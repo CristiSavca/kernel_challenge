@@ -1,0 +1,30 @@
+diff --git a/python/sglang/srt/layers/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark_fp4_moe.py
+index 97b1474..fa4b991 100644
+--- a/python/sglang/srt/layers/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark_fp4_moe.py
+@@ -475,7 +475,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            # Only routes to this rank's experts execute here. Use the
++            # global expert count to estimate routes per local expert.
++            if num_tokens * topk / self.global_num_experts / block_size_m < 0.9:
+                 break
+ 
+         if num_tokens == 1 and topk <= 32 and expert_map is None:
+@@ -487,11 +489,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 moe_align_single_token(local_topk_ids, block_size_m)
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
++            # IDs were already mapped to local indices, with -1 for remote
++            # experts. The alignment wrapper adds its sentinel bucket.
++            align_num_experts = self.num_local_experts
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids, block_size_m, align_num_experts
+             )
