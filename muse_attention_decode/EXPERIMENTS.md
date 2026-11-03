@@ -10,8 +10,7 @@
 - Uses unchanged production FA3 attention and output RMSNorm/gate.
 - Private H200 check passed correctness and static checks: **1.1358528683×**,
   95% interval **[1.1188150753, 1.1528906613]** relative to SGLang.
-- Scored submission sent November 3: `8727d7d1d2da427c`; confirmed queued in
-  mode `run`, result pending. Uses the same frozen source as the passing check.
+- Scored submission November 3: `8727d7d1d2da427c`; passed at **1.1345×**. Uses the same frozen source as the passing private check.
 
 ### Static audit
 
@@ -23,3 +22,16 @@
 - RoPE table caching depends only on the model theta and dimension, contains no input-derived values, and matches the official baseline's constant table.
 - No host sync, data-dependent allocation/control flow, output caching, subprocess or network use appears in the candidate.
 - The initial queue delay has cleared for this private check. Scored submission performance and rank remain separate from the measured private result.
+
+## Grouped sliding-window split-KV, v2 (November 3)
+
+- Private H200 check: `d046a6beb6634134`; last observed status `received`, GPU results pending.
+- Frozen candidate: `candidates/window_splitkv_v2.py`. SHA256: `f6f5b76c19bf3057d736b34f27aea9657487759ff86c0514b8f9288230b9c5e1`.
+- The v1 profiles spend 8–15 microseconds in sliding FA3 attention, plus separate split-combine and metadata-preparation launches.
+- v2 replaces sliding FA3 with paged grouped attention: all eight query heads sharing one KV head, and all queries in a verify block, reuse each loaded K/V tile.
+- Splits use an online stable softmax and FP32 accumulation/partials; a second kernel combines partials, rounds attention to BF16, and applies RMSNorm and sigmoid gating. The full-attention FA3 path is unchanged.
+- Query activations stay BF16 on the sliding path (more precise than the permitted stock FP8 query rounding); cache tensors remain FP8. Keys/values convert exactly from FP8 to BF16 for tensor-core operands, and actual input scale tensors are applied.
+- The split range covers `window + q_len - 1` positions: 2,055 for an 8-token block. Each query independently masks its causal end and exact 2,048-token window. No required key is dropped.
+- Flat cache addressing respects supplied page sizes, including 64, and writes new cache entries before attention. Empty splits produce zero output and negative-infinity log-sum-exp, and merge with zero weight.
+- Local Python syntax and whitespace checks passed; root independently reviewed the causal/window/page/scale/merge math. CUDA compilation, correctness and timing remain unverified until the private result arrives.
+- No second private check or scored submission was made for this version. Next action: read this job once complete, then promote only if correctness passes and measured gain is useful.

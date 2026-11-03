@@ -1,13 +1,14 @@
 # okc: problem=muse_bf16_proj
-"""Lossless weight packing and shape-specialized projections for H200.
+"""Profile-guided H200 projections with stock fallbacks.
 
-Small token batches use split-K tensor-core GEMMs; single-token projections
-use a bandwidth-oriented GEMV. The FP32 router keeps both BF16 residual
-components, with FP32 accumulation as permitted by the problem.
+Retain bandwidth GEMVs and small-pooler GEMMs where they measured faster.
+The FP32 router keeps both permitted BF16 residual components, accumulated
+in FP32, with enough K partitions to occupy the GPU for larger batches.
 """
 import torch
 import triton as tr
 import triton.language as tl
+from sglang.srt.layers.quantization.unquant import _bf16_gemm_dispatch_impl
 
 
 @tr.jit
@@ -56,9 +57,7 @@ def _reduce(P, Y, MN: tl.constexpr, S: tl.constexpr, BS: tl.constexpr):
 
 def prepare(weights):
     state = dict(weights)
-    for key, w in weights.items():
-        if key != "router":
-            state[key + "_t"] = w.t().contiguous()
+    state["pooler_t"] = weights["pooler"].t().contiguous()
     hi = weights["router"].to(torch.bfloat16)
     lo = (weights["router"] - hi.float()).to(torch.bfloat16)
     state["router_hi_t"] = hi.t().contiguous()
@@ -70,29 +69,27 @@ def kernel_fn(data, state):
     x, cfg = data["x"], data["config"]
     layer, m, n, k = cfg["layer"], cfg["m"], cfg["n"], cfg["k"]
     router = layer == "router"
+    gemv = m == 1 and layer != "o"
+    split_mm = router or (layer == "pooler" and 1 < m <= 16)
+    if not gemv and not split_mm:
+        return _bf16_gemm_dispatch_impl(x, state[layer][:n], None)
     y = torch.empty((m, n), device=x.device,
                     dtype=torch.float32 if router else torch.bfloat16)
-    if m == 1:
+    if gemv:
         split = tr.cdiv(k, 1024)
         p = torch.empty((split, n), device=x.device, dtype=torch.float32)
         _gemv[(tr.cdiv(n, 4), split)](x, state[layer], p, n, k, 4, 1024, num_warps=4)
         _reduce[(tr.cdiv(n, 256),)](p, y, n, split, 256)
         return y
-    if m <= 32 or router:
-        split = 8 if m <= 32 else 1
-        p = torch.empty((split, m, n), device=x.device, dtype=torch.float32)
-        if router:
-            wt, lo = state["router_hi_t"], state["router_lo_t"]
-        else:
-            # The <=8-token unpooler is a view of the first output channels.
-            # Its packed matrix retains the full physical row stride.
-            if n != state[layer].shape[0]:
-                return x @ state[layer][:n].T
-            wt, lo = state[layer + "_t"], state[layer + "_t"]
-        bm = 16 if m <= 16 else 32
-        _split_mm[(tr.cdiv(m, bm), tr.cdiv(n, 64), split)](
-            x, wt, lo, p, m, n, k, bm, 64, 64, split, router,
-            num_warps=4, num_stages=3)
-        _reduce[(tr.cdiv(m * n, 256),)](p, y, m * n, split, 256)
-        return y
-    return x @ state[layer][:n].T
+    split = 8
+    p = torch.empty((split, m, n), device=x.device, dtype=torch.float32)
+    if router:
+        wt, lo = state["router_hi_t"], state["router_lo_t"]
+    else:
+        wt = lo = state["pooler_t"]
+    bm = 16 if m <= 16 else 32
+    _split_mm[(tr.cdiv(m, bm), tr.cdiv(n, 64), split)](
+        x, wt, lo, p, m, n, k, bm, 64, 64, split, router,
+        num_warps=4, num_stages=3)
+    _reduce[(tr.cdiv(m * n, 256),)](p, y, m * n, split, 256)
+    return y

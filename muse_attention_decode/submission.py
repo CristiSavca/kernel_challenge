@@ -1,8 +1,9 @@
 # okc: problem=muse_attention_decode
 """Fuse query/key normalization, RoPE, FP8 conversion and cache scatter.
 
-Attention and its output norm/gate use the production FA3 and SGLang kernels.
-The fused producer preserves the BF16 rounding boundaries before FP8 storage.
+Sliding-window attention uses grouped split-KV Triton kernels, with the
+partial reduction fused into output RMSNorm and gating. Full attention retains
+the production FA3 path. BF16 activation and FP8 cache boundaries are preserved.
 """
 
 from typing import TypedDict
@@ -106,6 +107,94 @@ def _prepare_qkv(QKV, Q_OUT, POS, COS_SIN, LOC, KC, VC, KS, VS,
     tl.store(VC + dst, value, mask=mask & is_v[:, None])
 
 
+@triton.jit
+def _window_attention(Q, KC, VC, TABLE, SEQ, KS, VS, PART, LSE,
+                      HQ: tl.constexpr, HKV: tl.constexpr, D: tl.constexpr,
+                      LENGTH: tl.constexpr, GROUP: tl.constexpr,
+                      PAGE: tl.constexpr, TABLE_STRIDE: tl.constexpr,
+                      WINDOW: tl.constexpr, SPLITS: tl.constexpr,
+                      CHUNK: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr,
+                      SCALE: tl.constexpr):
+    batch = tl.program_id(0)
+    kv_head = tl.program_id(1)
+    split = tl.program_id(2)
+    qm = tl.arange(0, BM)
+    rd = tl.arange(0, D)
+    q_token = qm // GROUP
+    q_head = kv_head * GROUP + qm % GROUP
+    q = tl.load(Q + ((batch * LENGTH + q_token[:, None]) * HQ
+                     + q_head[:, None]) * D + rd[None, :],
+                mask=q_token[:, None] < LENGTH, other=0).to(tl.bfloat16)
+    seq = tl.load(SEQ + batch)
+    first = tl.maximum(0, seq - WINDOW + 1)
+    query_pos = seq + q_token
+    k_scale = tl.load(KS)
+    v_scale = tl.load(VS)
+    scale2 = SCALE * k_scale * 1.4426950408889634
+    m = tl.full((BM,), -1.0e6, tl.float32)
+    l = tl.zeros((BM,), tl.float32)
+    acc = tl.zeros((BM, D), tl.float32)
+    for step in range(tl.cdiv(CHUNK, BN)):
+        n = first + split * CHUNK + step * BN + tl.arange(0, BN)
+        k_live = n < seq + LENGTH
+        physical = tl.load(TABLE + batch * TABLE_STRIDE + n // PAGE,
+                           mask=k_live, other=0).to(tl.int64)
+        cache_row = physical * PAGE + n % PAGE
+        k = tl.load(KC + (cache_row[None, :] * HKV + kv_head) * D + rd[:, None],
+                    mask=k_live[None, :], other=0).to(tl.bfloat16)
+        v = tl.load(VC + (cache_row[:, None] * HKV + kv_head) * D + rd[None, :],
+                    mask=k_live[:, None], other=0).to(tl.bfloat16)
+        score = tl.dot(q, k).to(tl.float32) * scale2
+        live = (q_token[:, None] < LENGTH) & k_live[None, :] \
+            & (n[None, :] <= query_pos[:, None]) \
+            & (n[None, :] > query_pos[:, None] - WINDOW)
+        score = tl.where(live, score, -1.0e6)
+        new_m = tl.maximum(m, tl.max(score, axis=1))
+        alpha = tl.exp2(m - new_m)
+        prob = tl.where(live, tl.exp2(score - new_m[:, None]), 0.0)
+        acc = acc * alpha[:, None]
+        acc += tl.dot(prob.to(tl.bfloat16), v)
+        l = l * alpha + tl.sum(prob, axis=1)
+        m = new_m
+    inv_l = 1.0 / tl.maximum(l, 1.0e-30)
+    normalized = acc * (inv_l * v_scale)[:, None]
+    part_base = (((batch * HKV + kv_head) * SPLITS + split) * BM + qm) * D
+    tl.store(PART + part_base[:, None] + rd[None, :], normalized,
+             mask=q_token[:, None] < LENGTH)
+    logsum = tl.where(l > 0, m + tl.log2(l), -float("inf"))
+    tl.store(LSE + ((batch * HKV + kv_head) * SPLITS + split) * BM + qm,
+             logsum, mask=q_token < LENGTH)
+
+
+@triton.jit
+def _window_combine_norm_gate(PART, LSE, QKV, OUT,
+                              HQ: tl.constexpr, HKV: tl.constexpr, D: tl.constexpr,
+                              LENGTH: tl.constexpr, GROUP: tl.constexpr,
+                              SPLITS: tl.constexpr, BM: tl.constexpr,
+                              QKV_STRIDE: tl.constexpr):
+    row = tl.program_id(0)
+    head = row % HQ
+    token = row // HQ
+    batch = token // LENGTH
+    token_j = token % LENGTH
+    kv_head = head // GROUP
+    qm = token_j * GROUP + head % GROUP
+    splits = tl.arange(0, SPLITS)
+    rd = tl.arange(0, D)
+    lse = tl.load(LSE + ((batch * HKV + kv_head) * SPLITS + splits) * BM + qm)
+    maximum = tl.max(lse, axis=0)
+    weight = tl.exp2(lse - maximum)
+    part = tl.load(PART + (((batch * HKV + kv_head) * SPLITS
+                           + splits[:, None]) * BM + qm) * D + rd[None, :])
+    attn = tl.sum(part * weight[:, None], axis=0) / tl.sum(weight, axis=0)
+    # Production FA3 rounds the attention result to BF16 before output norm.
+    attn = attn.to(tl.bfloat16).to(tl.float32)
+    inv = tl.rsqrt(tl.sum(attn * attn, axis=0) / D + 1.0e-5)
+    gate = tl.load(QKV + token * QKV_STRIDE + (HQ + 2 * HKV + head) * D + rd).to(tl.float32)
+    sigmoid = 1.0 / (1.0 + tl.exp(-gate))
+    tl.store(OUT + row * D + rd, attn * inv * sigmoid)
+
+
 def kernel_fn(data):
     cfg = data["config"]
     batch, length = cfg["batch"], cfg["q_len"]
@@ -116,7 +205,9 @@ def kernel_fn(data):
 
     k_cache, v_cache = data["k_cache"], data["v_cache"]
     scaled = cfg["kv_scale"] != 1.0
-    q = torch.empty((tokens, hq, d), dtype=FP8, device=device)
+    window = cfg["window"]
+    q_dtype = torch.bfloat16 if window else FP8
+    q = torch.empty((tokens, hq, d), dtype=q_dtype, device=device)
     has_rope = bool(cfg["rope_theta"])
     cs = _cos_sin(cfg["rope_theta"], d, device) if has_rope else qkv
     rows = tokens * (hq + 2 * hkv)
@@ -128,7 +219,30 @@ def kernel_fn(data):
         num_warps=4, enable_fp_fusion=False,
     )
 
-    window = cfg["window"]
+    if window:
+        group = hq // hkv
+        bm = max(16, triton.next_power_of_2(length * group))
+        splits = 16 if batch <= 2 else 4
+        bn = 64
+        # Include the union of all causal windows in this verify block.
+        # For L=8 this is WINDOW+7 keys, not only WINDOW.
+        chunk = triton.cdiv(triton.cdiv(window + length - 1, splits), bn) * bn
+        partial = torch.empty((batch, hkv, splits, bm, d), dtype=torch.float32, device=device)
+        lse = torch.empty((batch, hkv, splits, bm), dtype=torch.float32, device=device)
+        output = torch.empty((batch, length, hq * d), dtype=torch.bfloat16, device=device)
+        _window_attention[(batch, hkv, splits)](
+            q, k_cache, v_cache, data["page_table"], data["seq_lens"],
+            data["k_scale"], data["v_scale"], partial, lse,
+            hq, hkv, d, length, group, cfg["page_size"],
+            data["page_table"].stride(0), window, splits, chunk, bm, bn,
+            cfg["sm_scale"] * cfg["qk_scale_factor"], num_warps=4,
+        )
+        _window_combine_norm_gate[(tokens * hq,)](
+            partial, lse, qkv, output, hq, hkv, d, length, group,
+            splits, bm, qkv.stride(0), num_warps=4,
+        )
+        return output
+
     descale = {}
     if scaled:
         descale = dict(k_descale=data["k_scale"].reshape(1, 1).expand(batch, hkv),

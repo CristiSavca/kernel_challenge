@@ -13,13 +13,12 @@ from typing import TypedDict
 import types
 
 import torch
+import triton
+import triton.language as tl
 from sgl_kernel.scalar_type import scalar_types
 
 from sglang.kernels.ops.activation.activation import silu_and_mul
 from sglang.kernels.ops.moe.moe_wna16_marlin import moe_wna16_marlin_gemm
-from sglang.kernels.ops.muse_spark_v12.fused_post_expert_norm_weighted_sum_triton import (
-    fused_post_expert_norm_weighted_sum,
-)
 from sglang.srt.layers.moe.fused_moe_triton import moe_align_block_size
 from sglang.srt.layers.quantization.marlin_utils import marlin_make_workspace
 from sglang.srt.layers.quantization.marlin_utils_fp4 import prepare_moe_nvfp4_layer_for_marlin
@@ -60,6 +59,137 @@ BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
 POST_NORM_EPS = 1e-8
 
 
+@triton.jit
+def _norm_weighted_sum(Y, W, Scores, Ids, Out, H: tl.constexpr, TOPK: tl.constexpr,
+                       BLOCK_H: tl.constexpr):
+    """Fuse the small-batch eager fallback as well as larger token batches."""
+    token = tl.program_id(0)
+    h = tl.arange(0, BLOCK_H)
+    weight = tl.load(W + h, h < H, other=0).to(tl.float32)
+    result = tl.full((BLOCK_H,), 0, tl.float32)
+    for slot in tl.static_range(TOPK):
+        route = token * TOPK + slot
+        expert = tl.load(Ids + route)
+        if expert >= 0:
+            y = tl.load(Y + route * H + h, h < H, other=0).to(tl.float32)
+            y = y * weight
+            rstd = tl.rsqrt(tl.sum(y * y, 0) / H + 1.0e-8)
+            score = tl.load(Scores + route).to(tl.float32)
+            result += (y * rstd) * score
+    tl.store(Out + token * H + h, result, h < H)
+
+
+def _finalize(y, scores, norm_weight, local_ids):
+    tokens, topk, hidden = y.shape
+    out = torch.empty((tokens, hidden), dtype=y.dtype, device=y.device)
+    _norm_weighted_sum[(tokens,)](
+        y, norm_weight, scores, local_ids, out,
+        H=hidden, TOPK=topk, BLOCK_H=triton.next_power_of_2(hidden),
+        num_warps=8, num_stages=1,
+    )
+    return out
+
+
+@triton.jit
+def _unpack_fp4(code):
+    """Decode the exact E2M1 grid, including signed zero, in FP32."""
+    magnitude = code & 7
+    bits = (((magnitude >> 1) + 126) << 23) | ((magnitude & 1) << 22)
+    value = bits.to(tl.float32, bitcast=True)
+    value = tl.where(magnitude < 2, magnitude.to(tl.float32) * 0.5, value)
+    return tl.where((code & 8) != 0, -value, value)
+
+
+@triton.jit
+def _packed_gate_up(X, Ids, W, Scales, Global, Inter,
+                    H: tl.constexpr, I: tl.constexpr, TOPK: tl.constexpr,
+                    BN: tl.constexpr, BK: tl.constexpr):
+    """Read packed weights only for a live route; fuse gate/up GEMVs and SwiGLU."""
+    route = tl.program_id(1)
+    expert = tl.load(Ids + route)
+    if expert >= 0:
+        token = route // TOPK
+        rows = tl.program_id(0) * BN + tl.arange(0, BN)
+        k = tl.arange(0, BK)
+        scale_global = tl.load(Global + expert).to(tl.float32)
+        gate_acc = tl.zeros((BN, BK), tl.float32)
+        up_acc = tl.zeros((BN, BK), tl.float32)
+        for base in range(tl.cdiv(H, BK)):
+            cols = base * BK + k
+            x = tl.load(X + token * H + cols, cols < H, other=0).to(tl.float32)
+            mask = (rows[:, None] < I) & (cols[None, :] < H)
+            gate_bytes = tl.load(W + expert * (2 * I * (H // 2))
+                                 + rows[:, None] * (H // 2) + cols[None, :] // 2,
+                                 mask, other=0).to(tl.int32)
+            up_bytes = tl.load(W + expert * (2 * I * (H // 2))
+                               + (rows[:, None] + I) * (H // 2) + cols[None, :] // 2,
+                               mask, other=0).to(tl.int32)
+            shift = (cols[None, :] & 1) * 4
+            gate_value = _unpack_fp4((gate_bytes >> shift) & 15)
+            up_value = _unpack_fp4((up_bytes >> shift) & 15)
+            gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))
+                                 + rows[:, None] * (H // 16) + cols[None, :] // 16,
+                                 mask, other=0).to(tl.float32) * scale_global
+            up_scale = tl.load(Scales + expert * (2 * I * (H // 16))
+                               + (rows[:, None] + I) * (H // 16) + cols[None, :] // 16,
+                               mask, other=0).to(tl.float32) * scale_global
+            # Match the BF16 weight/activation GEMMs at the production boundaries.
+            gate_w = (gate_value * gate_scale).to(tl.bfloat16).to(tl.float32)
+            up_w = (up_value * up_scale).to(tl.bfloat16).to(tl.float32)
+            gate_acc += gate_w * x[None, :]
+            up_acc += up_w * x[None, :]
+        gate = tl.sum(gate_acc, 1).to(tl.bfloat16).to(tl.float32)
+        up = tl.sum(up_acc, 1).to(tl.bfloat16).to(tl.float32)
+        value = (gate * tl.sigmoid(gate)) * up
+        tl.store(Inter + route * I + rows, value, rows < I)
+
+
+@triton.jit
+def _packed_down(Inter, Ids, W, Scales, Global, Y,
+                 H: tl.constexpr, I: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr):
+    route = tl.program_id(1)
+    expert = tl.load(Ids + route)
+    if expert >= 0:
+        rows = tl.program_id(0) * BN + tl.arange(0, BN)
+        k = tl.arange(0, BK)
+        scale_global = tl.load(Global + expert).to(tl.float32)
+        acc = tl.zeros((BN, BK), tl.float32)
+        for base in range(tl.cdiv(I, BK)):
+            cols = base * BK + k
+            x = tl.load(Inter + route * I + cols, cols < I, other=0).to(tl.float32)
+            mask = (rows[:, None] < H) & (cols[None, :] < I)
+            packed = tl.load(W + expert * (H * (I // 2))
+                             + rows[:, None] * (I // 2) + cols[None, :] // 2,
+                             mask, other=0).to(tl.int32)
+            code = (packed >> ((cols[None, :] & 1) * 4)) & 15
+            scale = tl.load(Scales + expert * (H * (I // 16))
+                            + rows[:, None] * (I // 16) + cols[None, :] // 16,
+                            mask, other=0).to(tl.float32) * scale_global
+            weight = (_unpack_fp4(code) * scale).to(tl.bfloat16).to(tl.float32)
+            acc += weight * x[None, :]
+        value = tl.sum(acc, 1).to(tl.bfloat16)
+        tl.store(Y + route * H + rows, value, rows < H)
+
+
+def _direct_small(x, local_ids, scores, state, size_n):
+    tokens, size_k = x.shape
+    routes = tokens * TOP_K
+    inter = torch.empty((routes, size_n), device=x.device, dtype=x.dtype)
+    y = torch.empty((tokens, TOP_K, size_k), device=x.device, dtype=x.dtype)
+    raw = state["raw"]
+    _packed_gate_up[(triton.cdiv(size_n, 8), routes)](
+        x, local_ids, raw["w13"], raw["w13_sf"], raw["w13_gs"], inter,
+        H=size_k, I=size_n, TOPK=TOP_K, BN=8, BK=256,
+        num_warps=4, num_stages=1, enable_fp_fusion=False,
+    )
+    _packed_down[(triton.cdiv(size_k, 8), routes)](
+        inter, local_ids, raw["w2"], raw["w2_sf"], raw["w2_gs"], y,
+        H=size_k, I=size_n, BN=8, BK=256,
+        num_warps=4, num_stages=1, enable_fp_fusion=False,
+    )
+    return _finalize(y, scores, state["norm_w"], local_ids)
+
+
 def _marlin_layer(weights, start, count):
     """The parameters prepare_moe_nvfp4_layer_for_marlin reads, for experts [start, start+count)."""
     sl = slice(start, start + count)
@@ -98,6 +228,10 @@ def prepare(weights):
     torch.cuda.synchronize()
     return {
         "banks": banks,
+        # Lossless local packed copies avoid retaining the full 256-expert storage.
+        # Dequantization happens inside the timed GEMV, never in prepare().
+        "raw": {name: weights[name][:32].clone() for name in
+                ("w13", "w13_sf", "w13_gs", "w2", "w2_sf", "w2_gs")},
         "workspace": marlin_make_workspace(device, max_blocks_per_sm=4),
         # MuseSpark1xFp4Experts binds the effective (1 + w) weight of the post-expert norm.
         "norm_w": (weights["post_norm_w"].float() + 1.0).to(torch.bfloat16),
@@ -118,6 +252,9 @@ def kernel_fn(data, state):
         local_ids = expert_map[local_ids]
     local_ids = local_ids.contiguous()
     topk_weights = data["topk_weights"].to(torch.float32).contiguous()
+
+    if num_tokens <= 8:
+        return _direct_small(x, local_ids, topk_weights, state, size_n)
 
     # Only one eighth of all routes are local under EP8. Size a tile
     # for the expected routes per local expert, rather than counting
@@ -153,6 +290,4 @@ def kernel_fn(data, state):
         cache2, cache3, bank["w2"], None, bank["w2_s"], bank["w2_gs"], None, None, None, ws,
         sorted_ids, block_experts, n_padded, topk_weights, top_k=1,
         size_m=num_tokens * TOP_K, size_n=size_k, size_k=size_n, **common).view(num_tokens, TOP_K, size_k)
-    return fused_post_expert_norm_weighted_sum(
-        y, topk_weights, norm_weight=state["norm_w"], eps=POST_NORM_EPS, weight_first=True,
-        slot_expert_ids=local_ids)
+    return _finalize(y, topk_weights, state["norm_w"], local_ids)

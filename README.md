@@ -13,9 +13,11 @@ earn serving-queue priority for the overall top 50.
 - All three private H200 checks passed correctness. Attention measured
   **1.1359×**, routed experts **1.0526×**, and dense projections **0.9505×**
   relative to SGLang. Attention and experts have gains outside their intervals.
-- Two scored submissions were sent November 3: attention
-  `8727d7d1d2da427c` and experts `8f1f69d433364789`. The service returned
-  receipt IDs and confirmed both as queued scored runs; results and ranks are pending.
+- Both November 3 scored submissions passed: attention `8727d7d1d2da427c`
+  measured **1.1345×**, and experts `8f1f69d433364789` measured **1.0458×**.
+  The observed overall rank was 1,771 of 1,940; ranks change as entries arrive.
+- A second tuning pass has six private checks queued across projections,
+  attention, experts and the whole decoder. These new candidates are unvalidated.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
 - `serving/patch.diff` is an unvalidated draft of the expert routing changes.
@@ -24,14 +26,37 @@ earn serving-queue priority for the overall top 50.
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
 | Dense projections | `43cb543b57c64b29` passed | 0.9505× | Candidate needs improvement |
-| Attention decode | `702a17ec1ad94e03` passed | 1.1359× | `8727d7d1d2da427c`, queued |
-| Routed experts | `1cc96c4a472b470a` passed | 1.0526× | `8f1f69d433364789`, queued |
+| Attention decode | `702a17ec1ad94e03` passed | 1.1359× | `8727d7d1d2da427c`, passed 1.1345× |
+| Routed experts | `1cc96c4a472b470a` passed | 1.0526× | `8f1f69d433364789`, passed 1.0458× |
 | Whole decoder layer | Official starter | — | — |
 | Prefill layer | Official starter | — | — |
 
 The official remote checks provide compilation, numerical tests, paired SGLang
 timing and profiles. A queued job should not be submitted again. Scored results
 may differ from the earlier private measurements; retain both results.
+
+## November 3 kernel focus
+
+Prioritize expert and attention costs, then integrate measured wins in the
+whole decoder. Use the projection profiles for a quick hybrid improvement.
+Prefill has a separate board and does not count toward the overall board used
+for serving priority, so it is lower priority during this pass.
+
+| Problem | New private check | Candidate |
+| --- | --- | --- |
+| Projections | `ce713efc5e9b44d8` | Profile-guided hybrid and larger-router split-K |
+| Attention | `d046a6beb6634134` | Grouped split-KV sliding-window attention and fused output norm/gate |
+| Experts | `8443a6493f7c4234` | Fused finalizer for small batches |
+| Experts | `cdec36c2da4b410c` | Direct packed NVFP4 GEMVs for up to 8 tokens |
+| Whole decoder | `9e55826b550f414b` | Previously validated component changes combined |
+| Whole decoder | `a28df47ba0584bed` | Combined components plus fused small-batch finalizer |
+
+**Active submission.py files now contain these experimental candidates.** The
+previously passing/scored snapshots remain immutable under `experiments/`.
+Score the exact source associated with a passing check; do not substitute an
+unvalidated active candidate. The kernel phase has both November 3 and November
+4 available before the cutoff; preserve time to prepare the separate serving
+entry, which does not require a qualifying kernel rank.
 
 ## Continue the experiments
 
@@ -62,7 +87,8 @@ Gains inside the reported confidence interval may be noise.
 
 ## Route to the serving entry
 
-1. Resolve the two scored results and inspect per-shape timings.
+1. Resolve the six new private checks and inspect per-shape timings. Publish
+   candidates that pass and establish useful gains.
 2. Improve the largest measured costs, especially the expert path at larger
    speculative batches, and combine passing kernels in the whole decoder.
 3. Transfer measured improvements into the pinned serving source. Export a
