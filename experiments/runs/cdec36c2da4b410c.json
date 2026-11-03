@@ -5,17 +5,149 @@
   "source_sha256": "f01c5293dcc3a4bd8f0e448e0e0ad52550c3b98719e6dd35ef5641a9622693e5",
   "source": "experiments/candidates/muse_moe_w4a16/f01c5293dcc3a4bd8f0e448e0e0ad52550c3b98719e6dd35ef5641a9622693e5.py",
   "recorded_at": "2026-11-03T23:00:34.592594+00:00",
-  "last_checked_at": "2026-11-03T23:01:20.608351+00:00",
+  "last_checked_at": "2026-11-03T23:40:16.225348+00:00",
   "response": {
     "board": "muse_moe_w4a16",
+    "call_id": "nyc3b:kc-cdec36c2da4b410c",
+    "cluster": "nyc3b",
     "content_hash": "46d2f93b8a3aba46308645c9754f110ae139743e06c3b395c1d1f4813e896df5",
     "created_at": 1793746834.1001453,
+    "dedicated": false,
     "duplicate_of": null,
+    "finished_at": 1793748754.7186503,
     "id": "cdec36c2da4b410c",
     "mode": "check",
+    "output": {
+      "log": "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/candidates/muse_moe_w4a16/profiles/f01c5293dcc3a4bd8f0e448e0e0ad52550c3b98719e6dd35ef5641a9622693e5.cdec36c2da4b410c.log"
+    },
     "payload_ref": "muse_moe_w4a16/46d2f93b8a3aba46308645c9754f110ae139743e06c3b395c1d1f4813e896df5.py",
-    "result": null,
-    "status": "queued",
+    "result": {
+      "checks": {
+        "flagged": [],
+        "ok": true,
+        "rejected": []
+      },
+      "error": null,
+      "evaluator": {
+        "code_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+        "files": {
+          "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+          "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+          "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+          "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+          "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+          "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+          "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+          "problems/muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+          "problems/muse_moe_w4a16/reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+          "problems/muse_moe_w4a16/task.yml": "cc6870087c1a115e69f40093478553e0a03c1b3e92f527c2e55c4115e2db42ad"
+        },
+        "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+      },
+      "flags": [],
+      "gpu": "H200",
+      "log_tail": "Traceback (most recent call last):\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/core.py\", line 43, in wrapper\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/core.py\", line 2540, in load\n    return _semantic.load(pointer, mask, other, boundary_check, padding_option, cache_modifier, eviction_policy,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/semantic.py\", line 1045, in load\n    other = self.cast(other, elt_ty)\n            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/semantic.py\", line 916, in cast\n    assert False, f'cannot cast {input} to {dst_ty}'\n           ^^^^^\nAssertionError: cannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/worker.py\", line 484, in child_main\n    out = kernel()(state.get(\"data\"))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/worker.py\", line 415, in <lambda>\n    return functools.partial(lambda k, p, d: k(d, p), fn, state[\"prep\"])\n                                             ^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/submission.py\", line 257, in kernel_fn\n    return _direct_small(x, local_ids, topk_weights, state, size_n)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/submission.py\", line 180, in _direct_small\n    _packed_gate_up[(triton.cdiv(size_n, 8), routes)](\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 374, in <lambda>\n    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 757, in run\n    kernel = self._do_compile(key, signature, device, constexprs, options, attrs, warmup)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 902, in _do_compile\n    kernel = self.compile(src, target=target, options=options.__dict__)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 307, in compile\n    module = src.make_ir(target, options, codegen_fns, module_map, context)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 80, in make_ir\n    return ast_to_ttir(self.fn, self, context=context, options=options, codegen_fns=codegen_fns,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntriton.compiler.errors.CompilationError: at 27:25:\n            x = tl.load(X + token * H + cols, cols < H, other=0).to(tl.float32)\n            mask = (rows[:, None] < I) & (cols[None, :] < H)\n            gate_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                                 + rows[:, None] * (H // 2) + cols[None, :] // 2,\n                                 mask, other=0).to(tl.int32)\n            up_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                               + (rows[:, None] + I) * (H // 2) + cols[None, :] // 2,\n                               mask, other=0).to(tl.int32)\n            shift = (cols[None, :] & 1) * 4\n            gate_value = _unpack_fp4((gate_bytes >> shift) & 15)\n            up_value = _unpack_fp4((up_bytes >> shift) & 15)\n            gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))\n                         ^\ncannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>\nTraceback (most recent call last):\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/core.py\", line 43, in wrapper\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/core.py\", line 2540, in load\n    return _semantic.load(pointer, mask, other, boundary_check, padding_option, cache_modifier, eviction_policy,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/semantic.py\", line 1045, in load\n    other = self.cast(other, elt_ty)\n            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/language/semantic.py\", line 916, in cast\n    assert False, f'cannot cast {input} to {dst_ty}'\n           ^^^^^\nAssertionError: cannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/worker.py\", line 484, in child_main\n    out = kernel()(state.get(\"data\"))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/worker.py\", line 415, in <lambda>\n    return functools.partial(lambda k, p, d: k(d, p), fn, state[\"prep\"])\n                                             ^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/submission.py\", line 257, in kernel_fn\n    return _direct_small(x, local_ids, topk_weights, state, size_n)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_moe_w4a16-chx9ruma/run/submission.py\", line 180, in _direct_small\n    _packed_gate_up[(triton.cdiv(size_n, 8), routes)](\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 374, in <lambda>\n    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 757, in run\n    kernel = self._do_compile(key, signature, device, constexprs, options, attrs, warmup)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/runtime/jit.py\", line 902, in _do_compile\n    kernel = self.compile(src, target=target, options=options.__dict__)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 307, in compile\n    module = src.make_ir(target, options, codegen_fns, module_map, context)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/sglang/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 80, in make_ir\n    return ast_to_ttir(self.fn, self, context=context, options=options, codegen_fns=codegen_fns,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntriton.compiler.errors.CompilationError: at 27:25:\n            x = tl.load(X + token * H + cols, cols < H, other=0).to(tl.float32)\n            mask = (rows[:, None] < I) & (cols[None, :] < H)\n            gate_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                                 + rows[:, None] * (H // 2) + cols[None, :] // 2,\n                                 mask, other=0).to(tl.int32)\n            up_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                               + (rows[:, None] + I) * (H // 2) + cols[None, :] // 2,\n                               mask, other=0).to(tl.int32)\n            shift = (cols[None, :] & 1) * 4\n            gate_value = _unpack_fp4((gate_bytes >> shift) & 15)\n            up_value = _unpack_fp4((up_bytes >> shift) & 15)\n            gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))\n                         ^\ncannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>\n",
+      "machine": {
+        "gpu_after": {
+          "clocks.max.sm": 1980,
+          "clocks.mem": 3201,
+          "clocks.sm": 1980,
+          "driver_version": "580.159.03",
+          "name": "NVIDIA H200",
+          "power.draw": 125.06,
+          "power.limit": 700,
+          "temperature.gpu": 37
+        },
+        "gpu_before": {
+          "clocks.max.sm": 1980,
+          "clocks.mem": 3201,
+          "clocks.sm": 1980,
+          "driver_version": "580.159.03",
+          "name": "NVIDIA H200",
+          "power.draw": 133.43,
+          "power.limit": 700,
+          "temperature.gpu": 37
+        },
+        "node": "n-szupglbnophi2mfwuhxj2gr5an"
+      },
+      "passed": false,
+      "records": [
+        {
+          "baseline_copies": 4,
+          "baseline_prepare_pad": 11140096,
+          "copies": 2,
+          "error": null,
+          "event": "setup",
+          "first": "baseline",
+          "prepare_pad": 8522240,
+          "prepare_s": 0.078427078,
+          "status": "pass"
+        },
+        {
+          "case": {
+            "bs": 4,
+            "seed": 8851434804782656649,
+            "sharding": "ep8"
+          },
+          "event": "test",
+          "index": 0,
+          "message": "CompilationError: at 27:25:\n            x = tl.load(X + token * H + cols, cols < H, other=0).to(tl.float32)\n            mask = (rows[:, None] < I) & (cols[None, :] < H)\n            gate_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                                 + rows[:, None] * (H // 2) + cols[None, :] // 2,\n                                 mask, other=0).to(tl.int32)\n            up_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                               + (rows[:, None] + I) * (H // 2) + cols[None, :] // 2,\n                               mask, other=0).to(tl.int32)\n            shift = (cols[None, :] & 1) * 4\n            gate_value = _unpack_fp4((gate_bytes >> shift) & 15)\n            up_value = _unpack_fp4((up_bytes >> shift) & 15)\n            gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))\n                         ^\ncannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>",
+          "status": "fail"
+        },
+        {
+          "case": {
+            "bs": 33,
+            "seed": 8851658484850144826,
+            "sharding": "ep8"
+          },
+          "event": "test",
+          "index": 1,
+          "message": "relative L2 error 5.549e-03 (worst row 5.810e-03)",
+          "status": "pass"
+        },
+        {
+          "case": {
+            "bs": 257,
+            "seed": 8852105844985121183,
+            "sharding": "ep8"
+          },
+          "event": "test",
+          "index": 2,
+          "message": "relative L2 error 5.560e-03 (worst row 5.945e-03)",
+          "status": "pass"
+        },
+        {
+          "case": {
+            "bs": 128,
+            "dist": "skewed",
+            "seed": 8852329525052609363,
+            "sharding": "ep8"
+          },
+          "event": "test",
+          "index": 3,
+          "message": "relative L2 error 5.362e-03 (worst row 5.625e-03)",
+          "status": "pass"
+        },
+        {
+          "case": {
+            "bs": 1,
+            "seed": 8852553205120097544,
+            "sharding": "ep8"
+          },
+          "event": "test",
+          "index": 4,
+          "message": "CompilationError: at 27:25:\n            x = tl.load(X + token * H + cols, cols < H, other=0).to(tl.float32)\n            mask = (rows[:, None] < I) & (cols[None, :] < H)\n            gate_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                                 + rows[:, None] * (H // 2) + cols[None, :] // 2,\n                                 mask, other=0).to(tl.int32)\n            up_bytes = tl.load(W + expert * (2 * I * (H // 2))\n                               + (rows[:, None] + I) * (H // 2) + cols[None, :] // 2,\n                               mask, other=0).to(tl.int32)\n            shift = (cols[None, :] & 1) * 4\n            gate_value = _unpack_fp4((gate_bytes >> shift) & 15)\n            up_value = _unpack_fp4((up_bytes >> shift) & 15)\n            gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))\n                         ^\ncannot cast int32[constexpr[8], constexpr[256]] to <['8', '256'], fp8e4nv>",
+          "status": "fail"
+        }
+      ],
+      "returncode": 112,
+      "score_us": null,
+      "speedup": null,
+      "speedup_ci": null,
+      "status": "ok"
+    },
+    "started_at": 1793748583.1841676,
+    "status": "done",
     "team": "CristiSavca"
   }
 }

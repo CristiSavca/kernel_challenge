@@ -141,9 +141,9 @@ def _window_attention(Q, KC, VC, TABLE, SEQ, KS, VS, PART, LSE,
                            mask=k_live, other=0).to(tl.int64)
         cache_row = physical * PAGE + n % PAGE
         k = tl.load(KC + (cache_row[None, :] * HKV + kv_head) * D + rd[:, None],
-                    mask=k_live[None, :], other=0).to(tl.bfloat16)
+                    mask=k_live[None, :], other=0.0).to(tl.bfloat16)
         v = tl.load(VC + (cache_row[:, None] * HKV + kv_head) * D + rd[None, :],
-                    mask=k_live[:, None], other=0).to(tl.bfloat16)
+                    mask=k_live[:, None], other=0.0).to(tl.bfloat16)
         score = tl.dot(q, k).to(tl.float32) * scale2
         live = (q_token[:, None] < LENGTH) & k_live[None, :] \
             & (n[None, :] <= query_pos[:, None]) \

@@ -1,7 +1,7 @@
 # Whole decoder experiments — November 3, 2026
 
-Both candidates are private checks, with GPU compilation, correctness and
-performance pending. The official PyTorch starter is preserved in the first
+Both private checks completed on H200 and passed GPU compilation, all 13
+numerical cases and all static checks, with no flags or rejections. The official PyTorch starter is preserved in the first
 Git commit. These candidates start from the official SGLang baseline.
 
 | Candidate | Check | Change |
@@ -32,6 +32,31 @@ and status receipts are under `../experiments/`.
   allocations and branches depend on fixed dimensions/configuration.
 
 Local Python compilation and an independent source audit found no actionable
-bug. The private finalizer symbol's availability in the judging image, numerical
-tolerances and performance still require the H200 checks. Do not score either
-candidate until its own check passes with a useful measured gain.
+bug. Official checks now confirm the private finalizer symbol is available,
+the numerical tolerances pass, and V2 has a useful measured gain.
+
+## November 3 official results
+
+| Candidate | Speedup | 95% interval | Normalized score |
+| --- | ---: | --- | ---: |
+| V1 | 1.017865× | [1.002597, 1.033133] | 22,223.29 µs |
+| V2 | **1.081198×** | **[1.064980, 1.097415]** | **20,921.52 µs** |
+
+Normalized SGLang baseline: 22,620.30 µs. V2's aggregate time is 5.86% lower
+than V1's across these separate runs. Recommend scoring the exact V2 source,
+SHA-256 `010c881e46e411735adef5aff33713d060106c9a4abef3cc5a4986043c221197`,
+from `experiments/candidates/muse_decode_layer/`.
+
+V2 improves one-token decode by 1.185× sliding / 1.181× full attention,
+16-token decode by 1.168× / 1.097×, and single-request eight-token verify by
+1.161× / 1.147×. Verify at batch 32 improves 1.171× / 1.105× from the local
+expert tile changes. Remaining regressions: decode batch 32 is 0.899× /
+0.956× and verify batch 16 is 0.959× / 0.974×. Larger-batch routing/GEMM
+costs still deserve attention; small-batch finalizer fusion is now validated.
+
+No scoring or additional private uploads were performed by this analysis.
+# November 3 scored promotion
+
+The exact V2 snapshot `010c881e46e411735adef5aff33713d060106c9a4abef3cc5a4986043c221197`
+passed private check `a28df47ba0584bed` at 1.0812× and was submitted for scoring
+as `846bf3fd98c54703`. The scored job is pending.

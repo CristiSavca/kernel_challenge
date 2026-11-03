@@ -6,7 +6,10 @@ Active source: `submission.py`, identical to `candidates/v003_profile_hybrid.py`
 Private check: **ce713efc5e9b44d8**.
 Raw source SHA-256: **b2e4fd2caaad6f68fd0022af15c95beb60935b180cad41632c824b53bcabe53b**.
 The helper froze these bytes before upload in `experiments/candidates/muse_bf16_proj/` and registered the receipt in `experiments/runs/ce713efc5e9b44d8.json`.
-Latest observed status: received. No new correctness or speed claim is established yet.
+Official H200 result: **passed**, 9/9 numerical cases and all static checks.
+Measured speedup **1.132050×**, 95% interval **[1.115069, 1.149031]**,
+score **4,267.30 µs** versus the normalized SGLang baseline **4,830.80 µs**.
+No flags or rejected checks. This exact snapshot is eligible for scoring.
 
 The prior profile had clear winners and regressions. v003 keeps one-token GEMVs for qkv, pooler, sliced unpooler, and router; retains the split-K pooler for 2–16 tokens; and uses SGLang's own `_bf16_gemm_dispatch_impl` for the other BF16 paths. The FP32 router keeps its permitted BF16 high/low split, with eight K partitions at every batch size instead of a single partition above 32 tokens. That specifically addresses poor occupancy in the 128/256-token router measurements.
 
@@ -47,7 +50,9 @@ The o-projection at 1–32 tokens, unpooler at 16/32 tokens, and qkv at 32 token
 - Allocations have fixed shapes. No host synchronization, input-dependent allocation/control flow, harness access, timing changes, module mutation, network, or process calls appear in the submission.
 - The SGLang fallback import is identical to the official baseline's import. The Triton kernels are unchanged from the earlier passing implementation; the larger router's grid changes its reduction grouping and still requires fresh validation.
 
-Local AST parsing passed. This Mac has no CUDA runtime. Remaining risks are the real GPU result, larger-router occupancy and memory traffic, strict router error tolerance after changed grouping, and variance under graph replay/cold-L2 timing.
+Local AST parsing and the official H200 compilation/numerical checks passed.
+The larger-router split-K change passed strict router tolerance and improved
+both larger shapes. Timing variance remains relevant when comparing later runs.
 
 ## Source reproducibility history
 
@@ -57,4 +62,20 @@ Local AST parsing passed. This Mac has no CUDA runtime. Remaining risks are the 
 
 ## Resume
 
-Use `python3 tools/experiments.py status ce713efc5e9b44d8` from the project root. Inspect correctness, all load scores, and particularly router 128/256. Keep checks private until a passing candidate has a useful measured gain. Compare changes against the reported uncertainty interval. No scored submission has been made by this projection task.
+The November 3 result validates the hybrid. Router 128 tokens measured
+**11.00 µs versus 16.29 µs** (1.481×), and router 256 tokens measured
+**13.33 µs versus 17.50 µs** (1.313×), resolving the earlier 57 µs regression.
+Other retained wins: one-token QKV 1.187×, pooler 1.124×, unpooler 1.318×,
+and router 1.824×; eight-token router 2.549×. Stock-dispatched shapes mostly
+remain close to parity (128-token pooler was 0.974× in this run).
+The normalized aggregate time is 16.0% lower than the earlier private V1 run;
+these are separate runs, not a paired V1/V3 measurement.
+
+Score the frozen `b2e4fd2c...` source associated with this passing check, then
+consider integrating the router and projection wins in the decoder. No scored
+submission has been made by this result-analysis subtask.
+# November 3 scored hybrid
+
+The exact passing V3 snapshot was scored as `b5538a0dd25d46be` and passed at
+**1.1303169997×**, CI [1.1133622447, 1.1472717547], score 4273.8453 µs.
+The corresponding private check was `ce713efc5e9b44d8` (1.1320×).

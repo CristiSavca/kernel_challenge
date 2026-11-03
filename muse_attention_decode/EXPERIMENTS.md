@@ -35,3 +35,14 @@
 - Flat cache addressing respects supplied page sizes, including 64, and writes new cache entries before attention. Empty splits produce zero output and negative-infinity log-sum-exp, and merge with zero weight.
 - Local Python syntax and whitespace checks passed; root independently reviewed the causal/window/page/scale/merge math. CUDA compilation, correctness and timing remain unverified until the private result arrives.
 - No second private check or scored submission was made for this version. Next action: read this job once complete, then promote only if correctness passes and measured gain is useful.
+# November 3 FP8 masked-load repair
+
+Private check `d046a6beb6634134` completed with `result.passed: false` and no
+speedup. Static source checks passed, but sliding-window tests failed compilation:
+Triton cannot cast the integer masked-load fill value directly to FP8 E4M3.
+Full-attention behavior was unchanged. Both FP8 cache loads now use `other=0.0`.
+The repaired source is `candidates/window_splitkv_v3_fp8_fill.py`, also active in
+`submission.py`, and is pending check `05f77382a0c84254`.
+
+The scored V1 remains the validated attention incumbent. Do not interpret the
+outer result `status: ok` as correctness; inspect `passed` and the test records.

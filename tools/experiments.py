@@ -75,9 +75,15 @@ def summary(data: dict) -> dict:
         result = response["result"]
         output["result"] = {
             key: result[key] for key in
-            ("status", "speedup", "speedup_ci", "score_us", "error", "checks")
+            ("status", "passed", "returncode", "speedup", "speedup_ci", "score_us", "error", "checks", "flags")
             if key in result
         }
+        if result.get("passed") is False:
+            failures = [r for r in result.get("records", []) if r.get("status") in ("fail", "error")]
+            if failures:
+                output["result"]["first_failure"] = {
+                    key: failures[0][key] for key in ("event", "case", "message", "error") if key in failures[0]
+                }
     return output
 
 

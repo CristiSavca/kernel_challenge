@@ -36,7 +36,11 @@ checked by the official serving service until that track opens November 5.
 
 Private check **`8443a6493f7c4234`** tests `candidates/fused_finalize_v2.py`.
 Local SHA-256: `1c630ca67809da86e67d258baa8de0cbcff5639dbc8e563482354247c3ed5ea2`.
-The result is pending. No scored submission has been made for this candidate.
+Official H200 result: **passed**, 5/5 numerical cases, all static checks,
+no flags or rejections. Measured speedup **1.205784×**, 95% interval
+**[1.187698, 1.223871]**, score **11,153.32 µs** versus normalized SGLang
+**13,448.50 µs**. This exact V2 snapshot is eligible for scoring; the active
+V3 file is still unvalidated. No scored submission was made by this analysis.
 
 The v1 profiles identify a specific gap: stock's post-expert norm helper uses
 an eager PyTorch fallback below 32 tokens. At one token, Marlin takes about
@@ -81,10 +85,48 @@ the unscheduled reduction loops may limit bandwidth. If V3 regresses but
 V2 passes, retain V2. Revisit a one-token-only dispatch after inspecting
 per-shape timing, without publishing an unmeasured variant.
 
-Both checks are queued at the coordinator's latest checkpoint. The initial
-receipts were `received` at 2026-11-03 23:00 UTC. The helper has frozen the
+V2 is complete and passing; V3 remains queued at the latest checkpoint.
+The initial receipts were `received` at 2026-11-03 23:00 UTC. The helper has frozen the
 uploaded bytes and saved receipts under `../experiments/`. An independent
 coordinator review found no source-level issue with V3's decoding, scaling,
 BF16 boundaries or route masking.
 Do not retry queued work. No further checks, scored submissions or commits
 were made by this subtask.
+
+
+## November 3 result analysis: V2
+
+| Tokens | SGLang paired time | V2 paired time | Speedup |
+| --- | ---: | ---: | ---: |
+| 1 | 76.30 µs | 54.44 µs | 1.402× |
+| 8 | 143.62 µs | 113.47 µs | 1.266× |
+| 16 | 196.45 µs | 163.51 µs | 1.201× |
+| 32 | 206.18 µs | 211.99 µs | 0.973× |
+| 128 | 471.68 µs | 430.62 µs | 1.095× |
+| 256 | 638.64 µs | 471.85 µs | 1.353× |
+
+The fusion provides the expected small-batch improvement. The prior V1 check
+measured 81.95/142.21/189.90 µs at 1/8/16 tokens; V2 is materially faster in
+those separate runs. At 32 tokens V1 was also approximately 0.971× SGLang,
+so the remaining small regression predates the finalizer. The normalized
+aggregate score time is 12.7% lower than V1's private check and 13.3% lower
+than the V1 scored run; these comparisons are across separate runs and seeds.
+Retain V2 as the validated incumbent while V3 is queued. Do not submit active
+`submission.py` until V3's own result establishes correctness and improvement.
+# November 3 public baseline and FP8 masked-load repair
+
+Validated fused-finalize V2 (1.2058× private) was submitted unchanged for scoring
+as `777df2bfda8b4a57`; score pending.
+
+Packed GEMV V3 check `cdec36c2da4b410c` failed compilation on the small-token
+path: integer `other=0` cannot cast directly to the FP8 scale type. Larger-token
+Marlin tests passed. Three scale loads now use `other=0.0` in
+`candidates/packed_gemv_v5_fp8_fill.py`, also active in `submission.py`.
+Fresh private check: `8af27f0313b44d84`, pending. No V3/V5 score was submitted.
+
+`candidates/public_local_align_v4.py` is an independent candidate based on the
+compact published GPT-6.1 Sol MoE kernel from Auto-research-agent commit
+`018b7a102348ea3b73701e8be52d24f82d8c91ee`. It adds provenance comments only,
+uses local Triton route alignment plus Marlin, and preserves its MIT license and
+original source under `third_party/`. Our private check `7d7d9292e9054337` is
+pending. Published local measurements do not establish our score.

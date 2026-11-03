@@ -16,8 +16,16 @@ earn serving-queue priority for the overall top 50.
 - Both November 3 scored submissions passed: attention `8727d7d1d2da427c`
   measured **1.1345×**, and experts `8f1f69d433364789` measured **1.0458×**.
   The observed overall rank was 1,771 of 1,940; ranks change as entries arrive.
-- A second tuning pass has six private checks queued across projections,
-  attention, experts and the whole decoder. These new candidates are unvalidated.
+- The second pass passed projections at **1.1320×**, experts at **1.2058×**,
+  and the best whole decoder at **1.0812×**. All three were promoted to scored
+  runs; projections passed at **1.1303×**, with the other two still queued.
+- Experimental attention and packed-GEMV experts failed Triton compilation on
+  integer-zero FP8 masked loads. Corrected sources have fresh private checks.
+- Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
+  payment verification, which Modal says unlocks the $30 free monthly allowance.
+  No GPU started, no usage was charged, and the failed app is stopped.
+- Selected public sources are pinned with licenses/hashes under `third_party/`.
+  A compact public MoE adaptation is now in our own private check.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
 - `serving/patch.diff` is an unvalidated draft of the expert routing changes.
@@ -25,10 +33,10 @@ earn serving-queue priority for the overall top 50.
 
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
-| Dense projections | `43cb543b57c64b29` passed | 0.9505× | Candidate needs improvement |
+| Dense projections | `ce713efc5e9b44d8` passed | 1.1320× | `b5538a0dd25d46be`, passed 1.1303× |
 | Attention decode | `702a17ec1ad94e03` passed | 1.1359× | `8727d7d1d2da427c`, passed 1.1345× |
-| Routed experts | `1cc96c4a472b470a` passed | 1.0526× | `8f1f69d433364789`, passed 1.0458× |
-| Whole decoder layer | Official starter | — | — |
+| Routed experts | `8443a6493f7c4234` passed | 1.2058× | `777df2bfda8b4a57` queued; previous passed 1.0458× |
+| Whole decoder layer | `a28df47ba0584bed` passed | 1.0812× | `846bf3fd98c54703` queued |
 | Prefill layer | Official starter | — | — |
 
 The official remote checks provide compilation, numerical tests, paired SGLang
@@ -45,18 +53,26 @@ for serving priority, so it is lower priority during this pass.
 | Problem | New private check | Candidate |
 | --- | --- | --- |
 | Projections | `ce713efc5e9b44d8` | Profile-guided hybrid and larger-router split-K |
-| Attention | `d046a6beb6634134` | Grouped split-KV sliding-window attention and fused output norm/gate |
+| Attention | `d046a6beb6634134` failed compile; corrected `05f77382a0c84254` pending | Grouped split-KV sliding-window attention and fused output norm/gate |
 | Experts | `8443a6493f7c4234` | Fused finalizer for small batches |
-| Experts | `cdec36c2da4b410c` | Direct packed NVFP4 GEMVs for up to 8 tokens |
+| Experts | `cdec36c2da4b410c` failed compile; corrected `8af27f0313b44d84` pending | Direct packed NVFP4 GEMVs for up to 8 tokens |
 | Whole decoder | `9e55826b550f414b` | Previously validated component changes combined |
 | Whole decoder | `a28df47ba0584bed` | Combined components plus fused small-batch finalizer |
+| Experts | `7d7d9292e9054337` pending | Public local alignment and fused finalizer, original source/license preserved |
 
-**Active submission.py files now contain these experimental candidates.** The
+**Active attention/MoE submission.py files contain the pending FP8 fixes.** The
 previously passing/scored snapshots remain immutable under `experiments/`.
 Score the exact source associated with a passing check; do not substitute an
 unvalidated active candidate. The kernel phase has both November 3 and November
 4 available before the cutoff; preserve time to prepare the separate serving
 entry, which does not require a qualifying kernel rank.
+
+The bounded Modal runner is documented in [tools/MODAL.md](tools/MODAL.md).
+It freezes exact inputs and checks public-reference correctness plus paired
+CUDA-graph timing; results are explicitly unofficial. Its lifecycle tests pass,
+but actual GPU execution remains blocked by Modal account verification.
+[tools/PUBLIC_RESEARCH.md](tools/PUBLIC_RESEARCH.md) records reusable sources,
+licenses, the encoded-source exclusion, and the experiment workflow.
 
 ## Continue the experiments
 
@@ -87,7 +103,7 @@ Gains inside the reported confidence interval may be noise.
 
 ## Route to the serving entry
 
-1. Resolve the six new private checks and inspect per-shape timings. Publish
+1. Resolve the new private checks and inspect per-shape timings. Publish
    candidates that pass and establish useful gains.
 2. Improve the largest measured costs, especially the expert path at larger
    speculative batches, and combine passing kernels in the whole decoder.

@@ -72,3 +72,22 @@ Removed 13 individually inspected generated downloads from `/private/tmp`: the s
 - Pinned source: https://github.com/sgl-project/sglang/tree/a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f
 
 Additional root research scratch retired: `/tmp/okc-site-20261024.js` (446,642 logical bytes), individually inspected with no open handle and outside Git. Observed free bytes: 153,143,562,240 before, 153,144,008,704 after (+446,464); concurrent activity may affect physical free space.
+
+## November 3 public-source and Modal setup
+
+The RTX 5080 PC is not yet set up. The user authorized using free Modal H200
+credits. Modal 1.6.3 is installed in a 53 MiB project venv and authenticated to
+cristisavca44. The first H200 request was denied before allocation because the
+account lacks a payment method. The account dialog says a refundable $0.50
+verification unlocks the full $30 monthly Starter allowance; current credits
+are $1. The user must complete that payment step. CLI usage remains $0 and the
+failed Modal app is stopped with zero tasks. No paid plan was enabled.
+
+The bounded runner and exact next commands are in tools/MODAL.md. It has four
+passing CPU lifecycle tests; live CUDA validation is still pending access.
+Selected public candidates, results and original licenses occupy 1.5 MiB under
+third_party; hashes were verified. tools/PUBLIC_RESEARCH.md records provenance
+and excludes the encoded dense source. No full third-party app build, model
+weights or local CUDA image was downloaded. No project cleanup was needed in
+this pass; free space observed 41 GiB initially and 45 GiB later reflects other
+concurrent disk activity, not removals by this task.

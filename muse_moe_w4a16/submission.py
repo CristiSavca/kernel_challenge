@@ -129,10 +129,10 @@ def _packed_gate_up(X, Ids, W, Scales, Global, Inter,
             up_value = _unpack_fp4((up_bytes >> shift) & 15)
             gate_scale = tl.load(Scales + expert * (2 * I * (H // 16))
                                  + rows[:, None] * (H // 16) + cols[None, :] // 16,
-                                 mask, other=0).to(tl.float32) * scale_global
+                                 mask, other=0.0).to(tl.float32) * scale_global
             up_scale = tl.load(Scales + expert * (2 * I * (H // 16))
                                + (rows[:, None] + I) * (H // 16) + cols[None, :] // 16,
-                               mask, other=0).to(tl.float32) * scale_global
+                               mask, other=0.0).to(tl.float32) * scale_global
             # Match the BF16 weight/activation GEMMs at the production boundaries.
             gate_w = (gate_value * gate_scale).to(tl.bfloat16).to(tl.float32)
             up_w = (up_value * up_scale).to(tl.bfloat16).to(tl.float32)
@@ -164,7 +164,7 @@ def _packed_down(Inter, Ids, W, Scales, Global, Y,
             code = (packed >> ((cols[None, :] & 1) * 4)) & 15
             scale = tl.load(Scales + expert * (H * (I // 16))
                             + rows[:, None] * (I // 16) + cols[None, :] // 16,
-                            mask, other=0).to(tl.float32) * scale_global
+                            mask, other=0.0).to(tl.float32) * scale_global
             weight = (_unpack_fp4(code) * scale).to(tl.bfloat16).to(tl.float32)
             acc += weight * x[None, :]
         value = tl.sum(acc, 1).to(tl.bfloat16)

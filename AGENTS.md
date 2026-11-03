@@ -25,7 +25,10 @@ Only weights may be repacked in prepare; never move input computation there.
 serving/sglang is a separate shallow Git checkout pinned by the official CLI.
 Keep its Git history intact; the parent repository intentionally ignores it.
 Export serving changes with `okc serve diff serving` and preserve the patch here.
-Do not download model weights or create a paid GPU rental without authorization.
+Do not download model weights or incur out-of-pocket GPU charges without authorization.
+The user authorized Modal setup and bounded single-H200 experiments funded by
+free credits. The client is in .venv-modal. Check tools/MODAL.md, the actual credit
+balance and account activation before running. Keep jobs within available credits.
 
 Keep generated scratch bounded. The setup had about 145 GiB free; the serving
 source is about 192 MiB. Preserve useful results and exact tested candidates.

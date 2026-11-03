@@ -1,0 +1,90 @@
+# Modal H200 experiments
+
+Setup checked November 3, 2026. Modal 1.6.3 is installed in `.venv-modal` with
+Python 3.13. The CLI is authenticated to workspace `cristisavca44`; credentials
+remain in the user's normal Modal configuration, outside this repository.
+
+## Current access blocker
+
+The first smoke request was rejected before GPU allocation: `Please add a
+payment method to use H200 GPU sandboxes.` The account showed $1 in included
+compute and $0 usage. Its Add payment method dialog explicitly says:
+
+- Verification unlocks the full $30 monthly Starter compute allowance.
+- Modal charges a one-time $0.50 verification fee, which it says is refunded.
+- The card must not already be used on another Modal account.
+
+The user must complete payment verification. No paid plan upgrade is needed.
+After verification, inspect the actual balance and the workspace spending limit
+before launching work. Authorization covers free-credit experiments, not charges
+beyond credits. The failed request's receipt is in
+`experiments/modal/20261103T233733Z-177140a4/manifest.json`.
+
+Sources: [GPU access](https://modal.com/docs/guide/gpu),
+[Starter pricing](https://modal.com/pricing),
+[workspace billing](https://modal.com/settings/cristisavca44/usage).
+
+## Run one experiment
+
+From the project root, no activation or global Python changes are needed:
+
+```bash
+.venv-modal/bin/python tools/modal_h200.py smoke
+.venv-modal/bin/python tools/modal_h200.py benchmark \
+  --problem muse_moe_w4a16 \
+  --candidate muse_moe_w4a16/candidates/public_local_align_v4.py \
+  --timeout 300
+```
+
+Add `--dry-run` to validate the inputs and inspect the exact manifest without
+creating any cloud resources. `--cases cases.json` accepts 1–64 explicit input
+configurations; seeds are set with `--seed` and `--weight-seed`.
+
+The smoke requests one H200 for at most 120 seconds and verifies `nvidia-smi`.
+The benchmark requests one H200, four CPU cores and 32 GiB RAM, with CPU/memory
+ceilings. Its default maximum lifetime is 300 seconds; the CLI accepts at most
+900 seconds. Each invocation makes one allocation attempt, uses no deployment
+or persistent volume, and terminates its sandbox in `finally`. Modal enforces
+the remote timeout even if the local process disconnects. Network access inside
+the sandbox is blocked. Image pulls happen on Modal, not this Mac.
+
+Observed pricing: H200 $4.54/hour; Sandbox CPU $0.1419/core-hour and memory
+$0.024/GiB-hour. At the requested resource ceilings a five-minute run is about
+$0.49, excluding separate image-build charges. This estimate is not a billing
+cap; check the current balance/rates and leave headroom. Do not start a long
+batch from the initial $1 allowance.
+
+## What the benchmark establishes
+
+The worker uses the public SGLang image, pinned to linux/amd64 digest
+`sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af`.
+The image provenance is retained in the imported benchmark manifest. The private
+judge has its own image and can change independently.
+
+Only the selected source, the problem's official public baseline/reference/
+checks/NVFP4 helper, and the worker are uploaded. The whole project, account
+files and credentials are not mounted. Every uploaded file is frozen and hashed
+under `experiments/modal/<run>/`; results, logs and termination status stay there.
+All weights/inputs are synthetic. No model download is required.
+
+Correctness uses the public reference, including returned cache entries when
+the problem supplies `collect`. It checks two fresh eager inputs, then every
+fresh CUDA graph replay. Candidate and baseline use separate state and inputs;
+timing alternates their order with a 128 MiB L2 flush before each measurement.
+The replay overhead is retained. Whole-decoder expert-bank scalar metadata is
+fixed per case so it remains compatible with the captured graph.
+
+The default cases are a small debugging subset, **not the complete official
+suite or an official score**. There is no official router-load calibration,
+load-weighted aggregate or confidence interval. A promising local result must
+still pass `okc check` before the exact same source is scored.
+
+Local lifecycle tests pass:
+
+```bash
+.venv-modal/bin/python -m unittest discover -s tools -p 'test_modal_h200.py' -v
+```
+
+These check resource bounds, cleanup after failure, explicit upload boundaries
+and dry runs. They do not establish CUDA compilation or numerical correctness;
+the live GPU smoke remains blocked by account verification.
