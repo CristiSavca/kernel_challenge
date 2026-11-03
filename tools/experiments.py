@@ -72,7 +72,12 @@ def summary(data: dict) -> dict:
     output = {key: data[key] for key in ("job", "problem", "label")}
     output.update(status=response.get("status"), mode=response.get("mode"))
     if response.get("result") is not None:
-        output["result"] = response["result"]
+        result = response["result"]
+        output["result"] = {
+            key: result[key] for key in
+            ("status", "speedup", "speedup_ci", "score_us", "error", "checks")
+            if key in result
+        }
     return output
 
 

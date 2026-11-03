@@ -2,7 +2,10 @@
 
 Private check `1cc96c4a472b470a` tests `candidates/local_routing_v1.py`.
 The immutable upload and full status are recorded under `../experiments/`.
-GPU correctness and timing are pending; no speedup has been established.
+Private H200 validation passed correctness and static checks. Measured speedup:
+**1.0526377681×**, 95% interval **[1.0368482016, 1.0684273346]** relative to SGLang.
+Scored submission sent November 3: `8f1f69d433364789`; confirmed queued in
+mode `run`, result pending. It uses the same frozen source as the passing check.
 
 This candidate retains SGLang's NVFP4 Marlin path, FP32 accumulation, BF16
 intermediates, SwiGLU and per-expert normalized weighted sum. It changes only
@@ -18,8 +21,8 @@ the sorting bucket count and the shape-based tile heuristic:
    expert still receives as many complete tiles as its actual routes need.
 
 The pinned wrapper/CUDA implementation was inspected to verify the sentinel
-contract, and local syntax compilation passed. Performance under skewed
-expert popularity and GPU numerical correctness require the official check.
+contract, and local syntax compilation passed. The official private H200 check
+also passed numerical correctness and established the measured gain above.
 
 If the combined change regresses, test a count-only control before changing
 the math. Do not pre-dequantize the persistent NVFP4 weight bank.

@@ -1,10 +1,12 @@
 # Open Kernel Challenge notes
 
-Verified against the official site and API on 2026-10-24. Re-read the live rules and limits before using a day's runs.
+Refreshed against the official site, terms and API on 2026-11-03. Re-read the live rules and limits before using a day's runs.
 
 ## What wins the prize
 
 The $100,000 is the total serving-track cash pool: first $50,000 plus an H200, second $30,000, third $10,000, fourth $3,000, fifth $2,000, and sixth through tenth $1,000 each. Kernel boards have no cash prizes. The overall kernel board's top 50 get serving-queue priority when the kernel phase closes.
+
+The top 50 are a queue-priority group, not a qualification cutoff. Terms section 6 allows entering either track independently; no minimum kernel rank, speedup or number of solved problems is stated for serving entry. Serving requires its own compliant SGLang patch.
 
 The entrant must be one individual, at least 18, with one account. The terms exclude sponsor personnel/family and jurisdictions or people prohibited by applicable law. Agent assistance is contemplated by the technical rules. The person must accept the rules through `okc login`; an agent must not accept them on their behalf. Submissions are licensed under Apache 2.0.
 
@@ -32,11 +34,13 @@ Serving evaluates hidden multi-turn coding conversations at 1, 4, 16 and 32 conc
 
 ## Iteration budget
 
-Live unauthenticated limits on 2026-10-24 were 10 scored submissions per kernel per UTC day; checks were 20/day for projections and experts, 10/day for attention, decoder and prefill. The prose docs still say 20 checks generally, so use `okc problems --json` for the current account's real allowance. Caps reset at 00:00 UTC, or 8 pm Eastern before the November clock change and 7 pm after it.
+Live limits on 2026-11-03 are 20 scored submissions and 40 checks per kernel per UTC day, across all five problems. The prose docs still contain older caps, so use `okc problems --json` for the current account's real allowance. Caps reset at 00:00 UTC, now 7 pm Eastern.
 
 Use `okc check <file> --json` for experiments, retain its profile and job ID, then submit a passing candidate to the board. Repeating identical code returns its previous result. A kernel run has 10 minutes for projections or 15 minutes for the other inspected tasks, including compilation. `prepare(weights)` is untimed, capped at 300 seconds. Serving allows 1 scored and 3 short check runs a day; the scored run can take up to 90 minutes.
 
 ## Implementation guardrails
+
+Updates verified November 3: source must be readable, with no embedded/prebuilt GPU binaries or compressed, encoded or obfuscated code (November 2 clarification). The latest kernel guidance permits approximate math accurate to BF16, BF16/FP16 split partial sums, and FP16 attention accumulation, while preserving the required computation and checking bounds. Consult the live restrictions before using any newly allowed precision behavior. Our two submitted candidates retain their originally validated precision behavior.
 
 - Preserve original BF16/NVFP4 weights or use a lossless representation; do not pre-dequantize experts into persistent higher-precision weights. The router alone permits FP32 weights represented as BF16 hi + lo with FP32 accumulation.
 - Keep the computation CUDA-graph compatible. Branch on dimensions/configuration, never on host-read input values. Compute each call from its fresh inputs.
