@@ -558,3 +558,24 @@ and self-contained upstream NOTICE comments. Critic reactivated for exact-source
 review and one private-check recommendation after the author finishes. Root alone
 submits. Preserve unchanged encodings0..11, tiny/MID/fallback dispatch, WGS
 barriers/GS2/FCI3/NTT1 and math precision. No new Modal allocation. Goal active.
+
+06:48 UTC concrete progress: KPERM-only source247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0
+is frozen and committeddca53c2 after root+critic full actual-byte inverse proof
+(100663296codes/6291456scale bytes, both stored layouts,14161scale pairs) and
+static review. Root submitted ONE official private MoE jobbcb761dfca264db0
+at06:47UTC; subsequently confirmed queued/check. Resume that job, neverduplicate.
+Local submission session83767 is terminalexit0. CPU environment bounded at
+/tmp/okc-kperm-cpu-20261104 (NumPy2.5.4), rootproofsession92666 terminalexit0.
+No local GPU allocation. Exact source/snapshot/receipt retained.
+
+Attention V11 official88f84f79fb11462d is DONE/PASS with16tests,12benchmarks,
+12profiles, no flags/rejections. Nonetheless reject this exact version: speedup
+2.2708996 vs active2.6119701; target B16/B32 fullQ8 normalized151.304/276.706us
+vs100.491/183.120us (~50% slower). Profiles confirmattn_kernel<8,true,0>.
+Independentcritic agrees no score/no decoderintegration. Differentdecoderflags
+andfreshseeds prevent isolated attribution to ownership/spills; resource screens
+remainfailed. Rejection andpercaseevidence:
+experiments/iterations/20261104-attention-v11-official-rejection.json.
+Attentionagent saves precise officialcoverage/flags checklist. Decoderagent now
+looks for one distinctdense/routingmechanism in already-preserved licensed source,
+no variants/GPU. Activepublicentriesunchanged; #1goal remainsunachieved.
