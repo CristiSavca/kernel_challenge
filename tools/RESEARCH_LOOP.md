@@ -20,31 +20,60 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-Terminal follow-up: repaired runner6f3f61 completed diagnostic
-`20261104T183437Z-9826c968` and recovered the failing checkpoint inside the live
-app context. Root and independent reviewer confirm 74 passing numerical cases,
-one failure, six passing actual activation profiles, and 15 numerical cases plus
-stream/graph checks not reached. In finite_cancellation, candidate equals the
-FP32 oracle exactly; stock differs by max_abs2.384185791015625e-7.
-Candidate/original relativeL2 is1; original/oracle is1582823.078587789 because
-the oracle result is near/at zero. This establishes the failing comparisons,
-not their instruction-level cause. Keep status failed/incomplete, preserve
-tolerances, do not promote, and do not repeat this same diagnostic. Next is a
-separately reviewed stage-level variance/inverse comparison with H511 and
-aligned controls; no source or GPU work for it has started. Root evidence:
-`20261104-finalizer-validation-root-result.json`; critic:
-`20261104-finalizer-validation-result-critic.json`.
+Latest terminal results, November4 after18:52UTC: attention V23 job
+`0193a093baa446f3`, exact c6b90f16, passed16 correctness tests/12benchmarks/
+12profiles with clean checks. Its score2.59112783 fails the fixed improvement
+gate versus public2.61197011 and private2.64253889. The affected-five speed
+GM ratios are0.98374659/0.97139198; zero cases improve against both parents.
+Control latency GMs1.00755123/1.00161346 stay within the fixed band. Close this
+attempt without retry, policy sweep, Q8 extension, decoder port or scored
+promotion. Root and independent result audits agree; the offline analyzer
+reproduces the exact fixed gate and eight focused analyzer tests pass.
+See `20261104-attention-exact-rescale-root-result.json` and
+`ATTENTION_EXACT_RESCALE_V23_RESULT_CRITIC_20261104.md`. Active attention87a9,
+MoE247888 and decoder97af remain unchanged.
 
-Both validation runs retain full $1.78 reservations. Latest allocation recorded
-5.40565763 conservative working budget after the second reservation and separate
-$5 headroom; fresh billing/attribution checks are required again. Both sandboxes
-are terminated; no official job is live. Lean implementation is committed in
-bff9cd8 and independently approved. No public score or source changed.
-Fresh 18:36 billing is gross4.17/billed0, both apps stopped with zero tasks.
-Retain this newer4.17 high-water observation (billing-after hash567c6247), not
-only the prior4.16434237. The finalizer runner's saved-floor binding is updated
-to that exact receipt; the financial formula, old reservations and certificates
-are unchanged. Conservative working allowance is now5.40 before future spend.
+Serving stage diagnostic `20261104T185116Z-a8743472` completed, exit0 with
+verified sandbox termination and stopped app. Exact helper91e6173b, original
+9b816e97, reference c94c3134, stage worker368af79c and runner690d4a46 are frozen.
+Root and critic independently decoded144 scalar values and verified all three
+bitwise recompositions. Original token2 variance/inverse each differ by1ULP
+between identical opposing-route squares; same logical H511 squares with
+physical pitch512 or separate aligned rows remove that difference. Original
+normalization already contains381 residual values (max_abs2.3841858e-7)
+before final route sum. Candidate/oracle final outputs are verified zero, but
+their token0 inverses differ by1ULP. This supports reduction-layout dependence,
+not a specific SASS cause or universal aligned-domain guarantee. Generic
+validation remains FAILED:74 earlier passing cases, one retained failure,
+15 later cases plus stream/graph checks still unexecuted. No helper/threshold
+change or serving promotion. Root evidence:
+`20261104-finalizer-stage-root-result.json`; independent critic:
+`20261104-finalizer-stage-result-critic.json`.
+
+Next concrete serving experiment: separately review a coverage-only protocol
+for the remaining15 cases, two streams and repeated fresh-input graphs using
+unchanged helpers. Retain the known failure explicitly and do not report generic
+PASS. Do not repeat the same cancellation diagnostic or force production to
+reproduce its stock rounding artifact. Full eight-H200 serving validation is
+still required when that track opens November10 at17:00UTC.
+
+The stage run retains its full $1.14 reservation; both prior validation runs
+retain their full $1.78 each. All15 journal records total29.82; original14-row
+byte prefix is preserved. Fresh post-stage billing is display4.18/component
+4.18466342, billed0; all visible apps are stopped with zero tasks. Preserve this
+new high-water receipt `experiments/modal/20261104T185116Z-a8743472/billing-after.json`
+(SHA5707549e). The runner saved-floor binding is raised to it; the guard,
+grant, financial formula and both immutable corrections remain unchanged.
+Conservative working allowance is4.24533658 with $5 additional headroom. This
+is a dated estimate; all fresh identity/attribution/lock checks apply before a
+new allocation. No GPU or official job remains live after these terminal runs.
+
+Latest board18:44UTC: overall/decoder403, MoE305; own scores unchanged.
+Decoder2.1812 versus leader2.5762 still needs about15.33% less latency. Bounded
+public GitHub scouting found no new compatible large rewrite in the inspected
+latest20 leader repositories; this is not a claim that no implementation exists.
+Lean source-bound integer fragment proof is committed in bff9cd8 and remains
+independently approved. The #1 goal remains active and unachieved.
 
 Latest continuation, November 4 after 18:25 UTC: the user-requested Lean
 methodology is implemented as an independent source-bound MULDEC integer

@@ -1,0 +1,808 @@
+{
+  "schema": 1,
+  "audited_at": "2026-11-04T18:53:25.308077+00:00",
+  "verdict": "DIAGNOSTIC_COMPLETE_NORMALIZATION_LAYOUT_DEPENDENCE_SUPPORTED_GENERIC_ACCEPTANCE_STILL_FAILED",
+  "run": "experiments/modal/20261104T185116Z-a8743472",
+  "evidence_sha256": {
+    "result.json": "3ce10b107e0108b284be0ec7d185b6d7b3b8edfdba8d02046156e2cbcf6900cc",
+    "manifest.json": "32162d8d97ae229392aaf0a49d601bff22815c3d82f53f528a86e71b78d00dd3",
+    "request.json": "11012b0f4e684a2a5c8eaef528aa60ff8737686db5a70162a9efbd2f0b7e313d",
+    "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "source_sha256": {
+    "candidate.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+    "baseline.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "validation_reference.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+    "finalizer_stages.py": "368af79ce048901eed0fe591806d1f0ae924c6690f81f5514706736b58e4aef9",
+    "worker.py": "690d4a46d15761e09b82d6fe696bdc0e28544af2dd6ba762b79e3c1f8b665bc5"
+  },
+  "environment": {
+    "cuda": "13.0",
+    "device": "NVIDIA H200",
+    "python": "3.12.3",
+    "torch": "2.14.1+cu130",
+    "triton": "3.8.0"
+  },
+  "elapsed_worker_seconds": 5.4235328780000005,
+  "reproduction_exactly_matches_prior_three_comparisons": true,
+  "bitwise_recompositions": {
+    "candidate": true,
+    "oracle": true,
+    "original": true
+  },
+  "inputs_unchanged": true,
+  "scalar_records_independently_decoded": {
+    "candidate.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547350406646729,
+        0.9547350406646729,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360312819480896,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746984",
+        "0x3f746984",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fbf",
+        "0x461c4000"
+      ],
+      "sha256": "583b7242ae11a17d55227f3554d9cf9180e82fe27a86f53e1ebef7b680985ccf"
+    },
+    "oracle.variance": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        0.0,
+        1.2103790044784546,
+        1.2103790044784546,
+        0.0,
+        1.1413511037826538,
+        1.1413511037826538,
+        0.0
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x00000000",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x00000000",
+        "0x3f9217cb",
+        "0x3f9217cb",
+        "0x00000000"
+      ],
+      "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186"
+    },
+    "oracle.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547351002693176,
+        0.9547351002693176,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360312819480896,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746985",
+        "0x3f746985",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fbf",
+        "0x461c4000"
+      ],
+      "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d"
+    },
+    "original.variance": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        0.0,
+        1.2103790044784546,
+        1.2103790044784546,
+        0.0,
+        1.1413511037826538,
+        1.1413509845733643,
+        0.0
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x00000000",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x00000000",
+        "0x3f9217cb",
+        "0x3f9217ca",
+        "0x00000000"
+      ],
+      "sha256": "874388e47d9cdceec6af05b90039f924f5fa84397cffa2650770e47a5baae560"
+    },
+    "original.epsilon_added": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        9.99999993922529e-09,
+        1.2103790044784546,
+        1.2103790044784546,
+        9.99999993922529e-09,
+        1.1413511037826538,
+        1.1413509845733643,
+        9.99999993922529e-09
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x322bcc77",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x322bcc77",
+        "0x3f9217cb",
+        "0x3f9217ca",
+        "0x322bcc77"
+      ],
+      "sha256": "321421b77d112343fa1a9116bd67a74766e5da405f7d3337810ed63f8ed613ee"
+    },
+    "original.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547351002693176,
+        0.9547351002693176,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360313415527344,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746985",
+        "0x3f746985",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fc0",
+        "0x461c4000"
+      ],
+      "sha256": "e52069b031237106dfac2cfc5ecb0520c6cc165fa7368cbfa03e017dcb6b67c1"
+    },
+    "contiguous_h511.variance": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        0.0,
+        1.2103790044784546,
+        1.2103790044784546,
+        0.0,
+        1.1413511037826538,
+        1.1413509845733643,
+        0.0
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x00000000",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x00000000",
+        "0x3f9217cb",
+        "0x3f9217ca",
+        "0x00000000"
+      ],
+      "sha256": "874388e47d9cdceec6af05b90039f924f5fa84397cffa2650770e47a5baae560"
+    },
+    "contiguous_h511.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547351002693176,
+        0.9547351002693176,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360313415527344,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746985",
+        "0x3f746985",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fc0",
+        "0x461c4000"
+      ],
+      "sha256": "e52069b031237106dfac2cfc5ecb0520c6cc165fa7368cbfa03e017dcb6b67c1"
+    },
+    "padded_pitch512_h511.variance": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        0.0,
+        1.2103790044784546,
+        1.2103790044784546,
+        0.0,
+        1.1413511037826538,
+        1.1413511037826538,
+        0.0
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x00000000",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x00000000",
+        "0x3f9217cb",
+        "0x3f9217cb",
+        "0x00000000"
+      ],
+      "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186"
+    },
+    "padded_pitch512_h511.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547351002693176,
+        0.9547351002693176,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360312819480896,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746985",
+        "0x3f746985",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fbf",
+        "0x461c4000"
+      ],
+      "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d"
+    },
+    "aligned_row_copies_h511.variance": {
+      "dtype": "torch.float32",
+      "values": [
+        1.0970697402954102,
+        1.0970697402954102,
+        0.0,
+        1.2103790044784546,
+        1.2103790044784546,
+        0.0,
+        1.1413511037826538,
+        1.1413511037826538,
+        0.0
+      ],
+      "bits": [
+        "0x3f8c6cc8",
+        "0x3f8c6cc8",
+        "0x00000000",
+        "0x3f9aedb3",
+        "0x3f9aedb3",
+        "0x00000000",
+        "0x3f9217cb",
+        "0x3f9217cb",
+        "0x00000000"
+      ],
+      "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186"
+    },
+    "aligned_row_copies_h511.inverse": {
+      "dtype": "torch.float32",
+      "values": [
+        0.9547351002693176,
+        0.9547351002693176,
+        10000.0,
+        0.9089486002922058,
+        0.9089486002922058,
+        10000.0,
+        0.9360312819480896,
+        0.9360312819480896,
+        10000.0
+      ],
+      "bits": [
+        "0x3f746985",
+        "0x3f746985",
+        "0x461c4000",
+        "0x3f68b0db",
+        "0x3f68b0db",
+        "0x461c4000",
+        "0x3f6f9fbf",
+        "0x3f6f9fbf",
+        "0x461c4000"
+      ],
+      "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d"
+    },
+    "bf16_inputs_fp64_products.variance": {
+      "dtype": "torch.float64",
+      "values": [
+        1.0970698745450655,
+        1.0970698745450655,
+        0.0,
+        1.21037902710297,
+        1.21037902710297,
+        0.0,
+        1.1413510543666407,
+        1.1413510543666407,
+        0.0
+      ],
+      "bits": [
+        "0x3ff18d99240990ea",
+        "0x3ff18d99240990ea",
+        "0x0000000000000000",
+        "0x3ff35db66612beaf",
+        "0x3ff35db66612beaf",
+        "0x0000000000000000",
+        "0x3ff242f952bc284e",
+        "0x3ff242f952bc284e",
+        "0x0000000000000000"
+      ],
+      "sha256": "f93775fed5d6e93158114f9beb3ca107b8ea6012c1442f3430861e41c0ae2f45"
+    },
+    "bf16_inputs_fp64_products.inverse": {
+      "dtype": "torch.float64",
+      "values": [
+        0.9547350207311721,
+        0.9547350207311721,
+        10000.0,
+        0.9089485544421115,
+        0.9089485544421115,
+        10000.0,
+        0.9360313097940458,
+        0.9360313097940458,
+        10000.0
+      ],
+      "bits": [
+        "0x3fee8d30754c5c4b",
+        "0x3fee8d30754c5c4b",
+        "0x40c3880000000000",
+        "0x3fed161b47626939",
+        "0x3fed161b47626939",
+        "0x40c3880000000000",
+        "0x3fedf3f7eef31e7c",
+        "0x3fedf3f7eef31e7c",
+        "0x40c3880000000000"
+      ],
+      "sha256": "984179cdc5b5892838a114aa159673f04556a75ea5913a6433fa1d17c1325841"
+    },
+    "rounded_fp32_products_fp64.variance": {
+      "dtype": "torch.float64",
+      "values": [
+        1.0970698745450655,
+        1.0970698745450655,
+        0.0,
+        1.21037902710297,
+        1.21037902710297,
+        0.0,
+        1.1413510543666407,
+        1.1413510543666407,
+        0.0
+      ],
+      "bits": [
+        "0x3ff18d99240990ea",
+        "0x3ff18d99240990ea",
+        "0x0000000000000000",
+        "0x3ff35db66612beaf",
+        "0x3ff35db66612beaf",
+        "0x0000000000000000",
+        "0x3ff242f952bc284e",
+        "0x3ff242f952bc284e",
+        "0x0000000000000000"
+      ],
+      "sha256": "f93775fed5d6e93158114f9beb3ca107b8ea6012c1442f3430861e41c0ae2f45"
+    },
+    "rounded_fp32_products_fp64.inverse": {
+      "dtype": "torch.float64",
+      "values": [
+        0.9547350207311721,
+        0.9547350207311721,
+        10000.0,
+        0.9089485544421115,
+        0.9089485544421115,
+        10000.0,
+        0.9360313097940458,
+        0.9360313097940458,
+        10000.0
+      ],
+      "bits": [
+        "0x3fee8d30754c5c4b",
+        "0x3fee8d30754c5c4b",
+        "0x40c3880000000000",
+        "0x3fed161b47626939",
+        "0x3fed161b47626939",
+        "0x40c3880000000000",
+        "0x3fedf3f7eef31e7c",
+        "0x3fedf3f7eef31e7c",
+        "0x40c3880000000000"
+      ],
+      "sha256": "984179cdc5b5892838a114aa159673f04556a75ea5913a6433fa1d17c1325841"
+    }
+  },
+  "same_h511_layouts": [
+    {
+      "name": "contiguous_h511",
+      "logical_values_equal": true,
+      "operand": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413137408,
+        "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "17ea97cbbe7c6e728a98b5f998413db4dac2b43c27b8dd9da8d50dbecd084fdf",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "row_copy_pointers_mod256": []
+    },
+    {
+      "name": "padded_pitch512_h511",
+      "logical_values_equal": true,
+      "operand": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413218816,
+        "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+        "row_address_mod16": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "sha256": "17ea97cbbe7c6e728a98b5f998413db4dac2b43c27b8dd9da8d50dbecd084fdf",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1536,
+          512,
+          1
+        ]
+      },
+      "row_copy_pointers_mod256": []
+    },
+    {
+      "name": "aligned_row_copies_h511",
+      "logical_values_equal": true,
+      "operand": null,
+      "row_copy_pointers_mod256": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "outputs": {
+    "candidate": {
+      "l2": 0.0,
+      "max_abs": 0.0,
+      "nonzero_values": 0,
+      "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "row_l2": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sha256": "e44c396437cde03cba1f5928d3894222f64efcb98c25f15240a85ded245a34e9"
+    },
+    "oracle": {
+      "l2": 0.0,
+      "max_abs": 0.0,
+      "nonzero_values": 0,
+      "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "row_l2": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sha256": "e44c396437cde03cba1f5928d3894222f64efcb98c25f15240a85ded245a34e9"
+    },
+    "original": {
+      "l2": 1.582823078587789e-06,
+      "max_abs": 2.384185791015625e-07,
+      "nonzero_values": 381,
+      "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "row_l2": [
+        0.0,
+        0.0,
+        1.582823078587789e-06
+      ],
+      "sha256": "fd1eae22ad4c8ed007a7d79a76bd38ab724353ed98590de97ac1ac36c3b777ae"
+    }
+  },
+  "opposing_routes": {
+    "candidate_inverse_bit_equal": true,
+    "input_value_negation": true,
+    "oracle_inverse_bit_equal": true,
+    "original_inverse_bit_equal": false,
+    "original_normalized_pair_sum": {
+      "l2": 1.582823078587789e-06,
+      "max_abs": 2.384185791015625e-07,
+      "nonzero_values": 381,
+      "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "row_l2": [
+        0.0,
+        0.0,
+        1.582823078587789e-06
+      ],
+      "sha256": "33f472bdb1ea05db5dfd514cfdedba40224b4b0d5194b1d802767cce217ae652"
+    },
+    "squares_bit_equal": true,
+    "weighted_value_negation": true
+  },
+  "h512_control": {
+    "changed_denominator": [
+      511,
+      512
+    ],
+    "comparisons": {
+      "candidate_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "candidate_vs_original": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "original_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      }
+    },
+    "new_random_draws": false,
+    "outputs": {
+      "candidate": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      },
+      "oracle": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      },
+      "original": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      }
+    }
+  },
+  "hypothesis_verdict": {
+    "supported": "Identical opposite-route squares produce unequal original H511 vectorized means/inverses for token2. Same-value H511 pitch512 and separate aligned row copies remove that inequality. Residual exists before final route sum.",
+    "counterhypotheses_disfavored": [
+      "Recomposition changed final output: all three exact bitwise gates passed",
+      "Final summation alone created this residual: normalized-pair sum and final FP32 route sum have identical byte hashes"
+    ],
+    "not_established": [
+      "Exact CUDA instruction/reduction tree or address alignment as the sole cause; layouts may change kernel/dispatch",
+      "Universal correctness on all aligned/other shapes",
+      "Equal candidate/oracle intermediate inverses: token0 differs by1ULP",
+      "Candidate variance: not observed",
+      "General helper original-compatibility acceptance, missing15 cases, streams/graphs, serving or performance gain"
+    ]
+  },
+  "cleanup": {
+    "exit_code": 0,
+    "sandbox_terminated_recorded": true,
+    "result_retrieved": true
+  },
+  "direct_speed_gain_percent": 0,
+  "next_decision": "Prefer a separately reviewed coverage-only protocol for the unexecuted15 cases and stream/graph checks, retaining this exact known generic failure and never emitting generic PASS. Do not force production to reproduce the observed eager reduction artifact or relax thresholds from this result.",
+  "reviewer_gpu_provider_official_calls": false,
+  "alternatives_and_objections": [
+    {
+      "option": "Complete outstanding coverage with unchanged helpers",
+      "reason": "Resolves remaining exceptional-value/output-ownership risks while preserving known failed comparison",
+      "strongest_objection": "Coverage completion cannot repair or waive the failed original-compatibility criterion; downstream serving/model validation remains necessary"
+    },
+    {
+      "option": "Choose a supported production domain with ordinary metadata fallback",
+      "reason": "May be appropriate if actual deployment scope is intentionally narrower",
+      "strongest_objection": "One H512 control does not establish universal aligned-shape safety, and broad fallback could sacrifice useful behavior without addressing the numerical contract"
+    },
+    {
+      "option": "Reproduce original eager reduction order",
+      "reason": "Could target strict original-value compatibility if that is an actual contract",
+      "strongest_objection": "Would deliberately reproduce an alignment-dependent residual and may eliminate performance benefit; no evidence currently makes this necessary"
+    }
+  ],
+  "post_run_monotonic_floor_audit": {
+    "comparison_commit": "97e1af5",
+    "frozen_run_runner_sha256": "690d4a46d15761e09b82d6fe696bdc0e28544af2dd6ba762b79e3c1f8b665bc5",
+    "subsequent_runner_sha256": "60f311f2980bf5228697c795378e13db4f6c30eeba4ac3fb26db2a12812af4a9",
+    "delta": "Only saved observation path/hash/amount; reversing these three literals reconstructs exact committed690d4a46 runner",
+    "old_floor_usd": "4.17081442",
+    "new_floor_usd": "4.18466342",
+    "provider_observation_path": "experiments/modal/20261104T185116Z-a8743472/billing-after.json",
+    "provider_observation_sha256": "5707549ecaa30578ff1302dfea155b79332eb8c87f9d2605ac7cc2b5991b156b",
+    "actual_saved_reader": "PASS without provider call",
+    "billing_snapshot_billed_usd": "0",
+    "listed_apps_stopped_zero_tasks": true,
+    "journal_prefix_sha256": "f42857d28aa3c4c6c87ee5db957d533e028193578c2f22cc5fe1618369ae1ef8",
+    "journal_current_sha256": "67ead741ed14f8b3915d6e907b8247f074aeb15abbab2002c8bef96b182ca21a",
+    "journal_old_records": 14,
+    "journal_current_records": 15,
+    "journal_relation": "Exact old14-record byte prefix preserved; only stage run1.14 appended",
+    "full_reservations_usd": "29.82",
+    "overlap_usd": "3.74",
+    "fixed_estimate_revision_usd": "9.51",
+    "grant_usd": "30",
+    "separate_headroom_usd": "5",
+    "working_estimate_usd": "4.24533658",
+    "guard_grant_and_both_certificates_equal_commit": true,
+    "estimate_certificate_sha256": "6ba6d283a301213433a67070033dfcafa3d4f115f9a01c2155c938b4e76e726f",
+    "allocation_performed": false
+  }
+}

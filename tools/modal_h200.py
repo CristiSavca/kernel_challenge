@@ -684,13 +684,13 @@ def run_compile_worker(payload: dict) -> None:
 def finalizer_observed_floor(root: Path) -> dict:
     """Bind a saved higher provider observation; this only increases the debit."""
     from modal_credit_budget import provider_spend
-    relative = "experiments/iterations/20261104-stage-resource-preflight.json"
-    expected = "2e5abe605041683f55abe3110acae56127676af8a30d4df180e56561a88f7358"
+    relative = "experiments/modal/20261104T185116Z-a8743472/billing-after.json"
+    expected = "5707549ecaa30578ff1302dfea155b79332eb8c87f9d2605ac7cc2b5991b156b"
     raw = (root / relative).read_bytes()
     if hashlib.sha256(raw).hexdigest() != expected:
         raise ValueError("Saved provider high-water evidence changed")
     amount = provider_spend(json.loads(raw)["billing"])
-    if str(amount) != "4.17081442":
+    if str(amount) != "4.18466342":
         raise ValueError("Saved provider high-water mismatch")
     return {"path": relative, "sha256": expected, "usd": str(amount)}
 

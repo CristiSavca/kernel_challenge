@@ -1,0 +1,2226 @@
+{
+  "active_stage": "complete",
+  "baseline_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "candidate_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "case_manifest_sha256": "7788252b3502280d4330bf1e743941fed745f2c6c23daab5622fb5d9d0e4a089",
+  "descriptor": {
+    "apply": true,
+    "broadcast_weight": false,
+    "eps": 1e-08,
+    "first": true,
+    "h": 511,
+    "ids": true,
+    "idtype": "int32",
+    "k": 3,
+    "mask": "local",
+    "name": "finite_cancellation",
+    "pattern": "cancellation",
+    "poison": false,
+    "sdtype": "float32",
+    "seed": 20268578,
+    "special": null,
+    "strided": false,
+    "t": 3,
+    "wdtype": "bfloat16",
+    "weight": true,
+    "xdtype": "bfloat16"
+  },
+  "diagnostic_complete": true,
+  "diagnostic_only": true,
+  "elapsed_seconds": 5.4235328780000005,
+  "environment": {
+    "cuda": "13.0",
+    "device": "NVIDIA H200",
+    "python": "3.12.3",
+    "torch": "2.14.1+cu130",
+    "triton": "3.8.0"
+  },
+  "file_sha256": {
+    "baseline.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "candidate.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+    "finalizer_stages.py": "368af79ce048901eed0fe591806d1f0ae924c6690f81f5514706736b58e4aef9",
+    "validation_reference.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede"
+  },
+  "fp64": [
+    {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "4b5c4c75308dee3f",
+          "4b5c4c75308dee3f",
+          "000000000088c340",
+          "396962471b16ed3f",
+          "396962471b16ed3f",
+          "000000000088c340",
+          "7c1ef3eef7f3ed3f",
+          "7c1ef3eef7f3ed3f",
+          "000000000088c340"
+        ],
+        "bytes": 72,
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "pointer": 47549413202432,
+        "raw_prefix_hex": "4b5c4c75308dee3f4b5c4c75308dee3f000000000088c340396962471b16ed3f",
+        "row_address_mod16": [
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64
+        ],
+        "sha256": "984179cdc5b5892838a114aa159673f04556a75ea5913a6433fa1d17c1325841",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547350207311721,
+          0.9547350207311721,
+          10000.0,
+          0.9089485544421115,
+          0.9089485544421115,
+          10000.0,
+          0.9360313097940458,
+          0.9360313097940458,
+          10000.0
+        ]
+      },
+      "name": "bf16_inputs_fp64_products",
+      "output": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "533506e06ccca9a3afac3afc3eb663b28de89811c3689be89e8fecf4e97c41b9"
+      },
+      "variance": {
+        "bits_little_endian_hex": [
+          "ea900924998df13f",
+          "ea900924998df13f",
+          "0000000000000000",
+          "afbe1266b65df33f",
+          "afbe1266b65df33f",
+          "0000000000000000",
+          "4e28bc52f942f23f",
+          "4e28bc52f942f23f",
+          "0000000000000000"
+        ],
+        "bytes": 72,
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "pointer": 47549413087744,
+        "raw_prefix_hex": "ea900924998df13fea900924998df13f0000000000000000afbe1266b65df33f",
+        "row_address_mod16": [
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64
+        ],
+        "sha256": "f93775fed5d6e93158114f9beb3ca107b8ea6012c1442f3430861e41c0ae2f45",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970698745450655,
+          1.0970698745450655,
+          0.0,
+          1.21037902710297,
+          1.21037902710297,
+          0.0,
+          1.1413510543666407,
+          1.1413510543666407,
+          0.0
+        ]
+      }
+    },
+    {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "4b5c4c75308dee3f",
+          "4b5c4c75308dee3f",
+          "000000000088c340",
+          "396962471b16ed3f",
+          "396962471b16ed3f",
+          "000000000088c340",
+          "7c1ef3eef7f3ed3f",
+          "7c1ef3eef7f3ed3f",
+          "000000000088c340"
+        ],
+        "bytes": 72,
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "pointer": 47549413218816,
+        "raw_prefix_hex": "4b5c4c75308dee3f4b5c4c75308dee3f000000000088c340396962471b16ed3f",
+        "row_address_mod16": [
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64
+        ],
+        "sha256": "984179cdc5b5892838a114aa159673f04556a75ea5913a6433fa1d17c1325841",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547350207311721,
+          0.9547350207311721,
+          10000.0,
+          0.9089485544421115,
+          0.9089485544421115,
+          10000.0,
+          0.9360313097940458,
+          0.9360313097940458,
+          10000.0
+        ]
+      },
+      "name": "rounded_fp32_products_fp64",
+      "output": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "533506e06ccca9a3afac3afc3eb663b28de89811c3689be89e8fecf4e97c41b9"
+      },
+      "variance": {
+        "bits_little_endian_hex": [
+          "ea900924998df13f",
+          "ea900924998df13f",
+          "0000000000000000",
+          "afbe1266b65df33f",
+          "afbe1266b65df33f",
+          "0000000000000000",
+          "4e28bc52f942f23f",
+          "4e28bc52f942f23f",
+          "0000000000000000"
+        ],
+        "bytes": 72,
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "pointer": 47549413201920,
+        "raw_prefix_hex": "ea900924998df13fea900924998df13f0000000000000000afbe1266b65df33f",
+        "row_address_mod16": [
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0,
+          8,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64
+        ],
+        "sha256": "f93775fed5d6e93158114f9beb3ca107b8ea6012c1442f3430861e41c0ae2f45",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970698745450655,
+          1.0970698745450655,
+          0.0,
+          1.21037902710297,
+          1.21037902710297,
+          0.0,
+          1.1413510543666407,
+          1.1413510543666407,
+          0.0
+        ]
+      }
+    }
+  ],
+  "generic_validation_status": "failed_at_finite_cancellation",
+  "h512_control": {
+    "changed_denominator": [
+      511,
+      512
+    ],
+    "comparisons": {
+      "candidate_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "candidate_vs_original": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "original_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      }
+    },
+    "new_random_draws": false,
+    "outputs": {
+      "candidate": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      },
+      "oracle": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      },
+      "original": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293"
+      }
+    }
+  },
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "inputs": {
+    "expert_output": {
+      "bytes": 9198,
+      "device": "cuda:0",
+      "dtype": "torch.bfloat16",
+      "pointer": 47549413064704,
+      "raw_prefix_hex": "dcbf08c00a3f8cbe8fbdd13faf3f96bd35bf2a3f823fd13e16bfb4bf6abff8bf",
+      "row_address_mod16": [
+        0,
+        14,
+        12,
+        10,
+        8,
+        6,
+        4,
+        2,
+        0
+      ],
+      "row_address_mod256": [
+        0,
+        254,
+        252,
+        250,
+        248,
+        246,
+        244,
+        242,
+        240
+      ],
+      "sha256": "b7015044286ca92c4f441305ab0f5e584fe0d0cd8de6ae4a3b5b6a18127c1331",
+      "shape": [
+        3,
+        3,
+        511
+      ],
+      "storage_offset": 0,
+      "stride": [
+        1533,
+        511,
+        1
+      ]
+    },
+    "norm_weight": {
+      "bytes": 1022,
+      "device": "cuda:0",
+      "dtype": "torch.bfloat16",
+      "pointer": 47549413074432,
+      "raw_prefix_hex": "0b3f823f5e3f913fc33e3b3f513f903f753f473f5f3fa13f953f9b3f853fcb3e",
+      "sha256": "41f529c5aa53c7146b005c60fa6cb465d9a066826657b91d4e2a8f8b0c96693e",
+      "shape": [
+        511
+      ],
+      "storage_offset": 0,
+      "stride": [
+        1
+      ]
+    },
+    "slot_expert_ids": {
+      "bytes": 36,
+      "device": "cuda:0",
+      "dtype": "torch.int32",
+      "pointer": 47549413075456,
+      "raw_prefix_hex": "0000000008000000000000000100000001000000050000000600000002000000",
+      "row_address_mod16": [
+        0,
+        12,
+        8
+      ],
+      "row_address_mod256": [
+        0,
+        12,
+        24
+      ],
+      "sha256": "93b0819e3fa3ce175a21ac27d38ece3c869f549f35adea9a1e0186724b145057",
+      "shape": [
+        3,
+        3
+      ],
+      "storage_offset": 0,
+      "stride": [
+        3,
+        1
+      ]
+    },
+    "topk_scores": {
+      "bytes": 36,
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "pointer": 47549413073920,
+      "raw_prefix_hex": "0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f",
+      "row_address_mod16": [
+        0,
+        12,
+        8
+      ],
+      "row_address_mod256": [
+        0,
+        12,
+        24
+      ],
+      "sha256": "535918286916675b94b05c03a164174657cb7c1c85b5c721755b86b65a38719f",
+      "shape": [
+        3,
+        3
+      ],
+      "storage_offset": 0,
+      "stride": [
+        3,
+        1
+      ]
+    }
+  },
+  "inputs_unchanged": true,
+  "layouts": [
+    {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8569743f",
+          "8569743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "c09f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413208064,
+        "raw_prefix_hex": "8569743f8569743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fc09f6f3f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "e52069b031237106dfac2cfc5ecb0520c6cc165fa7368cbfa03e017dcb6b67c1",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547351002693176,
+          0.9547351002693176,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360313415527344,
+          10000.0
+        ]
+      },
+      "logical_values_equal": true,
+      "name": "contiguous_h511",
+      "operand": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413137408,
+        "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "17ea97cbbe7c6e728a98b5f998413db4dac2b43c27b8dd9da8d50dbecd084fdf",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "variance": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "00000000",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "00000000",
+          "cb17923f",
+          "ca17923f",
+          "00000000"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413087744,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f00000000b3ed9a3fb3ed9a3f00000000cb17923fca17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "874388e47d9cdceec6af05b90039f924f5fa84397cffa2650770e47a5baae560",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          0.0,
+          1.2103790044784546,
+          1.2103790044784546,
+          0.0,
+          1.1413511037826538,
+          1.1413509845733643,
+          0.0
+        ]
+      }
+    },
+    {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8569743f",
+          "8569743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "bf9f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413208064,
+        "raw_prefix_hex": "8569743f8569743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fbf9f6f3f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547351002693176,
+          0.9547351002693176,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360312819480896,
+          10000.0
+        ]
+      },
+      "logical_values_equal": true,
+      "name": "padded_pitch512_h511",
+      "operand": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413218816,
+        "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+        "row_address_mod16": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "sha256": "17ea97cbbe7c6e728a98b5f998413db4dac2b43c27b8dd9da8d50dbecd084fdf",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1536,
+          512,
+          1
+        ]
+      },
+      "variance": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "00000000",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "00000000",
+          "cb17923f",
+          "cb17923f",
+          "00000000"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413249536,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f00000000b3ed9a3fb3ed9a3f00000000cb17923fcb17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          0.0,
+          1.2103790044784546,
+          1.2103790044784546,
+          0.0,
+          1.1413511037826538,
+          1.1413511037826538,
+          0.0
+        ]
+      }
+    },
+    {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8569743f",
+          "8569743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "bf9f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413249536,
+        "raw_prefix_hex": "8569743f8569743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fbf9f6f3f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547351002693176,
+          0.9547351002693176,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360312819480896,
+          10000.0
+        ]
+      },
+      "logical_values_equal": true,
+      "name": "aligned_row_copies_h511",
+      "operands": [
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413237248,
+          "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+          "sha256": "61ea51940a46b37e0bbd1f52af2aae4a9c546d81432d9eb1c32dd6e4c2809c18",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413239296,
+          "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+          "sha256": "61ea51940a46b37e0bbd1f52af2aae4a9c546d81432d9eb1c32dd6e4c2809c18",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413241344,
+          "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sha256": "ff662105e12fcc74e80dbc270db8a47b29437318961d1fffa93e08e7e165c211",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413243392,
+          "raw_prefix_hex": "0093b4404e86383dcdcb2740f47fc43cb5ce593f167d2a3fadfc763e20ad893f",
+          "sha256": "ea0c1a2326fd48b5e5cf213b7630fd64147b50f2e4c0bdbcafa04fa90024561f",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413245440,
+          "raw_prefix_hex": "0093b4404e86383dcdcb2740f47fc43cb5ce593f167d2a3fadfc763e20ad893f",
+          "sha256": "ea0c1a2326fd48b5e5cf213b7630fd64147b50f2e4c0bdbcafa04fa90024561f",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413247488,
+          "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sha256": "ff662105e12fcc74e80dbc270db8a47b29437318961d1fffa93e08e7e165c211",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413201920,
+          "raw_prefix_hex": "82ce75377cfc2a418ecca73cd5659b3e7e3f413e3d835d3d907bac3a0895b940",
+          "sha256": "894325a1ae1f4b66ddf26ae976e9cc362a07d8fa3cbb5c1f65b3514744d4d68e",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413203968,
+          "raw_prefix_hex": "82ce75377cfc2a418ecca73cd5659b3e7e3f413e3d835d3d907bac3a0895b940",
+          "sha256": "894325a1ae1f4b66ddf26ae976e9cc362a07d8fa3cbb5c1f65b3514744d4d68e",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        },
+        {
+          "bytes": 2044,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413206016,
+          "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sha256": "ff662105e12fcc74e80dbc270db8a47b29437318961d1fffa93e08e7e165c211",
+          "shape": [
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            1
+          ]
+        }
+      ],
+      "variance": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "00000000",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "00000000",
+          "cb17923f",
+          "cb17923f",
+          "00000000"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413212160,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f00000000b3ed9a3fb3ed9a3f00000000cb17923fcb17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          0.0,
+          1.2103790044784546,
+          1.2103790044784546,
+          0.0,
+          1.1413511037826538,
+          1.1413511037826538,
+          0.0
+        ]
+      }
+    }
+  ],
+  "limits": [
+    "Stage instrumentation can change allocations; exact recomposition is required.",
+    "Layout effects do not prove an instruction order or a universally safe shape.",
+    "No generic validation PASS, performance measurement or promotion."
+  ],
+  "official": false,
+  "opposing_routes": {
+    "candidate_inverse_bit_equal": true,
+    "input_value_negation": true,
+    "oracle_inverse_bit_equal": true,
+    "original_inverse_bit_equal": false,
+    "original_normalized_pair_sum": {
+      "l2": 1.582823078587789e-06,
+      "max_abs": 2.384185791015625e-07,
+      "nonzero_values": 381,
+      "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "row_l2": [
+        0.0,
+        0.0,
+        1.582823078587789e-06
+      ],
+      "sha256": "33f472bdb1ea05db5dfd514cfdedba40224b4b0d5194b1d802767cce217ae652"
+    },
+    "squares_bit_equal": true,
+    "weighted_value_negation": true
+  },
+  "recomposition": {
+    "candidate": true,
+    "oracle": true,
+    "original": true
+  },
+  "reference_sha256": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+  "reproduction": {
+    "candidate_minus_original": {
+      "coordinates": [
+        {
+          "column": 0,
+          "flat": 1022,
+          "left": 0.0,
+          "right": 2.3283064365386963e-10,
+          "token": 2
+        },
+        {
+          "column": 1,
+          "flat": 1023,
+          "left": 0.0,
+          "right": 2.384185791015625e-07,
+          "token": 2
+        },
+        {
+          "column": 4,
+          "flat": 1026,
+          "left": 0.0,
+          "right": 2.9802322387695312e-08,
+          "token": 2
+        },
+        {
+          "column": 5,
+          "flat": 1027,
+          "left": 0.0,
+          "right": -1.4901161193847656e-08,
+          "token": 2
+        },
+        {
+          "column": 6,
+          "flat": 1028,
+          "left": 0.0,
+          "right": -3.725290298461914e-09,
+          "token": 2
+        },
+        {
+          "column": 8,
+          "flat": 1030,
+          "left": 0.0,
+          "right": -1.1920928955078125e-07,
+          "token": 2
+        },
+        {
+          "column": 9,
+          "flat": 1031,
+          "left": 0.0,
+          "right": 2.9802322387695312e-08,
+          "token": 2
+        },
+        {
+          "column": 10,
+          "flat": 1032,
+          "left": 0.0,
+          "right": -5.960464477539063e-08,
+          "token": 2
+        },
+        {
+          "column": 11,
+          "flat": 1033,
+          "left": 0.0,
+          "right": -2.9802322387695312e-08,
+          "token": 2
+        },
+        {
+          "column": 12,
+          "flat": 1034,
+          "left": 0.0,
+          "right": 1.4551915228366852e-11,
+          "token": 2
+        },
+        {
+          "column": 14,
+          "flat": 1036,
+          "left": 0.0,
+          "right": -7.450580596923828e-09,
+          "token": 2
+        },
+        {
+          "column": 15,
+          "flat": 1037,
+          "left": 0.0,
+          "right": -5.960464477539063e-08,
+          "token": 2
+        },
+        {
+          "column": 16,
+          "flat": 1038,
+          "left": 0.0,
+          "right": -1.4901161193847656e-08,
+          "token": 2
+        },
+        {
+          "column": 17,
+          "flat": 1039,
+          "left": 0.0,
+          "right": -1.1920928955078125e-07,
+          "token": 2
+        },
+        {
+          "column": 18,
+          "flat": 1040,
+          "left": 0.0,
+          "right": -1.1920928955078125e-07,
+          "token": 2
+        },
+        {
+          "column": 19,
+          "flat": 1041,
+          "left": 0.0,
+          "right": -5.960464477539063e-08,
+          "token": 2
+        }
+      ],
+      "delta": {
+        "l2": 1.582823078587789e-06,
+        "max_abs": 2.384185791015625e-07,
+        "nonzero_values": 381,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          1.582823078587789e-06
+        ],
+        "sha256": "2619b6dd42d6434714cda7c316121846dcb7657966fa4829f9f8cf56fd9298ec"
+      }
+    },
+    "comparisons": {
+      "candidate_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "candidate_vs_original": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": false,
+        "exceptional": false,
+        "max_abs": 2.384185791015625e-07,
+        "pass": false,
+        "whole_rel_l2": 1.0,
+        "worst_row_rel_l2": 1.0
+      },
+      "original_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": false,
+        "exceptional": false,
+        "max_abs": 2.384185791015625e-07,
+        "pass": false,
+        "whole_rel_l2": 1582823.078587789,
+        "worst_row_rel_l2": 1582823.078587789
+      }
+    },
+    "matches_retained_failure": true,
+    "outputs": {
+      "candidate": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e44c396437cde03cba1f5928d3894222f64efcb98c25f15240a85ded245a34e9"
+      },
+      "oracle": {
+        "l2": 0.0,
+        "max_abs": 0.0,
+        "nonzero_values": 0,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "sha256": "e44c396437cde03cba1f5928d3894222f64efcb98c25f15240a85ded245a34e9"
+      },
+      "original": {
+        "l2": 1.582823078587789e-06,
+        "max_abs": 2.384185791015625e-07,
+        "nonzero_values": 381,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_l2": [
+          0.0,
+          0.0,
+          1.582823078587789e-06
+        ],
+        "sha256": "fd1eae22ad4c8ed007a7d79a76bd38ab724353ed98590de97ac1ac36c3b777ae"
+      }
+    }
+  },
+  "stages": {
+    "candidate": {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8469743f",
+          "8469743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "bf9f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413087232,
+        "raw_prefix_hex": "8469743f8469743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fbf9f6f3f",
+        "row_address_mod16": [
+          0,
+          12,
+          8
+        ],
+        "row_address_mod256": [
+          0,
+          12,
+          24
+        ],
+        "sha256": "583b7242ae11a17d55227f3554d9cf9180e82fe27a86f53e1ebef7b680985ccf",
+        "shape": [
+          3,
+          3
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1
+        ],
+        "values": [
+          0.9547350406646729,
+          0.9547350406646729,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360312819480896,
+          10000.0
+        ]
+      },
+      "variance_observed": false
+    },
+    "oracle": {
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8569743f",
+          "8569743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "bf9f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413218304,
+        "raw_prefix_hex": "8569743f8569743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fbf9f6f3f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "5d79e56a62eba258580210818e3f1d2e1c484c5cf68d466d11268e302ad4b21d",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547351002693176,
+          0.9547351002693176,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360312819480896,
+          10000.0
+        ]
+      },
+      "normalized": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413250048,
+        "raw_prefix_hex": "991764bf6fdf03c08782e43e3f6a97be94fdcfbce9c1913f7067883f8e1ca1bd",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "f6106fead9b2d2af7a12757ff086f8b4ccab8b23b9e76e3eadf9f846d6ca34b5",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "squared_operand_metadata": [
+        {
+          "bytes": 6132,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413213184,
+          "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+          "row_address_mod16": [
+            0,
+            12,
+            8
+          ],
+          "row_address_mod256": [
+            0,
+            252,
+            248
+          ],
+          "sha256": "afa3e8a38ce3a192c50e52533c5f59f31f431f5bb565e48f50b2a44b423fb9ff",
+          "shape": [
+            3,
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            511,
+            1
+          ]
+        },
+        {
+          "bytes": 6132,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413207040,
+          "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+          "row_address_mod16": [
+            0,
+            12,
+            8
+          ],
+          "row_address_mod256": [
+            0,
+            252,
+            248
+          ],
+          "sha256": "afa3e8a38ce3a192c50e52533c5f59f31f431f5bb565e48f50b2a44b423fb9ff",
+          "shape": [
+            3,
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            511,
+            1
+          ]
+        },
+        {
+          "bytes": 6132,
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "pointer": 47549413225472,
+          "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+          "row_address_mod16": [
+            0,
+            12,
+            8
+          ],
+          "row_address_mod256": [
+            0,
+            252,
+            248
+          ],
+          "sha256": "32a733616ff1cf0f1c282a9147921cda5728af386856e3079d083ec127040383",
+          "shape": [
+            3,
+            511
+          ],
+          "storage_offset": 0,
+          "stride": [
+            511,
+            1
+          ]
+        }
+      ],
+      "variance": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "00000000",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "00000000",
+          "cb17923f",
+          "cb17923f",
+          "00000000"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413086720,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f00000000b3ed9a3fb3ed9a3f00000000cb17923fcb17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "64ea29639c7748952b8f2f7bc05366d2211e0e91657607314a1918e69d1e6186",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          0.0,
+          1.2103790044784546,
+          1.2103790044784546,
+          0.0,
+          1.1413511037826538,
+          1.1413511037826538,
+          0.0
+        ]
+      }
+    },
+    "original": {
+      "converted": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413100544,
+        "raw_prefix_hex": "0000dcbf000008c000000a3f00008cbe00008fbd0000d13f0000af3f000096bd",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "467589d4d91086edfeb78236887c825b578aabed5d163837245b43d1da03ceab",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "epsilon_added": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "77cc2b32",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "77cc2b32",
+          "cb17923f",
+          "ca17923f",
+          "77cc2b32"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413082624,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f77cc2b32b3ed9a3fb3ed9a3f77cc2b32cb17923fca17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "321421b77d112343fa1a9116bd67a74766e5da405f7d3337810ed63f8ed613ee",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          9.99999993922529e-09,
+          1.2103790044784546,
+          1.2103790044784546,
+          9.99999993922529e-09,
+          1.1413511037826538,
+          1.1413509845733643,
+          9.99999993922529e-09
+        ]
+      },
+      "inverse": {
+        "bits_little_endian_hex": [
+          "8569743f",
+          "8569743f",
+          "00401c46",
+          "dbb0683f",
+          "dbb0683f",
+          "00401c46",
+          "bf9f6f3f",
+          "c09f6f3f",
+          "00401c46"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413083136,
+        "raw_prefix_hex": "8569743f8569743f00401c46dbb0683fdbb0683f00401c46bf9f6f3fc09f6f3f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "e52069b031237106dfac2cfc5ecb0520c6cc165fa7368cbfa03e017dcb6b67c1",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          0.9547351002693176,
+          0.9547351002693176,
+          10000.0,
+          0.9089486002922058,
+          0.9089486002922058,
+          10000.0,
+          0.9360312819480896,
+          0.9360313415527344,
+          10000.0
+        ]
+      },
+      "masked": {
+        "bytes": 9198,
+        "device": "cuda:0",
+        "dtype": "torch.bfloat16",
+        "pointer": 47549413091328,
+        "raw_prefix_hex": "dcbf08c00a3f8cbe8fbdd13faf3f96bd35bf2a3f823fd13e16bfb4bf6abff8bf",
+        "row_address_mod16": [
+          0,
+          14,
+          12,
+          10,
+          8,
+          6,
+          4,
+          2,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          254,
+          252,
+          250,
+          248,
+          246,
+          244,
+          242,
+          240
+        ],
+        "sha256": "b7015044286ca92c4f441305ab0f5e584fe0d0cd8de6ae4a3b5b6a18127c1331",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "normalized": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413155840,
+        "raw_prefix_hex": "991764bf6fdf03c08782e43e3f6a97be94fdcfbce9c1913f7067883f8e1ca1bd",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "efadc0bd8e202b0f00f07a7ec75049ab21fee908d8798b1fca7022da2728509f",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "route_sum": {
+        "bytes": 6132,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413192704,
+        "raw_prefix_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "row_address_mod16": [
+          0,
+          12,
+          8
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248
+        ],
+        "sha256": "33f472bdb1ea05db5dfd514cfdedba40224b4b0d5194b1d802767cce217ae652",
+        "shape": [
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          511,
+          1
+        ]
+      },
+      "scored": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413174272,
+        "raw_prefix_hex": "991764bf6fdf03c08782e43e3f6a97be94fdcfbce9c1913f7067883f8e1ca1bd",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "efadc0bd8e202b0f00f07a7ec75049ab21fee908d8798b1fca7022da2728509f",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "squares": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413137408,
+        "raw_prefix_hex": "32f45e3f080d95406ec55f3ef47fc43d4e63393a0417b63f4d789f3f2079de3b",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "17ea97cbbe7c6e728a98b5f998413db4dac2b43c27b8dd9da8d50dbecd084fdf",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "variance": {
+        "bits_little_endian_hex": [
+          "c86c8c3f",
+          "c86c8c3f",
+          "00000000",
+          "b3ed9a3f",
+          "b3ed9a3f",
+          "00000000",
+          "cb17923f",
+          "ca17923f",
+          "00000000"
+        ],
+        "bytes": 36,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413082112,
+        "raw_prefix_hex": "c86c8c3fc86c8c3f00000000b3ed9a3fb3ed9a3f00000000cb17923fca17923f",
+        "row_address_mod16": [
+          0,
+          4,
+          8,
+          12,
+          0,
+          4,
+          8,
+          12,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32
+        ],
+        "sha256": "874388e47d9cdceec6af05b90039f924f5fa84397cffa2650770e47a5baae560",
+        "shape": [
+          3,
+          3,
+          1
+        ],
+        "storage_offset": 0,
+        "stride": [
+          3,
+          1,
+          1
+        ],
+        "values": [
+          1.0970697402954102,
+          1.0970697402954102,
+          0.0,
+          1.2103790044784546,
+          1.2103790044784546,
+          0.0,
+          1.1413511037826538,
+          1.1413509845733643,
+          0.0
+        ]
+      },
+      "weighted": {
+        "bytes": 18396,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "pointer": 47549413118976,
+        "raw_prefix_hex": "00e86ebf00200ac00058ef3e00989ebe00dad9bc00ab983f00df8e3f00c0a8bd",
+        "row_address_mod16": [
+          0,
+          12,
+          8,
+          4,
+          0,
+          12,
+          8,
+          4,
+          0
+        ],
+        "row_address_mod256": [
+          0,
+          252,
+          248,
+          244,
+          240,
+          236,
+          232,
+          228,
+          224
+        ],
+        "sha256": "2ea531ccc258932a2b05487817d41c45d6dc0b95676cf4c37b92df08e6838157",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "storage_offset": 0,
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      }
+    }
+  },
+  "status": "diagnostic_complete",
+  "worker_sha256": "368af79ce048901eed0fe591806d1f0ae924c6690f81f5514706736b58e4aef9"
+}
