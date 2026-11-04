@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "reviewed_at": "2026-11-04T18:50:01.085070+00:00",
+  "verdict": "GO_FOR_ONE_FIXED_STAGE_DIAGNOSTIC_SUBJECT_TO_EXISTING_FRESH_GUARD",
+  "pins": {
+    "tools/serving_finalizer_stage_worker.py": "368af79ce048901eed0fe591806d1f0ae924c6690f81f5514706736b58e4aef9",
+    "tools/test_serving_finalizer_stage_worker.py": "fd5919d1786b96c32c50d5abe91d36216778c3f009855d12e2f32f859745a973",
+    "tools/SERVING_FINALIZER_STAGE_PLAN_20261104.md": "f5a4ed2983ee1995710116f34d5a65eefc714c50c9be8b1ebad9f0e178bc31e5",
+    "tools/modal_h200.py": "690d4a46d15761e09b82d6fe696bdc0e28544af2dd6ba762b79e3c1f8b665bc5",
+    "tools/test_modal_finalizer_stage_runner.py": "88d699c1dd5018b773fba1f459222b08bc2df786f07234cc310239cc2b6ef000"
+  },
+  "candidate_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "original_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "reference_worker_sha256": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+  "case_manifest_sha256": "7788252b3502280d4330bf1e743941fed745f2c6c23daab5622fb5d9d0e4a089",
+  "independent_checks": {
+    "focused_worker_tests": 11,
+    "actual_no_provider_dry_run": "PASS fixed H200300s/worker240s/four pins/floor4.17",
+    "source_diff_and_runner_branch_review": "PASS exact frozen runner; fixed resource/create, no-provider dry-run, bounded retrieval, failed/incomplete status retention, live-app recovery order",
+    "focused_runner_tests": 6,
+    "existing_validation_regression_tests": "Root reports13PASS; not redundantly rerun by critic"
+  },
+  "direct_runtime_speedup_percent": 0,
+  "purpose": "Resolve numerical-compatibility hold on prior official stock component speedups; no full-service or leaderboard gain claim",
+  "retained_failure": {
+    "run": "experiments/modal/20261104T183437Z-9826c968",
+    "checkpoint_sha256": "e5ba29486796ba4d01c92388b3437c680c73358bb0e3bbdeee98d42e9052be95",
+    "generic_validation_status": "failed_at_finite_cancellation"
+  },
+  "falsifiable_hypotheses": [
+    "Original opposing H511 means/inverses differ despite equal squared inputs",
+    "Opposing means/inverses agree but final combination differs",
+    "Staged instrumentation changes helper result, preventing attribution"
+  ],
+  "acceptance_for_diagnostic_completion": [
+    "Exact retained comparison reproduction",
+    "Original/oracle/candidate staged outputs bitwise equal unchanged helper outputs",
+    "All nine original/oracle variance/inverse and actual candidate inverse scalars complete, finite, byte/hash/value consistent",
+    "Three same-value squared-operand layout records, explicit H512 denominator change and complete output comparisons",
+    "Unchanged original input hashes and bounded result with live-app recovery"
+  ],
+  "source_findings": [
+    "No inverse-to-variance reconstruction claimed for candidate",
+    "Same-value layout controls act on actual squared FP32 operand",
+    "FP64 computations are explanatory references only",
+    "All production helpers and numerical policy remain unchanged",
+    "CPU expression tests and launch mocks do not prove GPU stage equivalence; actual run enforces it",
+    "Result status diagnostic_complete is distinct from generic numerical PASS"
+  ],
+  "reviewer_allocations_or_provider_calls": false,
+  "kill_conditions": [
+    "Exact retained failure not reproduced: incomplete, no stage attribution",
+    "Any original/oracle/candidate bitwise recomposition mismatch: incomplete, no stage attribution",
+    "Missing/corrupt raw scalar/control/provenance evidence: reject completion",
+    "Timeout/GPU error or failed read: preserve checkpoint if available, failed/incomplete, no automatic retry",
+    "No helper promotion or generic validation PASS regardless of diagnostic completeness"
+  ],
+  "resource_contract": {
+    "gpu": "H200",
+    "cpu": [
+      4,
+      4
+    ],
+    "memory_mib": [
+      32768,
+      32768
+    ],
+    "network_blocked": true,
+    "sandbox_timeout_seconds": 300,
+    "worker_budget_seconds": 240,
+    "read_timeout_seconds": 10,
+    "result_cap_bytes": 1048576,
+    "saved_provider_floor_usd": "4.17081442"
+  },
+  "monotonic_floor_refresh": {
+    "previous_runner_sha256": "32518307265b58ec363b2d1c265c61bc9ea8b02ec0e7da73fbf45b95953ef217",
+    "final_runner_sha256": "690d4a46d15761e09b82d6fe696bdc0e28544af2dd6ba762b79e3c1f8b665bc5",
+    "previous_usd": "4.17000000",
+    "final_usd": "4.17081442",
+    "evidence_path": "experiments/iterations/20261104-stage-resource-preflight.json",
+    "evidence_sha256": "2e5abe605041683f55abe3110acae56127676af8a30d4df180e56561a88f7358",
+    "independent_check": "Reversing only path/hash/expected amount reconstructs exact previously reviewed32518307 bytes; actual saved-evidence helper read passes without provider call",
+    "root_regression_check": "Six stage-runner tests PASS",
+    "effect": "More conservative debit only; no formula/helper/worker/tolerance/ledger change"
+  }
+}
