@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 23:10 UTC with V33 frozen for one official check.
+Updated November 04, 2026 at 23:10 UTC with V33 official check accepted.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -63,7 +63,8 @@ was real but insufficient. No forced selection, identical retry, or gate changes
 Raw receipt/profiles/log, root result and compact closeout are retained underV32.
 Independent critic reproduces root result. Next V33 is now frozen and independently reviewed.
 
-**V33 frozen; root owns one next official check.** Source
+**V33 accepted as official check `60b61041d08a4880`; inspect, never duplicate.**
+Source/gates/critic were committed `83db72d` before upload. Root owns polling. Source
 `a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090`
 at `muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py`.
 Fixed matrix-window normal decoder; escaped units use literal primary high-byte
@@ -82,7 +83,7 @@ The unique-expert traffic audit is closed read-only, no new implementation:
 retained job duplicates offer at most a conditional+1.465% decoder scenario,
 FT128+1.093%; no actual decoder routing census exists. Evidence in
 `experiments/iterations/20261104-moe-unique-expert-traffic-audit.json`.
-Root owns all GPU calls. No job in flight; no Modal allocation.
+Root owns all GPU calls. V33 `60b61041d08a4880` is the only job in flight; no Modal allocation.
 Serving work remains backlog under the current public #1 priority.
 
 
