@@ -1,5 +1,24 @@
 # Modal H200 experiments
 
+`serving-native-v27 --timeout 300` validates the isolated V27 adapter against
+the pinned stock Marlin preparation and forward methods on real `nn.Module`
+fixtures. Sources and licenses are uploaded with exact hashes. The worker has
+a 240-second cooperative budget, and partial evidence is recovered before the
+app exits. The mandatory credit guard, saved provider-spend floor, one-H200
+limit and guaranteed termination remain in force; there is no automatic retry.
+
+This is a PRMT component diagnostic using generated weights. Rank 3 undergoes
+actual installation; the other rank cases reuse the immutable bank with
+explicit metadata rebinding. It covers empty/live/remote routes, norm forms,
+chunk boundaries through 16K tokens, serial sharing, separate-owner streams
+and changed-input graph replays. It does not test the full scheduler, actual
+eight-GPU serving, LUT weights, deployed model memory or TTFT. Eager CUDA-event
+timings are descriptive only and cannot authorize performance promotion.
+`validation_complete` means the fixed diagnostic completed, not an official
+serving pass. Source review and CPU lifecycle checks must pass before allocation;
+inspect the package without any provider call using `--dry-run`. See
+`SERVING_NATIVE_MOE_V27_DEVICE_PLAN_20261104.md` and the separate worker critic.
+
 `serving-router-local-ids --timeout 600` compares the pinned SGLang JIT router
 plus its downstream expert-map indexing against the isolated V24 dual-ID
 router. It uses exact source/dependency hashes, the serving source's router

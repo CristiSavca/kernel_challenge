@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T21:37:25.746163+00:00",
+  "status": "GO_FOR_ONE_FIXED_DEVICE_DIAGNOSTIC_SUBJECT_TO_FRESH_GUARD",
+  "hypothesis": "The actual V27 installer and forward adapter preserve stock numerical semantics, immutable baseline and workspace ownership across supported rank/route/chunk/norm and explicit graph fixtures.",
+  "scope": "Actual one-rank installation and component methods on real nn.Module fixtures; other ranks rebind one immutable bank. Not full scheduler, full model, eight-GPU serving, official pass or deployment approval.",
+  "candidate_module_sha256": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+  "candidate_patch_sha256": "c0ca4e41e595df59046ccb67d3641053148090b9ed4019dc534eb229522700c6",
+  "payload": {
+    "serving_native_v27": true,
+    "gpu": "H200",
+    "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+    "timeout_seconds": 300,
+    "validation_budget_seconds": 240,
+    "seed": 20261104,
+    "pinned_commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+    "case_manifest_sha256": "6b7136f4556a13fdfc7068663e16a61813ae0d4225dcb1c033ed12e3cd2bc90b",
+    "policy": {
+      "whole_relative_l2": 0.015,
+      "row_factor": 5.0,
+      "row_norm_floor": 0.1,
+      "allzero_exact": true,
+      "timing_geomean_speed_min": 1.03,
+      "each_timing_latency_max": 1.02,
+      "timed_tokens": [
+        1,
+        8,
+        16,
+        32,
+        128,
+        256
+      ],
+      "paired_rounds": 5,
+      "repeats": 4,
+      "cache_protocol": "warm_no_flush",
+      "no_threshold_retune": true,
+      "diagnostics_only": true,
+      "performance_promotion": false,
+      "timing_scope": "eager_whole_chain_cuda_events",
+      "scale_coverage": "PRMT_only_LUT_not_attempted",
+      "global_scale_fixture": "varying_per_expert_distinct_gate_up_down_v1"
+    },
+    "case_descriptors": [
+      {
+        "name": "rank0_remote_before",
+        "t": 1,
+        "rank": 0,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261104
+      },
+      {
+        "name": "rank0_live",
+        "t": 1,
+        "rank": 0,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261205
+      },
+      {
+        "name": "rank0_remote_after",
+        "t": 1,
+        "rank": 0,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261306
+      },
+      {
+        "name": "rank1_remote_before",
+        "t": 1,
+        "rank": 1,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261407
+      },
+      {
+        "name": "rank1_live",
+        "t": 1,
+        "rank": 1,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261508
+      },
+      {
+        "name": "rank1_remote_after",
+        "t": 1,
+        "rank": 1,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261609
+      },
+      {
+        "name": "rank2_remote_before",
+        "t": 1,
+        "rank": 2,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261710
+      },
+      {
+        "name": "rank2_live",
+        "t": 1,
+        "rank": 2,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261811
+      },
+      {
+        "name": "rank2_remote_after",
+        "t": 1,
+        "rank": 2,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261912
+      },
+      {
+        "name": "rank3_remote_before",
+        "t": 1,
+        "rank": 3,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262013
+      },
+      {
+        "name": "rank3_live",
+        "t": 1,
+        "rank": 3,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262114
+      },
+      {
+        "name": "rank3_remote_after",
+        "t": 1,
+        "rank": 3,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262215
+      },
+      {
+        "name": "rank4_remote_before",
+        "t": 1,
+        "rank": 4,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262316
+      },
+      {
+        "name": "rank4_live",
+        "t": 1,
+        "rank": 4,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262417
+      },
+      {
+        "name": "rank4_remote_after",
+        "t": 1,
+        "rank": 4,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262518
+      },
+      {
+        "name": "rank5_remote_before",
+        "t": 1,
+        "rank": 5,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262619
+      },
+      {
+        "name": "rank5_live",
+        "t": 1,
+        "rank": 5,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262720
+      },
+      {
+        "name": "rank5_remote_after",
+        "t": 1,
+        "rank": 5,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262821
+      },
+      {
+        "name": "rank6_remote_before",
+        "t": 1,
+        "rank": 6,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262922
+      },
+      {
+        "name": "rank6_live",
+        "t": 1,
+        "rank": 6,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263023
+      },
+      {
+        "name": "rank6_remote_after",
+        "t": 1,
+        "rank": 6,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263124
+      },
+      {
+        "name": "rank7_remote_before",
+        "t": 1,
+        "rank": 7,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263225
+      },
+      {
+        "name": "rank7_live",
+        "t": 1,
+        "rank": 7,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263326
+      },
+      {
+        "name": "rank7_remote_after",
+        "t": 1,
+        "rank": 7,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263427
+      },
+      {
+        "name": "boundary_0",
+        "t": 0,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263528
+      },
+      {
+        "name": "boundary_8",
+        "t": 8,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263629
+      },
+      {
+        "name": "boundary_16",
+        "t": 16,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263730
+      },
+      {
+        "name": "boundary_31",
+        "t": 31,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263831
+      },
+      {
+        "name": "boundary_32",
+        "t": 32,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263932
+      },
+      {
+        "name": "boundary_128",
+        "t": 128,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264033
+      },
+      {
+        "name": "boundary_256",
+        "t": 256,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264134
+      },
+      {
+        "name": "boundary_383",
+        "t": 383,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264235
+      },
+      {
+        "name": "boundary_384",
+        "t": 384,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264336
+      },
+      {
+        "name": "boundary_385",
+        "t": 385,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264437
+      },
+      {
+        "name": "boundary_769",
+        "t": 769,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264538
+      },
+      {
+        "name": "boundary_16384",
+        "t": 16384,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264639
+      },
+      {
+        "name": "standard_norm",
+        "t": 31,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "standard",
+        "eps": 1e-05,
+        "seed": 20264740
+      },
+      {
+        "name": "expert_skew",
+        "t": 384,
+        "rank": 3,
+        "pattern": "skew",
+        "norm": "first",
+        "eps": 3e-06,
+        "seed": 20264841
+      }
+    ],
+    "file_sha256": {
+      "SGLANG_LICENSE.txt": "1495e1e757ef4d0925a2350563cf5754bb23c51701a8ec4fb3c5cdcbedae6747",
+      "NATIVE_LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "NATIVE_NOTICE.txt": "43ac9707b8c367e0c92c2d2e9b0506170df89690e5af3d68df82af544fe37e08",
+      "native_v27.py": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+      "candidate_experts.py": "c507f29d313bcee8aec96314e1ebcfcb38d8235f29487490565655302918ccf3",
+      "stock_experts.py": "1d377424e4c1f486f72a0e8ea67ea41dca4bd3f6929aa3729f5f7480861ed352",
+      "stock_marlin_utils.py": "a9011b5af7f8c9d25755d2ea4125e9fbdad06b862138be3ca27c85fc2f8a8e08",
+      "stock_finalizer.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+      "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "native_v27_worker.py": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8"
+    }
+  },
+  "controller_sha256": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+  "critic_response": [
+    "Resolved failed-prefix checkpoint rejection; strict trusted partial parsing now retains original failure before app teardown.",
+    "Original stock preparation and methods execute with actual imported dependencies, independent raw clones and exact stock stability controls.",
+    "One actual rank3 install; eight maps are explicitly metadata fixtures, not eight installations.",
+    "Separate owners use distinct workspaces and graph output storage; actual scheduler overlap remains unvalidated.",
+    "PRMT-only scope; LUT and generic weightless postnorm GPU coverage remain unrun.",
+    "Eager CUDA-event timings are descriptive only; performance_promotion false regardless of screen."
+  ],
+  "falsifier_and_kill": [
+    "Stop on first numerical, input-mutation, ownership or baseline-stability failure.",
+    "Preserve checkpoint on240s cooperative budget or runtime failure; never label unexecuted coverage passed.",
+    "No automatic allocation retry, tolerance change, incumbent replacement or scored submission."
+  ],
+  "estimated_upper_bound": {
+    "direct_public_decoder_score_gain": 0,
+    "full_serving_gain": "Unknown: component fraction, prefill, EP/scheduler and full model memory are unmeasured. V26 component score is not a full-serving bound.",
+    "conditional_scenario_only": "If a fraction f retained the measured V26 component speed1.68511, Amdahl gives1/(1-f+f/1.68511); neither f nor transfer is established."
+  },
+  "allocation": {
+    "command": [
+      ".venv-modal/bin/python",
+      "tools/modal_h200.py",
+      "serving-native-v27",
+      "--timeout",
+      "300"
+    ],
+    "gpus": 1,
+    "gpu": "H200",
+    "sandbox_seconds": 300,
+    "worker_budget_seconds": 240,
+    "conservative_reservation_usd": "1.14",
+    "last_working_allowance_usd": "1.25609779",
+    "headroom_usd": "5.00",
+    "fresh_guard_required": true,
+    "automatic_retry": false,
+    "out_of_pocket_authorized": false
+  },
+  "correctness_cases": 38,
+  "graph_replay_checks": 6,
+  "new_cpu_tests_passed": 19,
+  "existing_runner_tests_passed": 34,
+  "evidence_sha256": {
+    "tools/serving_native_v27_worker.py": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8",
+    "tools/test_serving_native_v27_worker.py": "453916b06c13f7d1a2ee6c62b7fbf7be48867987ff847fd68d925a663857d5ed",
+    "tools/modal_h200.py": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+    "tools/test_serving_native_v27_controller.py": "a3ffc1b2b84bf48103f1360bee3bd7dc3b53fc0701fe6dc556aafc99b9167964",
+    "tools/SERVING_NATIVE_MOE_V27_DEVICE_PLAN_20261104.md": "289e5492785a9a7f78ffb0b850f2f79c23406969e8d966b3f354783a5830ddc8",
+    "tools/SERVING_NATIVE_MOE_V27_WORKER_CRITIC_20261104.md": "3ac03900bd48385bf4f2f20b5c2b5722e52b87a893acdc1556f3a39ab0fb28e5",
+    "experiments/iterations/20261104-native-serving-v27-worker-critic.json": "153b4e3a7e0b765b58f2370b83b9cbb3e46c3857b531dc6be0341adabc01f8b1",
+    "experiments/iterations/20261104-native-serving-v27-worker-root-cpu.json": "ead90fbad263858be81cae51a28a0e347bf57b417b834eeb124ab8a3960d3ea8",
+    "experiments/iterations/20261104-v27-device-provider-preflight.json": "ae792e6d5cb28f7e647b78e64516e80a914995a415f1f057995749e8aa4407a0",
+    "experiments/leaderboards/20261104T2127-v28-closeout-v27-device.json": "e33f643509917bbfe65af5e3947ed462eb267a78502a3c3d74a2908b94690b99"
+  }
+}

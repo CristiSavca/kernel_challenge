@@ -735,6 +735,26 @@ def run_router_local_ids_worker(payload: dict) -> None:
     module.run(payload)
 
 
+def run_serving_native_v27_worker(payload: dict) -> None:
+    """Load only the frozen adapter-validation driver, then validate its package."""
+    import importlib.util
+    name = "native_v27_worker.py"
+    source = payload.get("files", {}).get(name)
+    if type(source) is not str or sha(source) != payload.get("file_sha256", {}).get(name):
+        raise ValueError("Native V27 worker source/hash mismatch")
+    folder = Path("/tmp/okc-input")
+    folder.mkdir(exist_ok=True)
+    (folder / name).write_text(source)
+    spec = importlib.util.spec_from_file_location("native_v27_worker", folder / name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.validate_payload(payload)
+    result = module.run(payload)
+    print(json.dumps({"status": result["status"], "result_path": "/tmp/okc-result.json"}), flush=True)
+    if result["status"] != "validation_complete":
+        raise RuntimeError("Native V27 worker did not complete; checkpoint retained")
+
+
 FINALIZER_READ_RESULT = """import sys
 with open("/tmp/okc-result.json", "rb") as stream:
     data = stream.read(1048577)
@@ -843,7 +863,29 @@ def retrieve_finalizer_coverage_result(sandbox, destination: Path, payload: dict
 
 
 def is_component_payload(payload) -> bool:
-    return bool(is_finalizer_payload(payload) or (payload and payload.get("serving_router_local_ids") is True))
+    return bool(is_finalizer_payload(payload) or (payload and (
+        payload.get("serving_router_local_ids") is True or payload.get("serving_native_v27") is True)))
+
+
+def retrieve_serving_native_v27_result(sandbox, destination: Path, payload: dict, *, recovery=False) -> dict:
+    """Bounded adapter evidence; a complete diagnostic is not a serving pass."""
+    import serving_native_v27_worker as native
+    if sha(Path(native.__file__).read_text()) != payload["file_sha256"]["native_v27_worker.py"]:
+        raise ValueError("Local native V27 worker changed after upload")
+    process = sandbox.exec("python3", "-c", FINALIZER_READ_RESULT, timeout=10, text=False)
+    content = process.stdout.read()
+    process.stderr.read()
+    process.wait()
+    if process.returncode != 0:
+        raise RuntimeError(f"Native V27 result read exited {process.returncode}")
+    if type(content) is not bytes or len(content) > 1024 * 1024:
+        raise ValueError("Native V27 result exceeds local byte/type bound")
+    result = json.loads(content)
+    native.validate_result(result, payload)
+    local = ("result.json" if not recovery and result["status"] == "validation_complete"
+             else "result-checkpoint.json")
+    save(destination / local, result)
+    return result
 
 
 def retrieve_router_local_ids_result(sandbox, destination: Path, payload: dict, *, recovery=False) -> dict:
@@ -878,7 +920,8 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
             manifest["validation_recovery_inside_app_context"] = True
             try:
                 if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
-                    retrieve = (retrieve_router_local_ids_result if payload.get("serving_router_local_ids") is True
+                    retrieve = (retrieve_serving_native_v27_result if payload.get("serving_native_v27") is True
+                                else retrieve_router_local_ids_result if payload.get("serving_router_local_ids") is True
                                 else retrieve_finalizer_coverage_result if payload.get("serving_finalizer_coverage") is True
                                 else retrieve_finalizer_stage_result if payload.get("serving_finalizer_stages") is True
                                 else retrieve_finalizer_validation_result)
@@ -892,7 +935,7 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage", "serving-router-local-ids", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage", "serving-router-local-ids", "serving-native-v27", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -909,7 +952,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.mode == "worker":
         payload = json.loads(Path(args.payload).read_text())
-        if payload.get("serving_router_local_ids") is True:
+        if payload.get("serving_native_v27") is True:
+            run_serving_native_v27_worker(payload)
+        elif payload.get("serving_router_local_ids") is True:
             run_router_local_ids_worker(payload)
         elif payload.get("serving_finalizer_coverage") is True:
             run_finalizer_validation_worker(payload, coverage=True)
@@ -936,6 +981,16 @@ def main() -> None:
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
     compile_mode = args.mode == "compile-sass"
+    if args.mode == "serving-native-v27":
+        from serving_native_v27_worker import build_payload
+        if (args.timeout != 300 or args.problem is not None or args.candidate or args.cases
+                or args.seed is not None or args.weight_seed != 7311 or args.repeats != 6):
+            parser.error("serving-native-v27 has fixed sources/cases and requires --timeout 300")
+        payload = build_payload(ROOT, IMAGE)
+        payload["provider_observed_floor_evidence"] = finalizer_observed_floor(ROOT)
+        for name, source in payload["files"].items():
+            if name.endswith(".py"):
+                compile(source, name, "exec")
     if args.mode == "serving-router-local-ids":
         from serving_router_local_ids_worker import build_payload
         if (args.timeout != 600 or args.problem is not None or args.candidate or args.cases
@@ -1130,6 +1185,9 @@ def main() -> None:
                         from modal_compile_sass import retrieve
                         result = retrieve(sandbox, destination)
                         manifest["compile_artifacts_retrieved"] = True
+                    elif payload.get("serving_native_v27") is True:
+                        result = retrieve_serving_native_v27_result(sandbox, destination, payload)
+                        manifest["validation_result_retrieved"] = True
                     elif payload.get("serving_finalizer_validation") is True:
                         result = retrieve_finalizer_validation_result(sandbox, destination, payload)
                         manifest["validation_result_retrieved"] = True
@@ -1148,6 +1206,8 @@ def main() -> None:
                     if payload.get("attention_v10_screen") is True:
                         save_attention_v10_logs(destination, result)
                     manifest["status"] = result["status"]
+                    if payload.get("serving_native_v27") is True and result["status"] != "validation_complete":
+                        raise RuntimeError("Native V27 validation incomplete or failed; no automatic retry")
                     if payload.get("serving_finalizer_validation") is True and result["status"] != "pass":
                         raise RuntimeError("Finalizer validation incomplete or failed; no automatic retry")
                     if payload.get("serving_finalizer_stages") is True and result["status"] != "diagnostic_complete":

@@ -1,0 +1,447 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T21:35:31.567745+00:00",
+  "cpu_only": true,
+  "provider_calls": 0,
+  "gpu_allocations": 0,
+  "results": [
+    {
+      "command": [
+        ".venv-modal/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_serving_native_v27*.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "test_complete_correctness_with_slow_timings_does_not_become_speed_pass (test_serving_native_v27_controller.NativeRunnerTests.test_complete_correctness_with_slow_timings_does_not_become_speed_pass) ... ok\ntest_complete_uses_one_fixed_gpu_and_exact_frozen_package (test_serving_native_v27_controller.NativeRunnerTests.test_complete_uses_one_fixed_gpu_and_exact_frozen_package) ... ok\ntest_failed_worker_recovers_original_failure_and_terminates (test_serving_native_v27_controller.NativeRunnerTests.test_failed_worker_recovers_original_failure_and_terminates) ... ok\ntest_incomplete_zero_exit_never_promoted (test_serving_native_v27_controller.NativeRunnerTests.test_incomplete_zero_exit_never_promoted) ... ok\ntest_live_scope_recovers_before_app_exit (test_serving_native_v27_controller.NativeRunnerTests.test_live_scope_recovers_before_app_exit) ... ok\ntest_reader_rejects_unknown_status_and_bad_package_identity (test_serving_native_v27_controller.NativeRunnerTests.test_reader_rejects_unknown_status_and_bad_package_identity) ... ok\ntest_recovery_error_does_not_mask_worker_failure_or_retry (test_serving_native_v27_controller.NativeRunnerTests.test_recovery_error_does_not_mask_worker_failure_or_retry) ... ok\ntest_wrong_timeout_and_dry_run_allocate_nothing (test_serving_native_v27_controller.NativeRunnerTests.test_wrong_timeout_and_dry_run_allocate_nothing) ... ok\ntest_actual_stock_ast_execution_without_module_registration (test_serving_native_v27_worker.WorkerTests.test_actual_stock_ast_execution_without_module_registration) ... ok\ntest_checkpoint_before_import_failure_preserves_original (test_serving_native_v27_worker.WorkerTests.test_checkpoint_before_import_failure_preserves_original) ... ok\ntest_complete_and_descriptive_timing_miss (test_serving_native_v27_worker.WorkerTests.test_complete_and_descriptive_timing_miss) ... ok\ntest_exact_private_substitutions_and_real_policy_logic (test_serving_native_v27_worker.WorkerTests.test_exact_private_substitutions_and_real_policy_logic) ... ok\ntest_fixed_deadline_and_checkpoint_bound (test_serving_native_v27_worker.WorkerTests.test_fixed_deadline_and_checkpoint_bound) ... ok\ntest_isolated_actual_flat_payload_import_no_repository_path (test_serving_native_v27_worker.WorkerTests.test_isolated_actual_flat_payload_import_no_repository_path) ... ok\ntest_partial_failed_install_and_stock_instability_are_retained (test_serving_native_v27_worker.WorkerTests.test_partial_failed_install_and_stock_instability_are_retained) ... ok\ntest_payload_rejects_pin_policy_and_flat_name_mutants (test_serving_native_v27_worker.WorkerTests.test_payload_rejects_pin_policy_and_flat_name_mutants) ... ok\ntest_payload_sources_and_fixed_domain (test_serving_native_v27_worker.WorkerTests.test_payload_sources_and_fixed_domain) ... ok\ntest_reject_incomplete_or_conflicting_complete_evidence (test_serving_native_v27_worker.WorkerTests.test_reject_incomplete_or_conflicting_complete_evidence) ... ok\ntest_trusted_partial_prefixes_remain_incomplete (test_serving_native_v27_worker.WorkerTests.test_trusted_partial_prefixes_remain_incomplete) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 1.633s\n\nOK\n"
+    },
+    {
+      "command": [
+        ".venv-modal/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_modal*runner.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "..................................\n----------------------------------------------------------------------\nRan 34 tests in 1.773s\n\nOK\n"
+    }
+  ],
+  "dry_run": {
+    "mode": "serving-native-v27",
+    "gpu": "H200",
+    "timeout_seconds": 300,
+    "official": false,
+    "status": "prepared",
+    "worker_sha256": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+    "serving_native_v27": true,
+    "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+    "validation_budget_seconds": 240,
+    "seed": 20261104,
+    "pinned_commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+    "case_manifest_sha256": "6b7136f4556a13fdfc7068663e16a61813ae0d4225dcb1c033ed12e3cd2bc90b",
+    "policy": {
+      "whole_relative_l2": 0.015,
+      "row_factor": 5.0,
+      "row_norm_floor": 0.1,
+      "allzero_exact": true,
+      "timing_geomean_speed_min": 1.03,
+      "each_timing_latency_max": 1.02,
+      "timed_tokens": [
+        1,
+        8,
+        16,
+        32,
+        128,
+        256
+      ],
+      "paired_rounds": 5,
+      "repeats": 4,
+      "cache_protocol": "warm_no_flush",
+      "no_threshold_retune": true,
+      "diagnostics_only": true,
+      "performance_promotion": false,
+      "timing_scope": "eager_whole_chain_cuda_events",
+      "scale_coverage": "PRMT_only_LUT_not_attempted",
+      "global_scale_fixture": "varying_per_expert_distinct_gate_up_down_v1"
+    },
+    "case_descriptors": [
+      {
+        "name": "rank0_remote_before",
+        "t": 1,
+        "rank": 0,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261104
+      },
+      {
+        "name": "rank0_live",
+        "t": 1,
+        "rank": 0,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261205
+      },
+      {
+        "name": "rank0_remote_after",
+        "t": 1,
+        "rank": 0,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261306
+      },
+      {
+        "name": "rank1_remote_before",
+        "t": 1,
+        "rank": 1,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261407
+      },
+      {
+        "name": "rank1_live",
+        "t": 1,
+        "rank": 1,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261508
+      },
+      {
+        "name": "rank1_remote_after",
+        "t": 1,
+        "rank": 1,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261609
+      },
+      {
+        "name": "rank2_remote_before",
+        "t": 1,
+        "rank": 2,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261710
+      },
+      {
+        "name": "rank2_live",
+        "t": 1,
+        "rank": 2,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261811
+      },
+      {
+        "name": "rank2_remote_after",
+        "t": 1,
+        "rank": 2,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20261912
+      },
+      {
+        "name": "rank3_remote_before",
+        "t": 1,
+        "rank": 3,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262013
+      },
+      {
+        "name": "rank3_live",
+        "t": 1,
+        "rank": 3,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262114
+      },
+      {
+        "name": "rank3_remote_after",
+        "t": 1,
+        "rank": 3,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262215
+      },
+      {
+        "name": "rank4_remote_before",
+        "t": 1,
+        "rank": 4,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262316
+      },
+      {
+        "name": "rank4_live",
+        "t": 1,
+        "rank": 4,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262417
+      },
+      {
+        "name": "rank4_remote_after",
+        "t": 1,
+        "rank": 4,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262518
+      },
+      {
+        "name": "rank5_remote_before",
+        "t": 1,
+        "rank": 5,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262619
+      },
+      {
+        "name": "rank5_live",
+        "t": 1,
+        "rank": 5,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262720
+      },
+      {
+        "name": "rank5_remote_after",
+        "t": 1,
+        "rank": 5,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262821
+      },
+      {
+        "name": "rank6_remote_before",
+        "t": 1,
+        "rank": 6,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20262922
+      },
+      {
+        "name": "rank6_live",
+        "t": 1,
+        "rank": 6,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263023
+      },
+      {
+        "name": "rank6_remote_after",
+        "t": 1,
+        "rank": 6,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263124
+      },
+      {
+        "name": "rank7_remote_before",
+        "t": 1,
+        "rank": 7,
+        "pattern": "remote_before",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263225
+      },
+      {
+        "name": "rank7_live",
+        "t": 1,
+        "rank": 7,
+        "pattern": "live",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263326
+      },
+      {
+        "name": "rank7_remote_after",
+        "t": 1,
+        "rank": 7,
+        "pattern": "remote_after",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263427
+      },
+      {
+        "name": "boundary_0",
+        "t": 0,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263528
+      },
+      {
+        "name": "boundary_8",
+        "t": 8,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263629
+      },
+      {
+        "name": "boundary_16",
+        "t": 16,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263730
+      },
+      {
+        "name": "boundary_31",
+        "t": 31,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263831
+      },
+      {
+        "name": "boundary_32",
+        "t": 32,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20263932
+      },
+      {
+        "name": "boundary_128",
+        "t": 128,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264033
+      },
+      {
+        "name": "boundary_256",
+        "t": 256,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264134
+      },
+      {
+        "name": "boundary_383",
+        "t": 383,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264235
+      },
+      {
+        "name": "boundary_384",
+        "t": 384,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264336
+      },
+      {
+        "name": "boundary_385",
+        "t": 385,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264437
+      },
+      {
+        "name": "boundary_769",
+        "t": 769,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264538
+      },
+      {
+        "name": "boundary_16384",
+        "t": 16384,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "first",
+        "eps": 1e-08,
+        "seed": 20264639
+      },
+      {
+        "name": "standard_norm",
+        "t": 31,
+        "rank": 3,
+        "pattern": "mixed",
+        "norm": "standard",
+        "eps": 1e-05,
+        "seed": 20264740
+      },
+      {
+        "name": "expert_skew",
+        "t": 384,
+        "rank": 3,
+        "pattern": "skew",
+        "norm": "first",
+        "eps": 3e-06,
+        "seed": 20264841
+      }
+    ],
+    "file_sha256": {
+      "SGLANG_LICENSE.txt": "1495e1e757ef4d0925a2350563cf5754bb23c51701a8ec4fb3c5cdcbedae6747",
+      "NATIVE_LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "NATIVE_NOTICE.txt": "43ac9707b8c367e0c92c2d2e9b0506170df89690e5af3d68df82af544fe37e08",
+      "native_v27.py": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+      "candidate_experts.py": "c507f29d313bcee8aec96314e1ebcfcb38d8235f29487490565655302918ccf3",
+      "stock_experts.py": "1d377424e4c1f486f72a0e8ea67ea41dca4bd3f6929aa3729f5f7480861ed352",
+      "stock_marlin_utils.py": "a9011b5af7f8c9d25755d2ea4125e9fbdad06b862138be3ca27c85fc2f8a8e08",
+      "stock_finalizer.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+      "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "native_v27_worker.py": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8"
+    },
+    "provider_observed_floor_evidence": {
+      "path": "experiments/iterations/20261104-native-serving-v25-preflight.json",
+      "sha256": "590e57bb356ff05afd4e7af5f9a6dbdb2151e58329dceafa4d81aa7762b0167f",
+      "usd": "4.25390221"
+    }
+  },
+  "evidence_sha256": {
+    "tools/serving_native_v27_worker.py": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8",
+    "tools/test_serving_native_v27_worker.py": "453916b06c13f7d1a2ee6c62b7fbf7be48867987ff847fd68d925a663857d5ed",
+    "tools/modal_h200.py": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+    "tools/test_serving_native_v27_controller.py": "a3ffc1b2b84bf48103f1360bee3bd7dc3b53fc0701fe6dc556aafc99b9167964",
+    "tools/SERVING_NATIVE_MOE_V27_DEVICE_PLAN_20261104.md": "289e5492785a9a7f78ffb0b850f2f79c23406969e8d966b3f354783a5830ddc8"
+  }
+}
