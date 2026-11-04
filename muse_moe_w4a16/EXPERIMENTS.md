@@ -142,3 +142,11 @@ and passed at 1.2100468954×. Packed-GEMV V5 remains a separate pending check.
 The reviewed native CUDA V6 source, with full licenses and diagnostics removed,
 is in private check `143f8587286e4384`. Its production CUDA/CPP and dispatch
 constants match the imported source. Do not score it until our check passes.
+
+## Packed V5 rejected on performance
+
+Check `8af27f0313b44d84` passed correctness but measured 0.7384545250× overall
+(CI 0.7273777072–0.7495313429). The direct packed GEMV path is the regression:
+bs1 took 170.05 us against 80.78 us stock; bs8 took 716.53 us against 142.83 us.
+Larger batches retaining Marlin behaved like V2. Do not promote this candidate
+or restrict it to bs1: both custom-path shapes lose. V4 remains the incumbent.

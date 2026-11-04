@@ -22,7 +22,8 @@ earn serving-queue priority for the overall top 50.
   whole decoder at **1.0813×**.
 - Experimental attention and packed-GEMV experts failed Triton compilation on
   integer-zero FP8 masked loads. Corrected attention passed at **1.2050×** and
-  was submitted for scoring; the corrected packed-GEMV experts are still testing.
+  was submitted for scoring. Corrected packed-GEMV experts passed correctness
+  but regressed to **0.7385×** and were not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
   payment verification, which Modal says unlocks the $30 free monthly allowance.
   No GPU started, no usage was charged, and the failed app is stopped.
@@ -59,7 +60,7 @@ for serving priority, so it is lower priority during this pass.
 | Projections | `ce713efc5e9b44d8` | Profile-guided hybrid and larger-router split-K |
 | Attention | `d046a6beb6634134` failed compile; corrected `05f77382a0c84254` passed 1.2050× | Grouped split-KV sliding-window attention and fused output norm/gate |
 | Experts | `8443a6493f7c4234` | Fused finalizer for small batches |
-| Experts | `cdec36c2da4b410c` failed compile; corrected `8af27f0313b44d84` pending | Direct packed NVFP4 GEMVs for up to 8 tokens |
+| Experts | `cdec36c2da4b410c` failed compile; corrected `8af27f0313b44d84` passed at 0.7385×, not scored | Direct packed NVFP4 GEMVs for up to 8 tokens |
 | Whole decoder | `9e55826b550f414b` | Previously validated component changes combined |
 | Whole decoder | `a28df47ba0584bed` | Combined components plus fused small-batch finalizer |
 | Experts | `7d7d9292e9054337` passed 1.3348× | Public local alignment and fused finalizer, original source/license preserved |
