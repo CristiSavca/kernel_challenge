@@ -20,18 +20,20 @@ larger controls stayed within 0.05%. Both independent analyses passed the fixed
 gate. This is a serving-component improvement, not a faster native kernel entry
 or a measured full-model gain. Broader free-credit H200 validation subsequently
 failed the generic H511 cancellation case; the first runner lost its detailed
-checkpoint after application teardown. The recovery lifetime is repaired and
-covered by a regression test. Numerical attribution and generic graph coverage
-remain unresolved; this component is held from serving promotion. No public
+checkpoint after application teardown. The repaired runner recovered a second
+run: our candidate equals the independent FP32 oracle exactly on that case,
+while stock differs by at most 2.3842e-7. The strict relative check still fails;
+15 later cases and generic graph coverage remain untested. The component is
+held from serving promotion pending a reduction-order diagnosis. No public
 kernel score/source was replaced. See
 [the failure evidence](tools/SERVING_FINALIZER_VALIDATION_FAILURE_20261104.md).
 
 Fresh arXiv, X/release, DeepSeek, Hugging Face and CUTLASS research is linked in
 [the active handoff](tools/RESEARCH_LOOP.md). Current official receipts and
 research retain exact sources, licenses, evaluator identity and measured limits.
-The next focused diagnostic preserves the same finalizer/cases/tolerances and
-recovers the missing comparison metrics with the repaired runner. Research leads
-need an actual compatible code path before a new optimization.
+The next focused diagnostic will compare per-route squared sums and inverses
+with ragged and aligned controls, preserving the helper and thresholds.
+Research leads need an actual compatible code path before a new optimization.
 
 The user-requested Lean methodology now has a working first implementation:
 [source-bound packed-decoder proof](formal/README.md). Lean checks all four

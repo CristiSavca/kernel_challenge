@@ -1,0 +1,322 @@
+{
+  "schema": 1,
+  "audited_at": "2026-11-04T18:37:51.681267+00:00",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "FAILED_GENERIC_VALIDATION_ORIGINAL_ORACLE_DISAGREEMENT_NO_CANDIDATE_ONLY_DEFECT_ESTABLISHED",
+  "run": "experiments/modal/20261104T183437Z-9826c968",
+  "prior_failed_run": "experiments/modal/20261104T182526Z-3d547341",
+  "source_sha256": {
+    "candidate.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+    "baseline.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "finalizer_validation.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+    "worker.py": "6f3f61a480d0e48b298eea23b0f1b63b36bd2ccc0850ce775f890321a13b0f16"
+  },
+  "evidence_sha256": {
+    "manifest.json": "b4357fcd6161f23ae689eb77988500791bd0d3479cf01722dd105ea8bed53041",
+    "request.json": "e7db04d3b447d8deab9cd48686efb88135712cd3e9919c0434b3e46e09a6df7f",
+    "result-checkpoint.json": "e5ba29486796ba4d01c92388b3437c680c73358bb0e3bbdeee98d42e9052be95",
+    "stderr.log": "2e25bbe76adfb1b9b3911c09b0ca6b0f8d93e841a6806c9dd401d63466b2f465"
+  },
+  "unchanged_from_first_run": [
+    "candidate.py",
+    "baseline.py",
+    "finalizer_validation.py",
+    "request.json"
+  ],
+  "coverage": {
+    "planned_cases": 90,
+    "retained_cases": 75,
+    "passing_cases": 74,
+    "failing_cases": 1,
+    "unreached_numerical_cases": 15,
+    "activation_profiles_passed": 6,
+    "streams_reached": false,
+    "graphs_reached": false
+  },
+  "numerical_policy": {
+    "diagnostic_metric_accumulation": "float64",
+    "exceptional_masks_exact": true,
+    "nonfinite_cases_are_not_official_evaluator_acceptance": true,
+    "row_norm_floor": 0.1,
+    "whole_relative_l2": 0.015,
+    "worst_row_relative_l2": 0.075
+  },
+  "failed_case": {
+    "comparisons": {
+      "candidate_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": true,
+        "exceptional": false,
+        "max_abs": 0.0,
+        "pass": true,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "candidate_vs_original": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": false,
+        "exceptional": false,
+        "max_abs": 2.384185791015625e-07,
+        "pass": false,
+        "whole_rel_l2": 1.0,
+        "worst_row_rel_l2": 1.0
+      },
+      "original_vs_fp32_oracle": {
+        "classification": {
+          "nan": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "negative_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          },
+          "positive_inf": {
+            "mismatch": 0,
+            "output": 0,
+            "reference": 0
+          }
+        },
+        "equal_values": false,
+        "exceptional": false,
+        "max_abs": 2.384185791015625e-07,
+        "pass": false,
+        "whole_rel_l2": 1582823.078587789,
+        "worst_row_rel_l2": 1582823.078587789
+      }
+    },
+    "descriptor": {
+      "apply": true,
+      "broadcast_weight": false,
+      "eps": 1e-08,
+      "first": true,
+      "h": 511,
+      "ids": true,
+      "idtype": "int32",
+      "k": 3,
+      "mask": "local",
+      "name": "finite_cancellation",
+      "pattern": "cancellation",
+      "poison": false,
+      "sdtype": "float32",
+      "seed": 20268578,
+      "special": null,
+      "strided": false,
+      "t": 3,
+      "wdtype": "bfloat16",
+      "weight": true,
+      "xdtype": "bfloat16"
+    },
+    "fallback_exact_required": false,
+    "name": "finite_cancellation",
+    "negative_ids": 0,
+    "pass": false,
+    "seed": 20268578,
+    "shape": [
+      3,
+      3,
+      511
+    ],
+    "tensor_metadata": {
+      "expert_output": {
+        "device": "cuda:0",
+        "dtype": "torch.bfloat16",
+        "shape": [
+          3,
+          3,
+          511
+        ],
+        "stride": [
+          1533,
+          511,
+          1
+        ]
+      },
+      "norm_weight": {
+        "device": "cuda:0",
+        "dtype": "torch.bfloat16",
+        "shape": [
+          511
+        ],
+        "stride": [
+          1
+        ]
+      },
+      "slot_expert_ids": {
+        "device": "cuda:0",
+        "dtype": "torch.int32",
+        "shape": [
+          3,
+          3
+        ],
+        "stride": [
+          3,
+          1
+        ]
+      },
+      "topk_scores": {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "shape": [
+          3,
+          3
+        ],
+        "stride": [
+          3,
+          1
+        ]
+      }
+    }
+  },
+  "preceding_74_cases_max_recorded_metrics": {
+    "candidate_vs_fp32_oracle": {
+      "whole_rel_l2": 6.856887778711403e-05,
+      "worst_row_rel_l2": 0.00024744065727820764,
+      "max_abs": 0.00390625
+    },
+    "candidate_vs_original": {
+      "whole_rel_l2": 4.530630184547198e-05,
+      "worst_row_rel_l2": 0.00024744065727820764,
+      "max_abs": 0.001953125
+    },
+    "original_vs_fp32_oracle": {
+      "whole_rel_l2": 7.665283340068438e-05,
+      "worst_row_rel_l2": 0.00020651689459984625,
+      "max_abs": 0.00390625
+    }
+  },
+  "profiles": [
+    {
+      "name": "boundary31",
+      "kind": "fast",
+      "pass": true,
+      "inverse_calls": 1,
+      "combine_calls": 1,
+      "original_calls": 0,
+      "gpu_event_count": 2,
+      "all_names_sha256": "13333c0289ef19140124333213cf04bedb3ddfdd6fb67dc8f88f90f4f38567ff"
+    },
+    {
+      "name": "boundary32",
+      "kind": "large",
+      "pass": true,
+      "inverse_calls": 0,
+      "combine_calls": 0,
+      "original_calls": 1,
+      "gpu_event_count": 1,
+      "all_names_sha256": "9a2e199defc53ec447027b82271dea025b4c846d4dd0aead144bd5ac0ee89d64"
+    },
+    {
+      "name": "boundary33",
+      "kind": "large",
+      "pass": true,
+      "inverse_calls": 0,
+      "combine_calls": 0,
+      "original_calls": 1,
+      "gpu_event_count": 1,
+      "all_names_sha256": "9a2e199defc53ec447027b82271dea025b4c846d4dd0aead144bd5ac0ee89d64"
+    },
+    {
+      "name": "fallback_fp32",
+      "kind": "eager",
+      "pass": true,
+      "inverse_calls": 0,
+      "combine_calls": 0,
+      "original_calls": 0,
+      "gpu_event_count": 12,
+      "all_names_sha256": "e40890089d18f15c19b78cabfc1e04548c9756ded73706ea9a4727e941dd17cb"
+    },
+    {
+      "name": "fallback_topk33",
+      "kind": "eager",
+      "pass": true,
+      "inverse_calls": 0,
+      "combine_calls": 0,
+      "original_calls": 0,
+      "gpu_event_count": 14,
+      "all_names_sha256": "385b3f99f42c7aca1ca2a8c2fcb14bd6ef7066b1ab8ae8f1c1c0d552e2411a1a"
+    },
+    {
+      "name": "fallback_hidden16385",
+      "kind": "eager",
+      "pass": true,
+      "inverse_calls": 0,
+      "combine_calls": 0,
+      "original_calls": 0,
+      "gpu_event_count": 14,
+      "all_names_sha256": "385b3f99f42c7aca1ca2a8c2fcb14bd6ef7066b1ab8ae8f1c1c0d552e2411a1a"
+    }
+  ],
+  "recovery": {
+    "inside_app_context": true,
+    "checkpoint_recovered": true,
+    "sandbox_terminated_recorded": true,
+    "worker_exit_code": 1
+  },
+  "interpretation": [
+    "Candidate and FP32 oracle have equal finite numerical output values; not a signed-zero/bitwise identity certificate.",
+    "Original disagrees with both. Small absolute residual does not pass the fixed relative acceptance criterion.",
+    "Stage-level cause is unmeasured: reduction layout/alignment and final sum remain hypotheses.",
+    "Official H4096/K8 component success remains separate; broader helper/stream/graph acceptance is incomplete."
+  ],
+  "next_action_proposal": {
+    "scope": "Separately reviewed stage diagnostic, not unchanged validation retry or promotion",
+    "inputs": "Frozen cancellation case plus one deterministic H512 zero-padded paired-route alignment control; helpers unmodified",
+    "capture": [
+      "Nine per-route variance/inverse scalars from original vectorized expressions, oracle slot expressions and existing candidate inverse kernel",
+      "Opposing weighted inputs/squares and normalized routes equality; final norms and bounded first residuals",
+      "Verify staged recomposition equals unchanged helper output before attribution; record shape/stride/alignment"
+    ],
+    "hypothesis": "Original H511 opposing means/inverses differ; candidate and slot oracle remain equal. If inverse pairs match, investigate combination instead.",
+    "bounds": "Two tiny fixed tensors; no model weights, autotuning or timing campaign; at most300s outer budget if separately authorized",
+    "kill": "Missing identity, failed recomposition equality or missing checkpoint makes attribution inconclusive; no tolerance change or generic PASS"
+  },
+  "provider_gpu_official_calls_by_reviewer": false,
+  "subsequent_monotonic_observation_update": {
+    "not_part_of_frozen_run": true,
+    "current_runner_sha256": "649db77651ee9ba6b572219175892a3bee8e7db366c9d84347d0e0c95638793a",
+    "change": "Only saved billing path/hash/expected amount changed in finalizer_observed_floor",
+    "prior_usd": "4.16434237",
+    "new_usd": "4.17000000",
+    "saved_evidence": "experiments/modal/20261104T183437Z-9826c968/billing-after.json",
+    "saved_evidence_sha256": "567c6247db32f6936cdc59215f1cf23ef146a3fe4af14e1f4f018ef61bbc1863",
+    "independent_saved_helper_read": "PASS; no provider call",
+    "billed_usd": "0",
+    "listed_apps": "both stopped with zero tasks",
+    "effect": "Only increases conservative debit; old journal/receipts/run source retain their original values"
+  }
+}

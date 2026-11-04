@@ -20,6 +20,32 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
+Terminal follow-up: repaired runner6f3f61 completed diagnostic
+`20261104T183437Z-9826c968` and recovered the failing checkpoint inside the live
+app context. Root and independent reviewer confirm 74 passing numerical cases,
+one failure, six passing actual activation profiles, and 15 numerical cases plus
+stream/graph checks not reached. In finite_cancellation, candidate equals the
+FP32 oracle exactly; stock differs by max_abs2.384185791015625e-7.
+Candidate/original relativeL2 is1; original/oracle is1582823.078587789 because
+the oracle result is near/at zero. This establishes the failing comparisons,
+not their instruction-level cause. Keep status failed/incomplete, preserve
+tolerances, do not promote, and do not repeat this same diagnostic. Next is a
+separately reviewed stage-level variance/inverse comparison with H511 and
+aligned controls; no source or GPU work for it has started. Root evidence:
+`20261104-finalizer-validation-root-result.json`; critic:
+`20261104-finalizer-validation-result-critic.json`.
+
+Both validation runs retain full $1.78 reservations. Latest allocation recorded
+5.40565763 conservative working budget after the second reservation and separate
+$5 headroom; fresh billing/attribution checks are required again. Both sandboxes
+are terminated; no official job is live. Lean implementation is committed in
+bff9cd8 and independently approved. No public score or source changed.
+Fresh 18:36 billing is gross4.17/billed0, both apps stopped with zero tasks.
+Retain this newer4.17 high-water observation (billing-after hash567c6247), not
+only the prior4.16434237. The finalizer runner's saved-floor binding is updated
+to that exact receipt; the financial formula, old reservations and certificates
+are unchanged. Conservative working allowance is now5.40 before future spend.
+
 Latest continuation, November 4 after 18:25 UTC: the user-requested Lean
 methodology is implemented as an independent source-bound MULDEC integer
 fragment proof. `formal/README.md` documents the exact scope and command.
