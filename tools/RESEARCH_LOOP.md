@@ -459,3 +459,38 @@ owned by attention_research_v2; root requested pre-launch compile checkpoints
 and timeout artifact recovery. No allocation authorized until finalstaticreview.
 Decoder agent researches one substantive next hypothesis offline, using actual
 profiles and75%DRAM evidence, not another blindparameter sweep.
+
+Attention V10 screen started06:08UTC, after exact static GO and commit05f263b.
+Live local session67460, sandboxsb-3mm1lWhj1XrvQpUuX74GW9,
+appap-XWVq5AL34dUXQKHXc1bv8a; root owns polling and allocation. Evidence
+experiments/modal/20261104T060813Z-37b2e369. Resume same session; no duplicate.
+Command attention-v10-screen --timeout900. Runner826e134d/helpercda695f4.
+Guard reserved$2.42 afterprior$16.94; observedbilling revisedto$3.44,
+workingbudgetremaining$2.20. Original$3.47snapshot preserved. Expected128checks
+across8cases; exact decoderparentwrapper comparison, not standaloneincumbent.
+Compiler logs checkpointbeforeGPUlaunch; actual2CTA/local0/activeflatplan gates.
+No numericalorperformance result yet.
+
+Attention V10 terminal at06:10UTC: session67460 exited1; sandboxtermination
+confirmed, app stopped0tasks. Bothcompilecapturescomplete(~58.6s each). Parent
+exact<8,true,0> haslocalBytes0; candidate haslocalBytes296 and explicitC7512
+WGMMAserialization dueinsufficientregisterresources. ptxasstatic296Bstack,
+1128Bspillstores/864Bspillloads. Both80initialregs/2CTA/114688shared.
+Onebaselineeagercheckpassed; zero candidateoraclechecks andzero timings.
+Firsttargetactualplanseligible264x1x1, butresourcegate correctlystopped.
+RejectV10ascompiled; no performance/numericalclaim, noofficialupload. Logs
+andresultwere normallyretrieved despite secondary recoveryNotFoundafterappstop.
+Elapsed120.9478s. Billingafter$3.61/resources$3.61343377, allcredits,$0billed.
+Decision experiments/iterations/20261104-attention-v10-resource-rejection.json.
+
+Root authorized NEW V11candidateonly (noGPUyet), ownedbyattention_research_v2:
+compile-timeROLE3QK/ROLE4PV throughrun_segments→segment→body so96/112
+allocations dominate disjointspecializedcalls ratherthan reconvergingintoROLE2.
+PreserveV10bytes,96/112/32 budgets,math/storage/grid,256consumerbarriers and
+parentfallbackROLE2. Ringinit must includeROLE3/thread0. This isoneconcrete
+allocator-visibility hypothesis, notknowncause; criticreviewrequired beforetest.
+Do notraisebudgetsblindly orrelaxgates. Currentguardwillnotfit900seconds;
+600seconds reserves$1.78 andmayfitcurrent~$2.03 budgetafterfreshpreflight.
+Decoderagent falsified11bitdensecodec aslargeranklever (already12bit) and
+is nowreading a newApache-licensed publicsourcelead keell0renz pinned890809c,
+reportedfair2.2532—notitsdisclaimedjudge-max#1. Noexecution/integrationyet.

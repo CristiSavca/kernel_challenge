@@ -1,0 +1,138 @@
+{
+  "problem": "muse_attention_decode",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "attention_v10_screen": true,
+  "attention_v10_tag": "af83e7f266584a8e",
+  "attention_v10_cases_sha256": "8ed2eccb574fb8eb5255f9c4dc6ab52c3f0e11c5cfa97bf346119ab11122d8ad",
+  "source_sha256": "d8be9200bb0357cacf8e48c104a44d9e57aa1e278afe2bdac27a4dd5d7d4790a",
+  "file_sha256": {
+    "baseline.py": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9",
+    "candidate.py": "d8be9200bb0357cacf8e48c104a44d9e57aa1e278afe2bdac27a4dd5d7d4790a",
+    "attention_resource_probe.py": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+    "reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055"
+  },
+  "cases": [
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "coherent"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 1,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "coherent"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "sliding",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "soft"
+    },
+    {
+      "batch": 3,
+      "ctx": 3003,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 64,
+      "q_len": 8,
+      "dist": "edges"
+    },
+    {
+      "batch": 4,
+      "ctx": 4093,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 64,
+      "q_len": 8,
+      "dist": "soft",
+      "kv_scale": 0.015625
+    }
+  ],
+  "repeats": 6,
+  "seed": 121021,
+  "weight_seed": 7311,
+  "comparison_baseline": "exact_decoder_attention_parent",
+  "incumbent": {
+    "path": "muse_attention_decode/candidates/decoder_parent_v10.py",
+    "sha256": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9"
+  },
+  "profile": true,
+  "resources": false,
+  "attention_v10_instrumentation": {
+    "baseline": {
+      "schema": 1,
+      "input_sha256": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9",
+      "output_sha256": "a8f62ce66bceb533498fa224e833063c717149efeb6cb40abf96ecee0b55a8db",
+      "helper_sha256": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+      "exact_reverse_proof": true,
+      "template": "attn_kernel<8,true,0>",
+      "changes": [
+        "host-only CUDA export",
+        "host pybind declaration/export",
+        "unique extension namespace",
+        "verbose compiler output",
+        "-Xptxas=-v"
+      ]
+    },
+    "candidate": {
+      "schema": 1,
+      "input_sha256": "d8be9200bb0357cacf8e48c104a44d9e57aa1e278afe2bdac27a4dd5d7d4790a",
+      "output_sha256": "f539041c83aaf67d51c0497a15c2bad83a78c2504b73a17b51a06387b28dfeaf",
+      "helper_sha256": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+      "exact_reverse_proof": true,
+      "template": "attn_kernel<8,true,0>",
+      "changes": [
+        "host-only CUDA export",
+        "host pybind declaration/export",
+        "unique extension namespace",
+        "verbose compiler output",
+        "-Xptxas=-v"
+      ]
+    }
+  }
+}
