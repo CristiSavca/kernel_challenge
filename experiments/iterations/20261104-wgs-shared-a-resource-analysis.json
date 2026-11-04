@@ -1,17 +1,218 @@
 {
   "schema": 1,
-  "status": "PENDING",
+  "status": "PASS",
   "job": "100bb9bbce8f4539",
   "source_sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38",
   "provenance": {
     "job": "100bb9bbce8f4539",
     "source_sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38",
-    "receipt_sha256": "c3832eebd896a709a70099624b508e9e676c7c732dc959d00383a75d343bfc7b",
+    "receipt_sha256": "a78ea6df03ac41523a20ac439d17bcd3ed03685d5f87f7172e182bf3e112ba75",
     "receipt": "experiments/runs/100bb9bbce8f4539.json",
-    "source": "experiments/candidates/muse_moe_w4a16/93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38.py"
+    "source": "experiments/candidates/muse_moe_w4a16/93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38.100bb9bbce8f4539.json",
+    "profile_sha256": "fbc814b53c79aeea21ac85b34d99953e83c89935bc42ef18bf641a77be4ff1cd",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
   },
   "automatic_promotion_allowed": false,
   "metrics": {},
-  "resource_gate": "PENDING",
-  "activation_gate": "PENDING"
+  "resources": {
+    "gate": "PASS_RETAINED_PAIRS",
+    "records": [
+      {
+        "id": 0,
+        "line": 52,
+        "v": 1,
+        "big": 0,
+        "ntl": 576,
+        "dyn": 194304,
+        "regs": 96,
+        "local": 0,
+        "static": 0,
+        "maxdyn": 194304,
+        "occ": 1,
+        "set": 0,
+        "attr": 0,
+        "cap": 0,
+        "issues": [],
+        "reported_admission": "PASS",
+        "attributes_usable": true,
+        "occupancy_usable": true,
+        "scope": "first launch of some compiled WGS module; not benchmark/state identity",
+        "eligible_for_clean_pair": true
+      },
+      {
+        "id": 1,
+        "line": 53,
+        "v": 1,
+        "big": 1,
+        "ntl": 576,
+        "dyn": 194304,
+        "regs": 96,
+        "local": 0,
+        "static": 0,
+        "maxdyn": 194304,
+        "occ": 1,
+        "set": 0,
+        "attr": 0,
+        "cap": 0,
+        "issues": [],
+        "reported_admission": "PASS",
+        "attributes_usable": true,
+        "occupancy_usable": true,
+        "scope": "first launch of some compiled WGS module; not benchmark/state identity",
+        "eligible_for_clean_pair": true
+      }
+    ],
+    "paired_record_ids": [
+      [
+        0,
+        1
+      ]
+    ],
+    "orphan_record_ids": [],
+    "missing_BIG": [],
+    "conflicts": [],
+    "malformed": [],
+    "failed_record_ids": [],
+    "compiler_diagnostics": {
+      "positive_warning_records": [],
+      "visible_build_steps": [
+        {
+          "line": 1,
+          "text": "[1/3] ccache c++ -MMD -MF main.o.d -DTORCH_EXTENSION_NAME=okc_moe_wgs_shared_a_v15_4aaab50d332b17d8_sm90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -fPIC -std=c++20 -c /tmp/muse_moe_w4a16-w7j7jhgn/sandbox/cache/torch_extensions/okc_moe_wgs_shared_a_v15_4aaab50d332b17d8_sm90a/main.cpp -o main.o "
+        },
+        {
+          "line": 2,
+          "text": "[2/3] ccache /usr/local/cuda/bin/nvcc -MD -MF cuda.cuda.o.d -DTORCH_EXTENSION_NAME=okc_moe_wgs_shared_a_v15_4aaab50d332b17d8_sm90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-"
+        },
+        {
+          "line": 51,
+          "text": "[3/3] ccache c++ main.o cuda.cuda.o -shared -L/opt/sglang/lib/python3.12/site-packages/torch/lib -lc10 -lc10_cuda -ltorch_cpu -ltorch_cuda -ltorch -ltorch_python -L/usr/local/cuda/lib64 -lcudart -o okc_moe_wgs_shared_a_v15_4aaab50d332b17d8_sm90a.so"
+        }
+      ],
+      "absence_of_other_warnings": "UNKNOWN: original compiler-output completeness is not certified",
+      "causal_limit": "Warning presence is a compiler fact, not measured latency or parent serialization evidence."
+    },
+    "policy": "Local bytes, register count and serialization warnings are reported; none alone is a rejection rule.",
+    "coverage_limit": "Identical repeated BIG0/1 pairs are retained; module/cache/weight/benchmark identities are not encoded. Occupancy is admission capacity, not achieved residency."
+  },
+  "resource_gate": "PASS_RETAINED_PAIRS",
+  "log_provenance": {
+    "saved_log": "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/candidates/muse_moe_w4a16/profiles/93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38.100bb9bbce8f4539.log",
+    "saved_log_sha256": "509a9313fe57344a3532022594e26e4e82a6f4eed0ba15eff40cfe0326db427b",
+    "selected_log_sha256": "39bcd8f12353e7274bd07d4d35ad6f2899e48d8c0ce87d554f7b909d97dbdc5e",
+    "relationship": "receipt_tail_contains_saved_log",
+    "artifact_conflicts": []
+  },
+  "evaluator_inventory_sha256": "68c76b0c18f7154905a802d227b084e15c4b95e17d0d67fa40e9fef3d6ab7e11",
+  "activation": {
+    "gate": "VISIBLE_DISPATCH_CONSISTENT_WGS_IDENTITY_UNKNOWN",
+    "captures": [
+      {
+        "index": 0,
+        "M": 1,
+        "affected": false,
+        "expected_BIG": false,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<false>(okc::Params)",
+            "calls": 1,
+            "BIG": false
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNCHANGED_SMALL_SOURCE_PATH"
+      },
+      {
+        "index": 1,
+        "M": 16,
+        "affected": false,
+        "expected_BIG": false,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<false>(okc::Params)",
+            "calls": 1,
+            "BIG": false
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNCHANGED_SMALL_SOURCE_PATH"
+      },
+      {
+        "index": 2,
+        "M": 32,
+        "affected": true,
+        "expected_BIG": true,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<true>(okc::Params)",
+            "calls": 1,
+            "BIG": true
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNKNOWN"
+      },
+      {
+        "index": 3,
+        "M": 8,
+        "affected": false,
+        "expected_BIG": false,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<false>(okc::Params)",
+            "calls": 1,
+            "BIG": false
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNCHANGED_SMALL_SOURCE_PATH"
+      },
+      {
+        "index": 4,
+        "M": 128,
+        "affected": true,
+        "expected_BIG": true,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<true>(okc::Params)",
+            "calls": 1,
+            "BIG": true
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNKNOWN"
+      },
+      {
+        "index": 5,
+        "M": 256,
+        "affected": true,
+        "expected_BIG": true,
+        "status": "CONSISTENT_SINGLE_VISIBLE_KERNEL",
+        "rows": [
+          {
+            "symbol": "void okc::moe_fused<true>(okc::Params)",
+            "calls": 1,
+            "BIG": true
+          }
+        ],
+        "unparsed_relevant_lines": [],
+        "runtime_arguments": "UNKNOWN: profile omits module, flags, pointers, grid and pmax",
+        "SS_A_activation": "UNKNOWN"
+      }
+    ],
+    "limit": "MAIN selection depends on runtime scale eligibility sfx. The fallback has the same moe_fused symbol; SSAR pairs do not bind each benchmark preparation. No new reference/nvfp4 input-chain certification is performed."
+  },
+  "activation_gate": "VISIBLE_DISPATCH_CONSISTENT_WGS_IDENTITY_UNKNOWN",
+  "decision": "DIAGNOSTIC_ONLY_NO_PROMOTION"
 }

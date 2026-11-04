@@ -1239,3 +1239,39 @@ T128/256disableit. Globalpack/scratch/UV/smallcontrolpathsremainunchangedin
 anyfutureport. Decoder_tunecancatchresource/launcherrorsandselectMarlin, so
 PASSalonecannotproveSS-Aactivation. Nointegrationcandidateexistsorapproved
 untilstandaloneusefulgatepasses.
+
+
+## Shared-A terminal rejection — November 4, 13:04 UTC
+
+Official private `100bb9bbce8f4539`, exact candidate `93c2d0fb…`, completed with
+5/5 tests, 6 benchmarks, 6 profiles and clean checks, but score 1.8271540353
+(CI 1.7997467248–1.8545613459) versus exact-parent public 2.3736910444 and private
+2.3898359607. Root separately reproduced performance report e2d405a9 and resource
+report 2eb99346 from frozen source/receipt/profile/full evaluator inventory.
+Independent result critic 02d371449344aa6e4eefc5537e07384d0075d8ba607c031b5de9576e09420099
+recomputed the raw comparisons. Affected normalized-latency GM is +69.017% /
++70.569% versus public/private; controls -0.146% / +0.296%. Every changed case
+regresses 62–76%. This is a decisive fixed-gate rejection, not an integration lead.
+
+Both retained BIG resource queries pass: 576 threads, 194304 dynamic bytes,
+96 registers, zero local/static bytes, one admitted CTA, all APIs successful.
+Generic profile symbols do not directly identify every timed module; no visible
+C75 warning does not prove warning absence. Source-accounted extra shared traffic
+and barriers are plausible costs, not isolated measured stall attribution.
+No decoder integration, nearby bank/depth/quota rescue, duplicate retry or extra
+diagnostic follows. Public decoder97af and MoE247888 byte hashes are unchanged.
+Root-result and terminal receipt/log/profiles preserve the rejected attempt.
+
+Fresh official snapshot `20261104T130435Z-shared-a-terminal.json`: overall393/1966,
+decoder393/1266 at2.1812 versus leader2.5510; MoE296/1395 at2.3737 versus2.7817.
+Decoder30 private/18 scored and MoE32 private/17 scored attempts remain. There
+is no pending official job. Rank slipped while submitted score remained stable.
+No Modal allocation or budget guard change. Local free space39GiB.
+
+The user's Rohan post reinforces experiment selection rather than blind volume.
+The public release audit found workflow code but no released GPU genetic engine,
+latency surrogate or Lean hardware model. A new source feasibility review and
+independent selection critique are running. A useful predictor must outperform
+simple baselines on held-out design families; case rows/seeds are not independent
+training designs. Do not claim that a dashboard or constraint checker establishes
+kernel gains. The #1 goal remains active and unachieved.

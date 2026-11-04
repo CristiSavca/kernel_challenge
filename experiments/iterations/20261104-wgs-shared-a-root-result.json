@@ -1,0 +1,100 @@
+{
+  "job": "100bb9bbce8f4539",
+  "candidate_sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38",
+  "receipt_sha256": "a78ea6df03ac41523a20ac439d17bcd3ed03685d5f87f7172e182bf3e112ba75",
+  "status": "FIXED_ATTEMPT_REJECTED_MEASURED_REGRESSION",
+  "official_passed": true,
+  "official_returncode": 0,
+  "official_speedup": 1.8271540353270757,
+  "official_speedup_ci": [
+    1.7997467247971695,
+    1.8545613458569816
+  ],
+  "correctness_tests_completed": 5,
+  "benchmark_cases_completed": 6,
+  "profile_captures": 6,
+  "source_receipt_profile_evaluator_identity_checked": true,
+  "root_reproduced_both_offline_reports": true,
+  "comparisons": [
+    {
+      "parent_job": "d24dd50196cb4158",
+      "parent_source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "affected_normalized_latency_GM": 1.6901710532376224,
+      "control_normalized_latency_GM": 0.9985444455586423,
+      "aggregate_score_ratio": 0.7697522555240741,
+      "affected_cases": [
+        {
+          "M": 32,
+          "normalized_latency_ratio": 1.6240208978180777
+        },
+        {
+          "M": 128,
+          "normalized_latency_ratio": 1.7084482468532152
+        },
+        {
+          "M": 256,
+          "normalized_latency_ratio": 1.7401974884999345
+        }
+      ],
+      "all_predeclared_gates_passed": false
+    },
+    {
+      "parent_job": "bcb761dfca264db0",
+      "parent_source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "affected_normalized_latency_GM": 1.7056932118668782,
+      "control_normalized_latency_GM": 1.0029630642994245,
+      "aggregate_score_ratio": 0.7645520719326248,
+      "affected_cases": [
+        {
+          "M": 32,
+          "normalized_latency_ratio": 1.626179536346251
+        },
+        {
+          "M": 128,
+          "normalized_latency_ratio": 1.7296811301817259
+        },
+        {
+          "M": 256,
+          "normalized_latency_ratio": 1.7642828971288949
+        }
+      ],
+      "all_predeclared_gates_passed": false
+    }
+  ],
+  "resource_gate": "PASS_RETAINED_PAIRS",
+  "resource_records": [
+    {
+      "big": 0,
+      "ntl": 576,
+      "dyn": 194304,
+      "regs": 96,
+      "local": 0,
+      "static": 0,
+      "maxdyn": 194304,
+      "occ": 1,
+      "set": 0,
+      "attr": 0,
+      "cap": 0
+    },
+    {
+      "big": 1,
+      "ntl": 576,
+      "dyn": 194304,
+      "regs": 96,
+      "local": 0,
+      "static": 0,
+      "maxdyn": 194304,
+      "occ": 1,
+      "set": 0,
+      "attr": 0,
+      "cap": 0
+    }
+  ],
+  "interpretation": "Valid correctness and launch admission do not imply performance. Changed workloads decisively regress against both exact-source incumbents while unchanged controls remain close. Extra shared operand transport/synchronization is a plausible cost, but this multi-change run does not isolate causal stalls or compiler behavior.",
+  "activation_limit": "MAIN selection depends on runtime scale eligibility sfx. The fallback has the same moe_fused symbol; SSAR pairs do not bind each benchmark preparation. No new reference/nvfp4 input-chain certification is performed.",
+  "public_submission_changed": false,
+  "promotion_allowed": false,
+  "decoder_integration_allowed": false,
+  "next_action": "Close fixed SS-A attempt. No bank/depth/quota rescue, duplicate retry or automatic diagnostic. Review a materially distinct evidence-supported mechanism.",
+  "independent_critic": "experiments/iterations/20261104-wgs-shared-a-result-critic.json"
+}

@@ -6,8 +6,10 @@ Parent: scored standalone MoE source
 `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`.
 This isolated candidate does not replace either active submission.
 
-Official private check `100bb9bbce8f4539` was submitted November4 at12:46 UTC
-and acknowledged as queued. There is no GPU correctness or timing result yet.
+Official private check `100bb9bbce8f4539` completed with all correctness checks
+passing, but its **1.827154x** score is substantially worse than the incumbent's
+**2.373691x**. The predetermined performance gate failed. This fixed attempt is
+closed; it is not eligible for promotion or decoder integration.
 
 The root accepted the fixed shared-A plan before implementation, following
 independent arithmetic/lifetime review and two independently reproduced CPU
@@ -95,7 +97,7 @@ Independent full source review approved one check (source-critic SHA4f53a826).
 Root's separate combined CPU run passed and exactly reproduced author report
 SHA57400109290853f0b52b52bebd2ffcd5814ce068134df90e2ef32bf5e8b244f0.
 The separate root report is `20261104-wgs-shared-a-root-cpu.json`.
-One private official check is now queued; only root polls that existing handle.
+One private official check was run and its terminal result is retained.
 Require all5 tests/6 benchmarks/6 profiles and clean evaluator checks/flags.
 Compare against exact-parent public `d24dd50196cb4158` and private
 `bcb761dfca264db0`: affected-case geometric speedup must be at least3% over both;
@@ -106,3 +108,34 @@ establish the parent's unknown serialization state.
 Failure or no useful measured gain closes this fixed experiment. Only a useful
 standalone result permits a separately reviewed decoder97af integration and
 whole-decoder private check. No nearby bank/depth/quota rescue is authorized.
+
+## Terminal result and decision
+
+The result was observed November 4 at 12:59 UTC. All 5 tests, 6 benchmarks and
+6 profiles passed with clean evaluator checks and no flags. Root independently
+reproduced both saved offline analyses from exact source, receipt and profiles.
+The score CI [1.799747, 1.854561] lies below both parent runs' intervals.
+
+| Affected M | Normalized latency vs public parent | vs private parent |
+| --- | ---: | ---: |
+| 32 | +62.40% | +62.62% |
+| 128 | +70.84% | +72.97% |
+| 256 | +74.02% | +76.43% |
+
+Affected geometric normalized latency increased 69.02%/70.57%; unchanged control
+geometric latency changed -0.15%/+0.30%. Different fresh seeds and nodes limit
+strict causal inference, but both predetermined comparisons decisively reject
+this candidate. No unchanged control fluctuation is an optimization gain.
+
+Both retained BIG queries report 576 threads, 194304 dynamic shared bytes,
+96 registers, zero local/static bytes, one admitted CTA and successful CUDA API
+statuses. That establishes admission for the queried pointers, not achieved
+occupancy or direct identity of every profiled invocation. No serialization
+warning is visible; compiler-log completeness is uncertified. Additional shared
+operand traffic/barriers are plausible costs, but this experiment also reduced
+ring depth and does not isolate which mechanism caused the regression.
+
+Evidence is retained in the performance-analysis, resource-analysis, root-result
+and result-critic files under `experiments/iterations/20261104-wgs-shared-a-*`.
+No public source changed. The conditional decoder integration map is historical
+work whose prerequisite failed. No rescue, rerun or diagnostic follows.
