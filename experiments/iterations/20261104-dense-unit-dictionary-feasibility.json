@@ -1,0 +1,149 @@
+{
+  "combined": {
+    "overflow_fraction": 0.006673177083333333,
+    "overflow_units": 82,
+    "units": 12288,
+    "weights": 6291456
+  },
+  "date": "2026-11-04",
+  "exact_checks": {
+    "adversarial_units_checked": 3,
+    "all_bf16_patterns_roundtripped": 65536,
+    "fallback_required_for_cardinalities": [
+      9,
+      128
+    ],
+    "four_code_selectors_checked": 65536,
+    "rne_endpoint_checks": 8,
+    "scope": "Bit representation only: no CUDA PRMT execution, MMA/FP32 sum-order or speed proof."
+  },
+  "generator": {
+    "K": 8192,
+    "kind": "Python random.Random.gauss distribution proxy",
+    "not_actual_torch_cuda_rng_or_judged_weights": true,
+    "not_proof_of_actual_eligibility": true,
+    "order": "FP32 Gaussian, FP32 inverse sqrt(8192), FP32 product, BF16 RNE",
+    "seeds": [
+      230401,
+      230402,
+      230403
+    ],
+    "units_per_seed": 4096,
+    "weights_per_unit": 512
+  },
+  "layout": {
+    "codes": "lane-major consecutive four-bit sign/index nibbles; differs from parent nibble order",
+    "fixed_header_bytes": 16,
+    "header": "eight e71|0x80 bytes, uint32 raw-unit index, uint32 mode",
+    "modeled_raw_index": 0,
+    "overflow_raw_sidecar_bytes": 1024,
+    "primary_payload_bytes": 768,
+    "raw_storage": "test model returns raw sidecar separately; not a production allocator"
+  },
+  "limits": [
+    "No candidate implementation, hardware allocation, compiler or provider calls.",
+    "The fixed primary is transferred even for raw fallback units; extra request bytes are 1024 per overflow.",
+    "No latency, occupancy, cache reuse, numerical MMA correctness or speed forecast follows.",
+    "Unit dictionary removes corrective arithmetic mathematically but changes FP32 accumulation association versus the parent.",
+    "Generic fallback and actual weight qualification are mandatory; distribution samples cannot justify omitting them."
+  ],
+  "proxy_samples": [
+    {
+      "bf16_bits_sha256": "d9f9b5723b7deec7e31389e94c393d99a4a65c4f341b00b429f41a9ddf1f222f",
+      "dictionary_only_unit_fraction": 0.9931640625,
+      "dictionary_overflow_fraction": 0.0068359375,
+      "dictionary_overflow_units": 28,
+      "e71_cardinality_histogram": {
+        "4": 8,
+        "5": 152,
+        "6": 1478,
+        "7": 1915,
+        "8": 515,
+        "9": 28
+      },
+      "e71_contiguous_span_histogram": {
+        "4": 8,
+        "5": 147,
+        "6": 1390,
+        "7": 1608,
+        "8": 703,
+        "9": 178,
+        "10": 46,
+        "11": 11,
+        "12": 4,
+        "13": 1
+      },
+      "mean_requested_weight_bytes_per_unit": 791.0,
+      "requested_weight_bytes_ratio_to_768": 1.0299479166666667,
+      "seed": 230401,
+      "units": 4096,
+      "weights": 2097152
+    },
+    {
+      "bf16_bits_sha256": "20a6fcd844fbb21e9561fc3aaccea2c134ff48c3aefcdc34d72ad55a7deeaf67",
+      "dictionary_only_unit_fraction": 0.994140625,
+      "dictionary_overflow_fraction": 0.005859375,
+      "dictionary_overflow_units": 24,
+      "e71_cardinality_histogram": {
+        "4": 5,
+        "5": 166,
+        "6": 1360,
+        "7": 2020,
+        "8": 521,
+        "9": 23,
+        "10": 1
+      },
+      "e71_contiguous_span_histogram": {
+        "4": 5,
+        "5": 161,
+        "6": 1260,
+        "7": 1746,
+        "8": 678,
+        "9": 190,
+        "10": 43,
+        "11": 10,
+        "12": 1,
+        "13": 1,
+        "14": 1
+      },
+      "mean_requested_weight_bytes_per_unit": 790.0,
+      "requested_weight_bytes_ratio_to_768": 1.0286458333333333,
+      "seed": 230402,
+      "units": 4096,
+      "weights": 2097152
+    },
+    {
+      "bf16_bits_sha256": "7ef35480bd5abfb243631b9469d21e0cee3098a2946327f4ae1880337903a9ff",
+      "dictionary_only_unit_fraction": 0.99267578125,
+      "dictionary_overflow_fraction": 0.00732421875,
+      "dictionary_overflow_units": 30,
+      "e71_cardinality_histogram": {
+        "4": 2,
+        "5": 149,
+        "6": 1409,
+        "7": 1976,
+        "8": 530,
+        "9": 30
+      },
+      "e71_contiguous_span_histogram": {
+        "4": 2,
+        "5": 145,
+        "6": 1309,
+        "7": 1671,
+        "8": 678,
+        "9": 224,
+        "10": 49,
+        "11": 13,
+        "12": 5
+      },
+      "mean_requested_weight_bytes_per_unit": 791.5,
+      "requested_weight_bytes_ratio_to_768": 1.0305989583333333,
+      "seed": 230403,
+      "units": 4096,
+      "weights": 2097152
+    }
+  ],
+  "script_sha256": "beb6d9845e912c194b14dda7ffd53366ce2daa1d99ad6241c77561a3081a0f55",
+  "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "status": "CPU_FEASIBILITY_ONLY"
+}

@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_ONE_PRIVATE_OFFICIAL_CHECK_ONLY",
+  "source_sha256": "4fcf108fc860865b0284031075c9e35461b761eb11f5cd4681917e44165871da",
+  "native_sha256": "9a54f7411a4827f71429e4d6c828693a403c20b9e56c3a7e00b6712818e63cff",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "comparators": {
+    "public": "d24dd50196cb4158",
+    "private": "bcb761dfca264db0"
+  },
+  "artifact_sha256": {
+    "muse_moe_w4a16/candidates/native_wgs_steady_lg_v21.py": "4fcf108fc860865b0284031075c9e35461b761eb11f5cd4681917e44165871da",
+    "tools/test_wgs_steady_lg_cpu.py": "7a0f51083fe73530f9e0ec48aad466535446ae0046b06fed2a95bd8ec07b8798",
+    "experiments/iterations/20261104-wgs-steady-lg-cpu.json": "cef2aa12e4d9282da849b855c6724079163a77dc5b1add5d2f21d59a558a1cb6",
+    "tools/WGS_INSTRUCTION_FOOTPRINT_REVIEW_20261104.md": "b2454b8a0b5f6607f5874d9112935849ee26891ffed192c39da776e377d6200d"
+  },
+  "exact_scope": [
+    "One CUDA pragma changes from unroll to unroll(FIRST ? 4 : 1) on lg=0..3 only.",
+    "One extension namespace changes to avoid stale compiled modules.",
+    "Replacing only these two strings restores every parent byte. All packing, arithmetic expressions, control-flow statements, dispatch, flags, producers, PDL, barriers, scratch and finalization remain source-identical."
+  ],
+  "independent_validation": {
+    "full_diff_review": true,
+    "independent_cpu_run_equals_author_report": true,
+    "source_bound_modeled_cases": 13440,
+    "matched_modeled_events": 5871216,
+    "event_sha256": "43fc82912e8c13c07b629bc82695715bedafd93248fb75135d6a7b97562beaf4",
+    "negative_controls": [
+      "one_bank",
+      "release_before_wait"
+    ],
+    "no_compiler_or_gpu_execution": true,
+    "coverage_limits": "Finite Python schedule model bound to source strings and exact parent restoration; not native C++ execution, compiler instruction scheduling, unequal-warp timing, full grid progress or numerical GPU proof."
+  },
+  "lifetime_review": [
+    "GS2 makes ci=2*lg+h and ci&1=h&1; the inner h/jj loops remain unrolled, so AF parity and NTT1 accumulator parity are unchanged in C++ semantics.",
+    "First stage remains unrolled and retains mma0 initialization and FCI3 pending flush.",
+    "Steady previous-X release still occurs only at lg=0,h=0 after wait1. Final wait0, odd-accumulator add and final X release are unchanged.",
+    "The final code load / weight-slot release retains its original logical position. Empty local ranges remain inherited skipped calls; no new global-zero-job support claim."
+  ],
+  "falsifiable_hypothesis": "Rolling only steady lg reduces duplicated hot instruction bodies enough to improve the M32/M128/M256 MAIN family, without changing memory bytes or computation. The expected source-copy pattern is first4+steady1 instead of4+4; emitted code size/compliance and instruction-fetch pressure are UNKNOWN until measured. A performance pass is useful empirical evidence, not proof of an instruction-cache cause.",
+  "pre_result_screen": {
+    "binding": "Exact source, full evaluator inventory/image, H200 and same per-case workload metadata except randomized seeds; preserve all raw records and compare both exact247888 parents.",
+    "required_records": {
+      "setup": 1,
+      "test": 5,
+      "benchmark": 6,
+      "profile": 6
+    },
+    "clean": "Official done/PASS, successful explicit tests and timings, returncode0, checks.ok, no flags; reproduce six-load official MoE geometric mean.",
+    "affected_M": [
+      32,
+      128,
+      256
+    ],
+    "control_M": [
+      1,
+      8,
+      16
+    ],
+    "main_geomean_candidate_speedup_over_parent_min": 1.01,
+    "joint_positive_main_case_count_min": 2,
+    "individual_main_normalized_latency_ratio_max": 1.02,
+    "control_geomean_normalized_latency_ratio_range": [
+      0.98,
+      1.02
+    ],
+    "ratio_definition": "Per-case speed ratio = candidate paired speedup / comparator paired speedup. Normalized latency ratio is its inverse. Family aggregates are geometric means. Every numeric condition must hold against both comparators except the joint count, which requires the same case positive against both.",
+    "interpretation": "Operational consistency screen, not statistical significance; official intervals may overlap and control drift remains a limit."
+  },
+  "kill_conditions": [
+    "Compilation failure, correctness failure, nonfinite output, hang, missing required records, source/evaluator mismatch or failed fixed numeric screen closes this exact attempt; do not lower the gate or repeat to seek noise.",
+    "Observed new serialization/spills require adverse analysis; do not claim the proposed overlap or smaller footprint without evidence. Hidden or absent log diagnostics are not proof of their absence.",
+    "No decoder integration or scored promotion based only on correctness, total binary size or a favorable isolated case."
+  ],
+  "compiler_and_performance_risks": [
+    "NVCC may ignore or reject the constexpr-dependent pragma; actual compilation is untested.",
+    "Rolling creates a backedge, loop control, dynamic descriptor arithmetic and conditional final-load/release; these can cost more than any instruction-fetch benefit.",
+    "Register allocation, local allocation and WGMMA serialization can change despite source-equivalent math.",
+    "The existing14 NCU metrics contain no instruction-fetch/cache metric. Total340480-byte BIG1 includes32 stage alternatives; the per-segment reachable envelopes are about13.9\u201321.9KiB, not the full binary.",
+    "Parent one-stage segments never execute the steady body. Compile mode and job mix can therefore change gain by shape."
+  ],
+  "scope_scenarios": {
+    "profile_source": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "profile_job": "7a8c4941741645ee",
+    "profile_sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+    "method": "Reduce only MAIN MoE profile fractions in cases4,5,8,9,10,11; retain normalized benchmark times,46/16 layer weights and six-load geometric aggregation. PDL/wait/overlap make these scenarios, not forecasts or hard bounds.",
+    "MAIN_speedup_1_01_decoder_latency_reduction": 0.0024350619440414167,
+    "MAIN_speedup_1_05_decoder_latency_reduction": 0.011768533919349622,
+    "MAIN_speedup_1_10_decoder_latency_reduction": 0.022594942927753547,
+    "MAIN_speedup_1_20_decoder_latency_reduction": 0.04184758958558188,
+    "gap_note": "The reported18.1% score gap corresponds to15.326% normalized latency reduction. Even an optimistic1.20x MAIN speedup models only4.185% overall; this is a bounded incremental test, not a first-place forecast."
+  },
+  "execution_scope": "Root alone may submit one private official check after accepting the pre-result screen. No new collector infrastructure or local GPU run is required for this narrow source change. Critic made no official/provider/GPU calls and did not edit the candidate."
+}

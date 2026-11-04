@@ -20,6 +20,31 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
+Latest continuation, November 4 17:39 UTC: official private MoE job
+`1a2a2a31f96f43e3` is running for frozen v21 source `4fcf108f…`. Root owns
+polling this handle; do not resubmit. It changes only the steady-stage `lg`
+unroll hint and extension namespace. Both independent source reviews and the
+reproduced 13,440-case CPU trace are preserved. Fixed pre-result gates are in
+`WGS_STEADY_LG_V21_PLAN.md`; new owned-SASS tooling was deferred so the actual
+candidate could be tested. No Modal allocation was made. Current public source
+hashes remain 247888 MoE / 97af decoder / 87a9 attention.
+
+Fresh 17:32 snapshot: overall and decoder #401, decoder 2.1812 versus leader
+2.5762; MoE #302 at 2.3737 versus 2.7817. These are unchanged own public scores.
+Kernel closes November 5 08:00 UTC; serving opens November 10 17:00 UTC and
+closes November 20 08:00 UTC, confirmed from the live API. Prizes are on serving.
+Fresh Modal billing moved down to displayed 4.13/component 4.12650025, billed0.
+Preserve known provider high-water 4.16434237 and existing immutable financial
+evidence. Do not treat the lower display as restored budget; all attribution,
+certificate and cleanup checks still apply before any next allocation.
+
+The new dictionary feasibility artifacts are retained under
+`DENSE_UNIT_DICTIONARY_FEASIBILITY_20261104.md`: exact CPU representation works,
+but modeled request bytes increase about3% and decode integer operations increase.
+No GPU candidate or performance claim follows. A separate serving review found
+the stock small-token expert finalizer's eager operation chain as a concrete
+fusion opportunity; implementation/numerical/performance review is in progress.
+
 At November 4, 12:17 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
 decoder and overall ranks were392. Passing that observed leader needs approximately
