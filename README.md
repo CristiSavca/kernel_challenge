@@ -26,9 +26,13 @@ Serving V27 now has an isolated, reproducible 213,160-byte patch connecting the
 passing V26 core to actual SGLang weight loading, forward dispatch and serial
 model-owned workspaces. Independent CPU review passed rank mapping, atomic
 installation/rollback, norm handling and chunk boundaries. The stock norm
-setter's device lookup was adapted for released raw weights. Device validation
-is being prepared against the exact stock methods; this is not yet a GPU,
-full-engine or official serving pass. The dirty serving checkout was preserved.
+setter's device lookup was adapted for released raw weights. The bounded H200
+run completed actual rank-3 bank installation, then reached its execution
+deadline within a coarse stock-preparation/initial-forward interval. Its
+recovered checkpoint contains **0/38 numerical cases and no timings**. The
+sandbox terminated and the app is stopped. This is incomplete device validation,
+not a numerical failure or serving pass. The dirty serving checkout was preserved.
+See [V27 device results](experiments/iterations/20261104-native-serving-v27-device-closeout.json).
 
 Serving expert prototype V26 passed official private job `274c69cbc0954d76`
 with all five tests, six benchmarks and clean checks. Its same-run stock score
@@ -43,8 +47,10 @@ unverified. See [V26 results](experiments/iterations/20261104-native-serving-v26
 
 V25 remains closed: it passed correctness at 1.2538x but made M1 13.63% slower
 than stock. V26's cross-run normalized aggregate is 1.3440x V25's; this is not
-same-input causal attribution. The next experiment tests the installed V27
-adapter's numerical and workspace behavior on one bounded H200.
+same-input causal attribution. The next probe isolates the stock initialization
+interval with precise stage checkpoints and a Python-version-stable report
+fingerprint. Further Modal allocation requires audited cost reconciliation and
+a fresh credit-guard pass; the journal and full reservation remain intact.
 
 The research loop now adapts EAT's diagnosis-driven role changes using our
 existing tools. Its [current handoff](tools/RESEARCH_LOOP.md) is separated from

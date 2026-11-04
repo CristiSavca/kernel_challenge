@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T21:45:14.758653+00:00",
+  "status": "DEVICE_VALIDATION_INCOMPLETE_EXEC_DEADLINE",
+  "decision": "CLOSE_FIXED_ATTEMPT_PRESERVE_ADAPTER_NO_PROMOTION_NO_AUTOMATIC_RETRY",
+  "source_commit": "787f1a7",
+  "run_id": "20261104T213729Z-f6cf2030",
+  "app_id": "ap-YPrbeYKO76d5ivHhfIfSCj",
+  "sandbox_id": "sb-8rM4gCMaIyZKzKk1u5lA8q",
+  "candidate_module_sha256": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+  "worker_sha256": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8",
+  "controller_sha256": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+  "official": false,
+  "full_engine_validated": false,
+  "performance_promotion": false,
+  "last_checkpoint": {
+    "status": "running",
+    "stage": "stock_prepare",
+    "elapsed_seconds": 88.045482834,
+    "elapsed_is_last_checkpoint_not_total_runtime": true,
+    "installation": {
+      "actual_nonzero_rank": 3,
+      "independent_raw_storages": true,
+      "prmt": true,
+      "registered_bank_only": true,
+      "weight_bytes": 905970816,
+      "workspace_instances": 1
+    },
+    "environment": {
+      "capability": [
+        9,
+        0
+      ],
+      "cuda": "13.0",
+      "device": "NVIDIA H200",
+      "device_count": 1,
+      "torch": "2.14.1+cu130"
+    },
+    "dependencies_match": true
+  },
+  "coverage": {
+    "planned_ordinary_cases": 38,
+    "completed_ordinary_cases": 0,
+    "completed_timed_cases": 0,
+    "baseline_stability_completed": false,
+    "serial_layers_completed": false,
+    "streams_completed": false,
+    "graphs_completed": false,
+    "lut_attempted": false
+  },
+  "failure": {
+    "remote_exit_code": -1,
+    "configured_exec_deadline_seconds": 280,
+    "sandbox_limit_seconds": 300,
+    "worker_cooperative_budget_seconds": 240,
+    "stderr_empty": true,
+    "sdk_wait_timeout_mapping": {
+      "path": ".venv-modal/lib/python3.13/site-packages/modal/container_process.py",
+      "sha256": "18927ae88b35d6b559105a9fcb52e607e3e9427e4a1dc09927dfaadec2755fc1",
+      "explanation": "Installed Modal ContainerProcess.wait catches ExecTimeoutError and returns -1; this runner returned -1 without a worker error checkpoint."
+    },
+    "unlocalized_interval": [
+      "stock Layer creation",
+      "stock weight clone/preparation and repack",
+      "CUDA synchronization",
+      "baseline input generation",
+      "first stock T32 mixed-route forward",
+      "second stock T32 mixed-route forward",
+      "baseline exact comparison before the next save"
+    ],
+    "unsupported_claims": [
+      "not a demonstrated native correctness failure",
+      "not a demonstrated Marlin repack or compiler defect",
+      "not a measured performance regression",
+      "not an official serving pass"
+    ]
+  },
+  "termination": {
+    "sandbox_terminated": true,
+    "checkpoint_recovered_inside_app": true,
+    "provider_app_stopped": true,
+    "provider_tasks": 0,
+    "provider_created_at": "2026-11-04 16:37:33-05:00",
+    "provider_stopped_at": "2026-11-04 16:42:23-05:00"
+  },
+  "costs": {
+    "reservation_usd": "1.14",
+    "provider_before_usd": "4.25390221",
+    "provider_after_usd": "4.83274092",
+    "aggregate_observed_increase_usd": "0.57883871",
+    "aggregate_increase_is_settled_per_run_cost": false,
+    "billed_cost_usd": "0E-8",
+    "working_allowance_after_reservation_usd": "0.11609779",
+    "working_allowance_with_latest_observed_floor_usd": "-0.46274092",
+    "headroom_usd": "5.00",
+    "ledger_unchanged_except_append_only_reservation": true,
+    "further_allocation_requires_fresh_guard": true
+  },
+  "next_concrete_experiment": "Source-preserving stock-only interval localization with per-stage checkpoints, subject to reviewed completed-cost reconciliation and fresh guard; do not rerun the full candidate blindly.",
+  "evidence_sha256": {
+    "experiments/modal/20261104T213729Z-f6cf2030/NATIVE_LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "experiments/modal/20261104T213729Z-f6cf2030/NATIVE_NOTICE.txt": "43ac9707b8c367e0c92c2d2e9b0506170df89690e5af3d68df82af544fe37e08",
+    "experiments/modal/20261104T213729Z-f6cf2030/SGLANG_LICENSE.txt": "1495e1e757ef4d0925a2350563cf5754bb23c51701a8ec4fb3c5cdcbedae6747",
+    "experiments/modal/20261104T213729Z-f6cf2030/candidate_experts.py": "c507f29d313bcee8aec96314e1ebcfcb38d8235f29487490565655302918ccf3",
+    "experiments/modal/20261104T213729Z-f6cf2030/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "experiments/modal/20261104T213729Z-f6cf2030/credit_grant.json": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "experiments/modal/20261104T213729Z-f6cf2030/credit_guard.py": "9f70c5006d8afd6e4a077cec8f3fe3baada2620703479bebf87ea0a333f0c9b2",
+    "experiments/modal/20261104T213729Z-f6cf2030/manifest.json": "d207a546c0ce215f99fa3d883b610f0478df5a064bc97a1bcdf0c4baa3e57680",
+    "experiments/modal/20261104T213729Z-f6cf2030/native_v27.py": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+    "experiments/modal/20261104T213729Z-f6cf2030/native_v27_worker.py": "d5e789f64c4fa0f74daa38117fddbb1d5a70e49b103b69a43522bac067edf3a8",
+    "experiments/modal/20261104T213729Z-f6cf2030/request.json": "154021f4c1de88936236cbd1bb01427187e10702b50da4a99cad4c9e0d74ab8e",
+    "experiments/modal/20261104T213729Z-f6cf2030/result-checkpoint.json": "0735f37d069b6c10eb5ff5242f10c40e84d91400e5e2da21caf7ae0cb5e8e50b",
+    "experiments/modal/20261104T213729Z-f6cf2030/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "experiments/modal/20261104T213729Z-f6cf2030/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "experiments/modal/20261104T213729Z-f6cf2030/stock_experts.py": "1d377424e4c1f486f72a0e8ea67ea41dca4bd3f6929aa3729f5f7480861ed352",
+    "experiments/modal/20261104T213729Z-f6cf2030/stock_finalizer.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "experiments/modal/20261104T213729Z-f6cf2030/stock_marlin_utils.py": "a9011b5af7f8c9d25755d2ea4125e9fbdad06b862138be3ca27c85fc2f8a8e08",
+    "experiments/modal/20261104T213729Z-f6cf2030/worker.py": "bf0b0a5d130ce07940260a3810d8eb1aee08d6d0a12069fbbe0d38fac4fe2bf9",
+    "experiments/iterations/20261104-native-serving-v27-device-root-plan.json": "7a907bb92fa7b209c996876fcd3634dbb94b4c8a7e9c9fbf25aaf3721fe6ffb3",
+    "experiments/iterations/20261104-native-serving-v27-provider-closeout.json": "c756dbcb15b623eefe6f87e837d686618e35a8b9d59aadc7778693eee434d2f0"
+  }
+}

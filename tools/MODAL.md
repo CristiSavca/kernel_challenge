@@ -19,6 +19,20 @@ serving pass. Source review and CPU lifecycle checks must pass before allocation
 inspect the package without any provider call using `--dry-run`. See
 `SERVING_NATIVE_MOE_V27_DEVICE_PLAN_20261104.md` and the separate worker critic.
 
+The fixed run `20261104T213729Z-f6cf2030` is closed as incomplete. Real rank-3
+installation completed, but the 280-second exec deadline expired within the
+uncheckpointed stock preparation/synchronization/two-initial-forwards interval.
+Zero of 38 numerical cases completed; no timings, streams or graphs are claimed.
+The partial checkpoint was recovered inside the live app, the sandbox terminated,
+and provider state confirms stopped/zero tasks. Preserve the full $1.14
+reservation. Latest provider usage is $4.83274092, billed $0; the current
+conservative working allowance is -$0.46274092, so no new allocation fits.
+Do not blindly rerun this mode. The separate stock-only diagnosis plan requires
+precise stage checkpoints and explicit-empty AST fingerprint compatibility:
+Python 3.13 defaults differ from the remote dump despite identical source bytes.
+That prospective completed-result reader defect did not cause the timeout.
+See `SERVING_NATIVE_MOE_V27_STOCK_PREP_DIAGNOSIS_20261104.md`.
+
 `serving-router-local-ids --timeout 600` compares the pinned SGLang JIT router
 plus its downstream expert-map indexing against the isolated V24 dual-ID
 router. It uses exact source/dependency hashes, the serving source's router

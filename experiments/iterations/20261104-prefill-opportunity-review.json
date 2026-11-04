@@ -1,0 +1,110 @@
+{
+  "additional_scatter_read_write_bytes_per_local_route": 16384,
+  "benchmark": {
+    "cases": 8,
+    "loads": 3,
+    "our_profile_available": false,
+    "prepare_seconds": 300,
+    "tests": 5,
+    "tokens": [
+      753,
+      3012,
+      16384
+    ],
+    "total_seconds": 900,
+    "weights": [
+      [
+        46,
+        16
+      ],
+      [
+        46,
+        16
+      ],
+      [
+        16,
+        138,
+        16,
+        16
+      ]
+    ]
+  },
+  "blockers": [
+    "Donor FP32 gate/up to SILU omits stock BF16 intermediate",
+    "Donor FP32 1+w differs effective BF16 norm",
+    "Known thread/stream misroute in whole source",
+    "No measured MoE share or independent prefill profile",
+    "Publisher/queue ownership, empty/skew routes and preparation cost not validated"
+  ],
+  "board": {
+    "entries": 882,
+    "leader": "LeshengJin",
+    "leader_job": "221df99535a54620",
+    "leader_score": 2.1470638261,
+    "our_entry": false,
+    "provenance": "root live read 2026-11-04 21:39 UTC",
+    "second": "olety",
+    "second_score": 2.0959466869
+  },
+  "conditional_model": {
+    "formula": "1/(1-f+f/g), same assumed component share/speed in all loads",
+    "leader_target": 2.1470638261,
+    "measured": false,
+    "required_g_at_f": {
+      "0.7": 4.223168144916271,
+      "0.8": 3.01032157079762,
+      "0.9": 2.4606814581180205
+    }
+  },
+  "date": "2026-11-04",
+  "donor": {
+    "bytes": 370116,
+    "claimed_score": 1.9141,
+    "commit": "890809cee421500b00126d084e81b338ef9181ab",
+    "dynamic_shared_bytes": 232448,
+    "known_issue": "fresh OS thread/default stream turn1/full misroute; root cause not established",
+    "license": "Apache-2.0",
+    "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "readme_sha256": "7326af3bb75dd3b00219dd4c2a8aefd8ee23bff357224cc4a95496ded51cdab1",
+    "registers": null,
+    "score_verified_by_us": false,
+    "selected_threads": 384,
+    "sha256": "f1807a75ec056b7f3874d4fce02331ca0043ac38a45af7710a8287a252421a92",
+    "url": "https://github.com/keell0renz/muse-open-kernel-challenge/blob/890809cee421500b00126d084e81b338ef9181ab/kernels/muse_prefill_layer.py"
+  },
+  "gross_gateup_traffic_removed_bytes_per_local_route": 32768,
+  "hypothesis": "Full-batch routed-row persistent W13/BF16/SILU/BF16/W2 expert core with stock front/back and exact norm/global-scale contract",
+  "local_source_sha256": {
+    "muse_prefill_layer/AGENTS.md": "c7e80605d2dd9ba2c20e0efdca3be5baa807e8d8b6f5e3b1c63ebc4fa55d21b4",
+    "muse_prefill_layer/TASK.md": "19518ea34cb5e711b2d2838b444570b0eb88ad08c3e9b0e66ac661f9e333014a",
+    "muse_prefill_layer/baseline.py": "87d95a0c4b78f0fd6c772436b959330ca45652b10e82dfc8add9acf0549227d4",
+    "muse_prefill_layer/reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+    "muse_prefill_layer/submission.py": "1e294bac7f86bfcde5368f690695569e6561b0f56f77a720b19b3d642793aeeb"
+  },
+  "md_sha256": "afee744b9f54d124d752b269b62692836fd4baf26bc789c2103c27fef4bb93a2",
+  "memory_gib": [
+    {
+      "baseline_cache13_cache2": 0.13787841796875,
+      "donor_three_buffers": 0.32537841796875,
+      "tokens": 753,
+      "v27_chunks": 2
+    },
+    {
+      "baseline_cache13_cache2": 0.551513671875,
+      "donor_three_buffers": 0.739013671875,
+      "tokens": 3012,
+      "v27_chunks": 8
+    },
+    {
+      "baseline_cache13_cache2": 3.0,
+      "donor_three_buffers": 3.1875,
+      "tokens": 16384,
+      "v27_chunks": 43
+    }
+  ],
+  "next_decision": "Finish current serving validation; source-audit precision-preserving isolated prefill core if additional scope accepted, not unchanged donor submission",
+  "not_net_traffic_bound": true,
+  "overall_score_contribution": false,
+  "review_scope": "read-only; no candidate, GPU, provider, official, weights or commit",
+  "verdict": "CONCRETE_PREFILL_COMPONENT_HYPOTHESIS_NOT_READY_FOR_GPU"
+}

@@ -7,6 +7,19 @@ serving throughput are distinct outcomes.
 
 ## Resume here
 
+**Latest user steering (21:50 UTC): prioritize #1 on the public leaderboard now.**
+The existing goal remains active. Root has redirected the three agents to a
+fresh public-source/attention scan, a new MoE algorithm hypothesis, and an
+independent supervisor/bottleneck reset. All are read-only until a concrete
+candidate is selected; root alone owns official checks. Current decoder entry
+is2.1811831350 at#409; leader2.5761628684 at21:51UTC. New snapshot:
+`experiments/leaderboards/20261104T2151-number-one-reset.json`. Official GPUs
+remain available; Modal allocations are blocked by current conservative ledger.
+Serving validation and stock-only probe below are a preserved backlog, not the
+current priority. Do not end this loop at a research-only plan if a viable new
+candidate can be implemented and checked.
+
+
 **V28 closed; no score or retry.** Exact decoder source
 `d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b`
 passed 1 setup/13 tests/12 benchmarks/12 profiles with clean checks and correct
@@ -26,7 +39,7 @@ selected shapes or repeat this attempt. `tools/DECODER_AFTER_V28_PRIORITY_202611
 found no evidence-ready high-value public probe; the next useful work is V27
 serving integration, not another WGS parameter sweep.
 
-**V27 adapter implemented and source-reviewed; device validation pending.**
+**V27 adapter source-reviewed; fixed device attempt closed incomplete.**
 Isolated package: `serving/candidates/native_serving_v27/`.
 Native module SHA `7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1`;
 patch SHA `c0ca4e41e595df59046ccb67d3641053148090b9ed4019dc534eb229522700c6`,
@@ -41,19 +54,27 @@ CPU checks cover real hooks, eight rank installations, policy/metadata declines,
 rollback, all chunk/norm cases and source restoration/patch application. Root
 and independent critic reproduced them; this is not device or scheduler proof.
 
-Root owns `tools/modal_h200.py` and `test_serving_native_v27_controller.py`.
-Author owns `tools/serving_native_v27_worker.py`, its CPU tests and device plan;
-critic independently reviews the frozen full package before any allocation.
-The proposed single-H200 diagnostic is fixed at 300s sandbox/240s worker, generated
-weights, actual stock preparation/methods and actual native installer/forward.
-Only rank3 installs a real 32-expert bank; all eight maps rebind immutable tensors
-with explicit metadata. Test zero/remote/live/poison routes, chunk boundaries,
-large prefill, norms, serial sharing, distinct-owner streams and changed-input
-graphs. Preserve partial checkpoints. PRMT-only coverage and eager diagnostic
-timings must be explicit; no full-engine/performance promotion inferred. Root
-must freeze worker/controller/review hashes and pass a fresh mandatory credit
-guard before allocation. No automatic retries. Resume any existing manifest
-before launching anything; never overlap writers or accepted jobs.
+Device run `20261104T213729Z-f6cf2030` used the frozen worker/controller from
+commit `787f1a7`: oneH200,300s sandbox,280s exec,240s cooperative budget.
+Native rank3 installation returned; bank905970816bytes/raw slots released,
+independent raw tensors and one workspace were recorded. Last checkpoint is
+`stock_prepare` at88.045s, not total runtime. The uncheckpointed span includes
+stock clones/preparation, synchronization, input generation and two initial
+stock forwards. Exec returned-1 at its deadline. **0/38 correctness cases,
+0timings, no serial/stream/graph results.** No numerical failure or pass inferred.
+Live-app recovery retained the checkpoint; sandbox terminated, provider app
+stopped/zero tasks. Preserve all staged files/licenses and source pins.
+
+Root result/independent critic/closeout are under `experiments/iterations/`
+with prefix`20261104-native-serving-v27-device-`. Diagnosis:
+`tools/SERVING_NATIVE_MOE_V27_STOCK_PREP_DIAGNOSIS_20261104.md`.
+Do not rerun the fixed full suite. Its next distinct diagnostic would trace only
+the stock interval with per-stage checkpoints, unchanged caps and no native
+rebuild. A separate prospective completion-reader defect is reproduced:
+Python3.13 ast.dump omits empty fields by default; show_empty=True reproduces
+all three remote AST hashes. Source bytes match. This did not cause the timeout;
+a future worker needs stable serialization and runtimePython metadata.
+The stock-only probe is deferred behind the user's renewed public-board push.
 
 V26 official private `274c69cbc0954d76`, source
 `944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7`, remains
@@ -75,7 +96,7 @@ Preserve public sources:
 - Decoder: `97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2`.
 - Attention: `87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c`.
 
-At 21:27 UTC: CristiSavca #408 overall; MoE #311 at 2.3736910444x; decoder #408
+At 21:51 UTC: decoder #409; MoE #312 at 2.3736910444x; decoder #409
 at 2.1811831350x. Leaders: 2.7817206619x MoE, 2.5761628684x decoder. No public
 score changed in V26/V28. Snapshot: `experiments/leaderboards/20261104T2127-v28-closeout-v27-device.json`.
 
@@ -88,12 +109,14 @@ prizes. Stop kernel submissions at kernel cutoff; stop experiments and disable
 the monitor at final contest cutoff. Live precision/patch/concurrency/TTFT rules
 are authoritative over historical notes.
 
-Read `MODAL.md`; use mandatory guarded runners only. At 21:28 UTC provider cost
-floor was $4.25390221, billed $0; recent apps stopped and manifests terminal/
+Read `MODAL.md`; use mandatory guarded runners only. At 21:43 UTC provider cost
+floor was $4.83274092, billed $0; recent apps stopped and manifests terminal/
 terminated. $30 grant, $5 headroom and immutable reservation/correction ledger
-leave conservative working allowance $1.25609779. This dated value cannot bypass
-fresh checks. A 600s/$1.78 reservation does not fit; 300s/$1.14 only fits if fresh
-guarded accounting permits it and the test can finish. One H200, <=900s, no
+leave conservative working allowance -$0.46274092 after the new full$1.14
+reservation. No further allocation fits. This is conservative journal accounting,
+not a claim the $30 provider allowance has been exhausted. Any completed-cost
+reconciliation needs exact provider attribution and independent review, never a
+lock/journal reset. Fresh checks remain mandatory. One H200, <=900s, no
 allocation retries, guaranteed termination; only one project Modal allocation
 at a time. Never reset lock/journal or refund
 reservations without reviewed evidence. No out-of-pocket GPU/API charges or
@@ -186,8 +209,9 @@ Research intake:
   reuse failures remain in the archive and `experiments/iterations/`. New work
   must address the actual failed premise, not repeat a disproven parameter sweep.
 
-Latest supervisor decision: `experiments/iterations/20261104-eat-supervisor-reflection.json`.
-Source commit `3189741`; V26 result/research commit `71a4b0c`.
+Latest completed supervisor record: `experiments/iterations/20261104-v27-v28-supervisor-reflection.json`.
+V28closeoutcommit `29d9334`; V27device source/reviewcommit `787f1a7`.
+The renewed public-board reset is in progress after the latest user steering.
 
 Heartbeat `okc-research-and-harsh-critic` runs every 15 minutes. Resume live work
 first; notify only meaningful verified gain/rank change, material failure,
