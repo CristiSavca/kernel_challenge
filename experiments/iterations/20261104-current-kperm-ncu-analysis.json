@@ -1,0 +1,316 @@
+{
+  "status": "COMPLETE_CHECKED_DIAGNOSTIC",
+  "official": false,
+  "run_id": "20261104T150731Z-ef5e7aac",
+  "files_sha256": {
+    "experiments/modal/20261104T150731Z-ef5e7aac/manifest.json": "a4a2110970784a765f4673ffb202a1b96ca8717f4541009896bc313a09dc24a5",
+    "experiments/modal/20261104T150731Z-ef5e7aac/result.json": "c0c5e9e47631be102ea2bc4bd63694ad0aaa5b557515b6b30c25828af78e7c45",
+    "experiments/modal/20261104T150731Z-ef5e7aac/worker.py": "7be4fe22daeb57dd96aaaaeb4848e3e807d557c4cdbaa968d2a0a83557835471",
+    "experiments/modal/20261104T150731Z-ef5e7aac/hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff",
+    "experiments/modal/20261104T150731Z-ef5e7aac/baseline.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "experiments/modal/20261104T150731Z-ef5e7aac/credit_guard.py": "cb604f7ad5ace935f43dfcf3a0c1bda1743f73f6aab10dea4056b5a5f68cc9a7"
+  },
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "native_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+  "decoder_lineage_only": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "hardware": "H200",
+  "ncu_version": "NVIDIA (R) Nsight Compute Command Line Profiler\nCopyright (c) 2018-2025 NVIDIA Corporation\nVersion 2025.3.1.0 (build 36398880) (public-release)\n",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "policy": {
+    "replay_mode": "kernel",
+    "cache_control": "all",
+    "clock_control": "none",
+    "graph_profiling": "node",
+    "profile_from_start": "off",
+    "launch_count": 2,
+    "requested_pass_count": null,
+    "pass_count_policy": "NCU chooses passes for the fixed metric list; actual counts required; no collection retry",
+    "scope": "standalone MoE only; not decoder routing, decoder PDL, or benchmark speedup",
+    "ordinary_timing_limitation": "Collected with profiling disabled inside an NCU-injected process; not independent benchmark evidence",
+    "cache_limitation": "NCU cache-control all flushes caches on replay; distinct from the ordinary read sweep and official benchmark conditions",
+    "interpretation_limit": "Low bandwidth and aggregate stall percentages do not establish a removable critical path or justify a shared-dequant rewrite; no source-PC attribution is collected"
+  },
+  "checks_total": 20,
+  "checks_passed": 20,
+  "sandbox_terminated": true,
+  "prepare_seconds": 203.561534317,
+  "collection_seconds": 217.952898621,
+  "total_worker_seconds": 221.526812826,
+  "all_three_optional_backpressure_metrics_available": true,
+  "raw_csv_reparse_equals_report": true,
+  "cases": [
+    {
+      "M": 32,
+      "input_seed": 7302,
+      "actual_routes_identical_to_old": true,
+      "R": 39,
+      "U": 16,
+      "J": 16,
+      "padded_rows": 128,
+      "NTT_histogram": {
+        "1": 16
+      },
+      "nominal_job_weight_bytes": 452984832,
+      "unique_weight_bytes": 452984832,
+      "read_over_nominal_weight_bytes": 1.0087540237991899,
+      "current_metrics": {
+        "dram__bytes_read.sum": 456950272.0,
+        "dram__bytes_write.sum": 3546368.0,
+        "gpu__time_duration.sum": 123840.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 77.3,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": 54.84,
+        "smsp__warps_eligible.avg.per_cycle_active": 1.28,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 11.7,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 6.65,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 2.21,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 20.36,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": 7.56,
+        "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct": 10.21,
+        "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct": 0.07,
+        "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct": 0.07
+      },
+      "previous_metrics": {
+        "dram__bytes_read.sum": 456964352.0,
+        "dram__bytes_write.sum": 3375872.0,
+        "gpu__time_duration.sum": 128576.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 74.43,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": 59.38,
+        "smsp__warps_eligible.avg.per_cycle_active": 1.4,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 11.22,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 7.49,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 1.89,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 17.97,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": 8.11
+      },
+      "common_metric_deltas": {
+        "dram__bytes_read.sum": -14080.0,
+        "dram__bytes_write.sum": 170496.0,
+        "gpu__time_duration.sum": -4736.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 2.8699999999999903,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": -4.539999999999999,
+        "smsp__warps_eligible.avg.per_cycle_active": -0.11999999999999988,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 0.47999999999999865,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": -0.8399999999999999,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 0.32000000000000006,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 2.3900000000000006,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": -0.5499999999999998
+      },
+      "current_passes": 5,
+      "previous_passes": 4,
+      "checks": [
+        {
+          "phase": "eager",
+          "seed": 7202,
+          "passed": true,
+          "detail": "relative L2 error 2.566e-03 (worst row 2.657e-03)"
+        },
+        {
+          "phase": "eager",
+          "seed": 7203,
+          "passed": true,
+          "detail": "relative L2 error 2.547e-03 (worst row 2.694e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.575e-03 (worst row 2.671e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7303,
+          "passed": true,
+          "detail": "relative L2 error 2.527e-03 (worst row 2.851e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7304,
+          "passed": true,
+          "detail": "relative L2 error 2.545e-03 (worst row 2.686e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7305,
+          "passed": true,
+          "detail": "relative L2 error 2.556e-03 (worst row 2.739e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7306,
+          "passed": true,
+          "detail": "relative L2 error 2.550e-03 (worst row 2.729e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7307,
+          "passed": true,
+          "detail": "relative L2 error 2.544e-03 (worst row 2.665e-03)"
+        },
+        {
+          "phase": "before_ncu",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.575e-03 (worst row 2.671e-03)"
+        },
+        {
+          "phase": "after_ncu",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.575e-03 (worst row 2.671e-03)"
+        }
+      ],
+      "injected_median_us_context_only": 399.85600113868713,
+      "profiled_duration_is_speedup_evidence": false
+    },
+    {
+      "M": 256,
+      "input_seed": 9302,
+      "actual_routes_identical_to_old": true,
+      "R": 354,
+      "U": 26,
+      "J": 27,
+      "padded_rows": 456,
+      "NTT_histogram": {
+        "1": 16,
+        "2": 5,
+        "3": 2,
+        "4": 1,
+        "5": 1,
+        "8": 2
+      },
+      "nominal_job_weight_bytes": 764411904,
+      "unique_weight_bytes": 736100352,
+      "read_over_nominal_weight_bytes": 1.007691936728395,
+      "current_metrics": {
+        "dram__bytes_read.sum": 770291712.0,
+        "dram__bytes_write.sum": 4375552.0,
+        "gpu__time_duration.sum": 209120.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 76.99,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": 57.01,
+        "smsp__warps_eligible.avg.per_cycle_active": 1.33,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 24.74,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 5.06,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 2.66,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 14.26,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": 9.35,
+        "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct": 10.96,
+        "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct": 0.35,
+        "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct": 0.52
+      },
+      "previous_metrics": {
+        "dram__bytes_read.sum": 769691136.0,
+        "dram__bytes_write.sum": 4264192.0,
+        "gpu__time_duration.sum": 214304.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 75.06,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": 59.48,
+        "smsp__warps_eligible.avg.per_cycle_active": 1.39,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 23.71,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 4.89,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 2.35,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 12.81,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": 9.58
+      },
+      "common_metric_deltas": {
+        "dram__bytes_read.sum": 600576.0,
+        "dram__bytes_write.sum": 111360.0,
+        "gpu__time_duration.sum": -5184.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 1.9299999999999926,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": -2.469999999999999,
+        "smsp__warps_eligible.avg.per_cycle_active": -0.05999999999999983,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 1.0299999999999976,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 0.16999999999999993,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 0.31000000000000005,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 1.4499999999999993,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": -0.23000000000000043
+      },
+      "current_passes": 5,
+      "previous_passes": 4,
+      "checks": [
+        {
+          "phase": "eager",
+          "seed": 9202,
+          "passed": true,
+          "detail": "relative L2 error 2.550e-03 (worst row 2.798e-03)"
+        },
+        {
+          "phase": "eager",
+          "seed": 9203,
+          "passed": true,
+          "detail": "relative L2 error 2.557e-03 (worst row 2.809e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.552e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9303,
+          "passed": true,
+          "detail": "relative L2 error 2.556e-03 (worst row 2.749e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9304,
+          "passed": true,
+          "detail": "relative L2 error 2.546e-03 (worst row 2.755e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9305,
+          "passed": true,
+          "detail": "relative L2 error 2.539e-03 (worst row 2.714e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9306,
+          "passed": true,
+          "detail": "relative L2 error 2.550e-03 (worst row 2.807e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9307,
+          "passed": true,
+          "detail": "relative L2 error 2.552e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "before_ncu",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.552e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "after_ncu",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.552e-03 (worst row 2.754e-03)"
+        }
+      ],
+      "injected_median_us_context_only": 407.82399475574493,
+      "profiled_duration_is_speedup_evidence": false
+    }
+  ],
+  "interpretation": {
+    "memory": "Both cases transfer close to nominal packed-weight requests and reach approximately77% reported sustainedDRAM. This is standalonecoldNCU evidence, not decoder timing or an attainable bandwidth ceiling.",
+    "pressure": "Math pipeline10.21/10.96%; MIO.07/.35%; LG.07/.52%. Gate for loadqueue-driven gather rewrite not met. Mathpressure can justify bounded source/instructioninspection, not a %latencyforecast or closedvariant revival.",
+    "new_candidate": "None established by this diagnostic. Do not implement gather rewrite from these counters.",
+    "comparison_limits": "Identicalactualroutes/image/tool but separateruns/uncontrolledclocks and fivevsfourNCUpasses; no controlledpairedtiming. Newpressuremetrics had no prior counterpart. No source-PC/SASS attribution collected.",
+    "next": "Inspect exact current dequant instruction graph for a distinct equivalent reduction in arithmetic; require concrete sourceproof and critic before candidate. Existing final-scalar, SC6, SS-A, prefetch and register experiments remain closed."
+  },
+  "independent_review": {
+    "path": "experiments/iterations/20261104-current-kperm-ncu-result-critic.json",
+    "sha256": "6a4143aafbebe77f86d77bdb2105950b7587dc4e20920ee908409bc3ff5203ed"
+  },
+  "post_run_billing": {
+    "evidence": "experiments/modal/20261104T150731Z-ef5e7aac/billing-after.json",
+    "evidence_sha256": "c6b1f62eb6637f25437b3f0dd3c50f274bb3d62499690e4e82d548573a920438",
+    "displayed_gross_usd": "4.16",
+    "displayed_billed_usd": "0",
+    "displayed_increase_usd": "0.37",
+    "provider_compute_component_delta_usd": "0.37112074",
+    "app_stopped": true,
+    "tasks": 0,
+    "scope": "Provider usage observed afterrun, not immutablefinalsettlement."
+  }
+}

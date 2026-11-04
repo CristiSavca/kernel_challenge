@@ -1521,3 +1521,32 @@ after independent/root41CPUchecks. It does not refund unusedreservations.
 Fresh provider, exact-intervallineitem, stopped-app, cleanup andlockchecks still
 gate everyallocation. No allocation follows merely from correctingaccounting.
 A separatelyreviewed boundedcurrent247888 hardwareprofile is inpreparation.
+
+## Current-parent hardware diagnostic completed — November 4, 15:22 UTC
+
+Run20261104T150731Z-ef5e7aac used exact247888/native85fb and completed in
+221.53s, including203.56s prepare. All20numericalchecks passed; all14requested
+counters returned for two5-passNCUlaunches; actualroutes exactly match oldef7
+(32: R39/U16/J16; 256: R354/U26/J27). Root and independentcritic6a4143aa
+verified rawCSV/source/helper/flags/route/termination. Sandbox terminatedtrue;
+providerapp stoppedwith0tasks. Displayedgrossusage4.16,billed0, about0.37increase.
+
+DRAM throughput77.30/76.99%; reads/nominalweightrequests1.008754/1.007692.
+Mathpressure10.21/10.96%;MIO0.07/0.35%;LG0.07/0.52%. The gather-rewrite
+inspectiongate is not met. No stallpercentage is recoverabletime. Fivepasses
+versus oldfour, separateuncontrolledruns and NCUinjection prevent pairedspeed
+claims; no source-PC/SASSattribution was collected. No newcandidate orpublic
+submission follows directly from these counters.
+
+Bounded actualMULDEC review found no exact simplification. Rootreproduced
+counterexamples for removing r3 masks, and no exactfour-rotationmaskcover in
+the narrow16-bitfamily. DQ7isdefinedbutinactive underMULDEC1. Compileroutput
+is now the missing evidence. A fixedCPU-onlycompile/disassembly diagnostic is
+being implemented/reviewed: fulloriginal_ext/source, no weightprepareorGPU,
+explicitHopperarchitecture, sameModalimage, boundedcompileandartifactcapture.
+A fixedCPU4/32GiBbudgetkind will retain allreservations/overlap/highwaterand
+use existingrates/margins; nofinancialcertificate ormanualrefund is approved.
+
+Latestofficialboard14:58: overall396/1970,decoder396/1268 at2.1812 versus
+leader2.5762;MoE298/1398 at2.3737 versus2.7817. Ownpublicscores/sources
+unchanged. Thegoalremainsactive andunachieved.

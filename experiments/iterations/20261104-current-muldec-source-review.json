@@ -1,0 +1,33 @@
+{
+  "status": "NO_NEW_CANDIDATE_FROM_BOUNDED_ACTIVE_MULDEC_REVIEW",
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "actual_branch": "OKC_MULDEC=1 firstdq4branch; DQ7define exists but itselsebranch is inactive",
+  "reviewer": "moe_research_reset",
+  "root_reproduced_counterexamples": [
+    {
+      "mutation": "remove r3 inputmask",
+      "q": "0x20",
+      "parent": "0x0",
+      "mutant": "0x80"
+    },
+    {
+      "mutation": "remove r3 outputmask",
+      "q": "0x1",
+      "parent": "0x80",
+      "mutant": "0x1084"
+    }
+  ],
+  "narrow_repack_search": {
+    "bits": 16,
+    "destination_mask": "0x81c0",
+    "rotations": 16,
+    "combinations": 1820,
+    "exact_four_rotation_covers": 0,
+    "scope": "Only fourcopies ofthismaskunder16-bitrotation; no general lowerbound or compilerinstructionoptimalityclaim."
+  },
+  "observations": [
+    "r1/r2 use disjoint sourcebits; already-maskedr1 cannotgenerate r2.",
+    "Existing bmul2l/h broadcast source is designedtofoldintoHMUL2; actual currentSASS notcollected."
+  ],
+  "next_required": "ExactcurrentMAIN binary/SASS around activeMULDEC,scale_pairs andpackedmultiplies, withsource/flags/compileridentity. Compile-onlyfeasibility underreview. Hardwarepressure doesnotprove thisinstructiongroup iscritical."
+}

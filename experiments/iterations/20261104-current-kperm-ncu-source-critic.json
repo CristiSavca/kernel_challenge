@@ -1,0 +1,51 @@
+{
+  "approved_scope": {
+    "cases": [
+      32,
+      256
+    ],
+    "collections": 1,
+    "decoder_lineage_only_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "native_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "optional_groups": "ISSUE and BACKPRESSURE independently all-or-none; no substitutions or retry",
+    "parent_budget_seconds": 860,
+    "profiled_launches": 2,
+    "sandbox_timeout_seconds": 900,
+    "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+  },
+  "blocking_findings": [],
+  "critical_findings": [
+    "Parent completion now also requires child source_sha256 to match the current frozen source.",
+    "Collection command/replay/cache/clock policy and run_child arithmetic, ordinary correctness checks and launch sequence remain unchanged.",
+    "Recovery permits only two fixed checkpoint paths, bounds bytes before transfer (4 MiB parent, 1 MiB child), uses a 10-second remote timeout per command, validates source/status/native identity, and saves separate files without promoting failed outer state.",
+    "Synthetic lifecycle pinNone is scoped to unittest setUp/addCleanup; production guard is not modified by the profiling change.",
+    "Read-only recovery may fail after timeout/disconnection; unavailable evidence remains unavailable."
+  ],
+  "independent_review": {
+    "duplicate_full_suite_performed": false,
+    "full_changed_production_and_test_deltas_read": true,
+    "root_reported_actual_no_provider_900s_dry_run_passed": true,
+    "root_reported_independent_cpu_tests_passed": 64,
+    "unchanged_function_ast_verified": {
+      "route_summary": true,
+      "run_bounded": true,
+      "run_child": true,
+      "run_hardware_worker": true
+    }
+  },
+  "limits": [
+    "No provider call, allocation, GPU execution or official submission performed by this reviewer.",
+    "CPU mocks and static review do not establish actual metric availability, permissions, compiler behavior, or performance.",
+    "NCU replay durations and aggregate stall percentages are diagnostic evidence, not benchmark scores or source-PC causal attribution.",
+    "GO is limited to the planned one current-parent diagnostic under the independently reviewed active credit guard; it does not approve arbitrary kernels, repeated collection or additional allocations."
+  ],
+  "schema_version": 1,
+  "source_hashes": {
+    "experiments/iterations/20261104-current-kperm-ncu-cpu.json": "787d4863d47aebc1619f7fe42cae2a7184db72fbb6bb9a5aa47c254ec73bce63",
+    "tools/modal_h200.py": "7be4fe22daeb57dd96aaaaeb4848e3e807d557c4cdbaa968d2a0a83557835471",
+    "tools/modal_hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff",
+    "tools/test_modal_h200.py": "b6e11531b1423e07d21be94b4ceab6b9e7f0885470513e237eee5689e610e657",
+    "tools/test_modal_hardware_metrics.py": "3aca637195e904efb04a84324c3fd66a60820d9f921af71bf2942fa57398fcff"
+  },
+  "verdict": "GO_ONE_FIXED_CURRENT_KPERM_NCU_DIAGNOSTIC"
+}

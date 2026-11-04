@@ -1,0 +1,283 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "VALID_COMPLETE_DIAGNOSTIC_NO_PROMOTION_OR_CANDIDATE_GO",
+  "provenance": {
+    "run": "experiments/modal/20261104T150731Z-ef5e7aac",
+    "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "native_source_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "files_sha256": {
+      "experiments/modal/20261104T150731Z-ef5e7aac/result.json": "c0c5e9e47631be102ea2bc4bd63694ad0aaa5b557515b6b30c25828af78e7c45",
+      "experiments/modal/20261104T150731Z-ef5e7aac/manifest.json": "a4a2110970784a765f4673ffb202a1b96ca8717f4541009896bc313a09dc24a5",
+      "experiments/modal/20261104T150731Z-ef5e7aac/hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff",
+      "experiments/modal/20261104T150731Z-ef5e7aac/worker.py": "7be4fe22daeb57dd96aaaaeb4848e3e807d557c4cdbaa968d2a0a83557835471",
+      "experiments/modal/20261104T054636Z-ea14816c/result.json": "398a89f345b90b47937ef06fb44e541dbb0bcf61d334843ff25fbdb34d3a6f43",
+      "tools/CURRENT_KPERM_NCU_INTERPRETATION_GATE_20261104.md": "3ba7904b4f0ee5d237954c96bc24e3c6436eace8d313dc960144306eaab78502"
+    },
+    "raw_stdout_sha256": "96d6a8ec11728544c788f9c214e657e98b54bc295654a85dc20a1002ec227966",
+    "image_same_as_old": true,
+    "ncu_version": "NVIDIA (R) Nsight Compute Command Line Profiler\nCopyright (c) 2018-2025 NVIDIA Corporation\nVersion 2025.3.1.0 (build 36398880) (public-release)",
+    "torch": "2.14.1+cu130",
+    "cuda": "13.0",
+    "triton": "3.8.0"
+  },
+  "validation": {
+    "all_recorded_payload_hashes_verified": true,
+    "native_ast_hash_verified": true,
+    "saved_helper_reparse_exact": true,
+    "independent_raw_csv_values_and_units_exact": true,
+    "raw_column_count": 283,
+    "all_fixed_metric_queries_successful": true,
+    "selected_metrics": 14,
+    "launches": 2,
+    "actual_pass_counts": [
+      5,
+      5
+    ],
+    "old_pass_counts": [
+      4,
+      4
+    ],
+    "checks_passed": 20,
+    "prepare_calls": 1,
+    "actual_main_defines": [
+      "-DOKC_NW=16",
+      "-DOKC_FAST1=0",
+      "-DOKC_EPI4=0",
+      "-DOKC_WGS=1",
+      "-DOKC_PRMTSC=1"
+    ],
+    "PDL": false,
+    "grid": 132,
+    "sandbox_terminated": true,
+    "collection_returncode": 0,
+    "timeout_or_truncation": false,
+    "worker_elapsed_seconds": 221.526812826,
+    "prepare_seconds": 203.561534317
+  },
+  "cases": [
+    {
+      "M": 32,
+      "route_identity_including_all_topk_ids_matches_old": true,
+      "R": 39,
+      "U": 16,
+      "J": 16,
+      "padded_rows": 128,
+      "NTT_histogram": {
+        "1": 16
+      },
+      "nominal_weight_request_bytes": 452984832,
+      "metrics": {
+        "dram__bytes_read.sum": {
+          "value": 456950272.0,
+          "unit": "byte"
+        },
+        "dram__bytes_write.sum": {
+          "value": 3546368.0,
+          "unit": "byte"
+        },
+        "gpu__time_duration.sum": {
+          "value": 123840.0,
+          "unit": "ns"
+        },
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": {
+          "value": 77.3,
+          "unit": "%"
+        },
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+          "value": 54.84,
+          "unit": "%"
+        },
+        "smsp__warps_eligible.avg.per_cycle_active": {
+          "value": 1.28,
+          "unit": "warp"
+        },
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": {
+          "value": 11.7,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": {
+          "value": 6.65,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": {
+          "value": 2.21,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": {
+          "value": 20.36,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": {
+          "value": 7.56,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct": {
+          "value": 10.21,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct": {
+          "value": 0.07,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct": {
+          "value": 0.07,
+          "unit": "%"
+        }
+      },
+      "old_to_current_common_metric_delta": {
+        "dram__bytes_read.sum": -14080.0,
+        "dram__bytes_write.sum": 170496.0,
+        "gpu__time_duration.sum": -4736.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 2.8699999999999903,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": -4.539999999999999,
+        "smsp__warps_eligible.avg.per_cycle_active": -0.11999999999999988,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 0.47999999999999865,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": -0.8399999999999999,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 0.32000000000000006,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 2.3900000000000006,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": -0.5499999999999998
+      },
+      "read_over_nominal": 1.0087540237991899,
+      "read_plus_write_GB_s": 3718.4806201550387,
+      "raw_launch": {
+        "ID": "0",
+        "Kernel Name": "void okc::moe_fused<(bool)1>(okc::Params)",
+        "Block Size": "(576, 1, 1)",
+        "Grid Size": "(132, 1, 1)",
+        "Device": "0",
+        "CC": "9.0"
+      },
+      "check_count": 10,
+      "actual_pass_count": 5,
+      "old_pass_count": 4
+    },
+    {
+      "M": 256,
+      "route_identity_including_all_topk_ids_matches_old": true,
+      "R": 354,
+      "U": 26,
+      "J": 27,
+      "padded_rows": 456,
+      "NTT_histogram": {
+        "1": 16,
+        "2": 5,
+        "3": 2,
+        "4": 1,
+        "5": 1,
+        "8": 2
+      },
+      "nominal_weight_request_bytes": 764411904,
+      "metrics": {
+        "dram__bytes_read.sum": {
+          "value": 770291712.0,
+          "unit": "byte"
+        },
+        "dram__bytes_write.sum": {
+          "value": 4375552.0,
+          "unit": "byte"
+        },
+        "gpu__time_duration.sum": {
+          "value": 209120.0,
+          "unit": "ns"
+        },
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": {
+          "value": 76.99,
+          "unit": "%"
+        },
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+          "value": 57.01,
+          "unit": "%"
+        },
+        "smsp__warps_eligible.avg.per_cycle_active": {
+          "value": 1.33,
+          "unit": "warp"
+        },
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": {
+          "value": 24.74,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": {
+          "value": 5.06,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": {
+          "value": 2.66,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": {
+          "value": 14.26,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": {
+          "value": 9.35,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct": {
+          "value": 10.96,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct": {
+          "value": 0.35,
+          "unit": "%"
+        },
+        "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct": {
+          "value": 0.52,
+          "unit": "%"
+        }
+      },
+      "old_to_current_common_metric_delta": {
+        "dram__bytes_read.sum": 600576.0,
+        "dram__bytes_write.sum": 111360.0,
+        "gpu__time_duration.sum": -5184.0,
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed": 1.9299999999999926,
+        "smsp__issue_active.avg.pct_of_peak_sustained_active": -2.469999999999999,
+        "smsp__warps_eligible.avg.per_cycle_active": -0.05999999999999983,
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": 1.0299999999999976,
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct": 0.16999999999999993,
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": 0.31000000000000005,
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": 1.4499999999999993,
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct": -0.23000000000000043
+      },
+      "read_over_nominal": 1.007691936728395,
+      "read_plus_write_GB_s": 3704.414996174445,
+      "raw_launch": {
+        "ID": "1",
+        "Kernel Name": "void okc::moe_fused<(bool)1>(okc::Params)",
+        "Block Size": "(576, 1, 1)",
+        "Grid Size": "(132, 1, 1)",
+        "Device": "0",
+        "CC": "9.0"
+      },
+      "check_count": 10,
+      "actual_pass_count": 5,
+      "old_pass_count": 4
+    }
+  ],
+  "interpretation": {
+    "traffic": "Read/nominal remains close to one. Current 77.30/76.99% DRAM throughput is diagnostic evidence of substantial memory service; no large uncached activation-traffic opportunity follows.",
+    "gather_lead": "NO GO from these counters: LG 0.07/0.52% does not meet the predeclared queue-pressure motivation for rewriting KPERM gather. Low pressure is not proof its instructions are free.",
+    "new_pressure": "Math-pipe 10.21/10.96%, MIO 0.07/0.35%, LG 0.07/0.52%. No old values exist for these three; no old-to-new change is claimed.",
+    "issue": "Current issue 54.84/57.01%, eligible 1.28/1.33. Coupled with math pressure, this permits a bounded instruction-inventory investigation, not critical-path attribution.",
+    "comparison_limits": [
+      "Separate runs; uncontrolled clocks and five versus four replay passes. Profile durations and injected ordinary timings are not official or paired benchmark evidence.",
+      "Aggregate math pressure cannot identify dequantization versus routing, address arithmetic, activation or normalization. No stall percentage is recoverable time.",
+      "No source-PC attribution or parent serialization evidence. No decoder or PDL overlap measurement.",
+      "No closed candidate is reopened. RaMP does not create a validated competing configuration."
+    ]
+  },
+  "conditional_next_inspection": {
+    "decision": "SOURCE_OR_ALREADY_RETAINED_SASS_INSPECTION_ONLY",
+    "target": "Exact247888 dq4 (line716), bmul2l/bmul2h (668/672), and wgs_seg scale_pairs plus decode (3099-3125).",
+    "question": "Inventory the actual repeated MULDEC bit decode, four RN BF16x2 multiplies per code word, four once-per-stage scale reconstructions, and any materialized broadcast/redundant instructions. Distinguish integer IMAD/LOP3/SHF from BF16 math; verify lowering rather than trusting historical source comments.",
+    "source_count_per_full_FT64_job": {
+      "physical_weight_values": 50331648,
+      "unit_stages": 768,
+      "warp_dq4_invocations": 196608,
+      "warp_bf16x2_multiply_invocations": 786432,
+      "warp_scale_pair_reconstructions": 49152
+    },
+    "count_scope": "Source-level work across both phases, assuming the declared full job geometry; excludes metadata/epilogue work and is not measured SASS instruction count or elapsed time.",
+    "stop_rule": "If retained exact binary is unavailable, keep source-only limitations; do not allocate, rerun, change scheduling/precision, or propose a kernel without a concrete exact-math instruction-removal mechanism. No new GPU work authorized."
+  }
+}
