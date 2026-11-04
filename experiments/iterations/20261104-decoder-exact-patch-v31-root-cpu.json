@@ -1,0 +1,126 @@
+{
+  "status": "CPU_PASS",
+  "identity": {
+    "parent_sha256": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "candidate_sha256": "0d552bf386fdbcae6837d97371ae74aa778709b234d993b4e341e655fe9216f7",
+    "full_restoration": true,
+    "all_device_source_identical": true,
+    "resource_report_after_caponly_return": true
+  },
+  "selftest": {
+    "same_calls_and_disabled_set": true,
+    "directed_modes": [
+      "pass",
+      "numerical_fail",
+      "exception",
+      "nan"
+    ],
+    "observed_rows": [
+      {
+        "kind": "selftest",
+        "layer": "o",
+        "m": 1,
+        "key": [
+          "o",
+          "sk2",
+          "fixture",
+          8
+        ],
+        "error": 0.001,
+        "tolerance": 0.005,
+        "passed": true,
+        "exception": null
+      },
+      {
+        "kind": "selftest",
+        "layer": "bad",
+        "m": 1,
+        "key": [
+          "bad",
+          "sk2",
+          "fixture",
+          8
+        ],
+        "error": 0.02,
+        "tolerance": 0.005,
+        "passed": false,
+        "exception": null
+      },
+      {
+        "kind": "selftest",
+        "layer": "launch",
+        "m": 1,
+        "key": [
+          "launch",
+          "sk2",
+          "fixture",
+          8
+        ],
+        "error": null,
+        "tolerance": 0.005,
+        "passed": false,
+        "exception": "RuntimeError: synthetic resource failure"
+      },
+      {
+        "kind": "selftest",
+        "layer": "nan",
+        "m": 1,
+        "key": [
+          "nan",
+          "sk2",
+          "fixture",
+          8
+        ],
+        "error": null,
+        "tolerance": 0.005,
+        "passed": false,
+        "exception": null
+      },
+      {
+        "kind": "disabled",
+        "keys": [
+          [
+            "bad",
+            "sk2",
+            "fixture",
+            8
+          ],
+          [
+            "launch",
+            "sk2",
+            "fixture",
+            8
+          ],
+          [
+            "nan",
+            "sk2",
+            "fixture",
+            8
+          ]
+        ]
+      }
+    ]
+  },
+  "outer_selection": {
+    "actual_selection_block_cases": 4,
+    "same_timer_calls_and_pick": true,
+    "bfp_and_fused_exception_records": true
+  },
+  "python_budget": {
+    "selftest_bytes": 3834,
+    "one_selftest_stop": true,
+    "outer_24_rows_survive_exhausted_selftest_budget": true
+  },
+  "host_mock": {
+    "bytes": 3584,
+    "successful_and_failed_api_observations": true,
+    "no_query_after_cap": true,
+    "no_admission_changes": true
+  },
+  "limits": [
+    "No CUDA compiler/device used",
+    "Host resource observations are first-launch module evidence, not achieved occupancy",
+    "Partial/truncated diagnostics do not prove all pointers or failed keys were observed",
+    "This diagnostic is not a performance promotion attempt"
+  ]
+}
