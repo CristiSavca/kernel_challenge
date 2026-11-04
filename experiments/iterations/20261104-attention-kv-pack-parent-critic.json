@@ -1,0 +1,409 @@
+{
+  "status": "PARENT_PROVENANCE_VERIFIED; candidate outcome not read or inferred",
+  "parents": [
+    {
+      "job": "8f9e5971f95841a0",
+      "mode": "run",
+      "receipt_sha256": "17d4eebbf1fdd64625161acd63fc7cc56dd865329c59c13d099524cefaf1bf48",
+      "profile_sha256": "e413c4eab93d07f7e2745d43271cbd8ca0f8ea0ba5282b115bf545bd7f419e19",
+      "source_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+      "status_counts": {
+        "test": 16,
+        "benchmark": 12,
+        "profile": 12
+      },
+      "setup_events": 0,
+      "speedup": 2.6119701144979857,
+      "recomputed_speedup": 2.6119701144979857,
+      "speedup_ci": [
+        2.572790562780516,
+        2.651149666215455
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "speedup": 3.58341409039096
+        },
+        {
+          "load": "decode 16",
+          "speedup": 2.5453645010566994
+        },
+        {
+          "load": "decode 32",
+          "speedup": 2.435728411506713
+        },
+        {
+          "load": "verify 1",
+          "speedup": 3.0349652724129315
+        },
+        {
+          "load": "verify 16",
+          "speedup": 2.175015395297101
+        },
+        {
+          "load": "verify 32",
+          "speedup": 2.1652962210020603
+        }
+      ],
+      "gpu": "H200",
+      "node": "n-ylawlh2urn5puf2qv62d6ccela",
+      "evaluator": {
+        "code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+        "files": {
+          "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+          "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+          "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+          "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+          "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+          "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+          "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+          "problems/muse_attention_decode/baseline.py": "37f51207283f85a65eb393b1dfb1344759d7df0bdec5450e34d24e7139f56ecc",
+          "problems/muse_attention_decode/reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+          "problems/muse_attention_decode/task.yml": "645f889fbbd52d1d731bf5eb53356aa7ef6eea8fab3073f0a2a3dd582fe6e4bb"
+        },
+        "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+      },
+      "benchmark_case_identity_without_seed": [
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 1",
+          "page": 1,
+          "weight": 46
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 1",
+          "page": 1,
+          "weight": 16
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 16",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 16",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 32",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 32",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 1",
+          "page": 1,
+          "q_len": 8,
+          "weight": 46
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 1",
+          "page": 1,
+          "q_len": 8,
+          "weight": 16
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 16",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 16",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 32",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 32",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 16
+        }
+      ],
+      "evaluator_canonical_sha256": "3c188e44a5a759e050b895215bb0c4ffe71453581734a1fda9d3df0575d00eee"
+    },
+    {
+      "job": "c21d391dbf604bb5",
+      "mode": "check",
+      "receipt_sha256": "d23740d6928c52c8d5c35130935c620ab3e464c0d18a86625deab28db7acf3c1",
+      "profile_sha256": "7a33067ab2561c36f6137e117405dc0417ff37656cb5dae28a4a87eb3ac57f0c",
+      "source_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+      "status_counts": {
+        "test": 16,
+        "benchmark": 12,
+        "profile": 12
+      },
+      "setup_events": 0,
+      "speedup": 2.6425388867913835,
+      "recomputed_speedup": 2.6425388867913835,
+      "speedup_ci": [
+        2.5934854226506414,
+        2.682176970093254
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "speedup": 3.580890746584794
+        },
+        {
+          "load": "decode 16",
+          "speedup": 2.519890106943684
+        },
+        {
+          "load": "decode 32",
+          "speedup": 2.70423245192326
+        },
+        {
+          "load": "verify 1",
+          "speedup": 3.0260322214524322
+        },
+        {
+          "load": "verify 16",
+          "speedup": 2.1567653388963866
+        },
+        {
+          "load": "verify 32",
+          "speedup": 2.138135310324684
+        }
+      ],
+      "gpu": "H200",
+      "node": "n-5imphluruu3bb3ci5c2w24thxw",
+      "evaluator": {
+        "code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+        "files": {
+          "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+          "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+          "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+          "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+          "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+          "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+          "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+          "problems/muse_attention_decode/baseline.py": "37f51207283f85a65eb393b1dfb1344759d7df0bdec5450e34d24e7139f56ecc",
+          "problems/muse_attention_decode/reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+          "problems/muse_attention_decode/task.yml": "645f889fbbd52d1d731bf5eb53356aa7ef6eea8fab3073f0a2a3dd582fe6e4bb"
+        },
+        "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+      },
+      "benchmark_case_identity_without_seed": [
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 1",
+          "page": 1,
+          "weight": 46
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 1",
+          "page": 1,
+          "weight": 16
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 16",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 16",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "decode 32",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "decode 32",
+          "page": 1,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 1",
+          "page": 1,
+          "q_len": 8,
+          "weight": 46
+        },
+        {
+          "batch": 1,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 1",
+          "page": 1,
+          "q_len": 8,
+          "weight": 16
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 16",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 16,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 16",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 16
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "soft",
+          "heads": "tp8",
+          "layer": "sliding",
+          "load": "verify 32",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 46
+        },
+        {
+          "batch": 32,
+          "ctx": 80000,
+          "dist": "coherent",
+          "heads": "tp8",
+          "layer": "full",
+          "load": "verify 32",
+          "page": 1,
+          "q_len": 8,
+          "spread": "agentic",
+          "weight": 16
+        }
+      ],
+      "evaluator_canonical_sha256": "3c188e44a5a759e050b895215bb0c4ffe71453581734a1fda9d3df0575d00eee"
+    }
+  ],
+  "evaluator_full_inventory_match": true,
+  "score_formula": "GM over6 loads of (46*baseline_sliding+16*baseline_full)/(46*median_sliding+16*median_full)",
+  "comparison_definition": "Load ratio is candidate load speedup divided by each parent load speedup; individual normalized latency is parent paired speedup divided by candidate paired speedup. Seeds may differ; other case identity and full evaluator/image must match.",
+  "limits": "No unchanged control cases. Complete16tests/12bench/12profile and no setup event are the observed attention-parent schema. Candidate correctness and timings remain pending."
+}

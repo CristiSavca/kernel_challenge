@@ -1466,3 +1466,18 @@ The current serving API confirms openNovember10 noonET, closeNovember20 02:59ET,
 the $100k prize pool awards $50k plusH200 to first. Existing pinned serving
 checkout and1549-byte patch are preserved for a separate read-only audit.
 No serving job, Modal allocation or public kernel source change was made.
+
+Serving audit now retained in tools/EXISTING_SERVING_PATCH_AUDIT_20261104.md.
+The original1549-byte patch exactly matches Oct24 commit ee009e1 and remains
+unchanged. No source-domain blocker found for its mapped-ID sentinel/allocation
+change; tile choice is a uniform-routing heuristic with possible skew costs.
+CPU domain checks do not validate serving GPU execution or performance. A direct
+247888 port is unsafe: fixed rank0 range, distinct global-scale/norm interfaces,
+no explicit MAIN zero-job guard, and6.75GiB/layer redundant packed payload before
+scratch/originals. No new integration or serving submission follows this audit.
+
+Attention parent critic4aff7b0e independently confirms16/12/12 complete records,
+matching full evaluator inventory/image and exact six-load score reproduction.
+Saved parents have different nodes and decode32 load speed differs about11%;
+retain the fixed both-parent screen but do not attribute cross-run drift to the
+candidate. Root alone follows running0d27c30b716843d8; no duplicate submission.

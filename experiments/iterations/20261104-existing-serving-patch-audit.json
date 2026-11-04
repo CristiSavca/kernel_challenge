@@ -1,0 +1,154 @@
+{
+  "status": "PASS_SOURCE_DOMAIN_MODEL",
+  "at": "2026-11-04T14:17:51.628352+00:00",
+  "base_commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+  "source_sha256": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b",
+  "patch_sha256": "4a861b0a3299ee812da4ab16ead0fd841898261369bdae8f427943a795b212d2",
+  "patch_matches_actual_diff": true,
+  "tile_checks_from_actual_ast": 147456,
+  "exhaustive_contiguous_expert_map_cases": 511,
+  "histogram_padding_models": 2520,
+  "negative_controls": {
+    "missing_sentinel_bucket": true,
+    "unmapped_global_ids": true,
+    "omitted_sentinel_capacity": true
+  },
+  "ep8_tile_examples": [
+    {
+      "M": 1,
+      "old": 8,
+      "patched": 8
+    },
+    {
+      "M": 8,
+      "old": 8,
+      "patched": 8
+    },
+    {
+      "M": 16,
+      "old": 8,
+      "patched": 8
+    },
+    {
+      "M": 28,
+      "old": 8,
+      "patched": 8
+    },
+    {
+      "M": 29,
+      "old": 16,
+      "patched": 8
+    },
+    {
+      "M": 32,
+      "old": 16,
+      "patched": 8
+    },
+    {
+      "M": 64,
+      "old": 32,
+      "patched": 8
+    },
+    {
+      "M": 128,
+      "old": 48,
+      "patched": 8
+    },
+    {
+      "M": 230,
+      "old": 64,
+      "patched": 8
+    },
+    {
+      "M": 231,
+      "old": 64,
+      "patched": 16
+    },
+    {
+      "M": 256,
+      "old": 64,
+      "patched": 16
+    },
+    {
+      "M": 384,
+      "old": 64,
+      "patched": 16
+    },
+    {
+      "M": 1024,
+      "old": 64,
+      "patched": 48
+    },
+    {
+      "M": 16384,
+      "old": 64,
+      "patched": 64
+    }
+  ],
+  "limits": [
+    "Only tile loop executed from actual Python AST; mapping and padding are independent integer models checked against source contracts.",
+    "Padding equality uses same tile size; changed tile size can change numeric reduction order.",
+    "No CUDA execution, AOT binary identity proof, concurrency, numerical tolerance or serving speed validation."
+  ],
+  "source_files": [
+    {
+      "path": "python/sglang/srt/layers/muse_spark_fp4_moe.py",
+      "sha256": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b"
+    },
+    {
+      "path": "python/sglang/srt/layers/moe/moe_runner/triton_utils/moe_align_block_size.py",
+      "sha256": "b9fe04c12c7ace9a32d7489907dda5ce4de7646d45713aec589e5e5cec6d1fee"
+    },
+    {
+      "path": "python/sglang/kernels/aot/csrc/moe/moe_align_kernel.cu",
+      "sha256": "f073dcb610cb5d12a0e5ddf27a23f4adf1a5daf33898d7c996943b2e3b3240ea"
+    },
+    {
+      "path": "python/sglang/kernels/jit/csrc/gemm/marlin_moe/moe_wna16_marlin.cuh",
+      "sha256": "ec75c89142eeee6e7d39d2908d3eeae74d1cc0c481368caa1263aa9d4bdcdc0a"
+    },
+    {
+      "path": "python/sglang/srt/layers/quantization/muse_spark_nvfp4_moe.py",
+      "sha256": "c09e0b4e32b7d5ac7af30caf74121dc0897e14e44f0e4503ea33a7acaf8f35a0"
+    },
+    {
+      "path": "python/sglang/srt/layers/quantization/modelopt_quant.py",
+      "sha256": "59fd4dd7a9395e63ab4a8a844486e7751fbde77e2755b36a640e221c456e5db8"
+    }
+  ],
+  "provenance": {
+    "first_commit": "ee009e1",
+    "date": "2026-10-24T00:30:22-04:00",
+    "patch_identical_to_first_commit": true,
+    "related_standalone_job": "1cc96c4a472b470a",
+    "related_source_sha256": "835601de59147a5f23f101803e39d0238380235e781d8e023b400e5a5f22aae9",
+    "related_run_passed": true,
+    "related_speedup": 1.0526377680998646,
+    "limit": "Related isolated kernel used persistent workspace and fixed EP8 bank; not exact serving patch validation or attribution to each hunk."
+  },
+  "future_port_weight_payload": {
+    "per_expert_codes_bytes": 25165824,
+    "per_expert_scales_bytes": 3145728,
+    "experts": 32,
+    "complete_layouts_per_state": 4,
+    "states": 2,
+    "total_bytes": 7247757312,
+    "GiB": 6.75,
+    "exclusions": [
+      "scratch",
+      "original checkpoint/stock layouts",
+      "temporary packing"
+    ],
+    "source": "muse_moe_w4a16/submission.py::_prepare_layout and prepare, exact247888"
+  },
+  "unchanged_after_review": {
+    "patch_sha256": "4a861b0a3299ee812da4ab16ead0fd841898261369bdae8f427943a795b212d2",
+    "source_sha256": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b",
+    "status": " M python/sglang/srt/layers/muse_spark_fp4_moe.py\n",
+    "diff_check_exit_code": 0
+  },
+  "note": {
+    "path": "tools/EXISTING_SERVING_PATCH_AUDIT_20261104.md",
+    "sha256": "743f9b7cefc6506c835cfede8ec325dff99c8c66e6dafc026b8817ae46dcd0d8"
+  }
+}
