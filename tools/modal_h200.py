@@ -680,9 +680,101 @@ def run_compile_worker(payload: dict) -> None:
     module.run(payload)
 
 
+def finalizer_observed_floor(root: Path) -> dict:
+    """Bind a saved higher provider observation; this only increases the debit."""
+    from modal_credit_budget import provider_spend
+    relative = "experiments/modal/20261104T155445Z-1ed7603c/billing-after.json"
+    expected = "0daf0080100319c8fb1af515a6f831598b457cf712e6356cd34e2566075be909"
+    raw = (root / relative).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != expected:
+        raise ValueError("Saved provider high-water evidence changed")
+    amount = provider_spend(json.loads(raw)["billing"])
+    if str(amount) != "4.16434237":
+        raise ValueError("Saved provider high-water mismatch")
+    return {"path": relative, "sha256": expected, "usd": str(amount)}
+
+
+def run_finalizer_validation_worker(payload: dict) -> None:
+    """Import exactly the reviewed validation helper, never an ambient module."""
+    import importlib.util
+    expected = {"candidate.py", "baseline.py", "finalizer_validation.py"}
+    if set(payload.get("files", {})) != expected or set(payload.get("file_sha256", {})) != expected:
+        raise ValueError("Unexpected finalizer validation file set")
+    folder = Path("/tmp/okc-input")
+    folder.mkdir(exist_ok=True)
+    for name, source in payload["files"].items():
+        if type(source) is not str or sha(source) != payload["file_sha256"][name]:
+            raise ValueError("Finalizer validation payload hash mismatch")
+        (folder / name).write_text(source)
+    spec = importlib.util.spec_from_file_location("finalizer_validation", folder / "finalizer_validation.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.validate_payload(payload)
+    module.run(payload)
+
+
+FINALIZER_READ_RESULT = """import sys
+with open("/tmp/okc-result.json", "rb") as stream:
+    data = stream.read(1048577)
+if len(data) > 1048576:
+    raise ValueError("finalizer validation result exceeds 1MiB")
+sys.stdout.buffer.write(data)
+"""
+
+
+def retrieve_finalizer_validation_result(sandbox, destination: Path, payload: dict, *, recovery=False) -> dict:
+    """One fixed-path, remotely capped read. Recovery is never a successful run."""
+    process = sandbox.exec("python3", "-c", FINALIZER_READ_RESULT, timeout=10, text=False)
+    content = process.stdout.read()
+    process.stderr.read()
+    process.wait()
+    if process.returncode != 0:
+        raise RuntimeError(f"Finalizer result read exited {process.returncode}")
+    if type(content) is not bytes or len(content) > 1024 * 1024:
+        raise ValueError("Finalizer result exceeds local byte/type bound")
+    result = json.loads(content)
+    expected = {"candidate_sha256": payload["source_sha256"],
+                "baseline_sha256": payload["baseline_sha256"],
+                "worker_sha256": payload["file_sha256"]["finalizer_validation.py"],
+                "case_manifest_sha256": payload["case_manifest_sha256"],
+                "file_sha256": payload["file_sha256"], "image": payload["image"]}
+    if (type(result) is not dict or any(result.get(k) != v for k, v in expected.items())
+            or result.get("official") is not False or result.get("diagnostic_only") is not True
+            or result.get("status") not in ("running", "incomplete", "failed", "pass")):
+        raise ValueError("Finalizer result provenance/status mismatch")
+    if result["status"] == "pass":
+        import serving_finalizer_validation_worker as finalizer
+        if sha(Path(finalizer.__file__).read_text()) != expected["worker_sha256"]:
+            raise ValueError("Local finalizer manifest implementation changed")
+        cases = finalizer.cases()
+        rows = result.get("cases", [])
+        if (result.get("planned_cases") != len(cases) or result.get("completed_cases") != len(cases)
+                or len(rows) != len(cases) or any(
+                    row.get("descriptor") != case or row.get("name") != case["name"]
+                    or row.get("seed") != case["seed"] or row.get("pass") is not True
+                    for row, case in zip(rows, cases))):
+            raise ValueError("Finalizer passing result has incomplete case coverage")
+        expected_profiles = {"boundary31": "fast", "boundary32": "large", "boundary33": "large",
+                             "fallback_fp32": "eager", "fallback_topk33": "eager", "fallback_hidden16385": "eager"}
+        profiles = result.get("profiles", [])
+        if (len(profiles) != len(expected_profiles)
+                or {p.get("name"): p.get("kind") for p in profiles} != expected_profiles
+                or any(p.get("pass") is not True or p.get("cuda_positive_duration_events_only") is not True
+                       or p.get("gpu_event_count", 0) <= 0 for p in profiles)):
+            raise ValueError("Finalizer passing result has incomplete activation coverage")
+        streams, graphs = result.get("two_streams", {}), result.get("two_graphs", {})
+        if (streams.get("pass") is not True or streams.get("calls") != 8
+                or graphs.get("pass") is not True or graphs.get("graphs") != 2
+                or graphs.get("fresh_replays") != 8):
+            raise ValueError("Finalizer passing result has incomplete stream/graph coverage")
+    local = "result-checkpoint.json" if recovery or result["status"] != "pass" else "result.json"
+    save(destination / local, result)
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -699,7 +791,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.mode == "worker":
         payload = json.loads(Path(args.payload).read_text())
-        if payload.get("compile_sass") is True:
+        if payload.get("serving_finalizer_validation") is True:
+            run_finalizer_validation_worker(payload)
+        elif payload.get("compile_sass") is True:
             run_compile_worker(payload)
         elif payload.get("hardware_profile") is True:
             run_hardware_worker(payload)
@@ -718,6 +812,15 @@ def main() -> None:
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
     compile_mode = args.mode == "compile-sass"
+    if args.mode == "serving-finalizer-validation":
+        from serving_finalizer_validation_worker import build_payload
+        if (args.timeout != 600 or args.problem is not None or args.candidate or args.cases
+                or args.seed is not None or args.weight_seed != 7311 or args.repeats != 6):
+            parser.error("serving-finalizer-validation has fixed sources/cases and requires --timeout 600")
+        payload = build_payload(ROOT, IMAGE)
+        payload["provider_observed_floor_evidence"] = finalizer_observed_floor(ROOT)
+        for name, source in payload["files"].items():
+            compile(source, name, "exec")
     if compile_mode:
         from modal_compile_sass import SOURCE_SHA, validate_payload
         if (args.timeout != 600 or args.problem is not None or args.candidate or args.cases
@@ -814,6 +917,8 @@ def main() -> None:
     save(destination / "manifest.json", manifest)
     from modal_credit_budget import allocation_guard, RESOURCE_CPU
     guard_kwargs = {"resource_kind": RESOURCE_CPU} if compile_mode else {}
+    if payload and payload.get("serving_finalizer_validation") is True:
+        guard_kwargs["observed_spend_floor"] = payload["provider_observed_floor_evidence"]["usd"]
     with allocation_guard(ROOT, stamp, manifest["timeout_seconds"], **guard_kwargs) as credit:
         if compile_mode and (credit.get("resource_kind") != RESOURCE_CPU or manifest["gpu"] is not None):
             raise RuntimeError("CPU compile resource/credit kind mismatch")
@@ -866,10 +971,12 @@ def main() -> None:
                 (destination / "stderr.log").write_text(stderr)
                 command.wait()
                 manifest["exit_code"] = command.returncode
-                if compile_mode and command.returncode:
+                if (compile_mode or (payload and payload.get("serving_finalizer_validation") is True)) and command.returncode:
                     # The worker may fail before creating any result checkpoint.
                     # Preserve its actual exit/logs; recovery failures are separate.
                     manifest["remote_failure"] = {"exit_code": command.returncode, "stderr_log": "stderr.log"}
+                    if payload and payload.get("serving_finalizer_validation") is True:
+                        save(destination / "manifest.json", manifest)
                     print(stderr[-6000:], file=sys.stderr)
                     raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
                 if payload:
@@ -877,12 +984,17 @@ def main() -> None:
                         from modal_compile_sass import retrieve
                         result = retrieve(sandbox, destination)
                         manifest["compile_artifacts_retrieved"] = True
+                    elif payload.get("serving_finalizer_validation") is True:
+                        result = retrieve_finalizer_validation_result(sandbox, destination, payload)
+                        manifest["validation_result_retrieved"] = True
                     else:
                         result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
                         save(destination / "result.json", result)
                     if payload.get("attention_v10_screen") is True:
                         save_attention_v10_logs(destination, result)
                     manifest["status"] = result["status"]
+                    if payload.get("serving_finalizer_validation") is True and result["status"] != "pass":
+                        raise RuntimeError("Finalizer validation incomplete or failed; no automatic retry")
                     if compile_mode and result["status"] != "compile_complete":
                         raise RuntimeError("CPU compile diagnostic did not complete; no retry")
                 else:
@@ -907,6 +1019,14 @@ def main() -> None:
                 except Exception as recovery_error:
                     manifest["compile_checkpoint_recovered"] = False
                     manifest["compile_retrieval_error_type"] = type(recovery_error).__name__
+            if payload and payload.get("serving_finalizer_validation") is True and sandbox is not None:
+                try:
+                    if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
+                        retrieve_finalizer_validation_result(sandbox, destination, payload, recovery=True)
+                    manifest["validation_checkpoint_recovered"] = True
+                except Exception as recovery_error:
+                    manifest["validation_checkpoint_recovered"] = False
+                    manifest["validation_retrieval_error_type"] = type(recovery_error).__name__
             if sandbox is None:
                 manifest["sandbox_created"] = False
             raise

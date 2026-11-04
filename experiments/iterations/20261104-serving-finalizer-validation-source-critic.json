@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "reviewed_at_utc": "2026-11-04T18:24:43.192151+00:00",
+  "verdict": "GO_FOR_ONE_FIXED_H200_VALIDATION_SUBJECT_TO_FRESH_EXISTING_GUARD",
+  "candidate_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "original_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "files": {
+    "worker": {
+      "path": "tools/serving_finalizer_validation_worker.py",
+      "sha256": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede"
+    },
+    "plan": {
+      "path": "tools/SERVING_FINALIZER_GPU_VALIDATION_PLAN_20261104.md",
+      "sha256": "a556ea43d5c48c106c65601ee719b042523285c816a40db8cefd967c96e43d59"
+    },
+    "worker_tests": {
+      "path": "tools/test_serving_finalizer_validation_worker_cpu.py",
+      "sha256": "2d5d7ea82375e7e9d82c49c7eef1928db0b5b7acce5fb1eaae802e38593a25ce"
+    },
+    "guard": {
+      "path": "tools/modal_credit_budget.py",
+      "sha256": "9f70c5006d8afd6e4a077cec8f3fe3baada2620703479bebf87ea0a333f0c9b2"
+    },
+    "floor_tests": {
+      "path": "tools/test_modal_observed_floor.py",
+      "sha256": "04fc44059600f7aeb76baf3d9ebfe64e34bb75c67ee25e3008c6a7a5502d0ad6"
+    },
+    "runner": {
+      "path": "tools/modal_h200.py",
+      "sha256": "339a85ef3a539c4bd4d5f8fb21fb3dfb6c9227b9a870da8d6ae8507cc5397a85"
+    },
+    "runner_tests": {
+      "path": "tools/test_modal_finalizer_validation_runner.py",
+      "sha256": "f87f19a4768ed92e97150511dc8e75cddb87f41d87e607187500b17bf6a066cf"
+    }
+  },
+  "case_manifest_sha256": "a57d656ba2635c8e3c6d95c93351de0aa4508e2c3b292510108c73abc535ccb2",
+  "independent_CPU_checks": {
+    "worker_contract_metric_tests": 12,
+    "worker_command": ".venv-modal/bin/python tools/test_serving_finalizer_validation_worker_cpu.py",
+    "worker_exit_code": 0,
+    "floor_tests": 4,
+    "floor_command": "python3 -m unittest discover -s tools -p test_modal_observed_floor.py -v",
+    "floor_exit_code": 0,
+    "CUDA_executed": false,
+    "provider_calls": false,
+    "runner_tests": 12,
+    "runner_command": "python3 -m unittest discover -s tools -p test_modal_finalizer_validation_runner.py -v",
+    "runner_exit_code": 0,
+    "existing_lifecycle_tests": 18,
+    "existing_lifecycle_command": "python3 -m unittest discover -s tools -p test_modal_h200.py -q",
+    "existing_lifecycle_exit_code": 0,
+    "actual_dry_run_exit_code": 0
+  },
+  "planned_GPU_coverage": {
+    "directed_cases": 90,
+    "conservative_small_kernel_signature_bound": 62,
+    "signature_cap": 80,
+    "representative_actual_GPU_activation_profiles": 6,
+    "two_stream_calls": 8,
+    "independent_graphs": 2,
+    "fresh_graph_replays": 8,
+    "worker_between_stage_budget_seconds": 540,
+    "outer_sandbox_timeout_seconds": 600,
+    "maximum_result_bytes": 1048576,
+    "model_weights_required": false
+  },
+  "source_findings": [
+    "Exact three-file payload pins candidate/original/worker and fixed manifest; no SGLang or model imports.",
+    "Independent FP32 Torch slot oracle shares no candidate kernels or scratch. Candidate-original, candidate-oracle and original-oracle comparisons remain separate.",
+    "Robust FP64 diagnostic metrics implement fixed mathematical thresholds; nonfinite metric values cannot silently pass. Nonfinite input cases require equal NaN/+Inf/-Inf masks and are not called official-evaluator acceptance.",
+    "Counterexample-first cases include poison masking, ragged output bounds, dispatch boundary, both norm orders, disabled norm, true BF16 subnormals, signed infinity outputs and exceptional epsilon.",
+    "CUDA activation requires actual positive-duration device events, not CPU launch names. Unavailable profiling produces incomplete coverage.",
+    "Two-stream queues use explicit input-production dependencies; outstanding output ownership is retained.",
+    "Capture observer stores pointer/extent metadata only, preserves natural scratch lifetime, restores torch.empty before replay, and checks cross-graph disjoint allocations plus held-output stability.",
+    "No performance measurement, new candidate, altered serving helper, automatic retry or promotion.",
+    "Observed-spend floor is monotonic; invalid input fails before side effects, all old certificate/reservation/grant calculations remain, effective observation persists for later reservations."
+  ],
+  "runner_review_remaining": [],
+  "limits": [
+    "CPU checks do not prove GPU execution or correctness.",
+    "A passing synthetic run does not establish full model token agreement, TP8/EP8 serving behavior, universal concurrency safety or leaderboard improvement.",
+    "Actual concurrent execution overlap is not measured.",
+    "Triton compiler/cache resource use is not inferred from the source signature count."
+  ],
+  "allocation_performed_by_reviewer": false,
+  "runner_findings": [
+    "Single fixed-path remote result read caps bytes before transfer at 1MiB and uses a 10-second command timeout; local byte/type cap retained.",
+    "Result candidate/original/worker/case-manifest/image/file identities must match frozen payload.",
+    "Passing results require all 90 exact descriptors with pass flags, six activation records, 8 stream calls and 2 graphs/8 fresh replays.",
+    "Partial/recovered data stays in result-checkpoint.json; failed worker exit is persisted before recovery, original exception remains, and sandbox termination path is preserved.",
+    "Actual Sandbox.create request remains one H200, four CPU and 32GiB hard limits, 600-second timeout, block_network=True. No extra worker retry or GPU allocation path was added.",
+    "Actual no-provider dry-run reproduces exact helper/worker/manifest pins and 4.16434237 floor from pinned billing evidence.",
+    "Installed Modal 1.6.3 Sandbox.exec signature supports text=False; remote command bound does not claim universal network timeout."
+  ],
+  "observed_floor_evidence": {
+    "path": "experiments/modal/20261104T155445Z-1ed7603c/billing-after.json",
+    "sha256": "0daf0080100319c8fb1af515a6f831598b457cf712e6356cd34e2566075be909",
+    "usd": "4.16434237"
+  },
+  "review_note": {
+    "path": "tools/SERVING_FINALIZER_GPU_VALIDATION_CRITIC_20261104.md",
+    "sha256": "024d9890ddfeec8f5a9e519d140ab60399fc6e7e29b0bc6614a5faadd72be8da"
+  }
+}

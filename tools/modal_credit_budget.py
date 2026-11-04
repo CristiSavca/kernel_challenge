@@ -401,10 +401,14 @@ def verified_estimate_revision(root: Path, grant, records, journal: Path, billin
 
 
 @contextmanager
-def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: str = RESOURCE_H200):
+def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: str = RESOURCE_H200,
+                     observed_spend_floor="0"):
     """Hold one project lock from preflight until the caller finishes termination."""
     # Reject unreviewed kinds/timeouts before filesystem changes or provider calls.
     reservation = reservation_usd(timeout, resource_kind)
+    # A caller may retain a newer saved provider observation. This only raises
+    # the debit; it cannot reduce existing evidence or restore working credit.
+    floor = money(observed_spend_floor, "observed spend floor")
     folder = root / "experiments" / "modal"
     folder.mkdir(parents=True, exist_ok=True)
     # Never unlink this inode: another process could otherwise lock a replacement.
@@ -430,7 +434,7 @@ def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: st
                 raise CreditGuardError("Credit verification date is invalid") from exc
             ceiling = money(grant.get("grant_usd"), "verified grant")
             headroom = money(grant.get("headroom_usd"), "safety headroom")
-            observed = money(grant.get("initial_observed_spend_usd"), "initial observed spend")
+            observed = max(floor, money(grant.get("initial_observed_spend_usd"), "initial observed spend"))
             if ceiling <= headroom or headroom < Decimal("5.00"):
                 raise CreditGuardError("Credit grant must preserve at least $5 safety headroom")
             if any(os.environ.get(key) for key in ("MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET")):
@@ -496,6 +500,8 @@ def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: st
             }
             if overlap_pin is not None:
                 receipt.update(overlap_certificate_sha256=overlap_pin, proved_overlap_usd=str(overlap))
+            if floor:
+                receipt["caller_observed_spend_floor_usd"] = str(floor)
             if estimate_pin is not None:
                 receipt.update(estimate_certificate_sha256=estimate_pin,
                                conservative_estimate_correction_usd=str(estimate_correction),
