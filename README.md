@@ -1,7 +1,7 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 19:06 UTC (board), with subsequent validation below.
+Status updated November 4, 2026, 19:22 UTC (board), with the 19:41 experiment below.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
@@ -38,10 +38,17 @@ and [coverage evidence](experiments/iterations/20261104-finalizer-coverage-root-
 Fresh arXiv, X/release, DeepSeek, Hugging Face and CUTLASS research is linked in
 [the active handoff](tools/RESEARCH_LOOP.md). Current official receipts and
 research retain exact sources, licenses, evaluator identity and measured limits.
-The next serving experiment targets the router's separate expert-ID mapping
-launch: preserve global IDs and FP32 scores while optionally emitting the local
-IDs Marlin needs. This is a source-supported hypothesis, not an implemented or
-measured gain; see [the scout](tools/SERVING_NEXT_OP_SCOUT_20261104.md).
+Serving router V24 is implemented in an isolated patch. Its bounded H200 run
+passed 432 exact-output cases, eight padding cases and eight legacy API cases,
+then stopped because the benchmark expected two parent launches and observed
+three. The candidate used one launch at T16. Stream/graph checks and paired
+timings were not reached, so validation is incomplete and no speed gain is
+claimed. The fixed attempt is closed without retry or promotion; see
+[the result](experiments/iterations/20261104-router-local-ids-root-result.json).
+A larger native-to-serving port now needs a bounded weight layout and the
+required BF16 intermediate roundings before implementation; the
+[feasibility record](experiments/iterations/20261104-native-serving-port-feasibility.json)
+explains why a direct transplant is unsuitable.
 Unchanged-finalizer diagnostics are closed; full serving compatibility remains
 unverified. Separately, exact-one
 attention rescale candidate V23 passed official private correctness check

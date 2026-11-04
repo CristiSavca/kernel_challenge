@@ -10,6 +10,10 @@ over 2% slower and one indexing launch removed. `screen_complete` only means
 the evidence was collected; `performance_gate_passed` records the separate
 decision. This is not an official or full-serving check. See
 `SERVING_ROUTER_LOCAL_IDS_SCREEN_20261104.md` for the protocol.
+The fixed run `20261104T194033Z-c834b1b0` stopped at its profiler gate after
+448 numerical/API cases passed: the parent had three launches instead of the
+assumed two. Stream/graph checks and paired timings were not reached. Preserve
+the failed checkpoint; this attempt is closed without a retry or speed claim.
 The usual mandatory credit guard, saved provider-spend high-water mark,
 one-H200 limit, bounded result retrieval and sandbox termination apply.
 The worker has a 540-second cooperative budget inside the 600-second sandbox.

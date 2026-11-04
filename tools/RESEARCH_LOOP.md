@@ -20,76 +20,84 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-Latest terminal result, November 4 at 19:13 UTC: bounded serving-finalizer
-coverage run `20261104T191321Z-25f35b45` completed on one H200. All 15 remaining
-numerical cases passed, followed by eight calls on two streams and eight fresh
-replays across two independent graphs. Input byte checks and output/input
-storage checks passed on all 15 cases; graph scratch/output ranges are disjoint,
-and replaying graph B preserves graph A's retained output. Actual simultaneous
-hardware execution overlap was not measured. Worker time was 5.9149 seconds,
-not a kernel timing result. Frozen worker c18de827, runner b289c8ed, helper
-91e6173b, original 9b816e97 and reference c94c3134 are retained in the run.
+Latest terminal result, November 4 at 19:41 UTC: serving router V24 run
+`20261104T194033Z-c834b1b0` is **incomplete validation**, caused by a benchmark
+launch-count assumption. Both actual pinned JIT variants compiled with matching
+common dependencies; all 24 installed dependency hashes matched. All 432 exact
+score/ID cases, eight padding cases and eight legacy optional-output cases pass.
+At T16 the parent emitted router + direct-copy + index kernels, while the
+candidate emitted only the router. The fixed harness expected exactly two parent
+kernels and stopped. Matching Torch 2.14.1 source converts int32 advanced indices
+to int64, strongly explaining the copy, but no operand trace proves its identity.
 
-Root independently checked all 93 new comparisons and the exact union of the
-prior 75 and new 15 descriptors. Combined numerical coverage is 89 passing cases
-and one retained failure, `finite_cancellation`. The two runs share the same
-recorded software/device environment. All 45 comparisons from the remaining
-cases have zero finite error and matching exceptional classifications. Stream
-maxima are whole relative L2 5.1672e-7 / worst row 4.4969e-6; graph maxima are
-4.5616e-6 / 1.9601e-5, below the unchanged .015 / .075 thresholds. This does not
-prove NaN payload equality, universal correctness or full-model compatibility.
-`coverage_complete` is not generic PASS: `generic_validation_status` remains
-`failed_at_finite_cancellation`. Root result:
-`20261104-finalizer-coverage-root-result.json`; independent result review:
-`SERVING_FINALIZER_COVERAGE_RESULT_CRITIC_20261104.md`.
+The failed checkpoint retains those raw events and all numerical evidence.
+There are **no paired timings, no T256 activation result, and no two-stream or
+two-graph result**. Do not infer latency gains from profiler durations, promote
+the patch, or call this a kernel correctness failure. The fixed attempt is
+closed without a retry or threshold/shape-policy rescue. Retain the isolated
+candidate as incomplete. Root evidence is
+`experiments/iterations/20261104-router-local-ids-root-result.json`; independent
+review is `SERVING_ROUTER_LOCAL_IDS_V24_RESULT_CRITIC_20261104.md`.
 
-The prior stage diagnostic `20261104T185116Z-a8743472` explained the retained
-case: identical opposing-route squares produce original means/inverses differing
-by one ULP; same logical H511 data with different physical row layout removes
-the inequality. The residual exists before final summation. Candidate/oracle
-outputs are zero but their token0 inverses differ. Keep the explanation, strict
-failure and earlier official component speed result separate. No helper,
-threshold, public incumbent or serving patch was promoted. Stop additional
-unchanged-helper diagnostic sweeps. The official eight-H200 serving check when
-available must still establish output agreement, TTFT and required concurrency.
+Source preparation commit `9591ce1` pins the five-file stock-only patch
+`0cfa4586`, manifest `f245464b`, worker `65a2bdcc` and run runner `3c18303d`.
+It excludes the existing finalizer/alignment edits. Actual backend dispatch
+controls whether a fourth local-ID output is available; unsupported paths retain
+the original map. Global IDs, score arithmetic, capture and stream ownership
+remain preserved in the source contract. CPU validation covered five exact file
+restorations, 21 dispatch guards, five wrapper cases, 12 model/Marlin boundaries,
+167936 extracted store terms, 14 alias/pair rejections and 32 sentinel slots.
+Independent worker/transport tests passed21; existing shared lifecycle tests26.
+CPU checks do not establish GPU concurrency or full serving compatibility.
 
-Next concrete optimization: the optional dual global/local expert-ID output
-specified in `SERVING_NEXT_OP_SCOUT_20261104.md`. The selected Marlin path ignores
-TRT packed IDs and separately indexes the expert map; its captured index row is
-1.8–3.3us, only 0.5–3.2% of that MoE component. There is no full-model speed bound.
-Preserve global IDs, FP32 scores, global capture, SP fallback, padding, backend
-selection and stream ownership. Native decoder97af already combines mapping,
-so this targets serving only. Implement an isolated patch from pinned a55ab7
-sources, preserving the existing finalizer and alignment edits; do not bundle
-them. Root must fix a pre-result net router-plus-map timing gate and obtain an
-independent source/harness review before the single-GPU component experiment.
-No source implementation or GPU run for this next idea has started.
+The next concrete work is an offline design for a larger, serving-compatible
+native expert path. Independently reviewed scout
+`20261104-native-serving-port-feasibility.json` rejects a direct transplant:
+native gate/up and down epilogues omit required serving BF16 intermediate
+roundings; it forms1+w in FP32 instead of consuming the cached effective BF16
+norm weight; and its two prepared layouts retain eight full code/scale copies.
+At32 local experts with three4096x4096 matrices, those copies alone occupy
+6.75GiB per layer. The418.5GiB figure is only an illustrative62-sparse-layer
+source-default scenario, not an inspected checkpoint. Design bounded retained
+packing, exact BF16 stage boundaries, actual per-rank IDs and per-execution
+scratch ownership before code or GPU allocation. No performance estimate is
+justified yet. Avoid another tiny router variation or unchanged-helper sweep.
 
-The coverage sandbox is terminated and its provider app stopped with zero tasks.
-CLI final-log collection timed out only after worker completion; exit0, complete
-result, termination and fresh provider state are confirmed. Do not restart it.
-Its full $1.14 reservation remains; all 16 journal rows total $30.96, with the
-original 15-row byte prefix preserved. Post-run billing is display $4.21,
-component $4.21235928, billed $0. Conservative working allowance is $3.07764072,
-with a separate $5 headroom. Save this higher observation even if a later display
-falls: `experiments/modal/20261104T191321Z-25f35b45/billing-after.json`, SHA4626955e.
-The existing saved-floor function binds that receipt; its three literal updates
-only raise the debit. Guard, grant, correction certificates and old reservations
-remain unchanged. Any future mode, including the router experiment, must carry
-this high-water observation into the fresh mandatory guard. No live official or
-Modal job remains after this run.
+V24 sandbox `sb-4XyY5qTJ2ZlckwQDm9dpW3` terminated; app
+`ap-PaHbiXivYJ4BfqNq16HFmm` is stopped with zero tasks. Failure evidence was
+recovered inside the live app context. Worker elapsed30.7676s is not kernel
+latency. Full reservation$1.78 remains:17 journal rows total$32.74 and the prior
+16-row byte prefix is unchanged. Post-run billing19:42 is display$4.22,
+component$4.21789781,billed$0. Preserve the higher provider floor$4.22000000,
+working allowance$1.29 and separate$5 headroom. Receipt
+`experiments/modal/20261104T194033Z-c834b1b0/billing-after.json`, SHA2ae77bac,
+is bound by the saved-floor function's three literal raise-only changes. Guard,
+correction certificates and reservations are unchanged. No live official or
+Modal job remains. A future allocation still needs a fresh guard; do not refund
+unused reservations or lower the floor if a later billing display falls.
 
-Attention V23 job `0193a093baa446f3` is closed: clean 16/12/12 correctness,
-benchmark/profile records, but score2.59112783 fails both preserved parent
-comparisons. No retry, branch-policy sweep, Q8 extension, decoder port or scored
-promotion. Active attention87a9, MoE247888 and decoder97af remain exact.
-Latest board at 19:06 UTC: overall/decoder404 and MoE307, unchanged own scores.
-Decoder2.1812 versus leader2.5762 still needs about15.33% less latency. Kernel
-cutoff is November5 08:00UTC; serving opens November10 17:00UTC and closes
-November20 08:00UTC. Current checks remaining are attention35/MoE27/decoder29;
-scored attempts18/17/18. These are dated snapshots, not substitutes for fresh
-limits or rules before another allocation/submission. Lean implementation bff9cd8
-remains in place. The #1 goal is active and unachieved.
+Serving finalizer V22 retains official component gains but its generic numerical
+status is still `failed_at_finite_cancellation`:89 of90 cases pass after the
+completed coverage run. The stage diagnostic located a stock reduction-layout
+residual on H511; candidate/oracle cancellation does not waive the strict
+failure. No finalizer or combined patch is promoted. Attention V23 remains
+closed after passing correctness but failing the fixed performance gate; no
+retry, Q8 extension, decoder port or scored promotion.
+
+Passing public attention87a9, MoE247888 and decoder97af remain byte-identical.
+Latest board snapshot19:22UTC: overall/decoder404 and MoE307, own scores unchanged.
+Decoder2.1812 versus leader2.5762 still requires about15.33% lower latency.
+Fresh19:39 rules/API retain kernel cutoff November5 08:00UTC, serving opening
+November10 17:00UTC and final cutoff November20 08:00UTC. Earlier same-wake
+private checks remaining attention35/MoE27/decoder29; scored18/17/18. No official
+job was launched this iteration. Serving prizes and private ranking require
+actual eight-H200 results; component evidence cannot establish #1.
+
+The user-requested Lean implementation `bff9cd8` remains complete and unchanged:
+source-bound universal uint32 MULDEC proofs, axiom audit, wrong-constant rejection
+and optional pre-upload proof gate. See `formal/README.md`. It does not prove
+complete CUDA/PTX correctness, races, floating point or performance. The overall
+#1 goal remains active and unachieved.
 
 Latest continuation, November 4 after 18:25 UTC: the user-requested Lean
 methodology is implemented as an independent source-bound MULDEC integer
