@@ -35,14 +35,27 @@ public sources. No full-model memory, generic rank/empty route, stream/graph,
 large prefill, TTFT or official eight-H200 serving pass has been established.
 All known official jobs are terminal. No Modal allocation was made for V25/V26.
 
-**Next assignment:** one serving integration contract owner maps actual pinned
-SGLang loading/Marlin calls to `prepare_native`, `Workspace`, `expert_outputs`.
-Require a concrete one-bank ownership transition, peak-memory account, workspace
-lifetime through finalization, stream/graph policy and minimal GPU validation
-matrix before writing an adapter. The owner can reject an infeasible contract.
-Another kernel parameter sweep does not address these deployment risks. Root
-alone owns the next allocation. Check live agents/processes/manifests/receipts
-first; never duplicate an accepted job or overlap writers to an artifact.
+The integration owner completed `SERVING_NATIVE_MOE_V26_INTEGRATION_CONTRACT_20261104.md`
+and its paired experiment JSON. **Next implementation:** isolate a pre-Marlin
+prepare/commit installer, a formatting-only export of the reviewed core, a
+chunked `_forward_marlin` branch and model/device/execution-lane workspace owner.
+Use already rank-local raw weights with `source_is_local=True`; do not recover
+them after Marlin repacking. Preserve actual pre/post norm metadata and epsilon,
+original stock finalizer and outer all-reduce. Do not use official component
+`prepare/kernel_fn` verbatim or bundle the dirty V22 finalizer/alignment edits.
+
+The 864 MiB bank replaces original code/scales; conversion still needs at least
+two banks plus >=64 MiB packing temporary for one layer. One-bank ownership is
+a design objective, not a contest mandate. T16384 needs 43 core/finalizer chunks;
+six timed cases <=256 do not establish prefill/TTFT. Full model capacity is
+unknown. Any stock-fallback/dual-bank alternative needs its own memory/timing
+comparison. CPU hook/lifecycle tests precede one frozen device validation plan;
+generic ranks, empty routes, changed-input graphs and distinct-workspace streams
+must pass before full serving validation. Root alone owns allocation, after a
+fresh guard; do not assume the remaining 300-second budget fits compilation and
+all cases. Another parameter sweep does not address these integration risks.
+Check live agents/processes/manifests/receipts first; never duplicate an accepted
+job or overlap writers to an artifact.
 
 ## Incumbents, deadlines and money
 
@@ -162,6 +175,9 @@ Research intake:
 - Older shared-A, R16, SC6, prefetch, wait-depth, register, packing and scalar
   reuse failures remain in the archive and `experiments/iterations/`. New work
   must address the actual failed premise, not repeat a disproven parameter sweep.
+
+Latest supervisor decision: `experiments/iterations/20261104-eat-supervisor-reflection.json`.
+Source commit `3189741`; V26 result/research commit `71a4b0c`.
 
 Heartbeat `okc-research-and-harsh-critic` runs every 15 minutes. Resume live work
 first; notify only meaningful verified gain/rank change, material failure,

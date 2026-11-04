@@ -1,0 +1,197 @@
+{
+  "schema": 1,
+  "status": "SOURCE_BASED_ADAPTER_IMPLEMENTATION_RECOMMENDED_DEPLOYMENT_BLOCKED",
+  "scope": "Serving ownership/integration only; no changes or device tests.",
+  "serving_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+  "sources": {
+    "python/sglang/srt/layers/quantization/muse_spark_nvfp4_moe.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "c09e0b4e32b7d5ac7af30caf74121dc0897e14e44f0e4503ea33a7acaf8f35a0",
+      "bytes": 8208
+    },
+    "python/sglang/srt/layers/quantization/modelopt_quant.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "59fd4dd7a9395e63ab4a8a844486e7751fbde77e2755b36a640e221c456e5db8",
+      "bytes": 134911
+    },
+    "python/sglang/srt/layers/quantization/marlin_utils_fp4.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "a9011b5af7f8c9d25755d2ea4125e9fbdad06b862138be3ca27c85fc2f8a8e08",
+      "bytes": 21421
+    },
+    "python/sglang/srt/layers/muse_spark_fp4_moe.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "1d377424e4c1f486f72a0e8ea67ea41dca4bd3f6929aa3729f5f7480861ed352",
+      "bytes": 35367
+    },
+    "python/sglang/srt/models/muse_spark.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "7e5018b3cb2ef41ee6cf09407e91e28dde069e5a33719ea58beb0d7137087355",
+      "bytes": 70635
+    },
+    "python/sglang/srt/runtime_context.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "b8510f48bb90fa22474a64f6769c1e71e3fb47a95dd313cffb11df7bf414c975",
+      "bytes": 83045
+    },
+    "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "4236fc6ef87c2fb7a019d7525342d74d4e0964f036c61bf32bc53e3699c6db0b",
+      "bytes": 73128
+    },
+    "python/sglang/srt/managers/scheduler.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "c1edcfe6f85e49bf85faf1f79129f4452445585de17cf1cdcc821de5008b1491",
+      "bytes": 262620
+    },
+    "python/sglang/srt/layers/layernorm_sp.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "ffdde97e6282103614d7cec20cc29fb3cf0157d051778e315b03a99bb8e81090",
+      "bytes": 11112
+    },
+    "python/sglang/srt/layers/moe/flashinfer_megamoe.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "00653efc6c663a5b787763c2a594408b43e899645f4bc4b20594161412599c00",
+      "bytes": 24513
+    },
+    "python/sglang/srt/model_loader/post_load.py": {
+      "git_revision": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+      "sha256": "566638279a4c27d66a000b046f52b970a3e9b614802651f74c46ce5484ad5b88",
+      "bytes": 8427
+    }
+  },
+  "component": {
+    "path": "serving/candidates/native_serving_v26/component.py",
+    "sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+    "bytes": 198128
+  },
+  "manifest": {
+    "path": "serving/candidates/native_serving_v26/manifest.json",
+    "sha256": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+    "bytes": 757
+  },
+  "component_result": {
+    "artifact": {
+      "path": "experiments/iterations/20261104-native-serving-v26-root-result.json",
+      "sha256": "78c71110aa5a8083df39bade55e40a7d5c55db04ea78ea0f5364213a7f9f8aa3",
+      "bytes": 11423
+    },
+    "job": "274c69cbc0954d76",
+    "score_vs_official_stock": 1.685110070128997,
+    "fixed_screen_passed": true,
+    "limit": "Different official and actual serving Marlin block heuristics; not full-model evidence."
+  },
+  "rules_snapshot": {
+    "path": "serving/RULES.md",
+    "sha256": "3df0c5358d0d26af4709bff8911570c3a620fd3a5be2ee0dc1c7adecc2a04f6c",
+    "bytes": 3583
+  },
+  "contract": {
+    "path": "tools/SERVING_NATIVE_MOE_V26_INTEGRATION_CONTRACT_20261104.md",
+    "sha256": "49edcf68652a112ae049fbce8ae70035d1465a0b48e07bb7134ba33b750d8fc6",
+    "bytes": 12814
+  },
+  "hook": {
+    "installer": "MuseSparkNvFp4FusedMoEMethod._process_weights_for_marlin before aliases and super()",
+    "raw_format": "Model constructor rejects interleaved checkpoints; local canonical NVFP4 weights are available here.",
+    "prepare_arguments": {
+      "source_is_local": true,
+      "globals_prepared": false,
+      "local_start": "layer.local_expert_offset",
+      "local_count": "layer.num_local_experts"
+    },
+    "forward": "MuseSpark1xFp4Experts._forward_marlin: pre-norm once, native core plus original finalizer per chunk; preserve external all-reduce.",
+    "cannot_reuse_official_wrapper_verbatim": [
+      "Rank0 defaults",
+      "Official norm1+w reconstruction",
+      "Fixed epsilon",
+      "Per-component workspace ownership"
+    ]
+  },
+  "memory": {
+    "bank_bytes": 905969664,
+    "extra_prepared_globals_bytes": 128,
+    "lut_bytes": 1024,
+    "workspace_bytes": 129005088,
+    "private_partial_bytes": 41943040,
+    "bank_at_60_layers_gib": 50.625,
+    "bank_at_62_layers_gib": 52.3125,
+    "workspace_per62_layers_gib": 7.449011743068695,
+    "minimum_two_banks_during_one_layer_conversion_bytes": 1811939328,
+    "single_repack_int64_temporary_bytes": 67108864,
+    "temporary_bound_limit": "Other simultaneous arrays and allocator retention are additional; measure actual peaks.",
+    "full_route_output_16384_bytes": 1073741824,
+    "combined_output_16384_bytes": 134217728,
+    "core_chunks_16384": 43,
+    "loaded_sparse_layer_count": "unknown",
+    "one_bank_policy": "Design objective, not contest mandate. Selective dual retention adds864MiB/layer and requires actual full-model memory plus measured prefill tradeoff.",
+    "prefill_risk": "T16384 requires43 core plus43 original large-finalizer launches; six timed official cases<=256 do not cover TTFT."
+  },
+  "workspace_contract": {
+    "owner": "Target model/device/execution lane, shared across serial layers and shape buckets",
+    "initialization": "Before capture, once; extensions initialized before capture.",
+    "lifetime": "Until referencing graphs destroyed and outstanding work complete.",
+    "serial_requirement": "Finalize all route outputs before next scratch use.",
+    "concurrent_requirement": "Distinct workspace per overlapping execution lane or explicit GPU completion dependency.",
+    "cooperative_limit": "Admission safety does not imply scratch isolation.",
+    "unsupported_initial": [
+      "SP/expert TP or alternate backend routing",
+      "Hot weight reload",
+      "Offload/device migration",
+      "Unresolved PDMUX/TBO execution-lane sharing"
+    ]
+  },
+  "blocking_gates": [
+    "Postload installer with prepare/commit ownership and safe unchanged decline",
+    "Actual serving norm/epsilon/chunk adapter, original stock finalizer only",
+    "Registered bank lifetime and layer-by-layer allocated/reserved memory evidence",
+    "Model/graph execution-lane workspace ownership",
+    "All ranks, empty routes and zero-to-live reset device tests",
+    "Capture/replay and distinct-workspace concurrency tests",
+    "Large prefill/TTFT and full8-H200 serving correctness/performance"
+  ],
+  "minimum_next_gpu_plan": {
+    "sessions": 1,
+    "hardware": "single H200, only after separate root approval and fresh mandatory credit/resource check",
+    "allocation_authorized": false,
+    "reuse": "One local bank across rank-offset tests, separate bank fixture for PRMT/LUT",
+    "token_counts": [
+      0,
+      1,
+      31,
+      32,
+      383,
+      384,
+      385,
+      769,
+      16384
+    ],
+    "critical_tests": [
+      "All8rank offsets",
+      "Allremote/live/allremote reuse and poisoned slots",
+      "Pinned actual serving comparator",
+      "Two-layer shared workspace sequence",
+      "Fresh captures and changed-input replay",
+      "Simultaneous distinct-workspace streams/graphs",
+      "Representative expert-skew routes",
+      "Stock baseline re-executed after candidate to detect state contamination"
+    ],
+    "next_after_pass": "Full8-H200 official serving check at actual flags and concurrency; no component-to-model gain extrapolation"
+  },
+  "no_actions": [
+    "No production/candidate/helper edits",
+    "No provider/GPU/official calls",
+    "No rules acceptance",
+    "No commits"
+  ],
+  "export_contract": {
+    "authority": "Root current verified official export constraint; no fresh call made by this review",
+    "max_patch_bytes": 409600,
+    "prefix": "python/sglang/",
+    "excluded_prefix": "python/sglang/srt/model_loader/",
+    "allowed": "Source and JSON only",
+    "max_added_line_chars": 400,
+    "v26_overlong_lines": 9,
+    "stale_snapshot": "serving/RULES.md states720KB; superseded for limit"
+  }
+}

@@ -92,5 +92,20 @@
       "Explicit one-project-Modal-allocation-at-a-time wording"
     ],
     "response": "All three corrected; source and frozen experiment gates unchanged."
+  },
+  "integration_contract": {
+    "status": "Source-based implementation contract complete; adapter and GPU/full-serving validation outstanding",
+    "evidence": {
+      "tools/SERVING_NATIVE_MOE_V26_INTEGRATION_CONTRACT_20261104.md": "49edcf68652a112ae049fbce8ae70035d1465a0b48e07bb7134ba33b750d8fc6",
+      "experiments/iterations/20261104-native-serving-v26-integration-contract.json": "77d19d9ee2f9c9cf46f9692836ced0ccf0ed40d3fbb859476d957675bdfa5c15"
+    },
+    "findings": [
+      "Prepare before Marlin repack; already-local expert stacks need source_is_local=True.",
+      "Use real serving norm cache/epsilon; do not reuse official wrapper verbatim.",
+      "Register bank ownership and share workspace only within a serialized execution lane.",
+      "Full prefill requires43chunks atT16384; component tests<=256 do not establish TTFT.",
+      "One bank is a design objective; actual model/layer/KV/draft/graph memory remains unmeasured."
+    ],
+    "next": "Implement isolated adapter and CPU lifecycle tests, then freeze bounded device plan within fresh guarded resources."
   }
 }
