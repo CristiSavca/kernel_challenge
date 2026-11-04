@@ -139,3 +139,23 @@ prefix is byte-identical to V5 and copied kernels match its AST. Syntax and
 independent merge invariants passed; the complete MIT notice is retained.
 This combined decoder is not GPU-validated yet. Keep individual control jobs
 to distinguish integration failures from performance interactions.
+
+## Native V4 passed and submitted
+
+Private check `f8e991f1a2c2469e` passed all 13 numerical tests and 12 timed
+shapes at **2.1541142783×**, CI [2.1218025642, 2.1864259925], with no flags,
+rejections or runtime errors. Every timed shape improved; ratios range from
+1.671× for sliding decode at batch 32 to 2.449× for sliding single-request
+verify. This validates the full integration, including the previously noted
+UV rounding and routing concerns, for the official tested cases.
+
+Exact frozen source
+`80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c`
+is now active and was submitted for scoring as `4b216098993e4112` (pending).
+Complete source licenses and the bias-restoration/batch-bound fixes are retained.
+Prepared native scratch still assumes sequential calls; this kernel result
+does not establish safety under overlapping serving graphs.
+
+The compact alignment, own-attention and combined controls remain in flight.
+Do not score them merely because they pass; compare them with this much faster
+native incumbent first.

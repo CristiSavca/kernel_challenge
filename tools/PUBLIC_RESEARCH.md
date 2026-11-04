@@ -108,7 +108,10 @@ strings. Bias cloning and unconditional restoration prevent synthetic tuning
 from modifying checkpoint bias on failure. It also applies the full-attention
 64-request guard. All eight routes and weight precision were reviewed. The
 prepared state assumes serial calls; serving requires a separate concurrency
-review. CUDA synchronization, UV reassociation accuracy and timing are pending.
+review. Our private check passed all 13 numerical tests and 12 timed shapes
+at 2.1541×, CI 2.1218–2.1864. Exact-source scored submission
+`4b216098993e4112` is pending. This covers the official kernel cases, including
+UV reassociation and routing; it does not validate concurrent serving use.
 
 ## Upstream freshness and attention comparison
 
