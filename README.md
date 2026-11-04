@@ -22,8 +22,9 @@ earn serving-queue priority for the overall top 50.
   payment verification, which Modal says unlocks the $30 free monthly allowance.
   No GPU started, no usage was charged, and the failed app is stopped.
 - Selected public sources are pinned with licenses/hashes under `third_party/`.
-  The fully attributed compact expert integration passed the whole-decoder
-  check at **1.1612×**; the combined-attention control remains in a private check.
+  The fully attributed compact expert integration passed at **1.1612×** and
+  its combined-attention control passed at **1.1750×**. Both are retained as
+  fallbacks; the native whole decoder is substantially faster.
   Published third-party timing reports are not our performance evidence.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
@@ -66,7 +67,7 @@ for serving priority, so it is lower priority during this pass.
 | Projections | `8c992affff0e45b8` passed 1.4774× | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` passed 2.1541× | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
 | Whole decoder | `8e13cd6e80194b4f` passed 1.1060×; not scored | Passing decoder V2 with grouped window attention; slower than native V4 |
-| Whole decoder | `b255f6b17f1b4758` pending | Validated compact expert integration plus grouped window attention, with full attribution |
+| Whole decoder | `b255f6b17f1b4758` passed 1.1750×; not scored | Compact expert integration plus grouped window attention; slower than native V4 |
 
 **Active submission.py files hold passing candidates:** native attention V4,
 native experts V6, native projections V4 and native decoder V4. Pending alternatives are
@@ -90,8 +91,10 @@ From this directory:
 ```bash
 okc problems
 python3 tools/experiments.py status
-okc status 8727d7d1d2da427c --json
-okc status 8f1f69d433364789 --json
+okc status 8f9e5971f95841a0 --json  # native attention
+okc status 3c15b408fdb04c44 --json  # native experts
+okc status 3caa02bd72da4c49 --json  # native projections
+okc status 4b216098993e4112 --json  # native whole decoder
 ```
 
 The experiment helper freezes the exact source before uploading and saves a
@@ -101,8 +104,10 @@ content identifier is retained separately. It does not print or handle tokens.
 ```bash
 python3 tools/experiments.py check muse_bf16_proj --label next-idea
 python3 tools/experiments.py status
-# Only after a passing check and a useful measured gain:
-python3 tools/experiments.py submit muse_bf16_proj --label validated-candidate
+# Only after a passing check and a useful measured gain; use its exact snapshot:
+python3 tools/experiments.py submit muse_bf16_proj \
+  --file 'experiments/candidates/muse_bf16_proj/<passing-source-sha256>.py' \
+  --label validated-candidate
 ```
 
 Read each problem's `EXPERIMENTS.md`, `TASK.md`, and the returned profile before

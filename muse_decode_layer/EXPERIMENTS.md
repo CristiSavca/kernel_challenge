@@ -176,3 +176,12 @@ identical to the earlier V3 integration, whose check measured 1.1582×; the
 complete-notice packaging did not change the computation. Retain V6 as a
 fully attributed fallback. It will not be scored because native V4 is much
 faster and already submitted. Only the combined V7 control remains pending.
+
+## Combined V7 control resolved
+
+Check `b255f6b17f1b4758` passed at **1.1749782771×**, CI
+[1.1573536029, 1.1926029513], with no flags or errors. This is numerically valid,
+but the small difference from V6 lies within the reported uncertainty, and it
+remains substantially slower than native V4 at 2.1541×. Do not score or promote
+this control. All private experiments in this batch are now resolved; the
+four native scored reruns remain outstanding.
