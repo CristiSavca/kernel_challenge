@@ -1,0 +1,296 @@
+{
+  "date": "2026-11-04",
+  "verdict": "GO_ONE_PRIVATE_CHECK_AFTER_ROOT_CPU_PASS",
+  "gpu_proof": false,
+  "performance_evidence": false,
+  "source_sha256": "c6b90f168bfdc21a8583b6a4bd03cebc0e6c4e03f994f74759c54ab5b677335c",
+  "parent_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+  "artifacts": {
+    "candidate": {
+      "path": "muse_attention_decode/candidates/exact_rescale_v23.py",
+      "sha256": "c6b90f168bfdc21a8583b6a4bd03cebc0e6c4e03f994f74759c54ab5b677335c"
+    },
+    "plan": {
+      "path": "tools/ATTENTION_EXACT_RESCALE_V23_PLAN_20261104.md",
+      "sha256": "70c4e49bf08a58894d84007d18f7260cf4fd41c87bcba96591e1986d65804bda"
+    },
+    "verifier": {
+      "path": "tools/test_attention_exact_rescale_cpu.py",
+      "sha256": "869bd22bd9a2a8f25b5a219ada5844ed13cbc1552203a6fa61261be701ba879f"
+    },
+    "author_cpu": {
+      "path": "experiments/iterations/20261104-attention-exact-rescale-cpu.json",
+      "sha256": "d7e434d752680b25731be899cd5f81270dfd75bab2cc1f14d2c59ce2c338f67f"
+    },
+    "critic_note": {
+      "path": "tools/ATTENTION_EXACT_RESCALE_V23_CRITIC_20261104.md",
+      "sha256": "1c725bf58f3d543f813252a0a5385ecd2346b6e7f3422e479c02cdac6735b979"
+    }
+  },
+  "independent_cpu_rerun_equal_author": true,
+  "cpu": {
+    "status": "PASS",
+    "parent_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+    "candidate_sha256": "c6b90f168bfdc21a8583b6a4bd03cebc0e6c4e03f994f74759c54ab5b677335c",
+    "full_byte_restoration": true,
+    "source_scope_negative_controls": 3,
+    "actual_loop_host_result": {
+      "finite_inputs": 4091,
+      "alphas": 9,
+      "output_comparisons": 1178208,
+      "unit_alpha_copy_checks": 130912,
+      "nonfinite_O_directed": 5,
+      "nonfinite_difference_input_bits": [
+        2139169605
+      ]
+    },
+    "limits": [
+      "Host FP32 semantics only; no CUDA compilation, FTZ, scheduling or GPU numerical proof.",
+      "Finite O inputs include signed zeros, subnormals and extremes; nonfinite O differences reported separately.",
+      "Host row-sum fusion is disabled equally in both wrappers; GPU FMA lowering is unproven.",
+      "No performance measurement, provider call or kernel allocation."
+    ]
+  },
+  "source_scope": {
+    "full_parent_restoration": true,
+    "runtime_delta": "scalar alpha != 1.f guard around sixteen existing O products only",
+    "new_collectives": false,
+    "keys_or_values_skipped": false,
+    "flags_launch_packing_timing_changed": false,
+    "licenses_preserved": true
+  },
+  "parents": [
+    {
+      "job": "8f9e5971f95841a0",
+      "receipt_sha256": "17d4eebbf1fdd64625161acd63fc7cc56dd865329c59c13d099524cefaf1bf48",
+      "profile_sha256": "e413c4eab93d07f7e2745d43271cbd8ca0f8ea0ba5282b115bf545bd7f419e19",
+      "recomputed_score": 2.6119701144979857,
+      "reported_score": 2.6119701144979857,
+      "evaluator_code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+      "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452",
+      "gpu": "H200",
+      "profile_mapping": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 13>",
+          "affected": false
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "symbol": "attn_kernel<1, false, 11>",
+          "affected": true
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 1>",
+          "affected": true
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "symbol": "attn_kernel<1, true, 0>",
+          "affected": true
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 1>",
+          "affected": true
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "symbol": "attn_kernel<1, true, 0>",
+          "affected": true
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 15>",
+          "affected": false
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "symbol": "attn_kernel<8, false, 11>",
+          "affected": false
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 3>",
+          "affected": false
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "symbol": "attn_kernel<8, true, 0>",
+          "affected": false
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 3>",
+          "affected": false
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "symbol": "attn_kernel<8, true, 0>",
+          "affected": false
+        }
+      ]
+    },
+    {
+      "job": "c21d391dbf604bb5",
+      "receipt_sha256": "d23740d6928c52c8d5c35130935c620ab3e464c0d18a86625deab28db7acf3c1",
+      "profile_sha256": "7a33067ab2561c36f6137e117405dc0417ff37656cb5dae28a4a87eb3ac57f0c",
+      "recomputed_score": 2.6425388867913835,
+      "reported_score": 2.6425388867913835,
+      "evaluator_code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+      "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452",
+      "gpu": "H200",
+      "profile_mapping": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 13>",
+          "affected": false
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "symbol": "attn_kernel<1, false, 11>",
+          "affected": true
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 1>",
+          "affected": true
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "symbol": "attn_kernel<1, true, 0>",
+          "affected": true
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "symbol": "attn_kernel<1, false, 1>",
+          "affected": true
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "symbol": "attn_kernel<1, true, 0>",
+          "affected": true
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 15>",
+          "affected": false
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "symbol": "attn_kernel<8, false, 11>",
+          "affected": false
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 3>",
+          "affected": false
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "symbol": "attn_kernel<8, true, 0>",
+          "affected": false
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "symbol": "attn_kernel<8, false, 3>",
+          "affected": false
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "symbol": "attn_kernel<8, true, 0>",
+          "affected": false
+        }
+      ]
+    }
+  ],
+  "fixed_gate": {
+    "official_aggregate_speed_ratio_min_both": 1.01,
+    "affected_indices": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "control_indices": [
+      0,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "affected_speed_gm_min_both": 1.03,
+    "jointly_faster_min": 3,
+    "affected_latency_max_both": 1.02,
+    "control_latency_gm_range_both": [
+      0.98,
+      1.02
+    ],
+    "tests": 16,
+    "benchmarks": 12,
+    "profiles": 12,
+    "retry_after_failure": false
+  },
+  "limits": [
+    "No CUDA compilation, GPU numerical/resource result or branch-frequency measurement.",
+    "Host signaling-NaN difference is recorded; no universal payload/FTZ bit-equivalence claim.",
+    "Compiler predication, reconvergence lowering and code/register cost remain unmeasured.",
+    "Decoder payoff numbers are profile scenarios, not critical-path bounds."
+  ],
+  "primary_sources": [
+    "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-mul",
+    "https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#ftz"
+  ]
+}
