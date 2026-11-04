@@ -97,3 +97,25 @@ and excludes the encoded dense source. No full third-party app build, model
 weights or local CUDA image was downloaded. No project cleanup was needed in
 this pass; free space observed 41 GiB initially and 45 GiB later reflects other
 concurrent disk activity, not removals by this task.
+
+## Native-entry evidence review (November 3 evening)
+
+All four native candidates passed their official private checks with no flags,
+rejections or runtime errors. An independent review matched all 43 numerical
+cases and 60 timed cases to the TASK declarations, including parameters and
+order. Recorded preparation times stayed within 300 seconds (MoE 140.60 s,
+projections 75.56 s, decoder 113.66 s).
+
+Passing-check snapshots, active submissions and scored-upload snapshots have
+identical SHA-256 hashes for each problem. Canonical server content hashes also
+match between each private check and its scored receipt, including decoder
+`4b216098993e4112`, now confirmed in mode `run`. Complete upstream MIT/Apache
+notices are present; original NVIDIA BSD text is retained with CUTLASS source.
+All 18 official evaluator files remain byte-identical to the initial commit,
+and applicable local evaluator hashes match those reported by the checks.
+
+Private speedups: attention 2.6425×, experts 2.3605×, projections 1.4774×,
+whole decoder 2.1541×. The new scored jobs are respectively
+`8f9e5971f95841a0`, `3c15b408fdb04c44`, `3caa02bd72da4c49` and
+`4b216098993e4112`. Their outcomes and leaderboard placements are still pending;
+do not present these private measurements as completed scored results.
