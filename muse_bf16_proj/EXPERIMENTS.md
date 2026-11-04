@@ -93,3 +93,21 @@ active packing defect was found. Keep compressed SK2 routes at CL=1: an unused
 CL>1 compressed epilogue drops peer escape buffers. Native barriers, numerical
 accuracy, performance and the 300-second preparation limit need the official
 GPU check. The existing scored hybrid remains active.
+
+## Native V4 passed and submitted
+
+Private check `8c992affff0e45b8` passed all nine numerical tests and 30 timed
+shapes at **1.4774342558×**, CI [1.4552727419, 1.4995957696], with no flags,
+rejections or runtime errors. This validates compilation, numerical accuracy,
+and preparation within the official limit for this exact candidate.
+
+The native router's paired speedups range from 2.399× to 5.239×. Small-batch
+BF16 projections also improve; most large-batch non-router shapes are close
+to baseline. Do not claim every individual shape improved: three ratios are
+slightly below 1.0 (0.998×, 0.984× and 0.982×).
+
+Exact frozen source
+`27a0afe97d0a9b8cd11a58f243b44f2c375d84cec5cb7b742f451da45a239e30`
+is now active and was submitted for scoring as `3caa02bd72da4c49` (pending).
+Keep the existing compressed-CL=1 constraint; the unused compressed cluster
+branch remains outside supported configurations.

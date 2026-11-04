@@ -12,24 +12,19 @@ earn serving-queue priority for the overall top 50.
   their original starters, references and SGLang baselines.
 - Four kernel boards have passing scored entries: projections **1.1303×**,
   attention **1.1345×**, experts **1.3383×**, and the whole decoder **1.0813×**.
-- New attention and expert candidates passed private H200 checks at **1.2050×**
-  and **1.3348×** respectively. The expert scored run passed at **1.3383×**
-  (CI 1.3182–1.3583); the attention scored run is still pending.
-- Native CUDA attention passed all 16 numerical tests at **2.6425×**
-  (CI 2.5935–2.6822). Its exact source is active and submitted for scoring as
-  `8f9e5971f95841a0`; the scored result is pending.
-- Native CUDA experts passed all five numerical tests at **2.3605×**
-  (CI 2.3251–2.3959). Exact-source scored submission `3c15b408fdb04c44` is
-  pending; this native candidate is now active.
+- Native CUDA attention, experts and projections passed all official private
+  correctness tests at **2.6425×**, **2.3605×** and **1.4774×** respectively.
+  Their exact sources are active and submitted for scoring; those results are
+  pending. The native whole-decoder check is also pending.
 - The direct packed-GEMV expert experiment passed correctness but regressed
   to **0.7385×**. It was rejected as an optimization and was not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
   payment verification, which Modal says unlocks the $30 free monthly allowance.
   No GPU started, no usage was charged, and the failed app is stopped.
 - Selected public sources are pinned with licenses/hashes under `third_party/`.
-  Reviewed native CUDA attention, experts, projections and decoder candidates
-  are in private checks, together with a compact expert integration into our
-  decoder. Published third-party timing reports are not our performance evidence.
+  The compact expert integration passed the whole-decoder check at **1.1582×**;
+  attribution-complete and combined-attention variants remain in private checks.
+  Published third-party timing reports are not our performance evidence.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
 - `serving/patch.diff` is an unvalidated draft of the expert routing changes.
@@ -37,7 +32,7 @@ earn serving-queue priority for the overall top 50.
 
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
-| Dense projections | `ce713efc5e9b44d8` passed | 1.1320× | `b5538a0dd25d46be`, passed 1.1303× |
+| Dense projections | `8c992affff0e45b8` passed | 1.4774× | `3caa02bd72da4c49` queued; hybrid V3 `b5538a0dd25d46be` passed 1.1303× |
 | Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` queued; earlier V3 `52117bcc7137435e` also queued; V1 passed 1.1345× |
 | Routed experts | `143f8587286e4384` passed | 2.3605× | `3c15b408fdb04c44` queued; compact V4 `d674d6a1ada44d16` passed 1.3383× |
 | Whole decoder layer | `41920b5cf4bf423f` passed | 1.1582× | Attribution-complete variant in private check; `846bf3fd98c54703` passed 1.0813× |
@@ -68,13 +63,13 @@ for serving priority, so it is lower priority during this pass.
 | Experts | `cac648f3b3904842` pending | Compact V4 with the full upstream MIT notice embedded; identical executable AST |
 | Whole decoder | `41920b5cf4bf423f` passed 1.1582× | Passing V2 decoder with the public V4 expert alignment/finalization |
 | Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
-| Projections | `8c992affff0e45b8` pending | Reviewed native CUDA with lossless BF16 weight compression |
+| Projections | `8c992affff0e45b8` passed 1.4774× | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` pending | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
 | Whole decoder | `8e13cd6e80194b4f` pending | Passing decoder V2 with our validated grouped window attention for decode and small verify batches |
 | Whole decoder | `b255f6b17f1b4758` pending | Validated compact expert integration plus grouped window attention, with full attribution |
 
 **Active submission.py files hold passing candidates:** native attention V4,
-native experts V6, projection hybrid V3 and decoder V2. Pending alternatives are
+native experts V6, native projections V4 and decoder V2. Pending alternatives are
 preserved separately under `candidates/` and immutable `experiments/` snapshots.
 Score the exact source associated with a passing check; do not substitute an
 unvalidated active candidate. The kernel phase has both November 3 and November
