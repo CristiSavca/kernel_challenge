@@ -50,3 +50,33 @@ flags, a material nearby-shape regression, or no useful gain beyond noise.
 Do not rerun a queued job, tune arbitrary escape density thresholds from scored
 inputs, or add a new codec merely to rescue this hypothesis. Preserve the
 incumbent while the check is pending. Root owns all official submissions.
+
+## Terminal decision — November 4, 2026
+
+**Reject promotion.** Private job `d4c26ebb65e94a84` completed successfully:
+13/13 correctness tests and12/12 timed cases passed, with no flags or rejections.
+The exact frozen source above scored **2.0876884235×**, 95% interval
+2.0563730972–2.1190037499×. This is2.91% below the public parent's2.1501860996×
+and3.08% below its earlier private2.1541142783×. Every case/load speedup ratio is
+below both parent runs. The proposed≥3% whole-decoder improvement did not occur.
+
+The candidate really executed compressed global-escape SK2 in every small-T
+profile; six additional renamed router launches are uncompressed and retain the
+old algorithm. Matched qkv SK2 durations increased in all eight small-T captures.
+At T1/T8 the tuner also dropped the parent's UV/fused pooler-router path, adding
+a separate router and explicit boundary1. T32 o-projection selected cuBLAS.
+Those different paths prevent attributing the whole loss to a single instruction
+or comparing the changed pooler row directly with the old fused row.
+
+T128/T256 have no SK2 launches, yet their SGLang-relative ratios also declined;
+fresh seeds, different nodes, baseline changes and tuning confound precise
+cross-job attribution. No device counters isolate global gather traffic,
+correction-tail latency, table scans or register pressure. The local log is empty
+and the result's log tail contains profiler messages, not compiler resources.
+Do not claim a measured spill or exact root cause.
+
+Preserve this failed experiment and the incumbent; no scored submission,
+identical retry, or rescue variant. Reproducible analysis:
+`tools/analyze_dense_escape_global_v10.py`,
+`experiments/iterations/20261104-dense-escape-global-mechanism-analysis.json`, and
+`tools/DENSE_ESCAPE_GLOBAL_V10_DIAGNOSIS.md`.

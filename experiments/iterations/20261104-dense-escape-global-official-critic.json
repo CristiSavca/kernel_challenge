@@ -1,0 +1,3391 @@
+{
+  "candidate": {
+    "job": "d4c26ebb65e94a84",
+    "receipt": "experiments/runs/d4c26ebb65e94a84.json",
+    "receipt_sha256": "3e4ffb274e30e71a7d01cbd4ff66700c3e24c71b728b59c0ddef7dad58b32a4d",
+    "profile": "experiments/candidates/muse_decode_layer/profiles/b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b.d4c26ebb65e94a84.json",
+    "profile_sha256": "98cf772dabfc614a73865a925d244fa796b4970e0b4f2a69e415c8394e73a0fc",
+    "source_sha256": "b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+    "node": "n-szupglbnophi2mfwuhxj2gr5an",
+    "speedup": 2.0876884235438955,
+    "speedup_ci": [
+      2.056373097190737,
+      2.1190037498970535
+    ]
+  },
+  "record_counts": {
+    "setup": 1,
+    "test": 13,
+    "benchmark": 12,
+    "profile": 12
+  },
+  "flags": [],
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "comparisons": [
+    {
+      "parent": {
+        "job": "f8e991f1a2c2469e",
+        "receipt": "experiments/runs/f8e991f1a2c2469e.json",
+        "receipt_sha256": "2db513d9056c13a4c135feecd99f28696e7a3d31fc78f7d7a75f3bce0e4af528",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.f8e991f1a2c2469e.json",
+        "profile_sha256": "8777cf44e2b023249a010aeca8bd56f3577e1ec8b4be258060fe35f639f69966",
+        "source_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+        "node": "n-jm6ivorpl4s77pryw35ktai2hy",
+        "speedup": 2.154114278329575,
+        "speedup_ci": [
+          2.121802564154631,
+          2.1864259925045184
+        ]
+      },
+      "cases": [
+        {
+          "index": 0,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 5459861967504088150,
+            "weight": 46
+          },
+          "parent_seed": 7395189526988405461,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9603934328823523,
+          "candidate_normalized_us": 74.71879835959233,
+          "parent_normalized_us": 71.17395486774042,
+          "candidate_raw_us": 77.34400033950806,
+          "parent_raw_us": 74.81599971652031,
+          "baseline_time_ratio": 1.00822616068983,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.7,
+              "share_percent": 28.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 15.0,
+              "share_percent": 18.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.0,
+              "share_percent": 14.9,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.4,
+              "share_percent": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.1,
+              "share_percent": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.1,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "duration_us": 4.9,
+              "share_percent": 6.0,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.9,
+              "share_percent": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.8,
+              "share_percent": 4.7,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.5,
+              "share_percent": 30.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "duration_us": 19.3,
+              "share_percent": 25.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.6,
+              "share_percent": 14.2,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.2,
+              "share_percent": 9.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.7,
+              "share_percent": 8.9,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "duration_us": 4.8,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 5.1,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 5459880788899850190,
+            "weight": 16
+          },
+          "parent_seed": 7395426114332534852,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9543302589434242,
+          "candidate_normalized_us": 81.46795544168202,
+          "parent_normalized_us": 76.93596183188589,
+          "candidate_raw_us": 85.05599945783615,
+          "parent_raw_us": 80.19199967384338,
+          "baseline_time_ratio": 1.010546084835318,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.5,
+              "share_percent": 26.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 14.6,
+              "share_percent": 16.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 11.8,
+              "share_percent": 13.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "duration_us": 11.3,
+              "share_percent": 13.1,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.3,
+              "share_percent": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 5.9,
+              "share_percent": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.0,
+              "share_percent": 5.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.8,
+              "share_percent": 4.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 28.8,
+              "share_percent": 33.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "duration_us": 18.0,
+              "share_percent": 21.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "duration_us": 10.8,
+              "share_percent": 12.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.5,
+              "share_percent": 12.2,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.3,
+              "share_percent": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.7,
+              "share_percent": 7.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 4.5,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 5459899610295612231,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 7395662701676664244,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9549737889600137,
+          "candidate_normalized_us": 137.07778020863677,
+          "parent_normalized_us": 128.0218471235858,
+          "candidate_raw_us": 142.43200421333313,
+          "parent_raw_us": 131.95200264453888,
+          "baseline_time_ratio": 1.022526155412366,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.3,
+              "share_percent": 50.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "duration_us": 22.2,
+              "share_percent": 14.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "duration_us": 19.0,
+              "share_percent": 12.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "duration_us": 12.7,
+              "share_percent": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 7.6,
+              "share_percent": 4.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "duration_us": 6.6,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 2.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 59.8,
+              "share_percent": 46.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 18.8,
+              "share_percent": 14.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 17.7,
+              "share_percent": 13.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 10.7,
+              "share_percent": 8.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 7.6,
+              "share_percent": 6.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "duration_us": 6.2,
+              "share_percent": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.7,
+              "share_percent": 2.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.9,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 5459918431691374273,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 7395899289020793637,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9625357509397533,
+          "candidate_normalized_us": 214.80753218172708,
+          "parent_normalized_us": 206.25184983951667,
+          "candidate_raw_us": 217.45599806308746,
+          "parent_raw_us": 211.56800538301468,
+          "baseline_time_ratio": 1.0024633934528713,
+          "candidate_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 89.3,
+              "share_percent": 41.3,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 58.5,
+              "share_percent": 27.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "duration_us": 21.6,
+              "share_percent": 10.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "duration_us": 18.6,
+              "share_percent": 8.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "duration_us": 12.3,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "duration_us": 8.3,
+              "share_percent": 3.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.1,
+              "share_percent": 1.9,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.7,
+              "share_percent": 1.7,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 89.4,
+              "share_percent": 44.2,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 51.6,
+              "share_percent": 25.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 17.8,
+              "share_percent": 8.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 17.6,
+              "share_percent": 8.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 10.5,
+              "share_percent": 5.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "duration_us": 7.5,
+              "share_percent": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.1,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 1.9,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 5459937253087136316,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 7396135876364923031,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.96395570694042,
+          "candidate_normalized_us": 162.91599766790011,
+          "parent_normalized_us": 156.5938297687316,
+          "candidate_raw_us": 163.90400379896164,
+          "parent_raw_us": 161.40799969434738,
+          "baseline_time_ratio": 1.0028735227677708,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 75.3,
+              "share_percent": 46.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "duration_us": 20.6,
+              "share_percent": 12.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "duration_us": 18.5,
+              "share_percent": 11.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "duration_us": 12.4,
+              "share_percent": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 10.0,
+              "share_percent": 6.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "duration_us": 6.9,
+              "share_percent": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.5,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "duration_us": 5.4,
+              "share_percent": 3.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.4,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 2.3,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 84.3,
+              "share_percent": 50.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 19.6,
+              "share_percent": 11.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 16.4,
+              "share_percent": 9.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "duration_us": 11.7,
+              "share_percent": 7.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 9.2,
+              "share_percent": 5.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 6.8,
+              "share_percent": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "duration_us": 5.4,
+              "share_percent": 3.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 4.5,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.0,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.7,
+              "share_percent": 2.3,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 5459956074482898360,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 7396372463709052426,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9786731366553956,
+          "candidate_normalized_us": 315.20052346594645,
+          "parent_normalized_us": 310.5449701380993,
+          "candidate_raw_us": 318.7679946422577,
+          "parent_raw_us": 313.6799931526184,
+          "baseline_time_ratio": 0.9933449729958924,
+          "candidate_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 168.9,
+              "share_percent": 53.7,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 68.8,
+              "share_percent": 21.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "duration_us": 19.9,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "duration_us": 17.8,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "duration_us": 12.4,
+              "share_percent": 3.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "duration_us": 7.5,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.6,
+              "share_percent": 1.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "duration_us": 5.3,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.3,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 1.3,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 170.8,
+              "share_percent": 52.6,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 77.7,
+              "share_percent": 23.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 19.7,
+              "share_percent": 6.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 17.6,
+              "share_percent": 5.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "duration_us": 11.7,
+              "share_percent": 3.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 8.3,
+              "share_percent": 2.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "duration_us": 5.4,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.7,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 4.6,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 1.2,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5459974895878660405,
+            "weight": 46
+          },
+          "parent_seed": 7396609051053181822,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9573383693051233,
+          "candidate_normalized_us": 112.34573968092916,
+          "parent_normalized_us": 108.40876789593236,
+          "candidate_raw_us": 116.2400022149086,
+          "parent_raw_us": 111.82400211691856,
+          "baseline_time_ratio": 0.9921050604298411,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 50.5,
+              "share_percent": 45.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 15.1,
+              "share_percent": 13.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.6,
+              "share_percent": 11.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.6,
+              "share_percent": 6.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "duration_us": 6.9,
+              "share_percent": 6.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.3,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 4.8,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 3.3,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 3.2,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 60.3,
+              "share_percent": 52.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 18.3,
+              "share_percent": 15.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.5,
+              "share_percent": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 8.0,
+              "share_percent": 7.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "duration_us": 7.2,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 7.1,
+              "share_percent": 6.2,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 3.1,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5459993717274422451,
+            "weight": 16
+          },
+          "parent_seed": 7396845638397311219,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9358587683154989,
+          "candidate_normalized_us": 122.94995639078523,
+          "parent_normalized_us": 107.55763427261583,
+          "candidate_raw_us": 127.87200510501862,
+          "parent_raw_us": 111.4719994366169,
+          "baseline_time_ratio": 1.0697873333722048,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.0,
+              "share_percent": 52.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 16.5,
+              "share_percent": 11.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "duration_us": 14.3,
+              "share_percent": 9.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.2,
+              "share_percent": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 8.8,
+              "share_percent": 5.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.1,
+              "share_percent": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.0,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 2.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 50.7,
+              "share_percent": 44.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 19.5,
+              "share_percent": 17.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "duration_us": 14.8,
+              "share_percent": 12.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.7,
+              "share_percent": 9.4,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 8.3,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.7,
+              "share_percent": 5.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 3.2,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460012538670184498,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 7397082225741440617,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9863460523704407,
+          "candidate_normalized_us": 251.19135857120267,
+          "parent_normalized_us": 251.37055837048186,
+          "candidate_raw_us": 254.33599948883057,
+          "parent_raw_us": 258.2719922065735,
+          "baseline_time_ratio": 0.9856428951838935,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 153.9,
+              "share_percent": 60.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.5,
+              "share_percent": 10.5,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 21.3,
+              "share_percent": 8.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.3,
+              "share_percent": 6.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 11.8,
+              "share_percent": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.5,
+              "share_percent": 2.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.1,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.8,
+              "share_percent": 1.9,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.1,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.1,
+              "share_percent": 1.2,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 147.3,
+              "share_percent": 59.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.9,
+              "share_percent": 10.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "duration_us": 20.8,
+              "share_percent": 8.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 16.0,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 11.8,
+              "share_percent": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.7,
+              "share_percent": 3.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.1,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.8,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.0,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.2,
+              "share_percent": 1.3,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460031360065946546,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 7397318813085570016,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9880377076838124,
+          "candidate_normalized_us": 340.58789020102654,
+          "parent_normalized_us": 343.237462193565,
+          "candidate_raw_us": 343.31199526786804,
+          "parent_raw_us": 348.28799962997437,
+          "baseline_time_ratio": 0.9804106933680654,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 149.5,
+              "share_percent": 43.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 104.3,
+              "share_percent": 30.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.0,
+              "share_percent": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 21.6,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.3,
+              "share_percent": 4.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.6,
+              "share_percent": 2.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.0,
+              "share_percent": 1.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.7,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.2,
+              "share_percent": 1.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.1,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 154.4,
+              "share_percent": 44.5,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 104.1,
+              "share_percent": 30.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.0,
+              "share_percent": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "duration_us": 22.0,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 16.1,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.5,
+              "share_percent": 2.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.1,
+              "share_percent": 1.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.7,
+              "share_percent": 1.3,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.0,
+              "share_percent": 1.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.2,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460050181461708595,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 7397555400429699416,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9943539772920896,
+          "candidate_normalized_us": 315.14008670798233,
+          "parent_normalized_us": 323.8292139011644,
+          "candidate_raw_us": 318.60800087451935,
+          "parent_raw_us": 324.40000772476196,
+          "baseline_time_ratio": 0.967673036188442,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 194.8,
+              "share_percent": 60.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 32.6,
+              "share_percent": 10.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 26.0,
+              "share_percent": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 23.5,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 15.2,
+              "share_percent": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.1,
+              "share_percent": 2.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.6,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.1,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 5.2,
+              "share_percent": 1.6,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 209.0,
+              "share_percent": 61.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 33.6,
+              "share_percent": 9.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 26.0,
+              "share_percent": 7.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 23.2,
+              "share_percent": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 15.2,
+              "share_percent": 4.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.3,
+              "share_percent": 2.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.2,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 5.2,
+              "share_percent": 1.5,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460069002857470645,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 7397791987773828817,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9870546901247902,
+          "candidate_normalized_us": 481.11427374476654,
+          "parent_normalized_us": 485.5123997637124,
+          "candidate_raw_us": 488.92800509929657,
+          "parent_raw_us": 491.7600005865097,
+          "baseline_time_ratio": 0.9781132276268744,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 203.3,
+              "share_percent": 40.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 185.8,
+              "share_percent": 37.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 33.9,
+              "share_percent": 6.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 26.4,
+              "share_percent": 5.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 22.9,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.3,
+              "share_percent": 1.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.0,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.7,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 210.1,
+              "share_percent": 41.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 187.3,
+              "share_percent": 36.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 32.6,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 25.8,
+              "share_percent": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 23.3,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.0,
+              "share_percent": 1.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 7.9,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.9,
+              "share_percent": 1.0,
+              "calls": 1
+            }
+          ]
+        }
+      ],
+      "loads": {
+        "decode 1": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 10742560.018785298,
+          "parent_weighted_baseline_ns": 10648320.073261857,
+          "candidate_weighted_time_ns": 4740552.011608159,
+          "parent_weighted_time_ns": 4504977.313226234,
+          "candidate_speedup": 2.2660989674789054,
+          "parent_speedup": 2.363678956162395,
+          "speedup_ratio": 0.9587169025518093
+        },
+        "decode 16": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 19140768.1806013,
+          "parent_weighted_baseline_ns": 18855712.22845465,
+          "candidate_weighted_time_ns": 9742498.404504925,
+          "parent_weighted_time_ns": 9189034.565117212,
+          "candidate_speedup": 1.9646673148799922,
+          "parent_speedup": 2.051979682395953,
+          "speedup_ratio": 0.9574496919901214
+        },
+        "decode 32": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 21969311.699271202,
+          "parent_weighted_baseline_ns": 22001024.273224175,
+          "candidate_weighted_time_ns": 12537344.268178549,
+          "parent_weighted_time_ns": 12172035.691571243,
+          "candidate_speedup": 1.7523098376609347,
+          "parent_speedup": 1.807505731227785,
+          "speedup_ratio": 0.9694629496254171
+        },
+        "verify 1": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 16597567.56387651,
+          "parent_weighted_baseline_ns": 16401632.136665285,
+          "candidate_weighted_time_ns": 7135103.327575305,
+          "parent_weighted_time_ns": 6707725.471574741,
+          "candidate_speedup": 2.32618461175345,
+          "parent_speedup": 2.4451853621872734,
+          "speedup_ratio": 0.9513326260356089
+        },
+        "verify 16": {
+          "has_sk2_profile_rows": false,
+          "candidate_weighted_baseline_ns": 35235743.84395033,
+          "parent_weighted_baseline_ns": 35809280.497953296,
+          "candidate_weighted_time_ns": 17004208.737491746,
+          "parent_weighted_time_ns": 17054845.080139205,
+          "candidate_speedup": 2.072177799503294,
+          "parent_speedup": 2.099654399068925,
+          "speedup_ratio": 0.9869137513403086
+        },
+        "verify 32": {
+          "has_sk2_profile_rows": false,
+          "candidate_weighted_baseline_ns": 48863550.7337749,
+          "parent_weighted_baseline_ns": 50310047.164559364,
+          "candidate_weighted_time_ns": 22194272.368483454,
+          "parent_weighted_time_ns": 22664342.235672962,
+          "candidate_speedup": 2.201628867237055,
+          "parent_speedup": 2.2197885401400677,
+          "speedup_ratio": 0.9918191879205455
+        }
+      },
+      "all_loads_speedup_ratio_geomean": 0.9691632633171208,
+      "sk2_loads_speedup_ratio_geomean": 0.9592183732503052,
+      "no_sk2_control_loads_speedup_ratio_geomean": 0.9893634293837447
+    },
+    {
+      "parent": {
+        "job": "4b216098993e4112",
+        "receipt": "experiments/runs/4b216098993e4112.json",
+        "receipt_sha256": "95f45350c05884f1ae6c7e4f44db629547e90f6b670edb19f75d0afd8a5dcafc",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.4b216098993e4112.json",
+        "profile_sha256": "848e23f2913e7577300bae4329090a1d63bc420ff114c6292172f722d9f7e722",
+        "source_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+        "node": "n-oqjh2x5qkdwydb4hfm23qfgn4r",
+        "speedup": 2.1501860995655244,
+        "speedup_ci": [
+          2.1179333080720415,
+          2.182438891059007
+        ]
+      },
+      "cases": [
+        {
+          "index": 0,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 5459861967504088150,
+            "weight": 46
+          },
+          "parent_seed": 3953054836652371582,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9652667439338696,
+          "candidate_normalized_us": 74.71879835959233,
+          "parent_normalized_us": 71.77184777038983,
+          "candidate_raw_us": 77.34400033950806,
+          "parent_raw_us": 74.49600100517273,
+          "baseline_time_ratio": 1.0049005765317682,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.7,
+              "share_percent": 28.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 15.0,
+              "share_percent": 18.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.0,
+              "share_percent": 14.9,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.4,
+              "share_percent": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.1,
+              "share_percent": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.1,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "duration_us": 4.9,
+              "share_percent": 6.0,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.9,
+              "share_percent": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.8,
+              "share_percent": 4.7,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.8,
+              "share_percent": 30.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "duration_us": 18.8,
+              "share_percent": 25.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.7,
+              "share_percent": 14.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.3,
+              "share_percent": 9.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.7,
+              "share_percent": 9.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "duration_us": 4.8,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.9,
+              "share_percent": 5.2,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 5459880788899850190,
+            "weight": 16
+          },
+          "parent_seed": 3953097541376436990,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.959110193689827,
+          "candidate_normalized_us": 81.46795544168202,
+          "parent_normalized_us": 77.43187808533683,
+          "candidate_raw_us": 85.05599945783615,
+          "parent_raw_us": 79.72799986600876,
+          "baseline_time_ratio": 1.0091030781543509,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.5,
+              "share_percent": 26.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 14.6,
+              "share_percent": 16.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 11.8,
+              "share_percent": 13.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "duration_us": 11.3,
+              "share_percent": 13.1,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.3,
+              "share_percent": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 5.9,
+              "share_percent": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.0,
+              "share_percent": 5.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.8,
+              "share_percent": 4.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.4,
+              "share_percent": 28.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "duration_us": 18.1,
+              "share_percent": 22.7,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "duration_us": 11.1,
+              "share_percent": 13.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.7,
+              "share_percent": 13.4,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.2,
+              "share_percent": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.3,
+              "share_percent": 7.9,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 4.8,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 5459899610295612231,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 3953140246100502399,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9698203814630734,
+          "candidate_normalized_us": 137.07778020863677,
+          "parent_normalized_us": 133.50403075105004,
+          "candidate_raw_us": 142.43200421333313,
+          "parent_raw_us": 137.66399770975113,
+          "baseline_time_ratio": 0.9957813583917267,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.3,
+              "share_percent": 50.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "duration_us": 22.2,
+              "share_percent": 14.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "duration_us": 19.0,
+              "share_percent": 12.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "duration_us": 12.7,
+              "share_percent": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 7.6,
+              "share_percent": 4.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "duration_us": 6.6,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 2.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 82.8,
+              "share_percent": 54.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 19.0,
+              "share_percent": 12.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 18.3,
+              "share_percent": 12.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 10.5,
+              "share_percent": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 7.4,
+              "share_percent": 4.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "duration_us": 6.3,
+              "share_percent": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.5,
+              "share_percent": 2.3,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 5459918431691374273,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 3953182950824567809,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9678214044909533,
+          "candidate_normalized_us": 214.80753218172708,
+          "parent_normalized_us": 210.27433049503745,
+          "candidate_raw_us": 217.45599806308746,
+          "parent_raw_us": 213.1040021777153,
+          "baseline_time_ratio": 0.9886861938968873,
+          "candidate_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 89.3,
+              "share_percent": 41.3,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 58.5,
+              "share_percent": 27.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "duration_us": 21.6,
+              "share_percent": 10.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "duration_us": 18.6,
+              "share_percent": 8.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "duration_us": 12.3,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "duration_us": 8.3,
+              "share_percent": 3.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.1,
+              "share_percent": 1.9,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.7,
+              "share_percent": 1.7,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 90.0,
+              "share_percent": 42.6,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 59.4,
+              "share_percent": 28.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 18.0,
+              "share_percent": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 17.9,
+              "share_percent": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 10.5,
+              "share_percent": 5.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "duration_us": 7.5,
+              "share_percent": 3.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.2,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 1.9,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 5459937253087136316,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 3953225655548633220,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9461594962876586,
+          "candidate_normalized_us": 162.91599766790011,
+          "parent_normalized_us": 157.76249658454836,
+          "candidate_raw_us": 163.90400379896164,
+          "parent_raw_us": 161.52000427246094,
+          "baseline_time_ratio": 0.9770669305303009,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 75.3,
+              "share_percent": 46.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "duration_us": 20.6,
+              "share_percent": 12.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "duration_us": 18.5,
+              "share_percent": 11.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "duration_us": 12.4,
+              "share_percent": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 10.0,
+              "share_percent": 6.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "duration_us": 6.9,
+              "share_percent": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.5,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "duration_us": 5.4,
+              "share_percent": 3.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.4,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 2.3,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 79.5,
+              "share_percent": 49.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 18.7,
+              "share_percent": 11.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 16.7,
+              "share_percent": 10.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "duration_us": 11.7,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "duration_us": 9.3,
+              "share_percent": 5.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 6.8,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "duration_us": 5.5,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 4.4,
+              "share_percent": 2.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.1,
+              "share_percent": 2.6,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.8,
+              "share_percent": 2.4,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 5459956074482898360,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 3953268360272698632,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9953628933640738,
+          "candidate_normalized_us": 315.20052346594645,
+          "parent_normalized_us": 310.9877275668327,
+          "candidate_raw_us": 318.7679946422577,
+          "parent_raw_us": 314.07999992370605,
+          "baseline_time_ratio": 1.0088465788718661,
+          "candidate_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 168.9,
+              "share_percent": 53.7,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 68.8,
+              "share_percent": 21.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "duration_us": 19.9,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "duration_us": 17.8,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "duration_us": 12.4,
+              "share_percent": 3.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "duration_us": 7.5,
+              "share_percent": 2.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.6,
+              "share_percent": 1.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "duration_us": 5.3,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.3,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 1.3,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "duration_us": 169.1,
+              "share_percent": 51.5,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 86.1,
+              "share_percent": 26.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 18.4,
+              "share_percent": 5.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "duration_us": 17.3,
+              "share_percent": 5.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "duration_us": 11.0,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "duration_us": 8.2,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "duration_us": 5.5,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 4.4,
+              "share_percent": 1.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.4,
+              "share_percent": 1.3,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 4.0,
+              "share_percent": 1.2,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5459974895878660405,
+            "weight": 46
+          },
+          "parent_seed": 3953311064996764045,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9558979027113389,
+          "candidate_normalized_us": 112.34573968092916,
+          "parent_normalized_us": 106.58866179076513,
+          "candidate_raw_us": 116.2400022149086,
+          "parent_raw_us": 110.59200018644333,
+          "baseline_time_ratio": 1.007527959684532,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 50.5,
+              "share_percent": 45.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 15.1,
+              "share_percent": 13.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.6,
+              "share_percent": 11.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.6,
+              "share_percent": 6.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "duration_us": 6.9,
+              "share_percent": 6.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.3,
+              "share_percent": 5.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 4.8,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 3.3,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 3.2,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 51.3,
+              "share_percent": 48.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 19.2,
+              "share_percent": 18.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.3,
+              "share_percent": 9.8,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 7.7,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "duration_us": 7.3,
+              "share_percent": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.1,
+              "share_percent": 5.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.5,
+              "share_percent": 3.3,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5459993717274422451,
+            "weight": 16
+          },
+          "parent_seed": 3953353769720829459,
+          "has_sk2_profile_rows": true,
+          "speedup_ratio": 0.9690623589468059,
+          "candidate_normalized_us": 122.94995639078523,
+          "parent_normalized_us": 119.25507904706949,
+          "candidate_raw_us": 127.87200510501862,
+          "parent_raw_us": 122.64000251889229,
+          "baseline_time_ratio": 0.99908679550189,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.0,
+              "share_percent": 52.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "duration_us": 16.5,
+              "share_percent": 11.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "duration_us": 14.3,
+              "share_percent": 9.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "duration_us": 12.2,
+              "share_percent": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 8.8,
+              "share_percent": 5.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "duration_us": 6.1,
+              "share_percent": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "duration_us": 5.0,
+              "share_percent": 3.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 3.7,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.6,
+              "share_percent": 2.4,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 64.7,
+              "share_percent": 51.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "duration_us": 18.8,
+              "share_percent": 14.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "duration_us": 14.5,
+              "share_percent": 11.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "duration_us": 10.5,
+              "share_percent": 8.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "duration_us": 8.2,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "duration_us": 6.6,
+              "share_percent": 5.2,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "duration_us": 3.5,
+              "share_percent": 2.8,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460012538670184498,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 3953396474444894874,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9955602217952325,
+          "candidate_normalized_us": 251.19135857120267,
+          "parent_normalized_us": 256.4221439512571,
+          "candidate_raw_us": 254.33599948883057,
+          "parent_raw_us": 260.0639909505844,
+          "baseline_time_ratio": 0.9752516721010214,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 153.9,
+              "share_percent": 60.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.5,
+              "share_percent": 10.5,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 21.3,
+              "share_percent": 8.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.3,
+              "share_percent": 6.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 11.8,
+              "share_percent": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.5,
+              "share_percent": 2.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.1,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.8,
+              "share_percent": 1.9,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.1,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.1,
+              "share_percent": 1.2,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 145.2,
+              "share_percent": 59.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 25.8,
+              "share_percent": 10.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "duration_us": 20.9,
+              "share_percent": 8.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.6,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 11.6,
+              "share_percent": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.5,
+              "share_percent": 3.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.2,
+              "share_percent": 2.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.8,
+              "share_percent": 2.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.2,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.1,
+              "share_percent": 1.3,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460031360065946546,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 3953439179168960290,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9894799301342768,
+          "candidate_normalized_us": 340.58789020102654,
+          "parent_normalized_us": 347.2873667463335,
+          "candidate_raw_us": 343.31199526786804,
+          "parent_raw_us": 350.3040075302124,
+          "baseline_time_ratio": 0.9703919982981944,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 149.5,
+              "share_percent": 43.8,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 104.3,
+              "share_percent": 30.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.0,
+              "share_percent": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 21.6,
+              "share_percent": 6.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.3,
+              "share_percent": 4.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.6,
+              "share_percent": 2.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.0,
+              "share_percent": 1.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.7,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.2,
+              "share_percent": 1.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.1,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 165.1,
+              "share_percent": 46.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 105.2,
+              "share_percent": 29.5,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "duration_us": 26.1,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "duration_us": 21.2,
+              "share_percent": 5.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "duration_us": 15.2,
+              "share_percent": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "duration_us": 7.6,
+              "share_percent": 2.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 5.1,
+              "share_percent": 1.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 4.7,
+              "share_percent": 1.3,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 3.9,
+              "share_percent": 1.1,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "duration_us": 3.0,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460050181461708595,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "parent_seed": 3953481883893025707,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9666848617630593,
+          "candidate_normalized_us": 315.14008670798233,
+          "parent_normalized_us": 324.36501946724354,
+          "candidate_raw_us": 318.60800087451935,
+          "parent_raw_us": 329.2800039052963,
+          "baseline_time_ratio": 0.9391923693117873,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 194.8,
+              "share_percent": 60.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 32.6,
+              "share_percent": 10.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 26.0,
+              "share_percent": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 23.5,
+              "share_percent": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 15.2,
+              "share_percent": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.1,
+              "share_percent": 2.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.6,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.1,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 5.2,
+              "share_percent": 1.6,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 194.6,
+              "share_percent": 60.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 32.4,
+              "share_percent": 10.1,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 25.4,
+              "share_percent": 7.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 22.9,
+              "share_percent": 7.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "duration_us": 14.9,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 8.9,
+              "share_percent": 2.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 2.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.0,
+              "share_percent": 2.5,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 5.3,
+              "share_percent": 1.7,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 5460069002857470645,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "parent_seed": 3953524588617091125,
+          "has_sk2_profile_rows": false,
+          "speedup_ratio": 0.9853547553851622,
+          "candidate_normalized_us": 481.11427374476654,
+          "parent_normalized_us": 499.77084207263823,
+          "candidate_raw_us": 488.92800509929657,
+          "parent_raw_us": 499.61601197719574,
+          "baseline_time_ratio": 0.9485712202657509,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 203.3,
+              "share_percent": 40.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 185.8,
+              "share_percent": 37.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 33.9,
+              "share_percent": 6.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "duration_us": 26.4,
+              "share_percent": 5.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 22.9,
+              "share_percent": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.3,
+              "share_percent": 1.8,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 1.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.0,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.7,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 218.0,
+              "share_percent": 42.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "duration_us": 186.1,
+              "share_percent": 36.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "duration_us": 33.0,
+              "share_percent": 6.4,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "duration_us": 25.7,
+              "share_percent": 5.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "duration_us": 22.8,
+              "share_percent": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "duration_us": 9.6,
+              "share_percent": 1.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "duration_us": 8.5,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "duration_us": 8.0,
+              "share_percent": 1.6,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "duration_us": 4.6,
+              "share_percent": 0.9,
+              "calls": 1
+            }
+          ]
+        }
+      ],
+      "loads": {
+        "decode 1": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 10742560.018785298,
+          "parent_weighted_baseline_ns": 10678176.008164883,
+          "candidate_weighted_time_ns": 4740552.011608159,
+          "parent_weighted_time_ns": 4540415.046803322,
+          "candidate_speedup": 2.2660989674789054,
+          "parent_speedup": 2.3518061450533803,
+          "speedup_ratio": 0.9635568697893127
+        },
+        "decode 16": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 19140768.1806013,
+          "parent_weighted_baseline_ns": 19272160.336375237,
+          "candidate_weighted_time_ns": 9742498.404504925,
+          "parent_weighted_time_ns": 9505574.702468902,
+          "candidate_speedup": 1.9646673148799922,
+          "parent_speedup": 2.027458721814015,
+          "speedup_ratio": 0.9690295016818681
+        },
+        "decode 32": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 21969311.699271202,
+          "parent_weighted_baseline_ns": 22165887.743234634,
+          "candidate_weighted_time_ns": 12537344.268178549,
+          "parent_weighted_time_ns": 12232878.483958546,
+          "candidate_speedup": 1.7523098376609347,
+          "parent_speedup": 1.811992800574422,
+          "speedup_ratio": 0.9670622516300468
+        },
+        "verify 1": {
+          "has_sk2_profile_rows": true,
+          "candidate_weighted_baseline_ns": 16597567.56387651,
+          "parent_weighted_baseline_ns": 16511136.352084577,
+          "candidate_weighted_time_ns": 7135103.327575305,
+          "parent_weighted_time_ns": 6811159.707128308,
+          "candidate_speedup": 2.32618461175345,
+          "parent_speedup": 2.424129966414476,
+          "speedup_ratio": 0.959595666891616
+        },
+        "verify 16": {
+          "has_sk2_profile_rows": false,
+          "candidate_weighted_baseline_ns": 35235743.84395033,
+          "parent_weighted_baseline_ns": 36187071.62234932,
+          "candidate_weighted_time_ns": 17004208.737491746,
+          "parent_weighted_time_ns": 17352016.489699163,
+          "candidate_speedup": 2.072177799503294,
+          "parent_speedup": 2.0854677981565652,
+          "speedup_ratio": 0.9936273297218885
+        },
+        "verify 32": {
+          "has_sk2_profile_rows": false,
+          "candidate_weighted_baseline_ns": 48863550.7337749,
+          "parent_weighted_baseline_ns": 51849792.55218059,
+          "candidate_weighted_time_ns": 22194272.368483454,
+          "parent_weighted_time_ns": 22917124.368655413,
+          "candidate_speedup": 2.201628867237055,
+          "parent_speedup": 2.2624912147833625,
+          "speedup_ratio": 0.9730994104425129
+        }
+      },
+      "all_loads_speedup_ratio_geomean": 0.9709338293860901,
+      "sk2_loads_speedup_ratio_geomean": 0.9648043773441407,
+      "no_sk2_control_loads_speedup_ratio_geomean": 0.983309803038665
+    }
+  ],
+  "output_visibility": {
+    "saved_log": "experiments/candidates/muse_decode_layer/profiles/b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b.d4c26ebb65e94a84.log",
+    "saved_log_bytes": 0,
+    "saved_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log_tail_chars": 1956,
+    "compiler_diagnostics_complete": false
+  },
+  "aggregation": "Official sliding/full weights46/16, six-load geometric mean; reproduces candidate and both parents exactly. Fresh runs are not paired against each other.",
+  "verdict": {
+    "decision": "REJECT this exact candidate; no score, no integration, no identical retry.",
+    "evidence": "All12 case speedup ratios and all6 load ratios fall below both exact80a4 parent runs. Aggregate relative speedup is0.969163 versus private and0.970934 versus public. The four affected SK2 loads lose approximately3-5% each; this does not support the ring-decoupling performance hypothesis.",
+    "controls": "Profiles0..7 execute renamed SK2 kernels. Profiles8..11 (M128/M256) contain no SK2 in candidate or parents and are unchanged-path controls. Their raw times improve while SGLang-relative ratios regress because reference baselines also shift; do not treat that as a measured SK2 effect.",
+    "causal_limits": "Dense autotuning selected different configurations/backends for some small workloads. Renamed uncompressed SK2 rows also exist although the new branch activates only COMP&&CL1. Truncated symbols do not always expose CL. PDL profile durations include waiting/overlap, and captures have fresh seeds/nodes; no exact attribution to sparse global loads, correction stalls or individual projections follows.",
+    "compiler_limits": "Successful compile diagnostics are not retained completely. No visible serialization warning is not proof of no forced serialization, and the profile report contains no register/localBytes/achieved occupancy evidence.",
+    "next_direction": "Preserve rejection and wait for the already submitted compact mechanism. Do not tune this failed rewrite through a blind parameter sweep; any dense follow-up needs a different falsifiable mechanism and evidence of a recoverable bottleneck."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "decision": "GO for one scored publication per problem of the two exact already-tested KPERM sources. No source edits, combination with rejected mechanisms, repeat checks or retry-to-improve-score loop.",
+  "scope": [
+    {
+      "problem": "muse_moe_w4a16",
+      "private_job": "bcb761dfca264db0",
+      "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "source": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+      "review": "experiments/iterations/20261104-moe-kperm3-official-critic.json"
+    },
+    {
+      "problem": "muse_decode_layer",
+      "private_job": "b2a773e2d7194de8",
+      "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+      "source": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+      "review": "experiments/iterations/20261104-decoder-kperm3-official-critic.json"
+    }
+  ],
+  "fresh_verification": "Independently rehashed both immutable source snapshots and verified their saved private receipts are terminal PASS with returncode0, checks.ok, no rejected/flagged checks and no flags. No remote polling by reviewer.",
+  "why_hold_is_now_resolved": "The prior decoder HOLD explicitly awaited broad dense/compact results. Both broader candidates have now failed their performance hypotheses and are rejected. KPERM has a distinct correct transformation and coherent favorable affected-case direction across the standalone and whole-decoder workloads, providing a reasonable modest candidate to publish once.",
+  "positive_evidence": [
+    "Standalone affected M32/M128/M256 speedup geometric ratio is about+3.15% versus private parent and+3.32% versus scored parent; all three affected sizes improve against both parents.",
+    "Whole-decoder affected loads improve about+2.21% against private parent and+1.71% against scored parent, with no affected-load regression against either. Official whole-decoder correctness passed after exact isolated source integration.",
+    "This authorizes a first public evaluation of an actual computation improvement with passing private evidence, rather than repeated identical private timing attempts."
+  ],
+  "limits_not_waived": [
+    "Aggregate private gains of about1.2-1.4% overlap reported parent/candidate confidence intervals. Unchanged controls vary and jobs use fresh seeds/nodes. The precise gain is not established, and the public run may fail to improve the best score.",
+    "Do not describe publication approval as statistically confirmed speedup, a robust rank gain or #1. Inspect the scored receipt and authenticated leaderboard identity after completion and report the actual result.",
+    "Preserve all existing incumbent and rejected-experiment evidence. Never edit or relabel a pending receipt, and never resubmit an already received scored job.",
+    "No retry solely because the first public score is less favorable. Any subsequent experiment needs a distinct substantive hypothesis and independent review."
+  ],
+  "supersedes": "Only the temporary score-now HOLD/NO_GO in the linked KPERM result critiques; their factual comparisons, uncertainty, no-repeat decision and source/correctness requirements remain in force."
+}

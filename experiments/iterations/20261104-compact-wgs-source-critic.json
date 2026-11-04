@@ -64,7 +64,7 @@
   },
   "unverified_and_kill_gates": [
     "No CUDA compilation, actual occupancy/register/local-memory values, WGMMA serialization diagnostics, numerical accuracy or GPU timing established by this review.",
-    "Require official terminal PASS, all case records, flags and checks, actual resource log and profile evidence before integration. Occupancy assertion failure is a failed architecture screen, not grounds to remove the guard.",
+    "Require official terminal PASS, all case records, flags/checks, actual occupancy evidence from the retained marker or demonstrably exercised non-bypassable WGS host gate, and profile/per-case performance evidence before integration. Preserve exact resource attributes if retained. Missing successful compiler logs alone do not justify another GPU run; disclose that serialization/spill diagnostics remain unavailable. Occupancy assertion failure is a failed admission screen, not grounds to remove the guard.",
     "A two-CTA design retains four compute warpgroups per SM, doubles producer warps, halves per-SM weight-ring capacity from110592 to55296 bytes, doubles logical activation stage requests, adds stage/fixup events, and rereads final Y. Therefore no speedup follows merely from two resident CTAs.",
     "FP32 reduction association and split ownership change. GPU nearby-shape and scratch-transition correctness remain required; CPU address proof alone is insufficient.",
     "Judge affected M32/128/256 against unchanged M1/8/16 controls and parent receipts; overlapping score intervals or fresh routing variation do not establish a precise win. Do not score a regressing or noisy architecture simply because it passes."
@@ -86,5 +86,6 @@
     "limits": "CPU arithmetic; not GPU FMA/rsqrt validation.",
     "max_parent_compact_sum_difference_relative_to_float64_sum": 2.196377919689493e-07,
     "norm_stress_scope": "Zero, ones, seven one-hot rows, 200 random signed FP32 rows scaled elementwise by powers of two with exponents -20..20 and25% zeros. Sequential FP32 scalar sum-of-squares model; this is not normalized-output error, CUDA FMA, rsqrt or BF16 output validation."
-  }
+  },
+  "pre_result_evidence_plan": "experiments/iterations/20261104-pending-experiment-evidence-plan.json"
 }

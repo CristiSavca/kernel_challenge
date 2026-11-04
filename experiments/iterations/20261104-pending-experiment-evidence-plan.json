@@ -1,0 +1,61 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "scope": "Offline result-extraction plan prepared before reading terminal dense/compact results. Root alone polls jobs. No GPU allocation, duplicate check or speculative candidate.",
+  "jobs": {
+    "compact": {
+      "job": "94e63981c631474e",
+      "source_sha256": "cf09ba584cc1537802636bb905ac08cda2095f83a163358e1c9bb716490130b8",
+      "parents": [
+        "143f8587286e4384",
+        "3c15b408fdb04c44"
+      ],
+      "additional_mechanism_comparator": "bcb761dfca264db0"
+    },
+    "dense": {
+      "job": "d4c26ebb65e94a84",
+      "source_sha256": "b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b",
+      "parents": [
+        "f8e991f1a2c2469e",
+        "4b216098993e4112"
+      ],
+      "additional_mechanism_comparator": "b2a773e2d7194de8"
+    }
+  },
+  "provenance_and_correctness": [
+    "Read only terminal local receipt/profile files saved by root. Hash frozen source, receipt and profile; verify job, problem, private mode, source identity, terminal state, returncode, passed, evaluator SHA, GPU/node and duplicate_of.",
+    "Count actual event records separately: setup, explicit tests, benchmarks, profiles. Expected prior shapes are compact setup1/test5/benchmark6/profile6 and dense setup1/test13/benchmark12/profile12; report actual counts and investigate differences, never silently assume them.",
+    "Check every record status, all error fields, checks.ok, rejected/flagged lists and flags. A benchmark-only success does not establish all checks passed.",
+    "Record all tested and timed shapes and fresh seeds. Compact prior explicit tests include M33/M257 and skewed M128; M384, zero local routes and complete scratch-transition coverage are not automatically established by those five tests. CPU coverage remains separate.",
+    "Preserve failure evidence and do not overwrite parent or earlier results. A compile/resource/numerical failure must not be represented as a timing result."
+  ],
+  "compiler_visibility": {
+    "observed_artifact_limit": "Existing terminal KPERM standalone/decoder receipts have short result.log_tail strings containing profiler activity messages; their response.output.log files exist but are zero bytes. Do not assume a .log filename means complete output.",
+    "candidate_build": "Compact load_inline uses verbose=False with -Xptxas -v,-O3. A flag requesting diagnostics does not establish those diagnostics reached preserved output; successful build output may be hidden before any server-tail truncation.",
+    "required_wording_if_no_diagnostics": "No serialization warning is visible in the retained output; complete compiler diagnostics were not retained, so absence of forced WGMMA serialization is unverified.",
+    "forbidden_inference": "Do not infer no C7512/C7510, no spills, zero local memory, exact register count or complete ptxas capture from an empty log or a successful run.",
+    "positive_warning_evidence": "Preserve any actual C7512/C7510, stack/spill or resource message verbatim with source artifact and surrounding specialization context. Interpret adverse evidence against measured gain and resource pressure; do not suppress it.",
+    "decision_boundary": "Incomplete successful compiler output is a visibility limitation, not an automatic correctness failure or reason for another GPU check. A useful measured gain may support keeping the hypothesis while disclosing that limitation. Actual occupancy guard failures remain correctness/admission blockers."
+  },
+  "compact_architecture_identification": {
+    "profile_expectation": "One void okc::moe_fused<false/true>(okc::Params) call per timed shape. Record the exact observed name, calls and duration. This symbol is shared with parent and therefore cannot by itself identify compact geometry or occupancy.",
+    "strongest_retained_marker": "OKC_COMPACT_WGS resources threads=320 dynamic=98048 occupancy=X/Y regs=A/B local=C/D. Parse and save exact line if retained; X andY must each be at least2. Attribute order is BIGfalse thenBIGtrue. Zero localBytes, if observed, does not establish no WGMMA serialization.",
+    "source_to_execution_chain": "Frozen SHA plus MAIN_DEFINES NW8/WGS1, M>16 dispatch and the PRMT-eligible scale path select compact. Host then doubles132-SM grid to264, opts in exact98048 dynamic bytes and queries both actual compiled BIG specializations at320 threads. A successfully exercised WGS call must have passed both occupancy>=2 queries before launch; otherwise TORCH_CHECK throws.",
+    "fallback_caveat": "PASS alone must not imply the WGS host guard ran if weights selected the unchanged non-PRMT fallback. Establish the active path from retained marker if available and inspected official input-generation/dispatch evidence. The supplied nvfp4.random_weights clamps ordinary block scales to [8,448], wholly positive normal E4M3, so this documented workload selects PRMT; keep this source-based inference distinct from a runtime marker.",
+    "what_guard_proves": "Both compiled kernel specializations have reported static admission capacity of at least two blocks per SM for the exact block size and dynamic shared memory on that run's device. Passing profiled execution establishes that exercised work completed without the guard rejecting it.",
+    "what_guard_does_not_prove": "No measurement of achieved occupancy, simultaneous two-block activity throughout the run, register/spill values when absent, improved latency hiding, memory bandwidth or serialization freedom. Native CPU Smem arithmetic is corroboration, not the runtime CUDA occupancy query."
+  },
+  "compact_performance": [
+    "For all six timed cases compare candidate normalized median_ns, raw median_raw_ns, paired_ratio/speedup, baseline_ns, timing intervals and seeds against both exact ef7 private/scored parents. Verify identical nonseed case definitions and evaluator identity before interpreting ratios.",
+    "Reproduce official aggregate as geometric mean of six case speedups. Report per-case speedup ratios, aggregate ratio, affected M32/128/256 geometric ratio and unchanged M1/M8/M16 control ratio separately. Include raw-profile MoE durations as corroborating captures, not interchangeable with normalized benchmark time.",
+    "Compare controls without using them to manufacture an exact noise correction. Fresh routes, baseline shifts and nodes break cross-job pairing; overlapping intervals and heterogeneous controls limit causal precision. Independent KPERM is an optional portfolio comparator, not this architecture's direct parent.",
+    "Keep an architecture win only if changed cases show a useful coherent improvement with official correctness, then review one isolated whole-decoder integration. The compact proposal target is at least10% lower aggregate affected-case latency without more than3% loss on any affected case. A weaker result requires explicit judgement rather than claiming the target met. Do not promote a broad regression because the aggregate or tiny controls moved favorably.",
+    "Two compact CTAs retain four compute warpgroups per SM, double producer warps, halve per-SM packed-weight ring capacity and add stage/fixup events plus a second Y read. Occupancy is a mechanism to test, not a promised improvement."
+  ],
+  "dense_performance": [
+    "Reproduce each load using official sliding/full weights46/16, then geometric mean of six load speedups. Compare all twelve cases to exact80a4 private/scored parents; show raw and normalized time, reference-baseline shifts and fresh seeds.",
+    "Find renamed sk2_global_escape_kernel rows in each profile, preserving all template details that survive report truncation. Map those rows to eligible COMP&&CL==1 paths using source-selected geometry; other dense/attention/MoE rows are within-run contextual controls, not clean independent experiments.",
+    "Report complete whole-decoder change as the primary outcome. Reduced selected SK2 row durations alone do not establish a decoder win because PDL rows can contain predecessor waiting/overlap, and the correction branch adds sparse global loads.",
+    "No automatic assumption that every case changed: profile actual chosen dense backends. For fused UV paths preserve physical2T rows; projections, shapes and backend selection can differ by workload and autotuning.",
+    "On useful gain, retain the exact passing source as a separate portfolio option. Integration with compact or KPERM requires an isolated combination and exact source review; standalone gains are not additive."
+  ]
+}

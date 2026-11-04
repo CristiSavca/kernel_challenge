@@ -1,0 +1,5054 @@
+{
+  "candidate": {
+    "job": "d4c26ebb65e94a84",
+    "source_sha256": "b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b",
+    "receipt": "experiments/runs/d4c26ebb65e94a84.json",
+    "receipt_sha256": "3e4ffb274e30e71a7d01cbd4ff66700c3e24c71b728b59c0ddef7dad58b32a4d",
+    "profile": "experiments/candidates/muse_decode_layer/profiles/b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b.d4c26ebb65e94a84.json",
+    "profile_sha256": "98cf772dabfc614a73865a925d244fa796b4970e0b4f2a69e415c8394e73a0fc",
+    "log_bytes": 0,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "speedup": 2.0876884235438955,
+    "speedup_ci": [
+      2.056373097190737,
+      2.1190037498970535
+    ],
+    "node": "n-szupglbnophi2mfwuhxj2gr5an",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+    "events": {
+      "setup": 1,
+      "test": 13,
+      "benchmark": 12,
+      "profile": 12
+    },
+    "flags": [],
+    "checks": {
+      "flagged": [],
+      "ok": true,
+      "rejected": []
+    }
+  },
+  "decision": "REJECT promotion; preserve incumbent. No rescue variant or GPU run.",
+  "comparisons": [
+    {
+      "parent": {
+        "job": "4b216098993e4112",
+        "source_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+        "receipt": "experiments/runs/4b216098993e4112.json",
+        "receipt_sha256": "95f45350c05884f1ae6c7e4f44db629547e90f6b670edb19f75d0afd8a5dcafc",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.4b216098993e4112.json",
+        "profile_sha256": "848e23f2913e7577300bae4329090a1d63bc420ff114c6292172f722d9f7e722",
+        "log_bytes": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "speedup": 2.1501860995655244,
+        "speedup_ci": [
+          2.1179333080720415,
+          2.182438891059007
+        ],
+        "node": "n-oqjh2x5qkdwydb4hfm23qfgn4r",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+        "events": {
+          "setup": 1,
+          "test": 13,
+          "benchmark": 12,
+          "profile": 12
+        },
+        "flags": [],
+        "checks": {
+          "flagged": [],
+          "ok": true,
+          "rejected": []
+        }
+      },
+      "aggregate_speedup_ratio": 0.9709338293860902,
+      "target_case_ratio_geomean": 0.96597064013188,
+      "control_case_ratio_geomean": 0.9842105476521116,
+      "load_results": {
+        "decode 1": {
+          "speedup_ratio": 0.9635568697893127,
+          "normalized_latency_ratio": 1.0440790021929258
+        },
+        "decode 16": {
+          "speedup_ratio": 0.9690295016818681,
+          "normalized_latency_ratio": 1.024924710967185
+        },
+        "decode 32": {
+          "speedup_ratio": 0.9670622516300468,
+          "normalized_latency_ratio": 1.0248891366508104
+        },
+        "verify 1": {
+          "speedup_ratio": 0.959595666891616,
+          "normalized_latency_ratio": 1.0475607142360748
+        },
+        "verify 16": {
+          "speedup_ratio": 0.9936273297218885,
+          "normalized_latency_ratio": 0.9799557733008213
+        },
+        "verify 32": {
+          "speedup_ratio": 0.9730994104425129,
+          "normalized_latency_ratio": 0.9684579972363099
+        }
+      },
+      "cases": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "tokens": 1,
+          "small_T_target": true,
+          "candidate_seed": 5459861967504088150,
+          "parent_seed": 3953054836652371582,
+          "candidate_normalized_us": 74.71879835959233,
+          "parent_normalized_us": 71.77184777038983,
+          "candidate_raw_us": 77.34400033950806,
+          "parent_raw_us": 74.49600100517273,
+          "speedup_ratio": 0.9652667439338696,
+          "baseline_time_ratio": 1.0049005765317682,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 15.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "us": 4.9,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "us": 18.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.9,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.7,
+              "candidate_us": 12.0,
+              "delta_us": 1.3000000000000007
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.7,
+              "candidate_us": 6.1,
+              "delta_us": -0.6000000000000005
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "tokens": 1,
+          "small_T_target": true,
+          "candidate_seed": 5459880788899850190,
+          "parent_seed": 3953097541376436990,
+          "candidate_normalized_us": 81.46795544168202,
+          "parent_normalized_us": 77.43187808533683,
+          "candidate_raw_us": 85.05599945783615,
+          "parent_raw_us": 79.72799986600876,
+          "speedup_ratio": 0.959110193689827,
+          "baseline_time_ratio": 1.0091030781543509,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 14.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 11.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "us": 11.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 5.9,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "us": 18.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "us": 11.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.7,
+              "candidate_us": 11.8,
+              "delta_us": 1.1000000000000014
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.3,
+              "candidate_us": 5.9,
+              "delta_us": -0.39999999999999947
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "tokens": 16,
+          "small_T_target": true,
+          "candidate_seed": 5459899610295612231,
+          "parent_seed": 3953140246100502399,
+          "candidate_normalized_us": 137.07778020863677,
+          "parent_normalized_us": 133.50403075105004,
+          "candidate_raw_us": 142.43200421333313,
+          "parent_raw_us": 137.66399770975113,
+          "speedup_ratio": 0.9698203814630734,
+          "baseline_time_ratio": 0.9957813583917267,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 78.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "us": 22.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "us": 19.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "us": 12.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "us": 6.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 82.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 19.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "us": 18.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 7.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "us": 6.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.5,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "pooler_fused_router",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 19.0,
+              "candidate_us": 22.2,
+              "delta_us": 3.1999999999999993
+            },
+            {
+              "role": "unpooler",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 18.3,
+              "candidate_us": 19.0,
+              "delta_us": 0.6999999999999993
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 12.7,
+              "delta_us": 2.1999999999999993
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.3,
+              "candidate_us": 6.6,
+              "delta_us": 0.2999999999999998
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "tokens": 16,
+          "small_T_target": true,
+          "candidate_seed": 5459918431691374273,
+          "parent_seed": 3953182950824567809,
+          "candidate_normalized_us": 214.80753218172708,
+          "parent_normalized_us": 210.27433049503745,
+          "candidate_raw_us": 217.45599806308746,
+          "parent_raw_us": 213.1040021777153,
+          "speedup_ratio": 0.9678214044909533,
+          "baseline_time_ratio": 0.9886861938968873,
+          "candidate_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 89.3,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 58.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "us": 21.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "us": 18.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "us": 12.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "us": 8.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.7,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 90.0,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 59.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "us": 18.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 17.9,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "us": 7.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "pooler_fused_router",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.9,
+              "candidate_us": 21.6,
+              "delta_us": 3.700000000000003
+            },
+            {
+              "role": "unpooler",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 18.0,
+              "candidate_us": 18.6,
+              "delta_us": 0.6000000000000014
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 12.3,
+              "delta_us": 1.8000000000000007
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 7.5,
+              "candidate_us": 8.3,
+              "delta_us": 0.8000000000000007
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "tokens": 32,
+          "small_T_target": true,
+          "candidate_seed": 5459937253087136316,
+          "parent_seed": 3953225655548633220,
+          "candidate_normalized_us": 162.91599766790011,
+          "parent_normalized_us": 157.76249658454836,
+          "candidate_raw_us": 163.90400379896164,
+          "parent_raw_us": 161.52000427246094,
+          "speedup_ratio": 0.9461594962876586,
+          "baseline_time_ratio": 0.9770669305303009,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 75.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "us": 20.6,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "us": 18.5,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "us": 12.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 10.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "us": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "us": 5.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 79.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 18.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "us": 16.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "us": 11.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 9.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 6.8,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "us": 5.5,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary2",
+              "us": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "unpooler",
+              "prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "changed": true,
+              "parent_us": 18.7,
+              "candidate_us": 20.6,
+              "delta_us": 1.9000000000000021
+            },
+            {
+              "role": "pooler_separate",
+              "prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 16.7,
+              "candidate_us": 18.5,
+              "delta_us": 1.8000000000000007
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "changed": true,
+              "parent_us": 11.7,
+              "candidate_us": 12.4,
+              "delta_us": 0.7000000000000011
+            },
+            {
+              "role": "router_uncompressed_unchanged",
+              "prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "changed": false,
+              "parent_us": 5.5,
+              "candidate_us": 5.4,
+              "delta_us": -0.09999999999999964
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "tokens": 32,
+          "small_T_target": true,
+          "candidate_seed": 5459956074482898360,
+          "parent_seed": 3953268360272698632,
+          "candidate_normalized_us": 315.20052346594645,
+          "parent_normalized_us": 310.9877275668327,
+          "candidate_raw_us": 318.7679946422577,
+          "parent_raw_us": 314.07999992370605,
+          "speedup_ratio": 0.9953628933640738,
+          "baseline_time_ratio": 1.0088465788718661,
+          "candidate_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 168.9,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 68.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "us": 19.9,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "us": 17.8,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "us": 12.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "us": 5.3,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 169.1,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 86.1,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 18.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "us": 17.3,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "us": 11.0,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 8.2,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "us": 5.5,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary2",
+              "us": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "unpooler",
+              "prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "changed": true,
+              "parent_us": 18.4,
+              "candidate_us": 19.9,
+              "delta_us": 1.5
+            },
+            {
+              "role": "pooler_separate",
+              "prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.3,
+              "candidate_us": 17.8,
+              "delta_us": 0.5
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "changed": true,
+              "parent_us": 11.0,
+              "candidate_us": 12.4,
+              "delta_us": 1.4000000000000004
+            },
+            {
+              "role": "router_uncompressed_unchanged",
+              "prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "changed": false,
+              "parent_us": 5.5,
+              "candidate_us": 5.3,
+              "delta_us": -0.20000000000000018
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "tokens": 8,
+          "small_T_target": true,
+          "candidate_seed": 5459974895878660405,
+          "parent_seed": 3953311064996764045,
+          "candidate_normalized_us": 112.34573968092916,
+          "parent_normalized_us": 106.58866179076513,
+          "candidate_raw_us": 116.2400022149086,
+          "parent_raw_us": 110.59200018644333,
+          "speedup_ratio": 0.9558979027113389,
+          "baseline_time_ratio": 1.007527959684532,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 50.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 15.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "us": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 4.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 51.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 19.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.7,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "us": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.5,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.3,
+              "candidate_us": 12.6,
+              "delta_us": 2.299999999999999
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.1,
+              "candidate_us": 6.3,
+              "delta_us": 0.20000000000000018
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "tokens": 8,
+          "small_T_target": true,
+          "candidate_seed": 5459993717274422451,
+          "parent_seed": 3953353769720829459,
+          "candidate_normalized_us": 122.94995639078523,
+          "parent_normalized_us": 119.25507904706949,
+          "candidate_raw_us": 127.87200510501862,
+          "parent_raw_us": 122.64000251889229,
+          "speedup_ratio": 0.9690623589468059,
+          "baseline_time_ratio": 0.99908679550189,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 78.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 16.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "us": 14.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 8.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 64.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 18.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "us": 14.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.5,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 12.2,
+              "delta_us": 1.6999999999999993
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.6,
+              "candidate_us": 6.1,
+              "delta_us": -0.5
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "tokens": 128,
+          "small_T_target": false,
+          "candidate_seed": 5460012538670184498,
+          "parent_seed": 3953396474444894874,
+          "candidate_normalized_us": 251.19135857120267,
+          "parent_normalized_us": 256.4221439512571,
+          "candidate_raw_us": 254.33599948883057,
+          "parent_raw_us": 260.0639909505844,
+          "speedup_ratio": 0.9955602217952325,
+          "baseline_time_ratio": 0.9752516721010214,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 153.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.5,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 21.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 11.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.1,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 145.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 25.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "us": 20.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.6,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 11.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.2,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.1,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "tokens": 128,
+          "small_T_target": false,
+          "candidate_seed": 5460031360065946546,
+          "parent_seed": 3953439179168960290,
+          "candidate_normalized_us": 340.58789020102654,
+          "parent_normalized_us": 347.2873667463335,
+          "candidate_raw_us": 343.31199526786804,
+          "parent_raw_us": 350.3040075302124,
+          "speedup_ratio": 0.9894799301342768,
+          "baseline_time_ratio": 0.9703919982981944,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 149.5,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 104.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 21.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.1,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 165.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 105.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "us": 21.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 3.9,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.0,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "tokens": 256,
+          "small_T_target": false,
+          "candidate_seed": 5460050181461708595,
+          "parent_seed": 3953481883893025707,
+          "candidate_normalized_us": 315.14008670798233,
+          "parent_normalized_us": 324.36501946724354,
+          "candidate_raw_us": 318.60800087451935,
+          "parent_raw_us": 329.2800039052963,
+          "speedup_ratio": 0.9666848617630593,
+          "baseline_time_ratio": 0.9391923693117873,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 194.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 32.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 23.5,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 15.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.1,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 5.2,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 194.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 32.4,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 25.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 22.9,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 14.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 8.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 5.3,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "tokens": 256,
+          "small_T_target": false,
+          "candidate_seed": 5460069002857470645,
+          "parent_seed": 3953524588617091125,
+          "candidate_normalized_us": 481.11427374476654,
+          "parent_normalized_us": 499.77084207263823,
+          "candidate_raw_us": 488.92800509929657,
+          "parent_raw_us": 499.61601197719574,
+          "speedup_ratio": 0.9853547553851622,
+          "baseline_time_ratio": 0.9485712202657509,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 203.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 185.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 33.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 26.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 22.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.7,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 218.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 186.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 33.0,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 25.7,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 22.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.6,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        }
+      ]
+    },
+    {
+      "parent": {
+        "job": "f8e991f1a2c2469e",
+        "source_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+        "receipt": "experiments/runs/f8e991f1a2c2469e.json",
+        "receipt_sha256": "2db513d9056c13a4c135feecd99f28696e7a3d31fc78f7d7a75f3bce0e4af528",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.f8e991f1a2c2469e.json",
+        "profile_sha256": "8777cf44e2b023249a010aeca8bd56f3577e1ec8b4be258060fe35f639f69966",
+        "log_bytes": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "speedup": 2.154114278329575,
+        "speedup_ci": [
+          2.121802564154631,
+          2.1864259925045184
+        ],
+        "node": "n-jm6ivorpl4s77pryw35ktai2hy",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+        "events": {
+          "setup": 1,
+          "test": 13,
+          "benchmark": 12,
+          "profile": 12
+        },
+        "flags": [],
+        "checks": {
+          "flagged": [],
+          "ok": true,
+          "rejected": []
+        }
+      },
+      "aggregate_speedup_ratio": 0.9691632633171209,
+      "target_case_ratio_geomean": 0.9584420079111811,
+      "control_case_ratio_geomean": 0.9889430106950856,
+      "load_results": {
+        "decode 1": {
+          "speedup_ratio": 0.9587169025518093,
+          "normalized_latency_ratio": 1.0522920942776555
+        },
+        "decode 16": {
+          "speedup_ratio": 0.9574496919901214,
+          "normalized_latency_ratio": 1.0602309018935172
+        },
+        "decode 32": {
+          "speedup_ratio": 0.9694629496254171,
+          "normalized_latency_ratio": 1.030012118421594
+        },
+        "verify 1": {
+          "speedup_ratio": 0.9513326260356089,
+          "normalized_latency_ratio": 1.063714273610579
+        },
+        "verify 16": {
+          "speedup_ratio": 0.9869137513403086,
+          "normalized_latency_ratio": 0.9970309702369313
+        },
+        "verify 32": {
+          "speedup_ratio": 0.9918191879205455,
+          "normalized_latency_ratio": 0.9792594966003632
+        }
+      },
+      "cases": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "tokens": 1,
+          "small_T_target": true,
+          "candidate_seed": 5459861967504088150,
+          "parent_seed": 7395189526988405461,
+          "candidate_normalized_us": 74.71879835959233,
+          "parent_normalized_us": 71.17395486774042,
+          "candidate_raw_us": 77.34400033950806,
+          "parent_raw_us": 74.81599971652031,
+          "speedup_ratio": 0.9603934328823523,
+          "baseline_time_ratio": 1.00822616068983,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 15.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.4,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "us": 4.9,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "us": 19.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.6,
+              "candidate_us": 12.0,
+              "delta_us": 1.4000000000000004
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.7,
+              "candidate_us": 6.1,
+              "delta_us": -0.6000000000000005
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "tokens": 1,
+          "small_T_target": true,
+          "candidate_seed": 5459880788899850190,
+          "parent_seed": 7395426114332534852,
+          "candidate_normalized_us": 81.46795544168202,
+          "parent_normalized_us": 76.93596183188589,
+          "candidate_raw_us": 85.05599945783615,
+          "parent_raw_us": 80.19199967384338,
+          "speedup_ratio": 0.9543302589434242,
+          "baseline_time_ratio": 1.010546084835318,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 22.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 14.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 11.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "us": 11.3,
+              "calls": 1
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 5.9,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 28.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+              "us": 18.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+              "us": 10.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 11.8,
+              "delta_us": 1.3000000000000007
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.7,
+              "candidate_us": 5.9,
+              "delta_us": -0.7999999999999998
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "tokens": 16,
+          "small_T_target": true,
+          "candidate_seed": 5459899610295612231,
+          "parent_seed": 7395662701676664244,
+          "candidate_normalized_us": 137.07778020863677,
+          "parent_normalized_us": 128.0218471235858,
+          "candidate_raw_us": 142.43200421333313,
+          "parent_raw_us": 131.95200264453888,
+          "speedup_ratio": 0.9549737889600137,
+          "baseline_time_ratio": 1.022526155412366,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 78.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "us": 22.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "us": 19.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "us": 12.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "us": 6.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 59.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 18.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "us": 17.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "us": 10.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "us": 6.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "pooler_fused_router",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 18.8,
+              "candidate_us": 22.2,
+              "delta_us": 3.3999999999999986
+            },
+            {
+              "role": "unpooler",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.7,
+              "candidate_us": 19.0,
+              "delta_us": 1.3000000000000007
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 10.7,
+              "candidate_us": 12.7,
+              "delta_us": 2.0
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.2,
+              "candidate_us": 6.6,
+              "delta_us": 0.39999999999999947
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "tokens": 16,
+          "small_T_target": true,
+          "candidate_seed": 5459918431691374273,
+          "parent_seed": 7395899289020793637,
+          "candidate_normalized_us": 214.80753218172708,
+          "parent_normalized_us": 206.25184983951667,
+          "candidate_raw_us": 217.45599806308746,
+          "parent_raw_us": 211.56800538301468,
+          "speedup_ratio": 0.9625357509397533,
+          "baseline_time_ratio": 1.0024633934528713,
+          "candidate_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 89.3,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 58.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 8, 1, 5, true,...",
+              "us": 21.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 5, true,...",
+              "us": 18.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 3, 1, 4, 2, 5, true,...",
+              "us": 12.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 16, 4, 1, 4, 1, 4, true,...",
+              "us": 8.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.7,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 89.4,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 51.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 17.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+              "us": 17.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+              "us": 7.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "pooler_fused_router",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.8,
+              "candidate_us": 21.6,
+              "delta_us": 3.8000000000000007
+            },
+            {
+              "role": "unpooler",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.6,
+              "candidate_us": 18.6,
+              "delta_us": 1.0
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                16,
+                3,
+                1,
+                4,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 12.3,
+              "delta_us": 1.8000000000000007
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                16,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 7.5,
+              "candidate_us": 8.3,
+              "delta_us": 0.8000000000000007
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "tokens": 32,
+          "small_T_target": true,
+          "candidate_seed": 5459937253087136316,
+          "parent_seed": 7396135876364923031,
+          "candidate_normalized_us": 162.91599766790011,
+          "parent_normalized_us": 156.5938297687316,
+          "candidate_raw_us": 163.90400379896164,
+          "parent_raw_us": 161.40799969434738,
+          "speedup_ratio": 0.96395570694042,
+          "baseline_time_ratio": 1.0028735227677708,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 75.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "us": 20.6,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "us": 18.5,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "us": 12.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 10.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "us": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "us": 5.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.4,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.8,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 84.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 19.6,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "us": 16.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "us": 11.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+              "us": 9.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 6.8,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "us": 5.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary2",
+              "us": 4.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.0,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.7,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "unpooler",
+              "prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "changed": true,
+              "parent_us": 19.6,
+              "candidate_us": 20.6,
+              "delta_us": 1.0
+            },
+            {
+              "role": "pooler_separate",
+              "prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 16.4,
+              "candidate_us": 18.5,
+              "delta_us": 2.1000000000000014
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "changed": true,
+              "parent_us": 11.7,
+              "candidate_us": 12.4,
+              "delta_us": 0.7000000000000011
+            },
+            {
+              "role": "router_uncompressed_unchanged",
+              "prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "changed": false,
+              "parent_us": 5.4,
+              "candidate_us": 5.4,
+              "delta_us": 0.0
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "tokens": 32,
+          "small_T_target": true,
+          "candidate_seed": 5459956074482898360,
+          "parent_seed": 7396372463709052426,
+          "candidate_normalized_us": 315.20052346594645,
+          "parent_normalized_us": 310.5449701380993,
+          "candidate_raw_us": 318.7679946422577,
+          "parent_raw_us": 313.6799931526184,
+          "speedup_ratio": 0.9786731366553956,
+          "baseline_time_ratio": 0.9933449729958924,
+          "candidate_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 168.9,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 68.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 4, 2, 2, 2, 3, true,...",
+              "us": 19.9,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 2, 2, 2, 2, 5, true,...",
+              "us": 17.8,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 3, 1, 4, 2, 4, true,...",
+              "us": 12.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "nvjet_sm90_tst_64x32_64x16_2x1_v_bz_TNT",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.6,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<2, 32, 1, 1, 8, 1, 4, false...",
+              "us": 5.3,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.3,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+              "us": 170.8,
+              "calls": 1
+            },
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 77.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 19.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "unpooler",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+              "us": 17.6,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+              "us": 11.7,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+              "us": 8.3,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                3
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+              "us": 5.4,
+              "calls": 1,
+              "template_prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 4.6,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 4.0,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "unpooler",
+              "prefix": [
+                2,
+                32,
+                4,
+                2,
+                2,
+                2,
+                3
+              ],
+              "changed": true,
+              "parent_us": 19.7,
+              "candidate_us": 19.9,
+              "delta_us": 0.1999999999999993
+            },
+            {
+              "role": "pooler_separate",
+              "prefix": [
+                2,
+                32,
+                2,
+                2,
+                2,
+                2,
+                5
+              ],
+              "changed": true,
+              "parent_us": 17.6,
+              "candidate_us": 17.8,
+              "delta_us": 0.1999999999999993
+            },
+            {
+              "role": "qkv",
+              "prefix": [
+                2,
+                32,
+                3,
+                1,
+                4,
+                2,
+                4
+              ],
+              "changed": true,
+              "parent_us": 11.7,
+              "candidate_us": 12.4,
+              "delta_us": 0.7000000000000011
+            },
+            {
+              "role": "router_uncompressed_unchanged",
+              "prefix": [
+                2,
+                32,
+                1,
+                1,
+                8,
+                1,
+                4
+              ],
+              "changed": false,
+              "parent_us": 5.4,
+              "candidate_us": 5.3,
+              "delta_us": -0.10000000000000053
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "tokens": 8,
+          "small_T_target": true,
+          "candidate_seed": 5459974895878660405,
+          "parent_seed": 7396609051053181822,
+          "candidate_normalized_us": 112.34573968092916,
+          "parent_normalized_us": 108.40876789593236,
+          "candidate_raw_us": 116.2400022149086,
+          "parent_raw_us": 111.82400211691856,
+          "speedup_ratio": 0.9573383693051233,
+          "baseline_time_ratio": 0.9921050604298411,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 50.5,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 15.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.6,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "us": 6.9,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 4.8,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 60.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 18.3,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+              "us": 7.2,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 7.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.5,
+              "candidate_us": 12.6,
+              "delta_us": 2.0999999999999996
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 7.1,
+              "candidate_us": 6.3,
+              "delta_us": -0.7999999999999998
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "tokens": 8,
+          "small_T_target": true,
+          "candidate_seed": 5459993717274422451,
+          "parent_seed": 7396845638397311219,
+          "candidate_normalized_us": 122.94995639078523,
+          "parent_normalized_us": 107.55763427261583,
+          "candidate_raw_us": 127.87200510501862,
+          "parent_raw_us": 111.4719994366169,
+          "speedup_ratio": 0.9358587683154989,
+          "baseline_time_ratio": 1.0697873333722048,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 78.0,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 2, 2, 4, 3, true, ...",
+              "us": 16.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                2,
+                2,
+                4,
+                3
+              ],
+              "compressed": true,
+              "role": "pooler_separate",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "us": 14.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 3, 1, 4, 2, 6, true, ...",
+              "us": 12.2,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 8.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 4, 1, 4, 1, 4, true, ...",
+              "us": 6.1,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void sk2_global_escape_kernel<1, 8, 1, 1, 8, 1, 6, false,...",
+              "us": 5.0,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                1,
+                1,
+                8,
+                1,
+                6
+              ],
+              "compressed": false,
+              "role": "router_uncompressed_unchanged",
+              "logical_path_changed": false
+            },
+            {
+              "name": "_boundary1",
+              "us": 3.7,
+              "calls": 1
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "us": 50.7,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+              "us": 19.5,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                16,
+                4,
+                1,
+                8,
+                1,
+                5
+              ],
+              "compressed": true,
+              "role": "pooler_fused_router",
+              "logical_path_changed": true
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+              "us": 14.8,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+              "us": 10.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "compressed": true,
+              "role": "qkv",
+              "logical_path_changed": true
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+              "us": 8.3,
+              "calls": 1
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+              "us": 6.7,
+              "calls": 1,
+              "template_prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "compressed": true,
+              "role": "o",
+              "logical_path_changed": true
+            },
+            {
+              "name": "_route_split",
+              "us": 3.6,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": [
+            {
+              "role": "qkv",
+              "prefix": [
+                1,
+                8,
+                3,
+                1,
+                4,
+                2,
+                6
+              ],
+              "changed": true,
+              "parent_us": 10.7,
+              "candidate_us": 12.2,
+              "delta_us": 1.5
+            },
+            {
+              "role": "o",
+              "prefix": [
+                1,
+                8,
+                4,
+                1,
+                4,
+                1,
+                4
+              ],
+              "changed": true,
+              "parent_us": 6.7,
+              "candidate_us": 6.1,
+              "delta_us": -0.6000000000000005
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "tokens": 128,
+          "small_T_target": false,
+          "candidate_seed": 5460012538670184498,
+          "parent_seed": 7397082225741440617,
+          "candidate_normalized_us": 251.19135857120267,
+          "parent_normalized_us": 251.37055837048186,
+          "candidate_raw_us": 254.33599948883057,
+          "parent_raw_us": 258.2719922065735,
+          "speedup_ratio": 0.9863460523704407,
+          "baseline_time_ratio": 0.9856428951838935,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 153.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.5,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 21.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 11.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.1,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.1,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 147.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "us": 20.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 16.0,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 11.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.7,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.8,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.0,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.2,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "tokens": 128,
+          "small_T_target": false,
+          "candidate_seed": 5460031360065946546,
+          "parent_seed": 7397318813085570016,
+          "candidate_normalized_us": 340.58789020102654,
+          "parent_normalized_us": 343.237462193565,
+          "candidate_raw_us": 343.31199526786804,
+          "parent_raw_us": 348.28799962997437,
+          "speedup_ratio": 0.9880377076838124,
+          "baseline_time_ratio": 0.9804106933680654,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 149.5,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 104.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "us": 21.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 15.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.2,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.1,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 154.4,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 104.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "us": 22.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "us": 16.1,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "us": 7.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 5.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 4.7,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.0,
+              "calls": 1
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+              "us": 3.2,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "tokens": 256,
+          "small_T_target": false,
+          "candidate_seed": 5460050181461708595,
+          "parent_seed": 7397555400429699416,
+          "candidate_normalized_us": 315.14008670798233,
+          "parent_normalized_us": 323.8292139011644,
+          "candidate_raw_us": 318.60800087451935,
+          "parent_raw_us": 324.40000772476196,
+          "speedup_ratio": 0.9943539772920896,
+          "baseline_time_ratio": 0.967673036188442,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 194.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 32.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 23.5,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 15.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.1,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.6,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.1,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 5.2,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 209.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 33.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 26.0,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 23.2,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+              "us": 15.2,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.2,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 5.2,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "tokens": 256,
+          "small_T_target": false,
+          "candidate_seed": 5460069002857470645,
+          "parent_seed": 7397791987773828817,
+          "candidate_normalized_us": 481.11427374476654,
+          "parent_normalized_us": 485.5123997637124,
+          "candidate_raw_us": 488.92800509929657,
+          "parent_raw_us": 491.7600005865097,
+          "speedup_ratio": 0.9870546901247902,
+          "baseline_time_ratio": 0.9781132276268744,
+          "candidate_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 203.3,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 185.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 33.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 26.4,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 22.9,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.3,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 8.0,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.7,
+              "calls": 1
+            }
+          ],
+          "parent_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "us": 210.1,
+              "calls": 1
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+              "us": 187.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "us": 32.6,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_NNN",
+              "us": 25.8,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "us": 23.3,
+              "calls": 1
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "us": 9.0,
+              "calls": 1
+            },
+            {
+              "name": "_boundary2",
+              "us": 8.5,
+              "calls": 1
+            },
+            {
+              "name": "_boundary1",
+              "us": 7.9,
+              "calls": 1
+            },
+            {
+              "name": "_route",
+              "us": 4.9,
+              "calls": 1
+            }
+          ],
+          "matched_SK2": []
+        }
+      ]
+    }
+  ],
+  "interpretation": [
+    "Every candidate case/load speedup is below both parents; all eight small-T normalized latencies rise.",
+    "26 compressed renamed SK2 launches in small-T profiles exercise the changed CL1 branch; six renamed uncompressed router launches do not.",
+    "T1/T8 dispatch loses the parent UV/fused pooler-router path, adding separate router and boundary1; T32 o moves to cuBLAS.",
+    "Matched qkv durations increase in all eight small-T captures; this is stronger mechanism evidence than comparing differently dispatched pooler rows.",
+    "Large-T captures contain no SK2, yet speedup ratios also fall; nodes, fresh seeds, route counts, baseline times and tuning differ.",
+    "No device evidence isolates sparse global sectors, correction-tail waits, table scans or register pressure as the cause.",
+    "Local candidate log is empty and result log_tail contains profiler messages; no compiler/register/spill/pmax measurements are available."
+  ],
+  "source_scan_analysis": {
+    "E": "exact escape count for one CTA",
+    "N": "NESC, active changed profiles use3 or4",
+    "parent": "N*E successful pointer increments, not E: every warp scans each entry; owner reads int2, nonowners inspect x. Stage boundaries add lookahead reads.",
+    "candidate": "N*E int2 source accesses, plus per-entry stage/range/modulo tests. Compiler may sink the delta load into owned branch.",
+    "source_level_payload_bytes_excluding_parent_lookahead": {
+      "parent": "4*(N+1)*E",
+      "candidate_full_int2": "8*N*E",
+      "N3": "16E versus24E",
+      "N4": "20E versus32E"
+    },
+    "not_measured_traffic": "Warp-uniform shared reads broadcast; multiply neither formula by32. Instructions, bank transactions and global reads require device evidence.",
+    "partition_feasibility": "Stable plane grouping preserves original per-plane order, but requires KST/NESC-specific metadata. Pooler same table uses NESC4 atTOKR8/16 andNESC3 at32.",
+    "alternative_directory": "Immutable per-stage start/end offsets preserve original table and support variableNESC:4*(K/KST+1)B perCTA,20\u2013132B across active geometries. Each warp visits only its assigned stage intervals; no implementation authorized."
+  }
+}

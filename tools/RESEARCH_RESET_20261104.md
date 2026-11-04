@@ -71,6 +71,31 @@ Dense candidate `b0387be3` preserves all correction warps and FP32 accumulation
 order while allowing exact compressed-weight corrections to read their input
 directly instead of waiting on the main TMA ring. Independent checks covered
 19,673,088 addresses, 2,561,346 patch ownership/order decisions, and 448 ring
-interleavings. Official private job `d4c26ebb65e94a84` is queued as of 07:33 UTC.
-Resume that job, never duplicate it while pending. The new global reads can
-also cost more than the removed waits; see `DENSE_ESCAPE_DECOUPLING_PLAN.md`.
+interleavings. Official private job `d4c26ebb65e94a84` completed with all 13
+tests and 12 benchmarks passing, but its 2.087688x score regresses by 2.91%
+against the public parent. All six load speedup ratios fall below both parent
+runs. The four affected small loads regress 3.52% against the public parent,
+versus 1.67% for the two unchanged large-load controls. Reject this version;
+no score or duplicate check. Profiles show different backend selections as well
+as changed correction code, so the result does not isolate global reads as the
+sole cause. See `20261104-dense-escape-global-official-critic.json` in the
+iteration evidence and `DENSE_ESCAPE_DECOUPLING_PLAN.md` for the hypothesis.
+
+Compact MoE source `cf09ba58`, private job `94e63981c631474e`, also passed all
+five tests and six benchmarks but regressed to 2.047216x versus 2.356104x.
+The actual host query confirmed two-block capacity at 98048 shared bytes,
+96 registers and 64 local bytes per thread. The three changed sizes have about
+34.6% higher SGLang-normalized latency, while unchanged controls remain close.
+Reject this version without decoder integration. Resource fit succeeded;
+the performance hypothesis failed. Retain the source, proofs and result.
+The FT128 follow-up was separately rejected before implementation: observed
+routes show only 0–7.69% removable packed requests and the compatible resource
+rewrite has substantial costs. See `FT128_REUSE_REASSESSMENT.md`.
+
+After both broad rejections, independent critic approved one public evaluation
+of each already-tested KPERM source. Root submitted MoE `247888` as scored job
+`d24dd50196cb4158`, and decoder `97af3994` as scored job `7a8c4941741645ee`.
+The receipts are received, not completed. This resolves only the earlier
+temporary promotion hold; the overlapping intervals and uncertainty remain.
+Resume those exact receipts and inspect the authenticated leaderboard after
+completion. Latest overall standing before these results is #401 of 1957.

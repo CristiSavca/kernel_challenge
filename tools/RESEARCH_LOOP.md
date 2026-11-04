@@ -626,3 +626,33 @@ compiler spills/serialization, numerical accuracy and timings remain unverified.
 Do not score/integrate until the official result is reviewed. Decoder KPERM
 b2a773e2d7194de8 result critique is saved; HOLD score pending broader tests.
 No Modal allocation or budget reset. Public entries unchanged; #1 not achieved.
+
+07:57 UTC: both broad research candidates are terminal PASS but performance failures.
+Dense d4c26ebb65e94a84:13 tests/12 benchmarks,2.087688x versus2.150186x public;
+reject/no score. Four changed SK2 loads regress3.52%; no-SK2 controls regress1.67%.
+Backend selections also changed, so do not attribute the whole loss to global reads.
+Compact94e63981c631474e:5 tests/6 benchmarks,2.047216x versus2.356104x public;
+reject/no score/no integration. Actual host attributes320 threads,98048 dynamic,
+occupancy capacity2/2,96 regs and64 local bytes per thread. Affected sizes show
+~34.6% higher SGLang-normalized latency; controls remain close. No hardware
+counters isolate stage overhead, activation requests, final reads or local memory.
+Both exact sources and terminal profiles/rejection audits are retained.
+
+Independent critic resolved the temporary KPERM HOLD after broader failures:
+GO for ONE scored publication per already-tested source, with overlapping
+intervals and no precise gain claim. Root submitted standalone247888 as
+scored jobd24dd50196cb4158 and decoder97af as scored job7a8c4941741645ee.
+Both receipts are received; decoder local session91366 is terminal exit0.
+Resume these exact jobs, no duplicate upload or timing-seeking retry. Do not
+replace incumbent files until scored receipts and leaderboard are reviewed.
+Fresh overall rank401 of1957; leadergauravjain14; no #1 claim. No Modal allocation.
+
+FT128 follow-up is rejected before implementation based on weak observed reuse
+and extra stage/register resources. A separate dense stage-directory idea is in
+plan review: retain exact80a4 parent ring/shared-input corrections and use tiny
+immutable per-KST offsets to skip repeated escape-index scans. Existing table
+sharing includesWSK/UPW, makingKST invariant whileNESC can differ. Author may
+implement only after critic accepts exact compatibility and a credible static
+cost rationale; no new GPU/official check authorized to agents. A plan is not a
+measured gain. Goal remains active; this turn made concrete research, code,
+validation, rejection and public-submission progress, with no blocking condition.
