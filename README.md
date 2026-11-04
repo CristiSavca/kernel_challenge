@@ -22,8 +22,8 @@ earn serving-queue priority for the overall top 50.
   payment verification, which Modal says unlocks the $30 free monthly allowance.
   No GPU started, no usage was charged, and the failed app is stopped.
 - Selected public sources are pinned with licenses/hashes under `third_party/`.
-  The compact expert integration passed the whole-decoder check at **1.1582×**;
-  attribution-complete and combined-attention variants remain in private checks.
+  The fully attributed compact expert integration passed the whole-decoder
+  check at **1.1612×**; the combined-attention control remains in a private check.
   Published third-party timing reports are not our performance evidence.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
@@ -62,7 +62,7 @@ for serving priority, so it is lower priority during this pass.
 | Experts | `143f8587286e4384` passed 2.3605× | Reviewed public CUDA packed-weight experts; diagnostics removed |
 | Experts | `cac648f3b3904842` passed 1.3494×; not scored | Compact V4 with the full upstream MIT notice embedded; identical executable AST, slower than native V6 |
 | Whole decoder | `41920b5cf4bf423f` passed 1.1582× | Passing V2 decoder with the public V4 expert alignment/finalization |
-| Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
+| Whole decoder | `83d9b48acd01462e` passed 1.1612×; not scored | Same decoder integration with full upstream MIT notice embedded; slower than native V4 |
 | Projections | `8c992affff0e45b8` passed 1.4774× | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` passed 2.1541× | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
 | Whole decoder | `8e13cd6e80194b4f` passed 1.1060×; not scored | Passing decoder V2 with grouped window attention; slower than native V4 |

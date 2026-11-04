@@ -26,8 +26,9 @@ inside the uploaded file; its AST including docstrings is identical to V4.
 Its private check `cac648f3b3904842` passed at 1.3494×; it is retained as a
 fallback without scoring because native V6 is substantially faster. The analogous
 `public_alignment_v6_licensed.py` has AST equality against decoder V3. V3
-passed at 1.1582×; the complete-notice source is now in private check
-`83d9b48acd01462e` before scored promotion.
+passed at 1.1582×; the complete-notice source passed check
+`83d9b48acd01462e` at 1.1612×. It is retained as a fallback without scoring,
+because native decoder V4's validated 2.1541× is much faster.
 
 The larger Gemini cohort reports approximately 2.65× attention, 2.38× MoE and
 2.17× decoder speedups in that repository's local protocol. These are research

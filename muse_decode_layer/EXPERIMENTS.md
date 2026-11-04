@@ -167,3 +167,12 @@ Check `8e13cd6e80194b4f` passed at **1.1060129400×**, CI
 integration is numerically valid and improves modestly over V2's 1.0812×
 private result. It is substantially slower than native V4's 2.1541×, so it
 will not be scored or promoted. Preserve it as measured integration evidence.
+
+## Licensed alignment V6 control resolved
+
+Check `83d9b48acd01462e` passed at **1.1612102333×**, CI
+[1.1437920798, 1.1786283868], with no flags or errors. Its executable AST is
+identical to the earlier V3 integration, whose check measured 1.1582×; the
+complete-notice packaging did not change the computation. Retain V6 as a
+fully attributed fallback. It will not be scored because native V4 is much
+faster and already submitted. Only the combined V7 control remains pending.
