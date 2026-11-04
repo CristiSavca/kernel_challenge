@@ -1,0 +1,196 @@
+{
+  "status": "CPU_PASS_GPU_NOT_RUN",
+  "source_sha256": "ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "verifier_sha256": "3f3be99656b8bc825c06239c539d261f4225f37055c69669d757d6a3d842d4d3",
+  "cpu_report_sha256": "eb785e69198104693e06e67bdbb403fa513baf37f41cb1487da92678d545b5d3",
+  "manifest_sha256": "6f4ac5c1b903f7eeeaffb60178a9f1da23bf9085af9e10ccee2ca0f7f012e895",
+  "plan_sha256": "1fa682fb6e74d9a3a1e1507d5d51d111584f58e8073168d831848c456caa5962",
+  "mechanism": "whole-K output tiles with actual GPU job-count cold/hot bins; no split reductions",
+  "evidence": {
+    "M32": {
+      "cold_jobs": 16,
+      "hot_jobs": 0,
+      "cold_A_units": 1024,
+      "cold_B_units": 512
+    },
+    "M256": {
+      "cold_jobs": 16,
+      "hot_jobs": 11,
+      "cold_A_units": 1024,
+      "cold_B_units": 512,
+      "hot_A_units": 352,
+      "hot_B_units": 176
+    },
+    "source": "experiments/iterations/20261104-current-kperm-ncu-result-critic.json"
+  },
+  "profile_share_scenarios_not_predictions": {
+    "0.1": {
+      "whole_latency_ratio": 0.9751153669905679
+    },
+    "0.2": {
+      "whole_latency_ratio": 0.9495517395621444
+    },
+    "0.5": {
+      "whole_latency_ratio": 0.8681259742112805
+    },
+    "1": {
+      "whole_latency_ratio": 0.7103416242956474
+    }
+  },
+  "cpu": {
+    "status": "CPU_PASS",
+    "source": {
+      "parent": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "source": "ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4",
+      "full_restoration": true,
+      "stage_arithmetic_source_identity": true,
+      "finalizer_source_identity": true
+    },
+    "controls": {
+      "identical_preprocessed_builds": 16,
+      "cases": [
+        [
+          "MAIN_DEFINES",
+          false,
+          false
+        ],
+        [
+          "MAIN_DEFINES",
+          false,
+          true
+        ],
+        [
+          "MAIN_DEFINES",
+          true,
+          false
+        ],
+        [
+          "MAIN_DEFINES",
+          true,
+          true
+        ],
+        [
+          "TINY_DEFINES",
+          false,
+          false
+        ],
+        [
+          "TINY_DEFINES",
+          false,
+          true
+        ],
+        [
+          "TINY_DEFINES",
+          true,
+          false
+        ],
+        [
+          "TINY_DEFINES",
+          true,
+          true
+        ],
+        [
+          "TINY2_DEFINES",
+          false,
+          false
+        ],
+        [
+          "TINY2_DEFINES",
+          false,
+          true
+        ],
+        [
+          "TINY2_DEFINES",
+          true,
+          false
+        ],
+        [
+          "TINY2_DEFINES",
+          true,
+          true
+        ],
+        [
+          "MID_DEFINES",
+          false,
+          false
+        ],
+        [
+          "MID_DEFINES",
+          false,
+          true
+        ],
+        [
+          "MID_DEFINES",
+          true,
+          false
+        ],
+        [
+          "MID_DEFINES",
+          true,
+          true
+        ]
+      ]
+    },
+    "coverage": {
+      "histograms": 67,
+      "max_jobs_tested": 79,
+      "max_padded_rows": 3264,
+      "cold_epilogue_coordinate_equalities": 768,
+      "limits": "CPU job/count/coordinate evidence; actual warp routing and GPU memory order require official check"
+    },
+    "native_actual_producer": {
+      "cases": 268,
+      "copies": 13535232,
+      "weight_bytes": 148692271104,
+      "activation_bytes": 49966743552,
+      "ring_waits": 13226976,
+      "zero_histograms": 1
+    },
+    "negative_controls": [
+      {
+        "mutant": "half",
+        "caught": true
+      },
+      {
+        "mutant": "stage",
+        "caught": true
+      },
+      {
+        "mutant": "directory",
+        "caught": true
+      }
+    ],
+    "limits": [
+      "No CUDA compiler/device used",
+      "Native test replaces only producer PTX with recording callbacks",
+      "Per-unit FP32 association differs from Stream-K and is not certified numerically",
+      "Actual2CTA capacity, WGMMA scheduling and graph performance remain untested"
+    ]
+  },
+  "fixed_gate": {
+    "public": "d24dd50196cb4158",
+    "private": "bcb761dfca264db0",
+    "affected_speed_gm_min": 1.04,
+    "whole_score_ratio_min": 1.02,
+    "affected_latency_each_max": 1.03,
+    "control_latency_gm": [
+      0.97,
+      1.03
+    ],
+    "control_latency_each_max": 1.03,
+    "tests": 5,
+    "benchmarks": 6,
+    "profiles": 6,
+    "cold_min_occupancy": 2,
+    "hot_min_occupancy": 1,
+    "activation": [
+      "v30_route_gather",
+      "v30_tiles<false,true>",
+      "v30_tiles<false,false>",
+      "v30_tiles<true,true>",
+      "v30_tiles<true,false>",
+      "v30_final"
+    ]
+  }
+}

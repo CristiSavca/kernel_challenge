@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "iteration": "moe-arch-v30",
+  "created_at": "2026-11-04T22:18:14.604524+00:00",
+  "source_review_status": "GO_FOR_OFFICIAL_CHECK",
+  "candidate_sha256": "ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4",
+  "candidate_path": "muse_moe_w4a16/candidates/moe_arch_v30/submission.py",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "parents": [
+    {
+      "job": "d24dd50196cb4158",
+      "mode": "run"
+    },
+    {
+      "job": "bcb761dfca264db0",
+      "mode": "check"
+    }
+  ],
+  "fixed_gate": {
+    "affected_load_GM_min": 1.04,
+    "each_affected_latency_max": 1.03,
+    "control_load_GM_latency_min": 0.97,
+    "control_load_GM_latency_max": 1.03,
+    "each_control_latency_max": 1.03,
+    "whole_score_ratio_min": 1.02
+  },
+  "hypothesis": "Remove MAIN cross-CTA split-K partial reduction, readiness polling and global spin barrier through full-K output ownership with separate sparse/dense tile geometry.",
+  "falsifiable_prediction": "Across M32/128/256, removed coordination outweighs five added launches, doubled sparse activation copies and hot-tail imbalance; full aggregate >=2% gain against both exact parents with every case cap.",
+  "strongest_failure_reason": "MAIN already requests near-nominal packed bytes at about77% DRAM throughput; no weight-byte saving. Additional sparse TMA/X copies, global phase ordering, coarse dense tails or lower actual capacity can dominate.",
+  "upper_bound_estimate": {
+    "type": "Profile-share sensitivity scenario, not forecast or physical bound",
+    "MAIN_time_reduction_10pct_whole_decoder_speed_ratio_estimate": 1.024,
+    "MAIN_time_reduction_20pct_whole_decoder_speed_ratio_estimate": 1.05,
+    "limit": "Separate profile shares are not exclusive critical-path fractions; standalone score cannot establish decoder gain or doubling."
+  },
+  "required_coverage": {
+    "setup": 1,
+    "tests": 5,
+    "benchmarks": 6,
+    "profiles": 6
+  },
+  "resources_required": "Actual V30R coldA/B capacity>=2, hotA/B>=1; allsix exact resource identities and positive profile symbols in allthree affectedcases.",
+  "kill_criteria": [
+    "Any official correctness, compiler, capacity, activation, flags or fixed performance gate failure",
+    "No identical retry, postmeasurement threshold changes or shape rescue; decoder port only after useful component result"
+  ],
+  "resources": {
+    "official_private_checks_planned": 1,
+    "Modal_allocations_planned": 0,
+    "out_of_pocket_authorized_usd": 0,
+    "automatic_scored_submission": false
+  },
+  "evidence_sha256": {
+    "experiments/iterations/20261104-decoder-number-one-moe-reset.json": "ef6c4e9d82f25ab05cd772b4a547f195d8d6a6020e56adffc8914954ca6945d1",
+    "experiments/iterations/20261104-moe-arch-v30-root-cpu.json": "eb785e69198104693e06e67bdbb403fa513baf37f41cb1487da92678d545b5d3",
+    "experiments/iterations/20261104-moe-arch-v30-source-critic.json": "0d63a141218cc3e047d3004f2b03e4761feb7aecdd1798bd47f533f18cc9cfc8",
+    "muse_moe_w4a16/candidates/moe_arch_v30/build.py": "a54c8f35cfffb3b95ee8f305437005a8fa8daf32a1c6c119f51302ca6a02f22b",
+    "muse_moe_w4a16/candidates/moe_arch_v30/cpu_result.json": "eb785e69198104693e06e67bdbb403fa513baf37f41cb1487da92678d545b5d3",
+    "muse_moe_w4a16/candidates/moe_arch_v30/manifest.json": "6f4ac5c1b903f7eeeaffb60178a9f1da23bf9085af9e10ccee2ca0f7f012e895",
+    "muse_moe_w4a16/candidates/moe_arch_v30/new_host.cuh": "d66ebd2dd9b4768426429ca1ded0ff34efeeb85cb718b1bbf8b0efb2100f6953",
+    "muse_moe_w4a16/candidates/moe_arch_v30/new_kernels.cuh": "a37ac79c602c77d7d26a9544947c0b07685eb13665ba9cbe865b3fcf70bff343",
+    "muse_moe_w4a16/candidates/moe_arch_v30/parent.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "muse_moe_w4a16/candidates/moe_arch_v30/submission.py": "ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4",
+    "muse_moe_w4a16/candidates/moe_arch_v30/test_cpu.py": "3f3be99656b8bc825c06239c539d261f4225f37055c69669d757d6a3d842d4d3",
+    "tools/DECODER_NUMBER_ONE_MOE_RESET_20261104.md": "1fa682fb6e74d9a3a1e1507d5d51d111584f58e8073168d831848c456caa5962",
+    "tools/MOE_ARCH_V30_SOURCE_CRITIC_20261104.md": "96ae9bf6d2bed9a55ba294107f43c88f3cd720be40812f83a33239e9c39f8438",
+    "tools/analyze_moe_v30.py": "a9f96b203436a762017142a905e67837f920d1aecc42082f601a0ad4d29133d4",
+    "tools/analyze_wgs_shared_a_result.py": "d51fd306e8d83b0cb2f165d1dc7a82eccaddbbdee9d2b1bf7e5a7502dda7bf7d",
+    "tools/test_analyze_moe_v30.py": "8d89a417b0a098774d058252fde4648b3ac979ecc219f1eaa0656e0707d7cf8b"
+  },
+  "freeze_order_exception": "Root plan write and intended pre-upload commit failed because an optional candidate README was absent. The already source-reviewed exact candidate was then uploaded by sequential orchestration that failed to stop on nonzero command status. This plan is saved immediately afterward, before any result observation. Fixed gates and all source/test/critic hashes were already set and independently reviewed before upload; none changed. Record remains explicit, no retroactive timestamp."
+}
