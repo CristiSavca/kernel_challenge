@@ -59,7 +59,8 @@ Reviewed adaptations now in official private checks:
   embedded. CPU packing/decode checks covered 10,129 words per packed layout
   and all 119 positive-normal scale codes. Our private run passed all five
   numerical tests at 2.3605×, CI 2.3251–2.3959. Exact-source scored submission
-  `3c15b408fdb04c44` is pending.
+  `3c15b408fdb04c44` passed at 2.3561×, CI 2.3208–2.3914, and is confirmed
+  as our current expert leaderboard entry.
 - Decoder `public_alignment_v3.py`, `41920b5cf4bf423f`: integrates only the
   validated compact expert route alignment and finalizer into our passing
   decoder. All previous decoder functions except `_experts` are AST-identical;

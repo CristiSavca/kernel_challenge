@@ -199,3 +199,12 @@ CI [1.3291235980, 1.3696045197], with no flags. Its executable AST is identical
 to V4, so the small timing difference is not a code optimization. Retain this
 fully attributed fallback, but do not score it: native V6's validated 2.3605×
 is substantially faster and its scored rerun is already queued.
+
+## Native V6 scored confirmation
+
+Scored run `3c15b408fdb04c44` passed at **2.3561039517×**, CI
+[2.3207623924, 2.3914455110], with no flags or errors. It uses the exact source
+that passed the 2.3605× private check. The leaderboard observation at
+2026-11-04 02:04:12 UTC confirms this job as CristiSavca's entry at rank 334
+on the expert board; ranks remain live. The compact observation is saved in
+`experiments/leaderboards/muse_moe_w4a16.latest.json`.
