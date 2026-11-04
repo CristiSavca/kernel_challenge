@@ -1,0 +1,205 @@
+{
+  "candidate": {
+    "job": "cffa322caeff4aa2",
+    "source_sha256": "fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f",
+    "receipt_sha256": "9ea87f08e6b475c490db0540b2f5ec8ff95b7c2ca6e3c298ac9f20cc26c1844e",
+    "receipt": "experiments/runs/cffa322caeff4aa2.json",
+    "source": "experiments/candidates/muse_moe_w4a16/fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f.cffa322caeff4aa2.json",
+    "profile_sha256": "999a1d94ddc9cbb8496868a8816ab468f74fe6e673f333cff9d35d327d8138c6",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "plan": "experiments/iterations/20261104-serving-finalizer-root-plan.json",
+  "plan_sha256": "e59ed57260add54c4cd4442ef07056efe090c721a03532dd1d5641d8432eb246",
+  "status": "KEEP_SERVING_COMPONENT_VALIDATION_PENDING",
+  "gates": {
+    "affected_GM": true,
+    "every_affected": true,
+    "two_affected_at_least_1p05": true,
+    "control_GM": true,
+    "every_control": true,
+    "profiles": true
+  },
+  "all_fixed_gates_pass": true,
+  "score": 1.1489195157548961,
+  "score_ci": [
+    1.1316857230185726,
+    1.1661533084912195
+  ],
+  "affected_GM_speedup": 1.320344959939793,
+  "affected_GM_latency_reduction_pct": 24.262217046248313,
+  "control_GM_normalized_latency": 1.0002491683767103,
+  "cases": [
+    {
+      "M": 1,
+      "load": "decode 1",
+      "affected": true,
+      "seed": 6476574348270307202,
+      "speedup": 1.4846665740323415,
+      "normalized_latency": 0.6735519055191016,
+      "baseline_us": 77.16800179332495,
+      "candidate_us": 51.97665465299547,
+      "baseline_raw_us": 81.4560018479824,
+      "candidate_raw_us": 55.456001311540604,
+      "expected_profile_path_present": true
+    },
+    {
+      "M": 16,
+      "load": "decode 16",
+      "affected": true,
+      "seed": 6476589191746691343,
+      "speedup": 1.2193375442502665,
+      "normalized_latency": 0.8201174520668676,
+      "baseline_us": 195.80800272524357,
+      "candidate_us": 160.58556028932904,
+      "baseline_raw_us": 199.90400224924088,
+      "candidate_raw_us": 165.6319946050644,
+      "expected_profile_path_present": true
+    },
+    {
+      "M": 32,
+      "load": "decode 32",
+      "affected": false,
+      "seed": 6476604035223075485,
+      "speedup": 0.9998168624192145,
+      "normalized_latency": 1.0001831711263025,
+      "baseline_us": 211.9360063225031,
+      "candidate_us": 211.97482687948522,
+      "baseline_raw_us": 216.09600633382797,
+      "candidate_raw_us": 216.5440022945404,
+      "expected_profile_path_present": true
+    },
+    {
+      "M": 8,
+      "load": "verify 1",
+      "affected": true,
+      "seed": 6476618878699459628,
+      "speedup": 1.2714794893791452,
+      "normalized_latency": 0.7864853569036282,
+      "baseline_us": 142.47999526560307,
+      "candidate_us": 112.05842992809508,
+      "baseline_raw_us": 146.70399576425552,
+      "candidate_raw_us": 115.80800265073776,
+      "expected_profile_path_present": true
+    },
+    {
+      "M": 128,
+      "load": "verify 16",
+      "affected": false,
+      "seed": 6476633722175843772,
+      "speedup": 0.9999054961529221,
+      "normalized_latency": 1.0000945127788992,
+      "baseline_us": 456.7999942228198,
+      "candidate_us": 456.84316765967486,
+      "baseline_raw_us": 461.0559940338135,
+      "candidate_raw_us": 460.60800552368164,
+      "expected_profile_path_present": true
+    },
+    {
+      "M": 256,
+      "load": "verify 32",
+      "affected": false,
+      "seed": 6476648565652227917,
+      "speedup": 0.9995303609620433,
+      "normalized_latency": 1.0004698597024153,
+      "baseline_us": 617.615990806371,
+      "candidate_us": 617.9061836720182,
+      "baseline_raw_us": 621.5519905090332,
+      "candidate_raw_us": 621.1519837379456,
+      "expected_profile_path_present": true
+    }
+  ],
+  "evaluator": {
+    "code_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+      "problems/muse_moe_w4a16/reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+      "problems/muse_moe_w4a16/task.yml": "cc6870087c1a115e69f40093478553e0a03c1b3e92f527c2e55c4115e2db42ad"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "flags": [],
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "correctness": [
+    {
+      "case": {
+        "bs": 4,
+        "seed": 6475090000631898152,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 0,
+      "message": "relative L2 error 5.588e-03 (worst row 5.683e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 33,
+        "seed": 6475104844108282193,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 1,
+      "message": "relative L2 error 5.547e-03 (worst row 5.745e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 257,
+        "seed": 6475134531061050278,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 2,
+      "message": "relative L2 error 5.554e-03 (worst row 6.089e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 128,
+        "dist": "skewed",
+        "seed": 6475149374537434322,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 3,
+      "message": "relative L2 error 5.374e-03 (worst row 5.697e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 1,
+        "seed": 6475164218013818367,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 4,
+      "message": "relative L2 error 5.469e-03 (worst row 5.469e-03)",
+      "status": "pass"
+    }
+  ],
+  "resources": {
+    "official_private_checks": 1,
+    "Modal_allocations": 0,
+    "out_of_pocket_usd": 0
+  },
+  "automatic_scored_promotion": false,
+  "limits": [
+    "Same-run stock-Marlin component comparison, not a gain over native247888 or whole serving.",
+    "Profiles confirm kernel activation; profile durations are not benchmark measurements.",
+    "Official GPU coverage is H4096, K8, BF16 input, stock Marlin routes; generic guard breadth needs GPU tests.",
+    "Separate multi-stream/graph ownership and full eight-GPU serving validation remain required."
+  ],
+  "next_experiment": "Focused generic finalizer GPU correctness and two-stream/CUDA-graph validation before serving integration."
+}

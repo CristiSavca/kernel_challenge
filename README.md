@@ -1,12 +1,34 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 3, 2026.
+Status updated November 4, 2026, 17:56 UTC.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
-## Current state
+## Latest measured state
+
+CristiSavca is 401st overall. Public scores are dense projections 1.4868×,
+attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
+is 2.5762×. Passing public sources remain preserved; private experimental
+regressions have not replaced them.
+
+Serving-finalizer v22 passed official private job `cffa322caeff4aa2`, with all
+five correctness tests, six timed cases and clean checks. Compared with the
+same-run stock Marlin component, latency fell 32.6%/21.4%/18.0% at 1/8/16 tokens;
+larger controls stayed within 0.05%. Both independent analyses passed the fixed
+gate. This is a serving-component improvement, not a faster native kernel entry
+or a measured full-model gain. Generic GPU/concurrent-graph tests and the full
+serving check remain outstanding. No scored promotion or paid GPU allocation
+followed this result.
+
+Fresh arXiv, X/release, DeepSeek, Hugging Face and CUTLASS research is linked in
+[the active handoff](tools/RESEARCH_LOOP.md). Current official receipts and
+research retain exact sources, licenses, evaluator identity and measured limits.
+The next focused experiment is broader validation of the preserved finalizer;
+research leads need an actual compatible code path before a new optimization.
+
+## Earlier setup and November 3 results
 
 - All five official problems are initialized; the first Git commit preserves
   their original starters, references and SGLang baselines.

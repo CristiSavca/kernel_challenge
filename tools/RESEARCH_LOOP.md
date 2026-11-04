@@ -30,7 +30,20 @@ unknown because this run's log has no compiler diagnostics. New owned-SASS
 tooling was deferred. No Modal allocation was made. Current public source
 hashes remain247888 MoE /97af decoder /87a9 attention.
 
-The next frozen component diagnostic is serving finalizer v22 `fc2fc6b5…`,
+Serving finalizer v22 `fc2fc6b5…` passed official private job
+`cffa322caeff4aa2`: 1 setup, 5 correctness tests, 6 benchmarks and 6 profiles,
+no flags or rejections. Root and independent critic reproduced every fixed gate.
+Same-run stock-Marlin speedups at M1/8/16 are1.48466657/1.27147949/1.21933754;
+affected GM1.32034496, control normalized-latency GM1.00024917. All control
+cases differ by less than0.05%. Both new kernels appear in every affected
+profile; controls retain the original finalizer. Six-case component score is
+1.14891952, CI[1.13168572,1.16615331]. Keep this serving component for focused
+validation; it does not beat native247888 or establish whole-serving speed.
+No scored submission or Modal allocation followed. Root analysis is
+`analyze_serving_finalizer_result.py`; independent result critic is
+`experiments/iterations/20261104-serving-finalizer-result-critic.json`.
+
+The frozen component diagnostic is
 27,639 bytes including the full upstream Apache license. It preserves exact
 official stock-Marlin baseline bytes and locally defines the new readable
 finalizer; it never modifies an imported module. Helper `91e6173b…` adds two
@@ -60,12 +73,42 @@ are already present;40762 is an EAGLE-only allowlist fix unused byDFlash;
 43363 targetsCUTLASS instead of the selectedMarlin;44972 needs itsDSPARK/cache
 stack. No wholesale upgrade or unsupported transfer speedup is claimed.
 
+The expanded November4 research notes are `LATEST_ARXIV_KERNEL_SCOUT_20261104.md`,
+`LATEST_DEEPSEEK_KERNEL_SCOUT_20261104.md`, `LATEST_X_KERNEL_SCOUT_20261104.md`
+and `LATEST_HF_CUTLASS_KERNEL_SCOUT_20261104.md`. Exact commits, licenses and
+hardware/precision limits are recorded. New FlashInfer/DeepSeek communication
+ideas require preserving Muse's per-route norm and existing rounding boundaries;
+Hugging Face input dtype does not imply BF16 computation. No dependency upgrade,
+new quantization, model change or public-source performance claim was adopted.
+The consolidated decision record is `LATEST_KERNEL_RESEARCH_20261104.md`.
+PipeLink supplies one distinct attention idea: skip only output multiplies when
+the already-computed rescale is exactly one. Current Q1 has this work, but a
+full-mask warp vote inside its quad-uniform branch is not established safe.
+Do not implement that naive placement. Preserve row-sum arithmetic, actual
+rescaling and Q8 behavior; source/semantic review precedes any GPU candidate.
+
+Next concrete experiment: focused GPU correctness for exact helper91e6173b,
+including ragged H/K/T within its generic guard, auxiliary dtypes and strides,
+invalid-route values, optional normalization, two independent streams, repeated
+CUDA graphs and fallback boundaries. This extends coverage beyond official
+H4096/K8/Marlin cases; it must not retune v22's successful speed gate. Use the
+existing bounded Modal runner only after a fresh budget/attribution preflight,
+single-H200 reservation and independent harness review. Do not reopen closed
+native v21/v20 or replace passing incumbents. Later eight-H200 serving validation
+must measure the finalizer/collective boundary and required concurrency levels.
+
+Latest17:56UTC snapshot `20261104T175633Z-v22-research.json`: overall401/1981,
+decoder401/1273 at2.1812 versus2.5762; MoE303/1403 at2.3737 versus2.7817.
+Own scores and exact active97af/247888/87a9 hashes remain unchanged. MoE27
+private checks/17 scored attempts remain. No official job is live at handoff.
+The #1 goal remains active and unachieved.
+
 The new dictionary feasibility artifacts are retained under
 `DENSE_UNIT_DICTIONARY_FEASIBILITY_20261104.md`: exact CPU representation works,
 but modeled request bytes increase about3% and decode integer operations increase.
 No GPU candidate or performance claim follows. A separate serving review found
 the stock small-token expert finalizer's eager operation chain as a concrete
-fusion opportunity; implementation/numerical/performance review is in progress.
+fusion opportunity; its component result is recorded above.
 
 At November 4, 12:17 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;

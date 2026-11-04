@@ -1,0 +1,242 @@
+{
+  "schema": 1,
+  "reviewed_at_utc": "2026-11-04T17:53:29.010233+00:00",
+  "verdict": "PASS_FIXED_SERVING_COMPONENT_SCREEN",
+  "next_action": "Retain this serving helper for focused generic/graph/concurrent-stream GPU validation and eventual serving check; no native incumbent replacement or scored publication from this diagnostic.",
+  "provenance": {
+    "job": "cffa322caeff4aa2",
+    "source_sha256": "fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f",
+    "receipt_sha256": "9ea87f08e6b475c490db0540b2f5ec8ff95b7c2ca6e3c298ac9f20cc26c1844e",
+    "receipt": "experiments/runs/cffa322caeff4aa2.json",
+    "source": "experiments/candidates/muse_moe_w4a16/fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f.cffa322caeff4aa2.json",
+    "profile_sha256": "999a1d94ddc9cbb8496868a8816ab468f74fe6e673f333cff9d35d327d8138c6",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "candidate_working_sha256": "fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f",
+  "helper_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+  "plan": "experiments/iterations/20261104-serving-finalizer-root-plan.json",
+  "plan_sha256": "e59ed57260add54c4cd4442ef07056efe090c721a03532dd1d5641d8432eb246",
+  "full_evaluator": {
+    "code_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+      "problems/muse_moe_w4a16/reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+      "problems/muse_moe_w4a16/task.yml": "cc6870087c1a115e69f40093478553e0a03c1b3e92f527c2e55c4115e2db42ad"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "full_evaluator_matches_job": "d24dd50196cb4158",
+  "counts": {
+    "setup": 1,
+    "test": 5,
+    "benchmark": 6,
+    "profile": 6
+  },
+  "tests": [
+    {
+      "index": 0,
+      "case": {
+        "bs": 4,
+        "seed": 6475090000631898152,
+        "sharding": "ep8"
+      },
+      "status": "pass",
+      "message": "relative L2 error 5.588e-03 (worst row 5.683e-03)"
+    },
+    {
+      "index": 1,
+      "case": {
+        "bs": 33,
+        "seed": 6475104844108282193,
+        "sharding": "ep8"
+      },
+      "status": "pass",
+      "message": "relative L2 error 5.547e-03 (worst row 5.745e-03)"
+    },
+    {
+      "index": 2,
+      "case": {
+        "bs": 257,
+        "seed": 6475134531061050278,
+        "sharding": "ep8"
+      },
+      "status": "pass",
+      "message": "relative L2 error 5.554e-03 (worst row 6.089e-03)"
+    },
+    {
+      "index": 3,
+      "case": {
+        "bs": 128,
+        "dist": "skewed",
+        "seed": 6475149374537434322,
+        "sharding": "ep8"
+      },
+      "status": "pass",
+      "message": "relative L2 error 5.374e-03 (worst row 5.697e-03)"
+    },
+    {
+      "index": 4,
+      "case": {
+        "bs": 1,
+        "seed": 6475164218013818367,
+        "sharding": "ep8"
+      },
+      "status": "pass",
+      "message": "relative L2 error 5.469e-03 (worst row 5.469e-03)"
+    }
+  ],
+  "official_score": 1.1489195157548961,
+  "reproduced_six_case_geometric_score": 1.1489195157548961,
+  "official_CI": [
+    1.1316857230185726,
+    1.1661533084912195
+  ],
+  "affected_speed_GM": 1.320344959939793,
+  "affected_latency_GM": 0.7573778295375169,
+  "controls_latency_GM": 1.0002491683767103,
+  "affected_cases_at_least_5pct": 3,
+  "cases": [
+    {
+      "index": 0,
+      "load": "decode 1",
+      "M": 1,
+      "affected": true,
+      "same_run_stock_speedup": 1.4846665740323415,
+      "normalized_latency": 0.6735519055191016,
+      "harness_baseline_us": 77.16800179332495,
+      "harness_candidate_us": 51.97665465299547,
+      "raw_baseline_us": 81.4560018479824,
+      "raw_candidate_us": 55.456001311540604,
+      "raw_speedup_descriptive": 1.4688401601546974,
+      "profile_finalizers": {
+        "inverse": true,
+        "combine": true,
+        "original": false
+      },
+      "profile_gate_passed": true
+    },
+    {
+      "index": 1,
+      "load": "decode 16",
+      "M": 16,
+      "affected": true,
+      "same_run_stock_speedup": 1.2193375442502665,
+      "normalized_latency": 0.8201174520668676,
+      "harness_baseline_us": 195.80800272524357,
+      "harness_candidate_us": 160.58556028932904,
+      "raw_baseline_us": 199.90400224924088,
+      "raw_candidate_us": 165.6319946050644,
+      "raw_speedup_descriptive": 1.2069165907582966,
+      "profile_finalizers": {
+        "inverse": true,
+        "combine": true,
+        "original": false
+      },
+      "profile_gate_passed": true
+    },
+    {
+      "index": 2,
+      "load": "decode 32",
+      "M": 32,
+      "affected": false,
+      "same_run_stock_speedup": 0.9998168624192145,
+      "normalized_latency": 1.0001831711263025,
+      "harness_baseline_us": 211.9360063225031,
+      "harness_candidate_us": 211.97482687948522,
+      "raw_baseline_us": 216.09600633382797,
+      "raw_candidate_us": 216.5440022945404,
+      "raw_speedup_descriptive": 0.9979311550725701,
+      "profile_finalizers": {
+        "inverse": false,
+        "combine": false,
+        "original": true
+      },
+      "profile_gate_passed": true
+    },
+    {
+      "index": 3,
+      "load": "verify 1",
+      "M": 8,
+      "affected": true,
+      "same_run_stock_speedup": 1.2714794893791452,
+      "normalized_latency": 0.7864853569036282,
+      "harness_baseline_us": 142.47999526560307,
+      "harness_candidate_us": 112.05842992809508,
+      "raw_baseline_us": 146.70399576425552,
+      "raw_candidate_us": 115.80800265073776,
+      "raw_speedup_descriptive": 1.266786339513135,
+      "profile_finalizers": {
+        "inverse": true,
+        "combine": true,
+        "original": false
+      },
+      "profile_gate_passed": true
+    },
+    {
+      "index": 4,
+      "load": "verify 16",
+      "M": 128,
+      "affected": false,
+      "same_run_stock_speedup": 0.9999054961529221,
+      "normalized_latency": 1.0000945127788992,
+      "harness_baseline_us": 456.7999942228198,
+      "harness_candidate_us": 456.84316765967486,
+      "raw_baseline_us": 461.0559940338135,
+      "raw_candidate_us": 460.60800552368164,
+      "raw_speedup_descriptive": 1.0009726025270067,
+      "profile_finalizers": {
+        "inverse": false,
+        "combine": false,
+        "original": true
+      },
+      "profile_gate_passed": true
+    },
+    {
+      "index": 5,
+      "load": "verify 32",
+      "M": 256,
+      "affected": false,
+      "same_run_stock_speedup": 0.9995303609620433,
+      "normalized_latency": 1.0004698597024153,
+      "harness_baseline_us": 617.615990806371,
+      "harness_candidate_us": 617.9061836720182,
+      "raw_baseline_us": 621.5519905090332,
+      "raw_candidate_us": 621.1519837379456,
+      "raw_speedup_descriptive": 1.0006439756799623,
+      "profile_finalizers": {
+        "inverse": false,
+        "combine": false,
+        "original": true
+      },
+      "profile_gate_passed": true
+    }
+  ],
+  "fixed_gates": {
+    "official_clean_complete": true,
+    "full_evaluator_image_inventory_matches_known_official": true,
+    "affected_speed_GM_at_least_1p05": true,
+    "all_affected_at_least_1p0": true,
+    "at_least_two_affected_at_least_1p05": true,
+    "controls_GM_latency_in_0p98_1p02": true,
+    "every_control_latency_at_most_1p03": true,
+    "profile_dispatch_all_six": true
+  },
+  "all_fixed_gates_passed": true,
+  "measurement_limits": [
+    "Same-run stock baseline comparison, not current native 247888 or decoder 97af; no full serving or leaderboard gain established.",
+    "All five official correctness cases passed, including actual small and fallback shapes. Required benchmark coverage is BF16 H4096 TOPK8 Marlin; arbitrary dimensions/dtypes/strides, nonfinite values and concurrent-stream/graph lifetime remain outside this diagnostic.",
+    "Profile names confirm new two-kernel finalizer in all three intended shapes and original finalizer in all three controls. Profile timings are separate observations and not a kernel-only baseline subtraction.",
+    "The aggregate confidence interval is for the six-case official score; no per-case statistical confidence interval is claimed. Controls near unity support the intended scope but are not a formal causal proof.",
+    "No resource markers were added. Retained USDT-only log does not establish compiler diagnostics, spills, registers, occupancy or their absence."
+  ],
+  "automatic_promotion_allowed": false
+}

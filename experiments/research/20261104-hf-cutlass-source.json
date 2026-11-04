@@ -1,0 +1,441 @@
+{
+  "observed_at": "2026-11-04T17:54:23.900419+00:00",
+  "repo": "huggingface/kernels-community",
+  "commit": "f923c618f29b019080f4b02ca2be5bc35fd10c51",
+  "files": [
+    {
+      "path": "nvfp4-gemm/build.toml",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/nvfp4-gemm/build.toml",
+      "sha256": "8d747b15c772466947aa7672b4fecb7fd93edd2ba42dd9fdf7ca50f672d46c2b",
+      "bytes": 1042,
+      "selected_lines": [
+        {
+          "line": 5,
+          "text": "license = \"Apache-2.0\""
+        },
+        {
+          "line": 26,
+          "text": "cuda-capabilities = ["
+        },
+        {
+          "line": 36,
+          "text": "    \"-DENABLE_NVFP4_SM100=1\","
+        }
+      ]
+    },
+    {
+      "path": "nvfp4-gemm/torch-ext/nvfp4_gemm/functional.py",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/nvfp4-gemm/torch-ext/nvfp4_gemm/functional.py",
+      "sha256": "65377485c50e903754f59be940c3c2f352813f7154be499f66eeddee685946cb",
+      "bytes": 3243,
+      "selected_lines": [
+        {
+          "line": 7,
+          "text": "@torch.library.register_fake(add_op_namespace_prefix(\"scaled_fp4_quant\"))"
+        },
+        {
+          "line": 20,
+          "text": "@torch.library.register_fake(add_op_namespace_prefix(\"cutlass_scaled_fp4_mm\"))"
+        },
+        {
+          "line": 41,
+          "text": "    return sf.view(torch.float8_e4m3fn) if sf.dtype == torch.int32 else sf"
+        },
+        {
+          "line": 61,
+          "text": "    aq, a_sf = ops.scaled_fp4_quant(x2.to(torch.bfloat16), a_gs, True)"
+        },
+        {
+          "line": 64,
+          "text": "    # the same bytes typed as fp8-e4m3."
+        },
+        {
+          "line": 65,
+          "text": "    y = ops.cutlass_scaled_fp4_mm(aq, pw.qweight, _as_fp8(a_sf), _as_fp8(pw.sf), alpha)"
+        }
+      ]
+    },
+    {
+      "path": "nvfp4-gemm/torch-ext/nvfp4_gemm/layers.py",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/nvfp4-gemm/torch-ext/nvfp4_gemm/layers.py",
+      "sha256": "6aca65c0d518dfe76bb39ec03e3c3727d9052edb302bd608d12c51547663d878",
+      "bytes": 7392,
+      "selected_lines": [
+        {
+          "line": 13,
+          "text": "    def forward(self, x):"
+        },
+        {
+          "line": 42,
+          "text": "    def forward(self, x):"
+        },
+        {
+          "line": 59,
+          "text": "    def forward("
+        }
+      ]
+    },
+    {
+      "path": "finegrained-fp8/README.md",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/finegrained-fp8/README.md",
+      "sha256": "b25118feba298c5ae61e98a38ab93a70748a0249c1419bb53678218e88d4c926",
+      "bytes": 5810,
+      "selected_lines": [
+        {
+          "line": 2,
+          "text": "license: apache-2.0"
+        },
+        {
+          "line": 11,
+          "text": "All kernels target Hopper (SM90) FP8 WGMMA instructions and are also compatible with Blackwell (SM100), ROCm, and XPU backends via Triton."
+        },
+        {
+          "line": 22,
+          "text": "- `B.dtype == float8_e4m3fn` with UE8M0 group-32 `Bs` (shape `[..., N, K // 32]`) \u2192 MXFP8 (`mx` dynamic)."
+        },
+        {
+          "line": 33,
+          "text": "Block-wise W8A8 FP8 GEMM with **inline** activation quant. `A` is raw bf16/fp16/fp32; the kernel computes per-K-tile per-row scales and casts to `float8_e4m3fn` inside the K-loop. `Bs` accepts fp32 or `float8_e8m0fnu` (UE8M0) \u2014 the kernel decodes UE8M0 inline. `BLOCK_SIZE_M` adapts to `M` (16 for decode, up to 128 for prefill)."
+        },
+        {
+          "line": 41,
+          "text": "Tensor-scale W8A8 FP8 GEMM. Pre-quantizes `A` via `fp8_act_quant(A, K)` to get a per-row activation scale, then runs the matmul with that and a single per-tensor weight scale `Bs`."
+        },
+        {
+          "line": 45,
+          "text": "W4A8 FP4 GEMM. `B` is packed FP4 (`int8`, two E2M1 codes per byte); `Bs` is UE8M0 with a fixed K-group of 32. `A` is raw bf16/fp16/fp32 \u2014 quantized to FP8 (E4M3) inline with its own UE8M0 K-group-32 scales. Uses `tl.dot_scaled` for the scaled MMA. Tile shape `(BLOCK_SIZE_N, BLOCK_SIZE_K)` is autotuned."
+        },
+        {
+          "line": 49,
+          "text": "MXFP8 W8A8 GEMM \u2014 the FP8 counterpart of the FP4 path. `B` is **unpacked** `float8_e4m3fn`; `Bs` is UE8M0 with a fixed K-group of 32. `A` is raw bf16/fp16/fp32 \u2014 quantized to E4M3 inline with its own UE8M0 K-group-32 scales. Both operands feed `tl.dot_scaled` (the hardware MX scaled MMA, Blackwell SM100+), unlike `w8a8_block_dynamic_fp8_matmul` which applies 128\u00d7128 scales in software. Handles arbitrary K (the tensor-mode path needs power-of-2 K). Tile shape is autotuned."
+        },
+        {
+          "line": 82,
+          "text": "| `<weight_dtype>`        | `fp8` (`float8_e4m3fn`, unpacked) or `fp4` (packed E2M1)                                                       |"
+        }
+      ]
+    },
+    {
+      "path": "finegrained-fp8/torch-ext/finegrained_fp8/matmul.py",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/finegrained-fp8/torch-ext/finegrained_fp8/matmul.py",
+      "sha256": "0f668b5d9e0e7db0675ea4518052b9320830f64f2468f2ecbcae7d0876336807",
+      "bytes": 27598,
+      "selected_lines": [
+        {
+          "line": 7,
+          "text": "#     http://www.apache.org/licenses/LICENSE-2.0"
+        },
+        {
+          "line": 127,
+          "text": "    Computes ``C = A @ B.T`` with bf16/fp16 ``A`` quantized to FP8 per-K-tile"
+        },
+        {
+          "line": 128,
+          "text": "    inline (one scale per M-row per BLOCK_SIZE_K) and pre-quantized FP8 weights"
+        },
+        {
+          "line": 174,
+          "text": "    A,  # (M, K) pre-quantized FP8 activations"
+        },
+        {
+          "line": 291,
+          "text": "        a = (a_raw / a_s_static).to(tl.float8e4nv)"
+        },
+        {
+          "line": 351,
+          "text": "    ``C = A @ B.T`` with bf16/fp16 ``A`` quantized to E4M3 per K-group inline (UE8M0"
+        },
+        {
+          "line": 417,
+          "text": "    A:  (..., K) raw activations, bf16/fp16/fp32 (quantized inline to FP8)"
+        },
+        {
+          "line": 487,
+          "text": "    A:  (..., K) raw bf16/fp16 activations \u2014 quantized to FP8 inline against ``As``"
+        },
+        {
+          "line": 629,
+          "text": "    ``float8_e4m3fn`` \u2192 unpacked E4M3 (MXFP8, ``(N, K)``). Both use UE8M0 group-32 scales"
+        },
+        {
+          "line": 632,
+          "text": "    A:  (..., K) raw activations, bf16/fp16/fp32 (quantized inline to E4M3); leading dims are"
+        },
+        {
+          "line": 636,
+          "text": "    assert B.dtype in (torch.int8, torch.float8_e4m3fn), ("
+        },
+        {
+          "line": 637,
+          "text": "        f\"B must be int8 (packed E2M1) or float8_e4m3fn (E4M3), got {B.dtype}\""
+        },
+        {
+          "line": 640,
+          "text": "        f\"Bs must be float8_e8m0fnu or uint8 (UE8M0), got {Bs.dtype}\""
+        },
+        {
+          "line": 703,
+          "text": "        A: Raw activation tensor ``[..., M, K]`` in bf16/fp16/fp32 \u2014 quantized"
+        },
+        {
+          "line": 704,
+          "text": "            inline to ``float8_e4m3fn`` against per-K-tile per-row UE8 scales."
+        },
+        {
+          "line": 705,
+          "text": "        B: FP8 weight tensor ``[N, K]`` in ``float8_e4m3fn``."
+        },
+        {
+          "line": 727,
+          "text": "        A: Raw activation tensor ``[..., M, K]`` in bf16/fp16/fp32 \u2014 quantized"
+        },
+        {
+          "line": 729,
+          "text": "        B: FP8 weight tensor ``[N, K]`` in ``float8_e4m3fn``."
+        },
+        {
+          "line": 749,
+          "text": "    Computes ``C = A @ B.T`` with raw bf16/fp16/fp32 ``A`` quantized to FP8"
+        },
+        {
+          "line": 754,
+          "text": "        B: FP8 weight tensor ``[N, K]`` in ``float8_e4m3fn``."
+        },
+        {
+          "line": 773,
+          "text": "        B: Packed E2M1 ``[N, K // 2]`` (``int8``) or E4M3 ``[N, K]`` (``float8_e4m3fn``)."
+        },
+        {
+          "line": 774,
+          "text": "        Bs: UE8M0 weight scales ``[N, K // 32]`` (``float8_e8m0fnu``)."
+        },
+        {
+          "line": 797,
+          "text": "    - MX weights \u2014 ``int8`` (packed E2M1) or ``float8_e4m3fn`` (E4M3) with UE8M0"
+        },
+        {
+          "line": 808,
+          "text": "                \"the MX path quantizes activations dynamically per group. Omit activation_scale.\""
+        }
+      ]
+    },
+    {
+      "path": "flash-attn3/README.md",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/flash-attn3/README.md",
+      "sha256": "a83094352d9e61f34e9141c3f03f4c4e7e9182d252958fcb625f361adb8010dc",
+      "bytes": 1345,
+      "selected_lines": [
+        {
+          "line": 2,
+          "text": "license: bsd-3-clause"
+        }
+      ]
+    },
+    {
+      "path": "flash-attn3/build.toml",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/flash-attn3/build.toml",
+      "sha256": "f26cd9813258e16f147435a5f0462f23a17ae47b1a5138f7404ba1535f062753",
+      "bytes": 33744,
+      "selected_lines": [
+        {
+          "line": 5,
+          "text": "license = \"BSD-3-Clause\""
+        },
+        {
+          "line": 21,
+          "text": "cuda-capabilities = [\"8.0\"]"
+        },
+        {
+          "line": 169,
+          "text": "cuda-capabilities = ["
+        },
+        {
+          "line": 203,
+          "text": "cuda-capabilities = [\"9.0a\"]"
+        },
+        {
+          "line": 277,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 278,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_paged_sm90.cuh\","
+        },
+        {
+          "line": 279,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_paged_softcap_sm90.cuh\","
+        },
+        {
+          "line": 280,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_paged_split_sm90.cuh\","
+        },
+        {
+          "line": 281,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_paged_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 282,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_sm90.cuh\","
+        },
+        {
+          "line": 283,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_softcap_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 284,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_softcap_sm90.cuh\","
+        },
+        {
+          "line": 285,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_split_sm90.cuh\","
+        },
+        {
+          "line": 286,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim128_e4m3_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 307,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 308,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_paged_sm90.cuh\","
+        },
+        {
+          "line": 309,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_paged_softcap_sm90.cuh\","
+        },
+        {
+          "line": 310,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_paged_split_sm90.cuh\","
+        },
+        {
+          "line": 311,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_paged_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 312,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_sm90.cuh\","
+        },
+        {
+          "line": 313,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_softcap_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 314,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_softcap_sm90.cuh\","
+        },
+        {
+          "line": 315,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_split_sm90.cuh\","
+        },
+        {
+          "line": 316,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_128_e4m3_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 337,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 338,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_paged_sm90.cuh\","
+        },
+        {
+          "line": 339,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_paged_softcap_sm90.cuh\","
+        },
+        {
+          "line": 340,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_paged_split_sm90.cuh\","
+        },
+        {
+          "line": 341,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_paged_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 342,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_sm90.cuh\","
+        },
+        {
+          "line": 343,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_softcap_packgqa_sm90.cuh\","
+        },
+        {
+          "line": 344,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_softcap_sm90.cuh\","
+        },
+        {
+          "line": 345,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_split_sm90.cuh\","
+        },
+        {
+          "line": 346,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim192_e4m3_split_softcap_sm90.cuh\","
+        },
+        {
+          "line": 367,
+          "text": "    \"flash-attn/instantiations/flash_fwd_hdim256_e4m3_packgqa_sm90.cuh\","
+        }
+      ]
+    },
+    {
+      "path": "deep-gemm/README.md",
+      "url": "https://raw.githubusercontent.com/huggingface/kernels-community/f923c618f29b019080f4b02ca2be5bc35fd10c51/deep-gemm/README.md",
+      "sha256": "b80b17b7dda192cfcbff7f98c91244b1f08470e6d8a14e5733a9536846ccaebb",
+      "bytes": 12303,
+      "selected_lines": [
+        {
+          "line": 16,
+          "text": "- 2025.07.20: DeepGEMM now supports both SM90/SM100, and has a full refactor with a low-CPU-overhead JIT CPP module."
+        },
+        {
+          "line": 29,
+          "text": "- NVIDIA SM90 or SM100 architecture GPU"
+        },
+        {
+          "line": 35,
+          "text": "    - CUDA 12.9 or higher for SM100"
+        },
+        {
+          "line": 44,
+          "text": "This library provides optimized GEMM kernels for NVIDIA GPUs with a naming convention: `D = C + A @ B`. The input shape layout is NT (non-transposed A, transposed B). While the SM90 implementation supports only the NT memory layout (row-major, col-major), the SM100 implementation supports all memory layouts (NT, TN, NN, TT). For example, `fp8_gemm_nt` will do a `D = C + A @ B.T`"
+        },
+        {
+          "line": 46,
+          "text": "For both architectures, the LHS scaling factor is required to have a TMA-aligned and transposed layout. And the data format for the scaling factor of SM90 and SM100 is different:"
+        },
+        {
+          "line": 49,
+          "text": "- SM100 requires scaling factors in packed [UE8M0](https://docs.nvidia.com/cuda/parallel-thread-execution/#alternate-floating-point-data-formats) format, which packs 4 UE8M0 into a single `torch.int`."
+        }
+      ]
+    }
+  ],
+  "cutlass": {
+    "release": {
+      "tag_name": "v4.8.1",
+      "published_at": "2026-10-21T09:49:16Z",
+      "html_url": "https://github.com/NVIDIA/cutlass/releases/tag/v4.8.1",
+      "target_commitish": "release/4.8"
+    },
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "pr": {
+      "number": 3819,
+      "title": "[CuTeDSL] Hopper FMHA example: variable-length (cu_seqlens) inputs",
+      "state": "open",
+      "merged_at": null,
+      "created_at": "2026-11-03T14:56:57Z",
+      "updated_at": "2026-11-04T08:56:37Z",
+      "html_url": "https://github.com/NVIDIA/cutlass/pull/3819"
+    },
+    "pr_head": "4b623b7567eac2ebd24274675d91a782521649f3",
+    "pr_base": "e13f5cd4142c43efc37c2f6339923eb4a57afb99"
+  }
+}
