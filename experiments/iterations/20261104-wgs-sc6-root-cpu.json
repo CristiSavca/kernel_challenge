@@ -1,0 +1,115 @@
+{
+  "status": "PASS",
+  "source_sha256": "8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "cuda_sha256": "04fde164b1ad1b49114ae664e23154ffd895a80316b14253d692bb02b149fdf0",
+  "conformance": {
+    "restored_parent_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "unchanged_python_nodes": 38,
+    "non_wgs_preprocessed_builds": 16,
+    "all_post_scale_decode_operand_order_preserved": true,
+    "natural_fat_aliases_inactive_WGMIN9": true
+  },
+  "packing": {
+    "cases": [
+      {
+        "phase": "W13",
+        "layout": "_POS",
+        "codes_checked": 33554432,
+        "scale_bytes_checked": 2097152,
+        "packed_bytes": 18350080,
+        "parent_bytes": 18874368
+      },
+      {
+        "phase": "W2",
+        "layout": "_POS",
+        "codes_checked": 16777216,
+        "scale_bytes_checked": 1048576,
+        "packed_bytes": 9175040,
+        "parent_bytes": 9437184
+      },
+      {
+        "phase": "W13",
+        "layout": "_POS_MUL",
+        "codes_checked": 33554432,
+        "scale_bytes_checked": 2097152,
+        "packed_bytes": 18350080,
+        "parent_bytes": 18874368
+      },
+      {
+        "phase": "W2",
+        "layout": "_POS_MUL",
+        "codes_checked": 16777216,
+        "scale_bytes_checked": 1048576,
+        "packed_bytes": 9175040,
+        "parent_bytes": 9437184
+      }
+    ],
+    "all_byte_values_fallback_layouts": 2
+  },
+  "native_decode": {
+    "actual_packed_records": 67600,
+    "qualified_records": 63504,
+    "cross_field_64x64_algebraic_superset": 4096,
+    "padded_native_pair_comparisons": 270848,
+    "qualified_pair_values": 3969,
+    "positions": 4,
+    "backgrounds": [
+      0,
+      1,
+      21,
+      62
+    ],
+    "native_uint32_wrap": true
+  },
+  "address_and_payload": {
+    "expert_stage_piece_bounds": 98304,
+    "ring_wrap_stages": 96,
+    "global_stage_bytes": 35840,
+    "shared_slot_bytes": 36864,
+    "unused_shared_tail_bytes": 1024,
+    "shared_bytes": 231168,
+    "weight_payload_reduction_fraction": 0.027777777777777776,
+    "unchanged_ring_wait_arrival_participants": true
+  },
+  "actual_state_dispatch": {
+    "qualification_bank_byte_cases": 512,
+    "complete_actual_prepare_calls": 10,
+    "alternating_prepared_states": 8,
+    "actual_kernel_calls": 72,
+    "actual_extension_launches": 80,
+    "partial_final_batch_M385": true,
+    "prepared_WGS_only_defines": true,
+    "heavy_unchanged_prepare_ops_mocked": true,
+    "unqualified_PRMT_and_nonPRMT_fallback": true
+  },
+  "host_resources": {
+    "sc6_enabled": {
+      "modes": 10,
+      "records": 20,
+      "max_record_bytes": 106,
+      "local_allocation_does_not_reject": true,
+      "actual_first_call_failure_propagates": true,
+      "failed_call_does_not_cache_success": true,
+      "successful_attributes_cached": true
+    },
+    "ordinary_WGS_fallback": {
+      "modes": 10,
+      "records": 20,
+      "max_record_bytes": 106,
+      "local_allocation_does_not_reject": true,
+      "actual_first_call_failure_propagates": true,
+      "failed_call_does_not_cache_success": true,
+      "successful_attributes_cached": true
+    }
+  },
+  "negative_controls": [
+    "wrong_SC6_multiplier",
+    "old_scale_bias",
+    "lost_p6_field",
+    "old_TMA_payload",
+    "old_piece_stride",
+    "global_SC6_mode_leaks_between_states"
+  ],
+  "limits": "CPU source restoration, actual integer packing/native decode and mocked host/prepare/dispatch execution; not CUDA compilation, tensor-core arithmetic, GPU memory ordering or performance. Unchanged LUT and ordinary prepare packing are mocked only in the state integration check; actual WGS copies are independently exercised at complete expert dimensions."
+}
