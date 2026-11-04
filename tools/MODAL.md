@@ -99,6 +99,19 @@ with at most eight rows before timing. Partial 64-row jobs count separately:
 65 routes to one expert produce jobs of 64 and one row. These observations
 describe the generated standalone inputs, not the decoder's routing.
 
+The dedicated `attention-v10-screen` mode is a fixed experiment for the exact
+decoder-attention parent and isolated V10 wrapper. It pins five uploaded files,
+eight cases, seed121021 and six paired replays; accepts only the usual bounded
+timeout/dry-run controls; and uses the same allocation guard and cleanup.
+It captures complete actual ptxas diagnostics before any attention launch,
+then requires zero local memory, two-CTA occupancy for the exact Q8 flat
+specialization, and observed target dispatch. Compiler/resource checkpoints
+survive ordinary worker failures, with best-effort recovery before termination
+on timeout. See `tools/ATTENTION_Q8_V10_SCREEN_HANDOFF.md` for hashes, limits and
+the distinction between original and host-instrumented sources. Use
+`python tools/modal_h200.py attention-v10-screen --timeout 900 --dry-run`
+to validate without allocation. This is not a standalone leaderboard candidate.
+
 The smoke requests one H200 for at most 120 seconds and verifies `nvidia-smi`.
 The benchmark requests one H200, four CPU cores and 32 GiB RAM, with CPU/memory
 ceilings. Its default maximum lifetime is 300 seconds; the CLI accepts at most

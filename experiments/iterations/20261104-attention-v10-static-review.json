@@ -1,0 +1,38 @@
+{
+  "reviewed_at": "2026-11-04T06:08:09.148289+00:00",
+  "status": "static_go_for_one_bounded_screen",
+  "official": false,
+  "gpu_validated": false,
+  "sha256": {
+    "tools/modal_h200.py": "826e134ddc0a78abaf4fbfe496ed70c5a721ea0352e487201c26b7f28490a041",
+    "tools/attention_resource_probe.py": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+    "tools/test_modal_attention_v10.py": "281018f88b1a39668a0bf7eeab603b6692c9115ecb2da0397301df7ee04bb769",
+    "muse_decode_layer/candidates/native_q8_role_pipeline_v10.py": "6eb318df58c3ef5576c4ea456b4b494e1ef4548090fa7707c84e247f960c2222",
+    "muse_attention_decode/candidates/decoder_parent_v10.py": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9",
+    "muse_attention_decode/candidates/decoder_q8_role_v10.py": "d8be9200bb0357cacf8e48c104a44d9e57aa1e278afe2bdac27a4dd5d7d4790a",
+    "tools/modal_credit_budget.py": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+    "tools/modal_credit_grant.json": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71"
+  },
+  "root_validation": [
+    "core8192-byte layout and109312event scheduleproof passes",
+    "8resource helpertests passed",
+    "combined83runner test executions passed (inheritedduplicates included)",
+    "fixed900second dryrun passed",
+    "exact guard/grant unchanged",
+    "manual review of upload boundaries, observer restoration, checkpoints and timeout recovery"
+  ],
+  "independent_critic": "/root/leaderboard_critic exact final GO on frozen runner826e134d/helpercda695f4/test281018f8",
+  "protocol": {
+    "gpu": "oneH200",
+    "timeout_s": 900,
+    "expected_checks": 128,
+    "cases": 8,
+    "fresh_graph_pairs_per_case": 6,
+    "seed_base": 121021,
+    "compiler_gate": "complete actual ptxas output, no changed-flat or unattributed serialization warning",
+    "resource_gate": "exact attn_kernel<8,true,0>; localBytes0, shared114688,384threads,2CTA occupancy",
+    "activation_gate": "actual untimed nativeargs + exact hostguard + runtimeoccupancy; requirelongfullq8targets active",
+    "comparison": "exact decoder attention parent, not active standalone87a9",
+    "promote_only_after": "useful measured gain, whole-decoder validation and official private check"
+  }
+}

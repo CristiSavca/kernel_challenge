@@ -16,6 +16,176 @@ IMAGE_TAG = "lmsysorg/sglang:dev-muse-spark-open"
 # Provenance: third_party/auto_research/018b7a1.../benchmarks/gpu/runtime-image.json
 IMAGE = "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af"
 PROBLEMS = ("muse_bf16_proj", "muse_attention_decode", "muse_moe_w4a16", "muse_decode_layer")
+V10_SOURCES = {
+    "baseline.py": ("muse_attention_decode/candidates/decoder_parent_v10.py",
+                    "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9"),
+    "candidate.py": ("muse_attention_decode/candidates/decoder_q8_role_v10.py",
+                     "d8be9200bb0357cacf8e48c104a44d9e57aa1e278afe2bdac27a4dd5d7d4790a"),
+    "attention_resource_probe.py": ("tools/attention_resource_probe.py",
+                                    "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756"),
+}
+V10_CASES_SHA = "8ed2eccb574fb8eb5255f9c4dc6ab52c3f0e11c5cfa97bf346119ab11122d8ad"
+V10_FILES = frozenset(V10_SOURCES) | {"reference.py", "checks.py"}
+
+
+def attention_v10_cases() -> list[dict]:
+    common = dict(ctx=80000, heads="tp8", layer="full", page=1, q_len=8, spread="agentic")
+    return [{**common, "batch": b, "dist": dist, **override} for b, dist, override in (
+        (16, "soft", {}), (32, "coherent", {}), (32, "soft", {"q_len": 1}),
+        (16, "coherent", {}), (32, "soft", {}), (16, "soft", {"layer": "sliding"}))] + [
+        dict(batch=3, ctx=3003, heads="tp8", layer="full", page=64, q_len=8, dist="edges"),
+        dict(batch=4, ctx=4093, heads="tp8", layer="full", page=64, q_len=8,
+             dist="soft", kv_scale=0.015625)]
+
+
+def validate_attention_v10_payload(payload: dict) -> None:
+    """Fail closed before importing uploaded code; this mode admits one fixed experiment."""
+    import re
+    if (payload.get("attention_v10_screen") is not True or payload.get("problem") != "muse_attention_decode"
+            or payload.get("cases") != attention_v10_cases() or payload.get("seed") != 121021
+            or payload.get("repeats") != 6 or payload.get("weight_seed") != 7311
+            or payload.get("image") != IMAGE or payload.get("profile") is not True
+            or payload.get("resources") is not False or set(payload.get("files", {})) != V10_FILES
+            or re.fullmatch(r"[a-f0-9]{16}", payload.get("attention_v10_tag", "")) is None):
+        raise ValueError("attention-v10-screen requires its fixed policy, cases, seeds and file allowlist")
+    for name, source in payload["files"].items():
+        if type(source) is not str or sha(source) != payload.get("file_sha256", {}).get(name):
+            raise ValueError(f"attention V10 uploaded digest mismatch: {name}")
+        if name in V10_SOURCES and sha(source) != V10_SOURCES[name][1]:
+            raise ValueError(f"attention V10 frozen source changed: {name}")
+    if (payload.get("source_sha256") != V10_SOURCES["candidate.py"][1]
+            or payload.get("incumbent", {}).get("sha256") != V10_SOURCES["baseline.py"][1]
+            or payload.get("attention_v10_cases_sha256") != V10_CASES_SHA):
+        raise ValueError("attention V10 original-source identity mismatch")
+
+
+def build_attention_v10_payload(root: Path, tag: str) -> dict:
+    from attention_resource_probe import instrument_source
+    cases_text = (root / "experiments/attention_q8_role_v10_cases.json").read_text()
+    if sha(cases_text) != V10_CASES_SHA or json.loads(cases_text) != attention_v10_cases():
+        raise ValueError("attention V10 fixed case file changed")
+    files = {name: (root / path).read_text() for name, (path, _) in V10_SOURCES.items()}
+    files.update({name: (root / "muse_attention_decode" / name).read_text()
+                  for name in ("reference.py", "checks.py")})
+    payload = {"problem": "muse_attention_decode", "files": files, "image": IMAGE,
+               "attention_v10_screen": True, "attention_v10_tag": tag,
+               "attention_v10_cases_sha256": V10_CASES_SHA,
+               "source_sha256": V10_SOURCES["candidate.py"][1],
+               "file_sha256": {name: sha(source) for name, source in files.items()},
+               "cases": attention_v10_cases(), "repeats": 6, "seed": 121021, "weight_seed": 7311,
+               "comparison_baseline": "exact_decoder_attention_parent",
+               "incumbent": dict(zip(("path", "sha256"), V10_SOURCES["baseline.py"])),
+               "profile": True, "resources": False}
+    validate_attention_v10_payload(payload)
+    payload["attention_v10_instrumentation"] = {}
+    for name in ("baseline", "candidate"):
+        source, proof = instrument_source(files[name + ".py"],
+            expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{tag}_{name}")
+        compile(source, name, "exec")
+        payload["attention_v10_instrumentation"][name] = proof
+    for name, source in files.items():
+        compile(source, name, "exec")
+    return payload
+
+
+def observe_attention_v10_call(module, invoke, records: list):
+    """Observe only actual untimed native scalar arguments; always restore the builder."""
+    original = module._module
+    fields = {13: "batch", 14: "q_len", 15: "q_heads", 16: "kv_heads", 17: "page_size",
+              18: "window", 19: "rope", 20: "n_splits", 21: "flat", 22: "nc",
+              25: "cs", 26: "ncl", 29: "tma_flags"}
+
+    def observed_module():
+        extension = original()
+
+        class Proxy:
+            def run(self, *args):
+                if len(args) != 30 or len(records) != 0 or any(type(args[i]) is not int for i in fields):
+                    raise RuntimeError("attention V10 native dispatch signature changed")
+                records.append({field: args[i] for i, field in fields.items()})
+                return extension.run(*args)
+        return Proxy()
+
+    module._module = observed_module
+    try:
+        return invoke()
+    finally:
+        module._module = original
+
+
+def attention_v10_dispatch(records: list, resources: dict, *, target: bool) -> dict:
+    result = {"native_call_count": len(records), "target": target, "activation_gate": False}
+    if len(records) != 1:
+        result["reason"] = "native_path_not_observed"
+        return result
+    record = records[0]
+    result.update(record)
+    pairs = record["kv_heads"] // 2
+    grid = [record["n_splits"], 1 if record["flat"] else record["batch"], pairs]
+    q8_flat = record["q_len"] == 8 and record["flat"] == 1
+    sms, occupancy = resources.get("sm_count", 0), resources.get("active_blocks_per_sm", 0)
+    requested_coop = bool(record["tma_flags"] & 2)
+    # Exact frozen host launch<8> rules, using observed run arguments and exported occupancy.
+    resident = bool(q8_flat and grid == [2 * sms, 1, 1] and occupancy >= 2)
+    coop = bool(q8_flat and requested_coop and grid[0] * grid[1] * grid[2] <= sms * occupancy)
+    active = bool(resident and coop and record["window"] == 0 and record["rope"] == 0 and record["cs"] == 0)
+    result.update(grid=grid, pairs=pairs, cooperative_requested=requested_coop,
+                  cooperative_after_host_guard=coop if q8_flat else None,
+                  resident_after_host_guard=resident if q8_flat else None,
+                  selected_template="attn_kernel<8,true,0>" if q8_flat else "unchanged_path",
+                  role_path_eligible=active,
+                  activation_gate=active and grid == [264, 1, 1],
+                  evidence="observed untimed native arguments + exact frozen host guard + runtime occupancy")
+    return result
+
+
+def require_attention_v10_resources(resources: dict, compiler: dict) -> None:
+    if (compiler.get("complete") is not True or compiler.get("saw_ptxas") is not True
+            or compiler.get("actual_ptxas_diagnostics") is not True):
+        raise RuntimeError("attention V10 requires complete actual ptxas diagnostics; cache hits are insufficient")
+    if any(w["scope"] != "other_kernel" and
+           any(marker in w["line"].lower() for marker in ("c7515", "serializ"))
+           for w in compiler.get("warnings", [])):
+        raise RuntimeError("attention V10 changed-flat/unattributed serialization warning requires review")
+    expected = {"status": "ok", "template": "attn_kernel<8,true,0>", "local_bytes": 0,
+                "threads_per_block": 384, "smem_struct_bytes": 113664,
+                "requested_dynamic_shared_bytes": 114688, "sm_count": 132,
+                "compute_major": 9, "compute_minor": 0}
+    if (any(resources.get(k) != v for k, v in expected.items())
+            or resources.get("active_blocks_per_sm", 0) < 2
+            or resources.get("max_dynamic_shared_bytes", 0) < 114688):
+        raise RuntimeError("attention V10 exact-specialization resource gate failed (requires localBytes=0, two resident CTAs)")
+
+
+def attention_v10_compiler_summary(probe, capture: dict) -> dict:
+    import re
+    result = probe.compiler_summary(capture)
+    # A verbose nvcc command containing '-Xptxas=-v' alone is not compiler evidence.
+    result["actual_ptxas_diagnostics"] = bool(re.search(r"(?m)^ptxas (?:info|warning|error)\b", capture["text"]))
+    result["compile_log_gate"] = bool(result["complete"] and result["saw_ptxas"] and result["actual_ptxas_diagnostics"])
+    return result
+
+
+def save_attention_v10_logs(destination: Path, result: dict) -> None:
+    for side in ("baseline", "candidate"):
+        capture = result.get("attention_v10", {}).get("compilation", {}).get(side, {}).get("capture", {})
+        if "text" in capture:
+            text = capture["text"]
+            if type(text) is not str or len(text) > 8 * 1024 * 1024:
+                raise ValueError("attention V10 compiler log exceeds its capture bound")
+            (destination / f"compile_{side}.log").write_text(text)
+
+
+def recover_attention_v10_checkpoint(sandbox, destination: Path, manifest: dict) -> None:
+    """Best effort while the bounded sandbox is alive; never replace the original failure."""
+    try:
+        result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
+        save(destination / "result.json", result)
+        save_attention_v10_logs(destination, result)
+        manifest["attention_v10_checkpoint_recovered"] = True
+    except Exception as exc:
+        manifest["attention_v10_checkpoint_recovered"] = False
+        manifest["attention_v10_retrieval_error_type"] = type(exc).__name__
 
 
 def sha(text: str) -> str:
@@ -71,11 +241,15 @@ def run_worker(payload_path: str) -> None:
     import torch
 
     payload = json.loads(Path(payload_path).read_text())
+    attention_v10 = payload.get("attention_v10_screen") is True
+    if attention_v10:
+        validate_attention_v10_payload(payload)
     folder = Path("/tmp/okc-input")
     folder.mkdir(exist_ok=True)
     for name, source in payload["files"].items():
-        if name not in {"candidate.py", "baseline.py", "reference.py", "checks.py", "nvfp4.py",
-                        "decoder_policy_metadata.py"}:
+        allowed = V10_FILES if attention_v10 else {"candidate.py", "baseline.py", "reference.py", "checks.py", "nvfp4.py",
+                                                  "decoder_policy_metadata.py"}
+        if name not in allowed:
             raise ValueError(f"Unexpected input file: {name}")
         (folder / name).write_text(source)
     sys.path.insert(0, str(folder))
@@ -127,6 +301,15 @@ def run_worker(payload_path: str) -> None:
         "device_capability": torch.cuda.get_device_capability(0), "cases": [],
     }
     started = time.monotonic()
+
+    def checkpoint(phase):
+        report["checkpoint_phase"] = phase
+        report["elapsed_seconds"] = time.monotonic() - started
+        temporary = Path("/tmp/okc-result.json.tmp")
+        save(temporary, report)
+        temporary.replace("/tmp/okc-result.json")
+        print(json.dumps({"attention_v10_checkpoint": phase}), flush=True)
+
     try:
         if torch.cuda.device_count() != 1 or "H200" not in report["gpu"]:
             raise RuntimeError(f"Expected exactly one H200, got {report['gpu']}")
@@ -136,7 +319,38 @@ def run_worker(payload_path: str) -> None:
         import triton
         import triton.language as tl
         report["triton"] = triton.__version__
+        if attention_v10:
+            probe = load("attention_resource_probe")
+            report["attention_v10"] = {"instrumentation": {}, "compilation": {}, "resources": {},
+                                       "expected_regular_checks": 128, "checks_are_official": False}
+            for name in ("baseline", "candidate"):
+                transformed, proof = probe.instrument_source(payload["files"][name + ".py"],
+                    expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
+                if proof != payload["attention_v10_instrumentation"][name]:
+                    raise RuntimeError("attention V10 local/remote source transform provenance mismatch")
+                (folder / (name + ".py")).write_text(transformed)
+                report["attention_v10"]["instrumentation"][name] = proof
         reference, baseline, candidate = (load(name) for name in ("reference", "baseline", "candidate"))
+        if attention_v10:
+            # Compile without launching attention. A new barrier failure must not erase its diagnostics.
+            for name, module in (("baseline", baseline), ("candidate", candidate)):
+                compile_started = time.monotonic()
+                try:
+                    _, capture = probe.capture_compile_call(module._module)
+                except probe.CompileCaptureError as exc:
+                    capture = exc.capture
+                    report["attention_v10"]["compilation"][name] = {
+                        "capture": capture, "summary": attention_v10_compiler_summary(probe, capture),
+                        "wall_seconds": time.monotonic() - compile_started, "status": "failed"}
+                    checkpoint(f"{name}_compile_failed")
+                    raise
+                summary = attention_v10_compiler_summary(probe, capture)
+                report["attention_v10"]["compilation"][name] = {
+                    "capture": capture, "summary": summary,
+                    "wall_seconds": time.monotonic() - compile_started, "status": "built_without_launch"}
+                checkpoint(f"{name}_compiled_before_any_attention_launch")
+                if summary["compile_log_gate"] is not True:
+                    raise RuntimeError("attention V10 compiler evidence is incomplete or no actual ptxas output was captured")
         weighted = hasattr(reference, "generate_weights")
         weights = reference.generate_weights(payload["weight_seed"]) if weighted else None
         # Independent copies protect the reference and the other implementation from prepare mutation.
@@ -227,12 +441,32 @@ def run_worker(payload_path: str) -> None:
                     {**case, "seed": payload["seed"] + 1000 * index}, weights))
             row = {"case": case, "checks": [], "timings_us": {"baseline": [], "candidate": []}}
             report["cases"].append(row)
+            target = attention_v10 and index in (0, 1, 3, 4)
             # Test multiple fresh inputs before capturing either implementation.
             for step in range(2):
                 fresh = generate(case, payload["seed"] + 1000 * index + step)
+                if attention_v10:
+                    row.setdefault("sequence_length_sums", []).append({"phase": "eager", "seed_step": step,
+                        "past_tokens": int(fresh["seq_lens"].sum().item())})
                 for name, module, state in zip(("baseline", "candidate"), (baseline, candidate), states):
                     data = clone(fresh)
-                    output = call(module, data, state)
+                    if attention_v10 and step == 0:
+                        records = []
+                        checkpoint(f"case{index}_{name}_before_untimed_launch")
+                        output = observe_attention_v10_call(module, lambda: call(module, data, state), records)
+                        if index == 0:
+                            # _launch<8> has now set this exact kernel's dynamic-shared attribute.
+                            report["attention_v10"]["resources"][name] = probe.collect_attention_resources(module)
+                        resources = report["attention_v10"]["resources"][name]
+                        dispatch = attention_v10_dispatch(records, resources, target=target)
+                        row.setdefault("attention_dispatch", {})[name] = dispatch
+                        checkpoint(f"case{index}_{name}_resources_and_dispatch_before_sync")
+                        if index == 0:
+                            require_attention_v10_resources(resources, report["attention_v10"]["compilation"][name]["summary"])
+                        if target and not dispatch["activation_gate"]:
+                            raise RuntimeError(f"{name} attention V10 target did not activate the exact flat cooperative resident plan")
+                    else:
+                        output = call(module, data, state)
                     torch.cuda.synchronize()
                     ok, detail = check(data, output)
                     row["checks"].append({"implementation": name, "phase": "eager", "seed_step": step,
@@ -257,6 +491,9 @@ def run_worker(payload_path: str) -> None:
                 captures.append((data, graph, output))
             for repeat in range(payload["repeats"]):
                 fresh = generate(case, payload["seed"] + 1000 * index + 100 + repeat)
+                if attention_v10:
+                    row["sequence_length_sums"].append({"phase": "graph", "seed_step": repeat,
+                        "past_tokens": int(fresh["seq_lens"].sum().item())})
                 if payload["problem"] == "muse_moe_w4a16":
                     cfg = fresh["config"]
                     routing = moe_route_summary(fresh["topk_ids"].detach().cpu().reshape(-1).tolist(),
@@ -314,6 +551,12 @@ def run_worker(payload_path: str) -> None:
             del captures, fixed, data, graph, output
             gc.collect()
             torch.cuda.empty_cache()
+            if attention_v10:
+                checkpoint(f"case{index}_complete")
+        if attention_v10:
+            report["attention_v10"]["regular_checks"] = sum(len(row["checks"]) for row in report["cases"])
+            if report["attention_v10"]["regular_checks"] != 128:
+                raise RuntimeError("attention V10 did not complete exactly 128 oracle checks")
         report["status"] = "passed_subset"
     except Exception as exc:
         report["status"] = "failed"
@@ -352,7 +595,7 @@ def run_hardware_worker(payload: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "attention-v10-screen", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -385,6 +628,11 @@ def main() -> None:
     if args.hardware_issue and args.mode != "hardware-profile":
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
+    if args.mode == "attention-v10-screen":
+        if (args.problem is not None or args.candidate or args.cases or args.seed is not None
+                or args.weight_seed != 7311 or args.repeats != 6):
+            parser.error("attention-v10-screen has fixed sources, eight cases, seed121021 and six pairs")
+        payload = build_attention_v10_payload(ROOT, uuid.uuid4().hex[:16])
     if args.mode == "hardware-profile":
         from modal_hardware_metrics import CASES, FILES, POLICY, PROFILE_SEEDS, SOURCE_SHA, REQUIRED, ISSUE, validate_payload
         if (args.problem not in (None, "muse_moe_w4a16") or args.candidate or args.cases
@@ -470,6 +718,14 @@ def main() -> None:
             # Freeze every uploaded source locally for this experiment's provenance.
             for name, source in payload["files"].items():
                 (destination / name).write_text(source)
+            if payload.get("attention_v10_screen") is True:
+                from attention_resource_probe import instrument_source
+                for name in ("baseline", "candidate"):
+                    transformed, proof = instrument_source(payload["files"][name + ".py"],
+                        expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
+                    if proof != payload["attention_v10_instrumentation"][name]:
+                        raise RuntimeError("attention V10 frozen instrumented source changed")
+                    (destination / f"instrumented_{name}.py").write_text(transformed)
             save(destination / "request.json", {k: v for k, v in payload.items() if k != "files"})
             (destination / "worker.py").write_text(worker_source)
         image = modal.Image.debian_slim(python_version="3.12") if args.mode == "smoke" else modal.Image.from_registry(IMAGE)
@@ -503,6 +759,8 @@ def main() -> None:
                 if payload:
                     result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
                     save(destination / "result.json", result)
+                    if payload.get("attention_v10_screen") is True:
+                        save_attention_v10_logs(destination, result)
                     manifest["status"] = result["status"]
                 else:
                     gpu_lines = (destination / "stdout.log").read_text().strip().splitlines()
@@ -514,6 +772,8 @@ def main() -> None:
                     raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
         except BaseException as exc:
             manifest.update(status="failed", error=str(exc))
+            if payload and payload.get("attention_v10_screen") is True and sandbox is not None:
+                recover_attention_v10_checkpoint(sandbox, destination, manifest)
             if sandbox is None:
                 manifest["sandbox_created"] = False
             raise

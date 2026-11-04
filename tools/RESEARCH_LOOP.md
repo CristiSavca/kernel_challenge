@@ -448,3 +448,14 @@ runner integration and tests; root alone owns allocation. Require actual
 complete ptxas output, post-warmup exact-specialization resource attributes,
 localBytes0 and2CTA occupancy, actual flat/cooperative plan, correctness and
 paired graph timings. No GPU currently running.
+
+Goal continuation06:00UTC: previous turn was progress (committed offline NCU
+recovery/parser and proved public submissions); no blocker. Fresh Modal CLI
+confirms every app stopped0tasks and billing unchanged$3.47/$0billed. No pending
+GPU session. Official quotas still decoder35private/19scored, attention38/18.
+Upstream head refresh06:02 confirms Auto-research018b7a1 and vjeuxf35a41ee
+unchanged. Root and critic reviewing fixed attention-v10-screen integration
+owned by attention_research_v2; root requested pre-launch compile checkpoints
+and timeout artifact recovery. No allocation authorized until finalstaticreview.
+Decoder agent researches one substantive next hypothesis offline, using actual
+profiles and75%DRAM evidence, not another blindparameter sweep.
