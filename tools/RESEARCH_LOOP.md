@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:26 UTC after V29 and V30 closed.
+Updated November 4, 2026 at 22:29 UTC with V31 diagnostic accepted.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -40,9 +40,24 @@ raw receipt/profile/log evidence, root results and independent critic retained.
 Plan timing exception remains explicit: plan/commit followed upload by27seconds,
 while source/gates/review were fixed beforehand and terminal result arrived later.
 
-Root owns all GPU calls. `moe_research_reset` builds V31 eligibility diagnostics;
-`attention_paper_reset` independently reviews that delta. `result_and_strategy_critic`
-completed V30 terminal review and is available for the V31 result. No Modal allocation; serving work stays backlog.
+**V31 diagnostic accepted as `5f48e0da4dcd4595`; inspect it, never duplicate.**
+Source0d552bf386fdbcae6837d97371ae74aa778709b234d993b4e341e655fe9216f7,
+package `muse_decode_layer/candidates/decoder_exact_patch_v31_diagnostic/`.
+Root/author/critic CPU reports exactly31b7e2e0; source and root plan committed
+5c83fc3 before upload. V31 changes observation only: V31P selftest/inner choice/
+outer choice JSON; V31R first compiled-pointer resource attributes. Three Python
+budgets plus host total13312B preserve later-stage evidence when earlier caps
+are exhausted. STOP/missing/truncated records mean incomplete coverage. Preserve
+both saved log and receipt log_tail; saved log may be a prefix before profiler.
+No changed numerical thresholds, math, geometry, timing order or selection.
+Explicitly distinguish launch/resource rejection, numerical disable, or tuner
+loss. No score/promotion is authorized for this diagnostic.
+
+Root owns all GPU calls and result files. `moe_research_reset` now audits actual
+unique-expert versus per-job weight traffic using retained routing evidence;
+this read-only audit must check prior failures and stop if benefit is negligible.
+`result_and_strategy_critic` is available for V31 terminal review. No Modal
+allocation; serving work stays backlog.
 
 
 **V28 closed; no score or retry.** Exact decoder source
