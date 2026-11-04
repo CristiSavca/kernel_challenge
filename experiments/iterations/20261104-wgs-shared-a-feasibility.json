@@ -1,0 +1,157 @@
+{
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "parent_source": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+  "compiler_evidence": "Parent C7511/C7512 status UNKNOWN; only failed WAIT2/REG112 variants positively serialized.",
+  "geometry": {
+    "rows": 256,
+    "K_per_stage": 256,
+    "FT": 64,
+    "threads": 576,
+    "weight_ring": 2,
+    "X_ring": 2,
+    "decoded_A_banks": 2,
+    "K_per_A_bank": 32,
+    "metadata_bytes": 22272,
+    "old_dynamic": 231168,
+    "new_dynamic": 194304,
+    "A_bank_bytes": 16384,
+    "A_descriptor_LBO": 128,
+    "A_descriptor_SBO": 256
+  },
+  "coordinate_proof": {
+    "BF16_locations": 16384,
+    "uint32_stores": 8192,
+    "per_warp_store_conflict_free": true,
+    "memory_layout": "K-major no-swizzle core8x8; separate2048B m64k16 tile perjj/WG"
+  },
+  "lifetime_model": {
+    "stage_checks": 6528,
+    "NTT": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "initial_seq": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "stage_lengths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "single_bank_negative_detected": true,
+    "scope": "abstract perWG retirement + explicit collective pre/post barriers; no CUDA memory-order proof"
+  },
+  "per_job": {
+    "weight_bytes": 28311552,
+    "raw_weight_TMA_copies": 768,
+    "activation_TMA_copies": 768,
+    "CTA_stage_events": 768,
+    "CTA_commit_group_events": 6144,
+    "WG_commit_groups": 24576,
+    "WG_WGMMA_instructions": 49152,
+    "new_A_shared_store_bytes": 100663296,
+    "new_A_logical_tensor_read_bytes": 100663296,
+    "new_preoverwrite_WG_barriers": 24576,
+    "new_publication_WG_barriers": 24576
+  },
+  "standalone_route_examples": [
+    {
+      "M": 32,
+      "input_seed": 7301,
+      "jobs": 16,
+      "additional_A_shared_store_plus_logical_read_bytes": 3221225472,
+      "additional_WG_barriers": 786432
+    },
+    {
+      "M": 32,
+      "input_seed": 7302,
+      "jobs": 16,
+      "additional_A_shared_store_plus_logical_read_bytes": 3221225472,
+      "additional_WG_barriers": 786432
+    },
+    {
+      "M": 32,
+      "input_seed": 7303,
+      "jobs": 18,
+      "additional_A_shared_store_plus_logical_read_bytes": 3623878656,
+      "additional_WG_barriers": 884736
+    },
+    {
+      "M": 128,
+      "input_seed": 7301,
+      "jobs": 26,
+      "additional_A_shared_store_plus_logical_read_bytes": 5234491392,
+      "additional_WG_barriers": 1277952
+    },
+    {
+      "M": 128,
+      "input_seed": 7302,
+      "jobs": 26,
+      "additional_A_shared_store_plus_logical_read_bytes": 5234491392,
+      "additional_WG_barriers": 1277952
+    },
+    {
+      "M": 128,
+      "input_seed": 7303,
+      "jobs": 24,
+      "additional_A_shared_store_plus_logical_read_bytes": 4831838208,
+      "additional_WG_barriers": 1179648
+    },
+    {
+      "M": 256,
+      "input_seed": 7301,
+      "jobs": 29,
+      "additional_A_shared_store_plus_logical_read_bytes": 5838471168,
+      "additional_WG_barriers": 1425408
+    },
+    {
+      "M": 256,
+      "input_seed": 7302,
+      "jobs": 27,
+      "additional_A_shared_store_plus_logical_read_bytes": 5435817984,
+      "additional_WG_barriers": 1327104
+    },
+    {
+      "M": 256,
+      "input_seed": 7303,
+      "jobs": 26,
+      "additional_A_shared_store_plus_logical_read_bytes": 5234491392,
+      "additional_WG_barriers": 1277952
+    }
+  ],
+  "routes_source_sha256": "6337501753ec31196380807668a96229b53784b5c0a9f4b6195bbdc0a0444df4",
+  "profile_sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+  "whole_decoder_profile_scenarios_not_predictions": {
+    "MAIN_reduction20pct": 0.05044772432548961,
+    "MAIN_reduction25pct": 0.06350268271417858,
+    "MAIN_reduction50pct": 0.13187261843974563,
+    "MAIN_reduction_needed_for5pct_whole": 0.19827240205715918
+  },
+  "decision": "Concrete fixed plan is source/math/resource feasible for1CTA; new compiled resources/correctness/performance UNKNOWN.",
+  "candidate_written": false,
+  "GPU_or_official_calls": false
+}

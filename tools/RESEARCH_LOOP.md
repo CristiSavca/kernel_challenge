@@ -1153,3 +1153,33 @@ lackrepeatablepositivefamilyevidence. Do notreopenmixeddispatchwithoutnewdata.
 Currentgoalturn remainsprogress: actualR16admissionfailure closed, read-only
 coordination/combinationalternatives assessed, distinctSSoperand designunderreview.
 The#1objective isactive/unachieved, notblocked orcomplete.
+
+
+## Shared-A WGMMA CPU implementation accepted — November4 12:32 UTC
+
+Root acceptedfixedSS-Aplan c3c30a91d55abc91e37fdb0f37e427111ef1c0f93277e29d74361f4f0dca13b7
+(original4df441db plusreviewedstorecostparagraph), afterindependentplanGOand
+exactrootreproductionauthor e01d54aa andcorrectedindependent db40647c reports.
+A sharedfilenamecollisionwasdetected: thefirstpurportedindependenthelpercopied
+theauthor'sscript. Itwasreconstructedunder *_critic.py withitsownoutput before
+rootacceptance. Correctindependentscript4742124b; onlythereconstructedreport
+isindependentCPUevidence. Source/runningcandidatewereuntouchedbythiscollision.
+
+The fixeddesign keeps576threads,FT64,256outputrows,K256,GS2/wait1,alljobs/math
+andKPERM; storesdecodedBF16 A into2K32sharedbanks, addsWGpreoverwriteand
+publicationbarriers, andreducesraw/Xrings3to2. Dynamicshared194304B fitsoneCTA
+onpaper. Extra96MiBstores+96MiBlogicaltensorAreadsand49152WGbarriers/job are
+materialcosts. Documented128B/SM/clockgenericstoremodelat132SM,sampled1980MHz
+gives72.22–87.26usserviceforJ24–29; notadditivelatency,notcontinuousclockor
+measuredHopperportthroughput. Tensor/TMApathsarenotincorrectlychargedtothat
+model. A20%MAINtimecutmodels5.045%decoder; thisisnotaforecast.
+
+Writerattention_paper_reset ownsisolatednative_wgs_shared_a_v15 fromexact247888,
+builderandcombinedactualsourceCPUproof. Independentmoe_research_reset owns
+itsdistinctlifetime/descriptorproof; result_and_strategy_criticreviewssource.
+NoGPUorofficialcalluntilfrozenfullsourcereviewandrootrerunpass. Runtimegate
+isvalidlaunch>=1CTA/successfulAPIs;localbytes/C7511areinformation,notarbitrary
+rejectionbeforetiming. Fixedusefulgate>=3%affectedMAINgeometricgainoverboth
+publicd24dd501/privatebcb761df, noaffected>3%normalizedregression,control
+GMwithin3%. Usefulstandalonegainstillrequiresseparatedecoderintegrationcheck.
+Noactiveincumbent/Modalguardchange;#1goalactive.
