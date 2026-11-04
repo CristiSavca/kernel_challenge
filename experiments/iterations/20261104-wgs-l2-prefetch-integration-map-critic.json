@@ -1,0 +1,162 @@
+{
+  "decision": "CLOSED_AFTER_FAILED_STANDALONE_SCREEN_NO_INTEGRATION",
+  "scope": "Historical source-integration evidence only. Standalone jobea811fae5f6648bf failed the fixed performance screen; no decoder implementation, GPU check or promotion is authorized.",
+  "pins": {
+    "map": {
+      "path": "tools/WGS_L2_PREFETCH_DECODER_INTEGRATION_MAP.md",
+      "sha256": "42b85d07ce190835425f6074ce7022cb2660119fbb2adf3f4997c67f71658a42"
+    },
+    "decoder_parent": {
+      "path": "muse_decode_layer/candidates/native_wgs_kperm3_v12.py",
+      "sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2"
+    },
+    "standalone_parent": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+    },
+    "standalone_candidate": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_l2_prefetch_v17.py",
+      "sha256": "85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759"
+    }
+  },
+  "independent_source_checks": {
+    "existing_AST_nodes_to_change": [
+      "MOE_CUDA_SRC",
+      "_ma_ext"
+    ],
+    "identical_parent_function_hashes": {
+      "wgs_wproducer": "b64ac1a3af9622c0a6a9f2a529498dc3ab6e38351a78d27243900e6a34d64dfc",
+      "okc_smem_bytes": "0fd49cf6e348fea8ee0fb4f84d6ed33c1cb5e078dd2170969ca07efb1a920432",
+      "okc_run": "bedd1bc40b2fb79d0e8edd26a09c62f34b61d8e3826b8c3ee5acf00681e9937f"
+    },
+    "cpp_exports_identical": true,
+    "full_CUDA_identical_after_exact_parent_BIGM_comment_removal": true,
+    "changed_weight_format": false
+  },
+  "findings": [
+    "The two-node port is sufficient. Apply the exact reviewed producer hint and LPFR helper/call to embedded CUDA, and use a unique _ma_ext cache namespace. WGS-only compiler verbosity is an explicit optional logging delta; optimization flags remain unchanged.",
+    "No prepared-state, module-selector, packing, ma_w, tensor ABI or scratch change is needed. This preserves existing selection behavior and does not claim to repair unrelated legacy global-alias behavior.",
+    "Only WGS MAIN is changed; general-scale fallback and small-token modules retain exact decoder-specific flags, including decoder tiny MULDEC1 and its FINPF difference from standalone.",
+    "The existing sole timed agent call remains _after_attention -> _moe(T); retain per-launch PDL setter, original-T selection and384-token chunks. UV dense2T still produces T-row MoE inputs.",
+    "LPFR establishes valid resources for queried compiled pointers during first module use, not achieved occupancy, benchmark-phase identity or effective cache prefetch. Decoder resources must be observed independently.",
+    "Preparation propagates compile errors, but runtime agent errors can be caught during tuning and cause Marlin selection. PASS alone cannot establish activation. Preserve tuner/fallback policy and inspect complete source/log/profile premises.",
+    "T32 MAIN uses PDL in the decoder whereas standalone is PDL-off; extra prefetch requests may contend with overlapping layer work. A standalone win is insufficient for decoder promotion."
+  ],
+  "public_parent_profile_scope": {
+    "job": "7a8c4941741645ee",
+    "receipt_sha256": "442b6b85121027ee51d7c3038fb25ba4ffa07d38a666073e3dcea341ab3f6f63",
+    "rows": [
+      {
+        "index": 0,
+        "T": 1,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           29.2 \u00b5s  36.7%      1"
+      },
+      {
+        "index": 1,
+        "T": 1,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           22.5 \u00b5s  28.1%      1"
+      },
+      {
+        "index": 2,
+        "T": 16,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           73.8 \u00b5s  51.5%      1"
+      },
+      {
+        "index": 3,
+        "T": 16,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           65.8 \u00b5s  30.5%      1"
+      },
+      {
+        "index": 4,
+        "T": 32,
+        "affected": true,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                            80.3 \u00b5s  50.0%      1"
+      },
+      {
+        "index": 5,
+        "T": 32,
+        "affected": true,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                            85.2 \u00b5s  25.6%      1"
+      },
+      {
+        "index": 6,
+        "T": 8,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           51.8 \u00b5s  48.9%      1"
+      },
+      {
+        "index": 7,
+        "T": 8,
+        "affected": false,
+        "PDL": true,
+        "expert_row": "void okc::moe_fused<false>(okc::Params)                           44.9 \u00b5s  41.6%      1"
+      },
+      {
+        "index": 8,
+        "T": 128,
+        "affected": true,
+        "PDL": false,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                           143.9 \u00b5s  58.5%      1"
+      },
+      {
+        "index": 9,
+        "T": 128,
+        "affected": true,
+        "PDL": false,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                           140.6 \u00b5s  42.0%      1"
+      },
+      {
+        "index": 10,
+        "T": 256,
+        "affected": true,
+        "PDL": false,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                           205.8 \u00b5s  61.7%      1"
+      },
+      {
+        "index": 11,
+        "T": 256,
+        "affected": true,
+        "PDL": false,
+        "expert_row": "void okc::moe_fused<true>(okc::Params)                           204.6 \u00b5s  40.9%      1"
+      }
+    ],
+    "direct_module_pointer_identity": false,
+    "interpretation": "All12 parent profiles visibly use generic agent moe_fused; affected indices4/5/8/9/10/11 agree with source MAIN dispatch. The symbols alone do not identify a new prefetched module."
+  },
+  "candidate_edits": false,
+  "gpu_allocations": 0,
+  "official_calls": 0,
+  "review_history": {
+    "original_map_sha256": "37372bc6cf674cfbc0a583b3273452bb59faac87714b73b2678f8ecc73974caa",
+    "original_critic_sha256": "04554f59c92f711296c4a0c2f18c44ffb7ca57768555f01e3b1b4780884166a5",
+    "original_decision": "FEASIBLE_MAP_ONLY_CONDITIONAL_ON_STANDALONE_SCREEN",
+    "final_map_sha256": "42b85d07ce190835425f6074ce7022cb2660119fbb2adf3f4997c67f71658a42",
+    "opening_only_change_verified": true,
+    "verification": "Replacing only the final opening status paragraph with the original conditional paragraph reconstructs the exact prior reviewed map SHA. All source mapping and caveats are unchanged.",
+    "terminal_result_critic": {
+      "path": "experiments/iterations/20261104-wgs-l2-prefetch-result-critic.json",
+      "sha256": "c69406d23ad1daf6fa5abdb5a77f54736e836f5fada58acafb8d51a84eb0f178"
+    },
+    "additional_CPU_suite_run": false,
+    "candidate_edits": false
+  },
+  "historical_future_port_gates_no_longer_active": [
+    "Useful standalone result under the already fixed1% consistency screen.",
+    "Exact two-node source restoration and embedded delta equality, with only known BIGM comment normalization.",
+    "Unchanged decoder-specific non-WGS preprocessing, flags, packing, launch arguments, chunks, PDL and fusion.",
+    "Successful actual LPFR API/admission records and source-supported intended MAIN activation, without interpreting absent warnings as proof.",
+    "One complete private decoder check:13tests/12benchmarks/12profiles against both97af receipts, using the official46/16 weighted per-load times then six-load geomean.",
+    "Separate independent source review and root approval before any GPU check or promotion."
+  ]
+}
