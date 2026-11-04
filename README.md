@@ -18,6 +18,9 @@ earn serving-queue priority for the overall top 50.
 - Native CUDA attention passed all 16 numerical tests at **2.6425×**
   (CI 2.5935–2.6822). Its exact source is active and submitted for scoring as
   `8f9e5971f95841a0`; the scored result is pending.
+- Native CUDA experts passed all five numerical tests at **2.3605×**
+  (CI 2.3251–2.3959). Exact-source scored submission `3c15b408fdb04c44` is
+  pending; this native candidate is now active.
 - The direct packed-GEMV expert experiment passed correctness but regressed
   to **0.7385×**. It was rejected as an optimization and was not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
@@ -36,7 +39,7 @@ earn serving-queue priority for the overall top 50.
 | --- | --- | --- | --- |
 | Dense projections | `ce713efc5e9b44d8` passed | 1.1320× | `b5538a0dd25d46be`, passed 1.1303× |
 | Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` queued; earlier V3 `52117bcc7137435e` also queued; V1 passed 1.1345× |
-| Routed experts | `7d7d9292e9054337` passed | 1.3348× | `d674d6a1ada44d16`, passed 1.3383× |
+| Routed experts | `143f8587286e4384` passed | 2.3605× | `3c15b408fdb04c44` queued; compact V4 `d674d6a1ada44d16` passed 1.3383× |
 | Whole decoder layer | `41920b5cf4bf423f` passed | 1.1582× | Attribution-complete variant in private check; `846bf3fd98c54703` passed 1.0813× |
 | Prefill layer | Official starter | — | — |
 
@@ -61,7 +64,7 @@ for serving priority, so it is lower priority during this pass.
 | Whole decoder | `a28df47ba0584bed` | Combined components plus fused small-batch finalizer |
 | Experts | `7d7d9292e9054337` passed 1.3348× | Public local alignment and fused finalizer, original source/license preserved |
 | Attention | `c21d391dbf604bb5` passed 2.6425× | Reviewed public CUDA attention with fresh output and full-batch traversal guard |
-| Experts | `143f8587286e4384` pending | Reviewed public CUDA packed-weight experts; diagnostics removed |
+| Experts | `143f8587286e4384` passed 2.3605× | Reviewed public CUDA packed-weight experts; diagnostics removed |
 | Experts | `cac648f3b3904842` pending | Compact V4 with the full upstream MIT notice embedded; identical executable AST |
 | Whole decoder | `41920b5cf4bf423f` passed 1.1582× | Passing V2 decoder with the public V4 expert alignment/finalization |
 | Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
@@ -70,8 +73,8 @@ for serving priority, so it is lower priority during this pass.
 | Whole decoder | `8e13cd6e80194b4f` pending | Passing decoder V2 with our validated grouped window attention for decode and small verify batches |
 | Whole decoder | `b255f6b17f1b4758` pending | Validated compact expert integration plus grouped window attention, with full attribution |
 
-**Active submission.py files hold passing candidates:** native attention V4, the public
-compact MoE V4, projection hybrid V3 and decoder V2. Pending alternatives are
+**Active submission.py files hold passing candidates:** native attention V4,
+native experts V6, projection hybrid V3 and decoder V2. Pending alternatives are
 preserved separately under `candidates/` and immutable `experiments/` snapshots.
 Score the exact source associated with a passing check; do not substitute an
 unvalidated active candidate. The kernel phase has both November 3 and November

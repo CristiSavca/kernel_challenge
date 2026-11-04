@@ -54,7 +54,9 @@ Reviewed adaptations now in official private checks:
 - Experts `public_cuda_v6.py`, `143f8587286e4384`: production CUDA/CPP strings
   and dispatch constants unchanged, unused diagnostics/timers removed, licenses
   embedded. CPU packing/decode checks covered 10,129 words per packed layout
-  and all 119 positive-normal scale codes. GPU behavior remains unverified.
+  and all 119 positive-normal scale codes. Our private run passed all five
+  numerical tests at 2.3605×, CI 2.3251–2.3959. Exact-source scored submission
+  `3c15b408fdb04c44` is pending.
 - Decoder `public_alignment_v3.py`, `41920b5cf4bf423f`: integrates only the
   validated compact expert route alignment and finalizer into our passing
   decoder. All previous decoder functions except `_experts` are AST-identical;

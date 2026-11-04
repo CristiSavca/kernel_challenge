@@ -81,3 +81,13 @@ is now active and was submitted for scoring as `8f9e5971f95841a0` (pending).
 The earlier own-window V3 scored job is also still queued; no duplicate retry
 was made. Passing kernel-entry checks do not establish concurrent serving
 safety for the global native scratch allocation.
+
+Profile follow-up: each case is a single fused CUDA launch. Full-attention
+batch 16/32 accounts for roughly 75.6–83.5% of its weighted load cost, but the
+profiles do not separate memory, arithmetic or barrier stalls, so they do not
+justify a specific split/stage change. Retain V4 pending more detailed evidence.
+Do not infer physical bandwidth from `median_ns`: it is a baseline-normalized
+equivalent derived from paired ratios. For full decode batch 32 it is 145.99 us,
+whereas raw candidate replay median minus replay overhead is 165.872 us,
+consistent with the 166.3 us profiler duration. The baseline distribution has
+a slower mode whose cause is not established by these records.

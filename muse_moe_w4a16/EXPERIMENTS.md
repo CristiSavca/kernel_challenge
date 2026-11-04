@@ -168,3 +168,26 @@ Its executable AST, including docstrings, exactly matches passing V4. Raw hash
 `e16fff24f5d346e2de624b80ef711ea065de1348123d977a23c35fb686f57045`
 is frozen for private check `cac648f3b3904842`. The original tested snapshots
 remain unchanged. Promote this exact attributed version after its check.
+
+## Native CUDA V6 passed and submitted
+
+Private check `143f8587286e4384` passed all five numerical tests and six timed
+shapes at **2.3605016998×**, CI [2.3250941743, 2.3959092253], with no flags,
+rejections or runtime errors. This supersedes compact V4 as the active kernel.
+
+Every timed shape improved. Paired speedups for 1/8/16/32/128/256 tokens are
+3.086× / 2.242× / 2.012× / 1.632× / 2.605× / 2.922×. The one-token case takes
+24.94 us against 76.96 us baseline; 256 tokens takes 213.46 us against 623.81 us.
+
+Exact frozen source
+`ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a`
+was submitted for scoring as `3c15b408fdb04c44` (pending). Complete source
+licenses are embedded. Compact V7's attribution-only private check remains
+live as a control, but should not be scored if it is slower than this V6.
+
+Profile follow-up: each shape is one fused CUDA launch. Although 32 tokens is
+the weakest relative speedup, its scaling does not isolate a dispatch cliff.
+The report lacks a breakdown of weight traffic, compute and barrier stalls;
+no specific tile or dispatch-threshold adjustment is justified. Retain V6.
+Profiler duration and the paired-ratio-normalized benchmark time are distinct
+measurements; their difference is not removable launch overhead.
