@@ -1,0 +1,111 @@
+{
+  "decision": "GO_ONE_OFFICIAL_PRIVATE_CHECK",
+  "scope": "Frozen SC6 source and CPU evidence only. No public promotion or decoder integration approval.",
+  "reviewer": "result_and_strategy_critic",
+  "evidence": {
+    "candidate": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_sc6_v16.py",
+      "sha256": "8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5"
+    },
+    "parent": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+    },
+    "plan": {
+      "path": "tools/SC6_KPERM_PLAN.md",
+      "sha256": "660633ee367a4bbd5d08c72673261667180cfce83cf31d8341c74062ec2cb76c"
+    },
+    "builder": {
+      "path": "tools/build_wgs_sc6_candidate.py",
+      "sha256": "975aab3f003d7bc13d13e550f18cdaae09d37a8fcb4f10f1c7a0f310ae066faa"
+    },
+    "verifier": {
+      "path": "tools/test_wgs_sc6_cpu.py",
+      "sha256": "ca7766ecd5d0eb0ea9ec6498831a9f2f6cfc18368ea0a47f7be9e51d1a85b0fd"
+    },
+    "author_cpu": {
+      "path": "experiments/iterations/20261104-wgs-sc6-cpu.json",
+      "sha256": "3caa7461ea40db76d5b19bb8255982285ab2e06862ce7af9a2fb86a6caa9650f"
+    },
+    "root_cpu": {
+      "path": "experiments/iterations/20261104-wgs-sc6-root-cpu.json",
+      "sha256": "3caa7461ea40db76d5b19bb8255982285ab2e06862ce7af9a2fb86a6caa9650f"
+    },
+    "root_donor_arithmetic": {
+      "path": "experiments/iterations/20261104-sc6-root-donor-arithmetic.json",
+      "sha256": "11662734ba0df3ed46b9f0a09c2e4976cd647c870d0b1b41a50468e0a88210e0"
+    }
+  },
+  "review_method": [
+    "Read complete diff against exact 247888 parent.",
+    "Read complete focused verifier and actual saved proof report.",
+    "Independently hashed final candidate, plan, builder, verifier and both byte-identical author/root CPU reports.",
+    "No duplicate full CPU rerun: root independently ran the frozen suite and produced the identical report."
+  ],
+  "findings": {
+    "state_and_dispatch": "Both actual local W13/W2 scale banks must satisfy PRMT and byte domain 0x40..0x7e. The prepared larger-layout state owns sc6_wgs; SC6 flags enter only its WGS extension key. Tiny remains uncompressed, non-PRMT and unqualified-PRMT fallbacks retain parent paths. Mixed prepared states do not depend on a mutable process-wide encoding flag.",
+    "payload_and_barriers": "Each global stage is 35840 bytes with four 8960-byte pieces. Both weight expected transaction count and bulk-copy size use WGS_STG. Shared ring slots remain 36864 bytes, leaving 1024 unread padding bytes. X-ring base, X contribution to the joined barrier, participants, phase bits, releases and all three ring slots are unchanged.",
+    "arithmetic": "Actual native uint32 reconstruction matches parent BF16 scale-pair bits. p.zero is assigned zero by unchanged host source. Codes, KPERM order and every source instruction after scale decoding, including GS2/wait1, NTT1 dual accumulators, WGMMA operand order and finalization, are unchanged.",
+    "fallback_alias": "Natural-fat aliases can point to WGS entries but are dormant under the unchanged OKC_WGMIN=9 configuration; active define lists contain no override. Sixteen non-WGS preprocessed configurations are identical.",
+    "resources": "Host diagnostics query both exact BIG pointers with unchanged 576-thread/231168-byte geometry. Attribute/API failures and occupancy below one propagate before the success flag is cached. Register count, local bytes and compiler warnings are informational rather than automatic performance rejection.",
+    "cost_hypothesis": "Packed weight requests fall by 1/36, or 2.7778%, with unchanged stage count, activation traffic and shared allocation. Added scale load and integer reconstruction can erase the saving. There is no speed or occupancy forecast."
+  },
+  "cpu_coverage": {
+    "unchanged_python_nodes": 38,
+    "unchanged_non_wgs_preprocessed_builds": 16,
+    "actual_full_expert_packing": "Complete W13 and W2 dimensions in both code-bit layouts; all code nibbles and reconstructed scale bytes compare with parent. This is coordinate coverage, not 32 independently sampled full expert banks.",
+    "packed_code_nibble_comparisons": 100663296,
+    "scale_byte_comparisons": 6291456,
+    "native_scale_pair_comparisons_including_padding": 270848,
+    "qualified_pair_records": 63504,
+    "cross_field_64_by_64_superset_records": 4096,
+    "qualification_bank_byte_cases": 512,
+    "actual_prepare_layout_calls": 10,
+    "alternating_prepared_states": 8,
+    "actual_kernel_fn_calls": 72,
+    "extension_launch_mock_calls": 80,
+    "expert_stage_piece_address_cases": 98304,
+    "ring_wrap_address_stages": 96,
+    "host_modes_per_encoding": 10,
+    "negative_controls": [
+      "Wrong SC6 multiplier",
+      "Old scale bias",
+      "Lost p6 bit field",
+      "Old TMA payload count",
+      "Old compressed piece stride",
+      "Encoding flag leaking across prepared states"
+    ]
+  },
+  "accepted_prespecified_gate": {
+    "parent_public_job": "d24dd50196cb4158",
+    "parent_private_job": "bcb761dfca264db0",
+    "affected_M": [
+      32,
+      128,
+      256
+    ],
+    "controls_M": [
+      1,
+      8,
+      16
+    ],
+    "affected_geomean_relative_speedup_min_each_parent": 1.01,
+    "minimum_affected_cases_faster_against_both_parents": 2,
+    "each_affected_normalized_latency_ratio_max": 1.02,
+    "control_geomean_normalized_latency_interval_each_parent": [
+      0.98,
+      1.02
+    ],
+    "official_evidence": "Clean setup, five correctness tests, six benchmark cases and six profiles, matching source/evaluator/case identities; inspect SC6 selection and actual compiled admission.",
+    "interpretation": "Operational consistency screen, not a statistical significance test. A useful standalone result permits separate integration review; it does not automatically establish a leaderboard improvement."
+  },
+  "limitations": [
+    "CPU proof does not compile CUDA or establish GPU memory ordering, tensor-core execution, runtime selection, compiler resources or speed.",
+    "Native decoder uses a CPU implementation of byte_perm and unsigned C++ arithmetic; official execution is still required.",
+    "Unchanged heavy prepare pack/LUT operations are mocked in the state integration test; actual WGS packing is separately exercised at full expert dimensions.",
+    "Root donor arithmetic evidence is independent supporting evidence, not an additional GPU result.",
+    "Compiler log truncation must be reported; absence of a warning in retained output is not proof that no warning occurred."
+  ],
+  "candidate_edited_by_reviewer": false,
+  "official_calls_by_reviewer": 0
+}

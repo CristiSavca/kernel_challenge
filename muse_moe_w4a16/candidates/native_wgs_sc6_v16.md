@@ -1,7 +1,8 @@
 # Lossless six-bit WGS scales over the scored KPERM parent
 
-2026-11-04. Isolated candidate, awaiting independent source review and root's
-official private check. Active submissions are unchanged.
+2026-11-04. Isolated candidate. Independent source review approved this exact
+hash for one private check after root reproduced the CPU report byte for byte.
+GPU outcome remains pending. Active submissions are unchanged.
 
 Frozen source: `8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5`.
 Parent: `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`;
@@ -65,6 +66,8 @@ Reproduce with `/tmp/okc-kperm-cpu-20261104/bin/python tools/test_wgs_sc6_cpu.py
 --expected-sha 8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5`.
 CPU evidence does not establish CUDA compilation, GPU tensor results, memory
 ordering or performance. No GPU run was made by the author.
+Independent source verdict: `experiments/iterations/20261104-wgs-sc6-source-critic.json`
+(240d3a37), GO for the exact frozen source; no requested changes.
 
 The predeclared screen compares M32/128/256 against both exact parent receipts:
 affected GM relative speed at least 1.01, at least two of three affected cases

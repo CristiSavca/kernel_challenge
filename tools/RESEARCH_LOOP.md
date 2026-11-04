@@ -1309,3 +1309,30 @@ This consistency screen is not significance. A useful result permits a separate
 decoder integration decision. Cluster activationmulticast and updatedcosttables
 remain unsupported now: no measured L2/TMA bottleneck or postKPERM perNTTfit.
 No live GPUjob, Modalallocation, publicchange or#1claim at this checkpoint.
+
+
+## SC6 source frozen and one private check received — November 4, 13:28 UTC
+
+Frozen8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5
+passed final verifierca7766ec; root's separate run exactly reproduced author
+report3caa7461ea40db76d5b19bb8255982285ab2e06862ce7af9a2fb86a6caa9650f.
+Targeted actual packing covers both complete expert matrices/bitlayouts, exact
+scale-pair reconstruction including64x64crossfields, state-specificqualification/
+flags across alternating preparations andM385chunking,16nonWGSpreprocessedbuilds,
+fullCUDArestoration/unchangedpostdecodeMMA, hostadmissionerror/retry and6negatives.
+CPUhost/mock limits remain explicit; no actualGPU correctness/speed claim.
+
+Final independent sourcecritic240d3a37351f8425466c491ef5fbfb2136e7848356a07ececf788f8879e40435
+approved ONE privatecheckafterrootCPU, fulfilled. Root submitted724a1bce7a3f41e5;
+receipt and frozenbytes saved before furtherpolls. Initialstatusreceived, root
+alonepolls thishandle; no duplicateupload. Fixed1%MAINconsistencygate is unchanged.
+Standalonepublic247888/decoder97af remain unchanged; noModalallocation.
+
+ConditionalSC6decoder map identifies6existingnodes/3helpers, with state-owned
+ma_sfx/ma_sc6 andcachemodule selection so alternating preparations cannotinherit
+wrongglobalencodings. No decoder candidate before useful standalone result.
+Parallelprefix feasibility is source-local and coversnj<=88, but savedaftergather
+jointready gaps are0–64ns, giving no measured exposedprefixstall. Potential small
+contention gain is uncertain; no newdiagnostic campaign or automaticcandidate.
+#1goal remainsactive andunachieved; currentturn has implemented/measurednextstep
+in progress, not a leaderboardgain claim.
