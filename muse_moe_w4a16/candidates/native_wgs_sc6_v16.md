@@ -1,8 +1,9 @@
 # Lossless six-bit WGS scales over the scored KPERM parent
 
-2026-11-04. Isolated candidate. Independent source review approved this exact
-hash for one private check after root reproduced the CPU report byte for byte.
-GPU outcome remains pending. Active submissions are unchanged.
+2026-11-04. Official private check `724a1bce7a3f41e5` passed correctness but
+failed the predeclared useful-performance screen. This fixed attempt is closed;
+no decoder integration, scored submission or repeat follows. Active entries
+remain unchanged.
 
 Frozen source: `8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5`.
 Parent: `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`;
@@ -76,3 +77,25 @@ positive against both parents, and every affected normalized latency at most
 correctness, evaluator and provenance checks must be clean. This is a consistency
 screen, not a statistical significance claim. Failure closes this fixed attempt;
 a useful standalone result only permits a separately reviewed decoder port.
+
+## Terminal result
+
+All5 tests,6 benchmarks and6 profiles passed with clean checks and no flags.
+Score2.3848432086, CI[2.3490705605,2.4206158567], overlaps both exact-parent
+intervals. The affected-case geometric speed ratio is1.005309 versus public
+d24dd501 (+0.531%) and0.996160 versus privatebcb761df (-0.384%); both miss1.01.
+OnlyM32 is faster against both parents, missing the joint2-of-3 requirement.
+Every affected slowdown cap and both control-drift gates pass. This is lack of
+demonstrated useful gain, not proof that compression is universally slower.
+
+Both SC6R entries report enabledSC6,576threads,231168dynamic bytes,96registers,
+zero local/static bytes, one admitted CTA and successful APIs. Compilation
+explicitly reports no stack/spills. No C75 warning is visible; complete absence
+is not established. Exact evaluator-weight generation, source dispatch and
+SC6W/SC6R/compile markers support activation by inference, not direct per-case
+module-pointer tracing. Resource success does not override the failed timing gate.
+
+Root and independent critic629896910c31e8ec37a8c37f765ffb15fabe77902e4b207d4818729212c1ff42
+recomputed the result. Evidence is in the performance-analysis, resource-analysis,
+root-result and result-critic files under`experiments/iterations/20261104-wgs-sc6-*`.
+The conditional decoder map remains historical work; its prerequisite failed.

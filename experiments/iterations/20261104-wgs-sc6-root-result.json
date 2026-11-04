@@ -1,0 +1,48 @@
+{
+  "status": "CLOSE_FIXED_ATTEMPT_NO_DEMONSTRATED_USEFUL_GAIN",
+  "job": "724a1bce7a3f41e5",
+  "source_sha256": "8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5",
+  "receipt_sha256": "f962a0e9c60ebd88e3d81b316104acef7bb96ef0afded35d9296c6d76f596b0f",
+  "official_passed": true,
+  "official_speedup": 2.384843208610992,
+  "official_speedup_ci": [
+    2.3490705604818274,
+    2.420615856740157
+  ],
+  "performance_screen_passed": false,
+  "joint_positive_M": [
+    32
+  ],
+  "comparisons": [
+    {
+      "parent_job": "d24dd50196cb4158",
+      "affected_speedup_ratio_GM": 1.0053085816361844,
+      "control_normalized_latency_ratio_GM": 0.9959283819700399,
+      "aggregate_speedup_ratio": 1.0046982374810938,
+      "gates": {
+        "affected_GM_at_least_1pct_faster": false,
+        "every_affected_normalized_latency_at_most_1p02": true,
+        "control_normalized_latency_GM_within_2pct": true
+      }
+    },
+    {
+      "parent_job": "bcb761dfca264db0",
+      "affected_speedup_ratio_GM": 0.9961600670223345,
+      "control_normalized_latency_ratio_GM": 1.0003354244733784,
+      "aggregate_speedup_ratio": 0.9979108390013711,
+      "gates": {
+        "affected_GM_at_least_1pct_faster": false,
+        "every_affected_normalized_latency_at_most_1p02": true,
+        "control_normalized_latency_GM_within_2pct": true
+      }
+    }
+  ],
+  "interpretation": "Modest positive relative to public parent, not corroborated against private parent. Onlyoneaffectedcasepositiveagainstboth. This is insufficient useful evidence, not proof that compression has no benefit or is universally slower. No post-result gate adjustment.",
+  "resource_evidence": "experiments/iterations/20261104-wgs-sc6-resource-analysis.json",
+  "source_critic": "experiments/iterations/20261104-wgs-sc6-source-critic.json",
+  "result_critic": "experiments/iterations/20261104-wgs-sc6-result-critic.json",
+  "public_source_changed": false,
+  "decoder_integration_allowed": false,
+  "promotion_allowed": false,
+  "next_action": "Close fixed SC6; no retest or M32-only cherry-pick. Assess separate bounded source hypothesis with its own costs and prespecified gate."
+}

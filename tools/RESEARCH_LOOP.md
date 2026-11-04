@@ -1344,3 +1344,36 @@ serverboardidentity. NoGPUmetricsyet. Conditionalintegrationmap independentcriti
 six-node scope, state-owned selector forfourprepareclosures/soleagentcall,
 threeformatstates, PDL/chunking preservation and noautomaticport. Finalsource804,
 fullCPU3caa7461 and sourcecritic240d3a37 are complete. Rootalonepollsthehandle.
+
+
+## SC6 terminal result closes fixed attempt — November 4, 13:42 UTC
+
+Official724a1bce7a3f41e5/source80448352passed5tests/6benchmarks/6profiles with
+cleanchecks andscore2.3848432086, CI[2.3490705605,2.4206158567]. Rootandindependent
+critic629896910c31e8ec37a8c37f765ffb15fabe77902e4b207d4818729212c1ff42
+recomputedexactsource/fullinventory/profilecomparisons. MAINaffectedGM is+0.531%
+versuspublic247888 and-0.384%versusprivate247888; onlyM32positiveagainstboth,
+missing1%GMandjoint2-of-3gates. Controlsnormalizedlatency-0.407%/+0.0335%and
+allindividual2%regressioncaps pass. This is insufficient useful evidence, not a
+proven regression/universalno-benefitclaim. No gateadjustment, retry, M32-only
+cherry-pick, decoderintegration or scoredpromotion follows.
+
+ActualSC6Wenabled/SC6Rsc6=1,576threads,231168dynamicbytes,96registers,zero
+local/static,oneCTA andallAPIs0. Bothcompiledentriesreport0stack/spills. NoC75
+visible,absenceuncertified. Evaluatorprovidedreference/nvfp4 hashes match; default
+random_weightsclampsscales8..448, so sourcechain+markerssupportsMAINactivation
+byinference, notper-casepointertrace. Validresourcescannotrescuefailedtiminggate.
+Exactsource/diff/proof/receipt/profile/log/performance/resource/root/criticretained.
+
+Fresh13:42snapshot20261104T134231Z-sc6-terminal.json: overall394/1968,
+decoder394/1266 at2.1812 versusleader2.5510; MoE297/1397 at2.3737 versus2.7817.
+Public97af/247888hashes unchanged. Decoder30private/18scored,MoE31private/17scored
+remaining. No official job islive; noModalallocation/guardchange; local38GiBfree.
+
+Small-pathSC6sourcefeasibility058769bd isrealbutdeferred: same2.7778%byte-saving
+withmoreunpack andno separate measuredsmall-pathadvantage. A newread-onlylead
+reviews fixedthree-stage bulkL2weightprefetch onexact247888, preservingmath,
+rings/barriers andrealcopyorder. PrimaryPTX support verified, but hints may be
+ignored or addcachepollution/duplicateDRAM traffic; no performanceclaim or source
+implementationGO yet. Authorandcritic areindependentlyreviewingsequencebounds
+andcost. #1goalactive/unachieved; thisturn isprogress fromactualterminal evidence.

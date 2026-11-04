@@ -1,7 +1,8 @@
 # Conditional SC6 decoder integration map
 
-2026-11-04. Read-only map, no decoder candidate or GPU work. A useful standalone
-SC6 result is a prerequisite; this document does not authorize a port.
+2026-11-04. Read-only map, no decoder candidate or GPU work. SC6's terminal
+standalone result failed its fixed performance screen, so no port is authorized.
+Retain this map only as source evidence; the conditional implementation is closed.
 
 Pins: decoder `97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2`,
 standalone parent `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`,
@@ -31,6 +32,10 @@ thresholds4/8/16, TINY2 PRMT guard and `_main_defines(sfx)` fallback, using
 `st['ma_sc6']` is true. Store loaded module references in that state; keep the
 existing process-wide `_MA_EXTS` cache keyed by the complete immutable define
 tuple. The state holds refs, not duplicate extension binaries or weight banks.
+Preserve `_moe_build`'s initial `okc_set_pdl(0)` for loaded references; the existing
+per-launch setter still selects actual PDL. Use the state's PRMT predicate in the
+TINY2 guard, never global `_moe_tiny2_ok()`. A future CPU test must execute all
+distinct build closures to catch late-bound loop captures.
 
 **Do not copy standalone's global callers or add a mutable `_MA_SC6W`.** Decoder
 currently uses global `_MA_SFX` and `_MOE*` aliases. Simply setting another global
