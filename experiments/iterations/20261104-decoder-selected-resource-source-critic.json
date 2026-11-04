@@ -1,0 +1,87 @@
+{
+  "recorded_at": "2026-11-04T10:48:20Z",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_ONE_PRIVATE_DIAGNOSTIC_CHECK",
+  "candidate": "muse_decode_layer/candidates/native_selected_resources_diag_v13.py",
+  "candidate_sha256": "e444f46f945e03bb42dab8d80ed4869f8a7da6464f845ac09ac3cf8ea19473fd",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "plan_sha256": "070fc97b22ae315c53afd7e546ef967a9bd5880758d14f68b42e13b2ac4284e8",
+  "builder_sha256": "532a7a8977f7f61b625564105315fb62ebfc7d2f298ebb5a054710d527650a1b",
+  "moe_fragment_sha256": "13df4faf25c9aa5e7dd40ff2290ced1c64001e4c494d80bcfd353418ae408d43",
+  "combined_verifier_sha256": "976fe0084cfc952cb536417a2ec9f9c42fdb7c18232ac4d5fe85cea54f40272e",
+  "moe_verifier_sha256": "c3a5682aec590df03b21776ff5016bbed28396c782dde0ebbd2ab8b9260213c2",
+  "combined_cpu_record_sha256": "c255633e96db54e98df4717c2f51783e0a54cabf1b5853d7ab2fc681f86d1c77",
+  "independent_review": {
+    "full_diff_read": true,
+    "full_parent_byte_restoration_executed": true,
+    "generated_SK2_sm90_and_fallback_conformance_executed": true,
+    "changed_original_ast_nodes": [
+      "MOE_CUDA_SRC",
+      "MOE_CPP_SRC",
+      "_ma_ext",
+      "bfp_SK2_SRC",
+      "bfp_CPP_SRC",
+      "bfp__get_ext",
+      "first bfp__sk2_src definition, fallback diagnostic control export only",
+      "prepare"
+    ],
+    "original_ast_nodes_removed": 0,
+    "added_python_scope": "sys stderr alias, bounded host metadata and six lifecycle/control functions",
+    "original_device_math_launches_flags_packing_tuner_dispatch_restored_exactly": true,
+    "final_source_hash_verified": true
+  },
+  "host_audit": [
+    "SK2 report follows existing attribute setup and cap-only return, using the actual templated pointer, actual dynamic shared size and existing launch geometry.",
+    "The SK2 key includes all emitted template distinctions, physical dimensions, pmax, UV mode, PDL, geometry and tensor device. Only BF16 and FP32 output types are emitted, distinguished by OutBytes.",
+    "Small MoE report uses the same BIG predicate and exact kernel pointer as the existing launch. Actual effective compile flags identify the decoder-specific resource sample.",
+    "Reporting is disabled before original prepare work and enabled only after original tune, PIN_PICK, self-test and guards. Newly built modules inherit current arm state.",
+    "Mutexes protect dedup, counters and output; atomic fast checks stop reporting after exhaustion. Controls do not reset bytes or keys.",
+    "No added device synchronization, input copy, kernel launch, timing call, attribute setter, fallback, error-clearing call, process, network or harness access.",
+    "API failure statuses remain explicit and corresponding unavailable values are minus one. CUDA errors do not select a different computation path."
+  ],
+  "bounds": {
+    "sk2_bytes_including_schema_and_stop": 8192,
+    "sk2_maximum_seen_slots": 64,
+    "sk2_key_slot_bytes": 256,
+    "maximum_small_moe_modules_with_budget": 6,
+    "moe_bytes_per_module_including_schema_and_stop": 320,
+    "global_moe_notice_reserve": 128,
+    "combined_diagnostic_byte_cap": 10240,
+    "small_moe_resource_keys_per_module": 1,
+    "overflow_behavior": "Explicit partial-coverage marker, no later queries or key growth; original computation continues unchanged."
+  },
+  "cpu_evidence": {
+    "root_rerun": "Root reported terminal PASS and byte-identical output to the author record; no duplicate full critic run was necessary.",
+    "sk2_actual_host_helper_with_mock_cuda": {
+      "bytes": 7726,
+      "records": 33,
+      "queries": 130,
+      "tested": "disabled state, dedup, changed physical M/pmax/UV/PDL, API errors, budget exhaustion, and rearming without budget reset"
+    },
+    "moe_actual_host_helper_with_mock_cuda": {
+      "effective_preprocessed_builds": 6,
+      "modes_each": 12,
+      "nonreporting_controls": 2,
+      "maximum_observed_module_bytes": 267,
+      "tested": "actual kernel selection, effective flags, disabled state, changed BIG/device/dynamic identity, individual and combined API errors, extreme formatting, 32 concurrent calls, and no reset after exhaustion"
+    },
+    "lifecycle": "Actual extracted Python helper tested with mocked extension controls, repeated prepare, lazy binding, six-module cap and unsupported-module overflow."
+  },
+  "result_gate": [
+    "Root owns the single private check and exact receipt/profile/log archival.",
+    "Require official correctness PASS before treating it as useful diagnostic evidence.",
+    "Interpret only retained, attributable resource records with successful query statuses; missing or overflowed coverage remains unknown.",
+    "Small-MoE M/grid/PDL and generation are first-sample context, not exhaustive shape coverage or checkpoint identity.",
+    "CL greater than one occupancy is block-only capacity; cluster capacity and achieved occupancy are unmeasured.",
+    "No public promotion or performance claim from this score. No automatic retry for missing logs."
+  ],
+  "limitations": [
+    "CPU mocks do not compile CUDA, validate CUDA capture behavior, establish actual function resources or prove GPU correctness.",
+    "Host logging can add eager/capture overhead; source preservation does not establish identical cubins or unchanged timing.",
+    "Read-only attributes cannot establish stalls, dynamic spill traffic, serialization absence or a future speedup mechanism.",
+    "The parent can emit additional output; a 10240-byte diagnostic cap does not guarantee that every line survives the official 16000-character tail.",
+    "Fresh unchanged tuning may choose a different specialization from the earlier public run."
+  ],
+  "critic_gpu_used": false,
+  "critic_candidate_edited": false
+}

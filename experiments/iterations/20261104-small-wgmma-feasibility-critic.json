@@ -1,0 +1,43 @@
+{
+  "recorded_at": "2026-11-04T10:32:22Z",
+  "reviewer": "result_and_strategy_critic",
+  "decision": "NO_GO_IMPLEMENTATION_WITH_CURRENT_EVIDENCE",
+  "reviewed_note": "tools/SMALL_WGMMA_FEASIBILITY.md",
+  "reviewed_evidence": "experiments/iterations/20261104-small-wgmma-feasibility.json",
+  "scope": "One proposed small-token WGMMA geometry only; not a universal claim against WGMMA.",
+  "independent_arithmetic": {
+    "original_partial_read_write_bytes": 6291456,
+    "original_expression": "768 units * 8 warps * 128 FP32 values * 4 bytes * 2 read/write",
+    "proposed_partial_read_write_bytes": 1572864,
+    "proposed_expression": "192 units * 2 warpgroups * 512 FP32 values * 4 bytes * 2 read/write",
+    "new_shared_activation_operand_bytes": 12582912,
+    "activation_expression": "192 units * 4096 K * 8 padded tokens * 2 bytes",
+    "net_extra_shared_payload_before_activation_cache_fills": 7864320,
+    "dynamic_shared_bytes": 212736,
+    "shared_expression": "36608 retained metadata + 3 * 36864 weight slots + 8 * 4096 * 2 activation cache",
+    "unchanged_weight_request_bytes_per_job": 28311552,
+    "unchanged_weight_TMA_copies_per_job": 768
+  },
+  "why_no_go": [
+    "One CTA and eight useful compute warps remain; packed weight traffic and TMA copy count do not decrease.",
+    "Reduced cross-K partial traffic is more than offset by added logical shared activation requests before cache fill stores.",
+    "For one or two jobs, 64 or 128 complete phase-B units underfill 132 SMs; larger units can worsen critical tails even when total requested weight bytes match.",
+    "Removing the activation register cache may reduce registers, but baseline standalone small paths have no reported local storage and shared memory still prevents two CTAs.",
+    "No retained small-path hardware attribution establishes a sufficiently large removable issue/helper/dependency cost."
+  ],
+  "whole_decoder_scenarios": {
+    "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "public_job": "7a8c4941741645ee",
+    "small_moe_cut_needed_for_five_percent_decoder_cut": 0.233214621,
+    "small_moe_cut_needed_for_observed_leader_gap": 0.626949464,
+    "qualification": "Profile-share scenarios, not latency bounds or predictions; PDL overlap and separate captures limit attribution."
+  },
+  "limits": [
+    "Payload counts are not measured shared transactions, HBM traffic or latency.",
+    "Saved M16 route histograms are standalone evidence and cannot determine decoder distributions.",
+    "The 144/148/149 register captures are standalone; decoder M1 uses different MULDEC/FINPF flags.",
+    "The proposed mapping, descriptor, cache lifetime and compiler resource allocation have not been implemented or GPU-validated."
+  ],
+  "gpu_used": false,
+  "candidate_created": false
+}

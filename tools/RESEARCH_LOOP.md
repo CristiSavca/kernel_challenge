@@ -20,15 +20,15 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-At November 4, 08:23 UTC, the official decoder leader was 2.5401×. Our exact
+At November 4, 10:48 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
-overall/decoder rank was 381. Passing that observed leader needs approximately
-14.13% less normalized latency. This remains an unachieved goal, not a forecast.
-Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank288.
+overall/decoder rank was 390. Passing that observed leader needs approximately
+14.50% less normalized latency. This remains an unachieved goal, not a forecast.
+Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank292.
 Both active submission.py files equal their scored snapshots. The preceding
 80a4/ef7 files remain frozen; private experiments never replace these incumbents
 without a useful verified result. See the dated live snapshot in
-`experiments/leaderboards/20261104T082347Z-kperm-public-results.json`.
+`experiments/leaderboards/20261104T104834Z-selected-diagnostic-refresh.json`.
 
 The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
@@ -898,3 +898,53 @@ M1 standalone REG149 resources do not transfer to decoder's different flags.
 No new Modal allocation or budget change. Disk36GiB free at turn start.
 Previous turn was progress; this turn adds terminal measurement and closes an
 unsuccessful mechanism. Goal remains active and unachieved, with no blocker audit.
+
+10:49 UTC: one diagnostics-only whole-decoder check is received:
+c0b4201c5ad345d1, exact source
+e444f46f945e03bb42dab8d80ed4869f8a7da6464f845ac09ac3cf8ea19473fd.
+It is based on current scored97af. It adds bounded HOST resource reporting for
+actual post-prepare SK2 and small-MoE launches; every device function, packing
+helper, compiler flag, launch expression and tuning algorithm remains unchanged.
+It is NOT eligible for promotion or a performance claim, regardless of score.
+Root alone polls; no other official job is live. Do not duplicate the upload.
+
+Reporting stays disabled throughout prepare, including tuning and self-tests,
+then arms loaded extensions; lazy modules inherit the armed state. Generation
+means last arming epoch, not weight identity. Actual signatures include template,
+physical shape, pmax, UV, PDL and dynamic shared size. Cap-only queries are excluded.
+SK2 is capped at8192 bytes; six small-MoE modules have320-byte caps plus a128-byte
+global reserve, total10240. Dedup state stays bounded after exhaustion. Small-MoE
+emits one resource identity per module, then explicit partial coverage for a new
+identity; API errors/truncation/missing records remain unknown. Post-prepare
+observations are not labeled as benchmark versus correctness calls.
+
+Root full source diff review and frozen CPU rerun passed; report SHA
+c255633e96db54e98df4717c2f51783e0a54cabf1b5853d7ab2fc681f86d1c77
+matches author's. Proof restores all parent97af bytes and generated SK2 sources,
+checks actual logging/lifecycle/errors/bounds and72 MoE native mock cases across
+six effective macro builds. Independent final source critic GO is retained.
+Local PTYs90463/59171 ended with exit0. No CUDA compilation or numerical proof
+is inferred from mocks. Official resource data may expose local storage or
+admission limits; it cannot establish achieved occupancy, stall attribution,
+dynamic spill traffic or compiler serialization. No automatic variant follows.
+
+The10:48 UTC board now has a new leader, LeshengJin: decoder2.5510 andMoE2.7817.
+Our unchanged decoder2.1812 is rank390; MoE2.3737 is292. Required normalized
+decoder latency reduction is about14.50% against that snapshot. Source files
+remain exactly97af/247888. Snapshot20261104T104834Z-selected-diagnostic-refresh.json.
+A bounded public source scout of the new leader handle inspected all20 public
+repositories and pinned three README/license pairs. No compatible new Muse/H200
+kernel release was found; newest repository push was September23. No private job
+access, participant message or branch traversal. Exact GitHub/leaderboard identity
+is unverified. See LESHENGJIN_PUBLIC_SOURCE_SCOUT_20261104.md and its JSON evidence.
+
+Independent budget read confirms no Modal allocation fits the existing guard:
+nine reservations total21.14 USD and the saved billing evidence leaves negative
+working allowance after the5 USD reserve. All nine manifests record termination,
+but there is no supported settlement/refund path. Nominal provider credits are
+not shown depleted; do not confuse guard allowance with actual credit balance.
+No grant/journal/lock change, automatic recycling or new Modal allocation.
+Small-WGMMA and narrower dense-codec feasibility are closed without implementation.
+Current turn is progress: terminal failure audited, broader limits established,
+new information-gathering source independently verified and submitted. Goal stays
+active and unachieved; no blocked or completion claim.

@@ -1,0 +1,47 @@
+{
+  "recorded_at": "2026-11-04T10:32:22Z",
+  "reviewer": "result_and_strategy_critic",
+  "decision": "GO_CPU_IMPLEMENTATION_ONLY",
+  "reviewed_plan": "tools/DECODER_SELECTED_RESOURCE_DIAGNOSTIC_PLAN.md",
+  "reviewed_plan_sha256": "95ab414c9fc26677afaa2199ce4be49ac5673250fc87e2a43d25bfd1ea1a18a5",
+  "parent_source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "scope": "One isolated diagnostic decoder; no source or GPU approval in this record.",
+  "useful_missing_evidence": [
+    "The retained exact 97af official profiles contain durations and abbreviated kernel identities, not CUDA function resources.",
+    "Retained standalone MoE resource captures do not establish exact decoder M1 resources: MULDEC and FINPF flags differ.",
+    "Exact selected SK2 resources can constrain a later architecture feasibility analysis without another speculative numerical rewrite."
+  ],
+  "compliance_basis": {
+    "local_task": "muse_decode_layer/TASK.md explicitly allows print diagnostics and returns the last 16000 characters, while prohibiting input work moved into prepare, harness access and timing tampering.",
+    "inference": "Read-only host CUDA attribute and occupancy diagnostics are consistent with that allowance when all device math, flags, launches, tuning and input processing remain unchanged.",
+    "cuda_execution_reference": "https://docs.nvidia.com/cuda/cuda-runtime-api/cuda_runtime_api/group__CUDART__EXECUTION.html",
+    "cuda_occupancy_reference": "https://docs.nvidia.com/cuda/cuda-runtime-api/cuda_runtime_api/group__CUDART__OCCUPANCY.html"
+  },
+  "required_before_frozen_source_review": [
+    "Write the exact small-MoE allocation into the plan: at most six eligible small builds, each at most 320 bytes including schema and overflow, total 1920 bytes; no MAIN query.",
+    "Disable reporting before every prepare and arm only after existing tuning, PIN_PICK, attention self-test and guard checks; new lazy extensions inherit the current arm state.",
+    "Report only a real post-prepare SK2 dispatch after the cap-only return, using the exact existing kernel pointer and actual dynamic shared memory.",
+    "Preserve full specialization identity including PK, FUSE, BND and runtime UV mode, pmax, physical dimensions and PDL; changed pmax or shared size must remain distinct.",
+    "Keep output, dedup storage and query work bounded after overflow; SK2 ceiling is 8192 bytes including header and overflow.",
+    "Keep every device function, numerical define, compiler flag, original launch, packing helper, selector and autotuner unchanged after removing only approved host additions.",
+    "CPU proof must cover generated BND/UV source, new no-op fallback binding, lifecycle, lazy modules, dedup identity, query errors and worst-case formatting/budget exhaustion."
+  ],
+  "official_evidence_gate": [
+    "Root alone may authorize and run one private check after final source review.",
+    "Retain exact candidate hash, terminal receipt and full available log tail; identify successful versus unavailable per-API results.",
+    "Match retained identities to actual dispatched configurations; missing, error or overflow records remain unknown.",
+    "CL greater than one block occupancy is not cluster occupancy; report this limitation.",
+    "Correctness failure ends the diagnostic attempt; an incomplete log does not authorize an automatic retry.",
+    "The diagnostic score cannot justify promotion, a performance claim or an identical noise-seeking retry."
+  ],
+  "limits": [
+    "Host queries and formatting can add eager or capture host overhead; unchanged replay source does not establish identical cubins or identical check timing.",
+    "Function attributes do not establish achieved occupancy, dynamic spill traffic, stalls, escape-warp latency or absence of WGMMA serialization.",
+    "Local storage equal to zero or capacity equal to one alone does not establish a useful rewrite mechanism.",
+    "Fresh unchanged tuning can select different configurations from the earlier public run.",
+    "Read-only CUDA queries may report previous asynchronous errors; a nonzero status is not uniquely attributable to the query."
+  ],
+  "gpu_used": false,
+  "candidate_edited": false,
+  "modal_guard_changed": false
+}
