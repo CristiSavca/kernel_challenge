@@ -1,26 +1,29 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 21:27 UTC (board), after the V28 private check.
+Handoff updated November 4, 2026 after the V33 private check.
+**Optimization is paused by the user.** Start with [the Claude handoff](HANDOFF_CLAUDE.md)
+and [draft preservation manifest](handoff/20261104/manifest.json). The recurring
+monitor is also paused. No GPU job is running.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
 ## Latest measured state
 
-CristiSavca is 408th overall. Public scores are dense projections 1.4868×,
+CristiSavca was #409 overall in the last saved board snapshot. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
 
-Decoder V28 passed all 13 official numerical tests but failed its frozen speed
-gate: **2.1146x**, versus the preserved public decoder's **2.1812x**. The three
-affected weighted loads have 5.15% higher normalized latency than the public
-parent; all six affected cases are slower than both exact-source anchors.
-Root and independent critic agree: close the attempt without scoring or retry.
-Replacing the public kernel's vector atomics with private owner sums did not
-carry over the gain seen against the serving prototype's scalar CAS path.
-See [V28 results](experiments/iterations/20261104-decoder-v28-closeout.json).
+The latest private decoder candidate V33 passed all13 official tests but scored
+**1.9740×**, below the preserved public decoder's **2.1812×**. It was not scored
+or promoted. V29–V33's consumer repair/completion line is closed; raw evidence
+and an independent critique are preserved in
+[the V33 closeout](experiments/iterations/20261104-decoder-nibble-sidecar-v33-closeout.json).
+The proposed next dense hardware-counter diagnostic was not implemented before
+the pause. Unfinished controller/credit changes are archived as draft patches;
+they are not active validated tooling.
 
 Serving V27 now has an isolated, reproducible 213,160-byte patch connecting the
 passing V26 core to actual SGLang weight loading, forward dispatch and serial

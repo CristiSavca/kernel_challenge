@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "verdict": "GO_FIXED_POLICY_IMPLEMENTATION_ONLY",
+  "activation_approved": false,
+  "allocation_approved": false,
+  "proposal": {
+    "path": "experiments/iterations/20261104-modal-additional-reconciliation-proposal.json",
+    "sha256": "f8b763ddc3b7062734e11afa2f3041abac0992382ebe86236135650e769fc6f2"
+  },
+  "evidence": {
+    "path": "experiments/iterations/20261104-modal-new-attribution-readonly.json",
+    "sha256": "8ae72c40bc9b1207784263c28977477c814d99759f23090dc23d9f85eee0aeb8"
+  },
+  "guard_reviewed": {
+    "path": "tools/modal_credit_budget.py",
+    "sha256": "9f70c5006d8afd6e4a077cec8f3fe3baada2620703479bebf87ea0a333f0c9b2"
+  },
+  "journal_reviewed": {
+    "path": "experiments/modal/credit-reservations-2026-11.jsonl",
+    "sha256": "a3df654d6930a0b7e45c120cad5ec87de03c4c0408ab252f0e3e5e5166bfd704",
+    "records": 18
+  },
+  "existing_certificates": [
+    {
+      "path": "tools/modal_credit_overlap_20261104.json",
+      "sha256": "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce"
+    },
+    {
+      "path": "tools/modal_credit_finished_estimate_20261104.json",
+      "sha256": "6ba6d283a301213433a67070033dfcafa3d4f115f9a01c2155c938b4e76e726f"
+    }
+  ],
+  "provider_highwater_evidence": {
+    "path": "experiments/iterations/20261104-native-serving-v27-provider-closeout.json",
+    "sha256": "c756dbcb15b623eefe6f87e837d686618e35a8b9d59aadc7778693eee434d2f0"
+  },
+  "independent_checks": {
+    "original_prefix_records": [
+      9,
+      11
+    ],
+    "current_journal_records": 18,
+    "new_run_indices": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "estimate_indices": [
+      9,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "retained_full_indices": [
+      10,
+      11,
+      17
+    ],
+    "old_billing_rows_nondecreasing": 33,
+    "fresh_unique_billing_rows": 58,
+    "source_worker_manifest_guard_checks": 9,
+    "uploaded_file_hashes_checked": 41,
+    "sandbox_create_calls_per_worker": 1,
+    "source_and_provider_resources_match": true,
+    "unique_app_task_sandbox_attribution": true,
+    "created_started_finished_ordered": true,
+    "terminated_provider_and_manifest": true,
+    "old_new_correction_membership_disjoint": true,
+    "each_posted_charge_le_revised_or_full_estimate": true,
+    "decimal_amounts_independently_recomputed": true
+  },
+  "amounts": {
+    "original_R": "33.88",
+    "old_A": "3.74",
+    "old_E": "9.51",
+    "new_A": "0.83",
+    "new_E": "5.48",
+    "P_floor": "4.83274092",
+    "fresh_P": "4.65000000",
+    "grant": "30.00",
+    "headroom": "5.00",
+    "conditional_available_before_new_policy": "-0.46274092",
+    "conditional_available_after_new_policy": "5.84725908"
+  },
+  "required_implementation_invariants": [
+    "Pin this exact fixed scope and original evidence; do not rewrite journal or original certificates.",
+    "Preserve P>=4.83274092 and every larger observed spend; fresh smaller summary cannot restore credit.",
+    "Count each fixed A/E once in total debit; never sum receipt corrections.",
+    "Preserve original reservation on CPU10/11, timeout17 and every future run.",
+    "Fresh full-cycle billing must retain saved rows and not exceed revised/full per-app estimates.",
+    "Preserve all-app stopped query, lock, fsync-before-allocation, missing-record and unresolved-cleanup guards.",
+    "Independently review implementation and focused negative tests before any fresh allocation preflight."
+  ],
+  "limitations": [
+    "Conservative lifetime/build estimate, not final settlement or provider-enforced upper bound.",
+    "Saved apps list contains only latest app; reviewed owned sandbox termination is separate from fresh full workspace app check.",
+    "No provider calls, allocations or guard/journal/lock edits in this review."
+  ],
+  "note": {
+    "path": "tools/MODAL_ADDITIONAL_RECONCILIATION_CRITIC_20261104.md",
+    "sha256": "0cc3d461916443c0e92a11bc118b569d170d2995f91374f742e9d7aa96afd379"
+  }
+}

@@ -1,14 +1,20 @@
-# Research loop: current handoff
+# Research loop: paused handoff
 
-Updated November 04, 2026 at 23:10 UTC with V33 official check accepted.
-The #1 goal remains active and unachieved. Prizes belong to the separate serving
-track. Component correctness, component speed, public kernel rank and full
-serving throughput are distinct outcomes.
+Updated November 4, 2026. **The user paused optimization.** The goal and
+`okc-research-and-harsh-critic` automation are PAUSED; all agents are stopped.
+No official/Modal GPU job is in flight. The subsequent authorized task was a
+Claude handoff and GitHub push, not a resumption of experiments.
+
+Start with [HANDOFF_CLAUDE.md](../HANDOFF_CLAUDE.md), which supersedes stale
+next-action statements below. Public incumbents remain unchanged. V33 is closed.
+The unreviewed extra-credit guard and incomplete V34 controller were preserved
+as exact patches in `handoff/20261104/`; active tool files were restored to the
+last committed versions. V34's worker/tests/manifest do not exist.
 
 ## Resume here
 
 **Latest user steering: public #1 and a 100% score-gain stretch target.**
-The existing goal remains active. Public decoder is 2.1811831350 at #409,
+The existing goal is paused and unachieved. Public decoder is 2.1811831350 at #409,
 leader 2.5761628684 in the 21:51 UTC snapshot. Doubling means 4.3623662701;
 that is an objective, not a forecast. Official GPUs remain available. Modal
 is blocked by the current conservative free-credit ledger; no paid allocation.
@@ -24,9 +30,8 @@ raw rates .122..250%, so byte fallback is not the demonstrated cause. Do not
 call this a measured repair-kernel slowdown. Selftest exceptions/errors and
 tuning choices were silent. Root and independent critic agree the fixed attempt
 failed activation and speed, while the exact path's eligibility remains unknown.
-Source bbbc37f8 and all raw evidence/critics are preserved. New V31 will expose
-those existing decisions without changing math, geometry, thresholds or selection;
-it is a single diagnostic-only experiment, never scored or a noise retry.
+Source bbbc37f8 and all raw evidence/critics are preserved. The completed V31 diagnostic exposed those decisions without changing math,
+geometry, thresholds or selection; its outcome is recorded below.
 
 **V30 closed; no retry, port or promotion.** Official `d0510bc0412a4537`
 passed1setup/5tests/6benchmarks/6profiles with clean flags. Score2.0335370900,
@@ -61,29 +66,30 @@ including15COMP, have local_bytes0. Still zero timed COMP activation; all20
 prepare selftests pass with no disabled keys. Removing array local allocation
 was real but insufficient. No forced selection, identical retry, or gate changes.
 Raw receipt/profiles/log, root result and compact closeout are retained underV32.
-Independent critic reproduces root result. Next V33 is now frozen and independently reviewed.
+Independent critic reproduces root result. V33 was subsequently frozen, reviewed and measured; its failed outcome follows.
 
-**V33 accepted as official check `60b61041d08a4880`; inspect, never duplicate.**
-Source/gates/critic were committed `83db72d` before upload. Root owns polling. Source
-`a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090`
-at `muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py`.
-Fixed matrix-window normal decoder; escaped units use literal primary high-byte
-low nibbles plus256B missing-nibble sidecar instead of per-word repairs/full-raw
-sidecars. Primary loads no longer depend on descriptor. Geometry/selection/MMA
-order/handback remain. Actual retained V32 logical bytes predict+2.15..2.80%
-versus768B primary,+1.44..1.92% versusV32; more frequent global requests may lose.
-Root/author/critic reproduceCPU98355753:2,572,288 bit comparisons,2,808 mappings,
-4 rejected mutations. Separate layout review passes; six analyzer fixtures pass.
-Source critic GO4385170f. Fixed plan `20261104-decoder-nibble-sidecar-v33-root-plan.json`
-requires whole>=1.025/affectedGM>=1.04 against BOTH97af, all latency caps/controls,
-clean13tests/12benchmarks/profiles, exact COMP activation and observedlocal0.
-No retries, forced selection or gate relaxation. No public source changes.
+**V33 closed; no scoring or retry.** Official `60b61041d08a4880`, source
+`a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090`,
+passed13tests/12benchmarks/12profiles, clean flags. Score1.97401181553,
+CI[1.94440163830,2.00362199276], whole ratios.905019/.906902 against both97af,
+affectedGM.864490/.866609; all8 affected cases fail their latency cap.
+Partial COMP counts[1,1,2,2,0,0,1,1] do not match incumbent coverage.
+All22 observed pointers (18COMP) have local0 and valid capacity;20 selftests pass.
+No compiler/resource success is a public speedup. Root/independent critic agree:
+close the V29–V33 consumer repair/completion line. No forced selection or subset
+rescue. Source, raw profiles/logs, root result and critic are preserved underV33.
+
+**Proposed V34 is unfinished and paused.** A distinct diagnostic would profile
+original97af standalone QKV and fused-pooler M16 at natural PDL0. It would not
+change the public submission. No worker/tests/manifest were written. Root's
+controller draft is archived in `handoff/20261104/decoder-dense-v34-controller.DRAFT.patch`;
+current controller has been restored. See Claude handoff before resuming.
 
 The unique-expert traffic audit is closed read-only, no new implementation:
 retained job duplicates offer at most a conditional+1.465% decoder scenario,
 FT128+1.093%; no actual decoder routing census exists. Evidence in
 `experiments/iterations/20261104-moe-unique-expert-traffic-audit.json`.
-Root owns all GPU calls. V33 `60b61041d08a4880` is the only job in flight; no Modal allocation.
+No official or Modal job is in flight. No allocation or submission is authorized while paused.
 Serving work remains backlog under the current public #1 priority.
 
 
@@ -103,8 +109,8 @@ Frozen source/plans/reviews: commit `b0c3eb5`. Terminal records:
 `20261104-decoder-v28-result-critic.json`, `20261104-decoder-v28-closeout.json`.
 Retain raw receipt/profile JSON, text and log. Do not change thresholds, rescue
 selected shapes or repeat this attempt. `tools/DECODER_AFTER_V28_PRIORITY_20261104.md`
-found no evidence-ready high-value public probe; the next useful work is V27
-serving integration, not another WGS parameter sweep.
+historically found no evidence-ready high-value public probe and prioritized V27.
+That recommendation predates the later V29–V33 work and current pause.
 
 **V27 adapter source-reviewed; fixed device attempt closed incomplete.**
 Isolated package: `serving/candidates/native_serving_v27/`.
@@ -170,7 +176,8 @@ score changed in V26/V28. Snapshot: `experiments/leaderboards/20261104T2127-v28-
 Live API then: kernel cutoff **November 5 08:00 UTC**; serving opens **November
 10 17:00 UTC**, closes **November 20 08:00 UTC**. Recheck live rules/API before
 new work. Kernel limits: 40 private/20 scored daily per problem; after V26,
-MoE has 25 private checks/17 scores and decoder 28 checks/18 scores left today. Serving: 3 checks/1 score daily,
+remaining counts in old snapshots are historical. Requery `okc problems`.
+Serving: 3 checks/1 score daily,
 eight H200s, private board. Overall kernel top 50 earns queue priority, not
 prizes. Stop kernel submissions at kernel cutoff; stop experiments and disable
 the monitor at final contest cutoff. Live precision/patch/concurrency/TTFT rules
@@ -278,9 +285,9 @@ Research intake:
 
 Latest completed supervisor record: `experiments/iterations/20261104-v27-v28-supervisor-reflection.json`.
 V28closeoutcommit `29d9334`; V27device source/reviewcommit `787f1a7`.
-The renewed public-board reset is in progress after the latest user steering.
+The public-board reset was interrupted by the user pause; no experiment is active.
 
-Heartbeat `okc-research-and-harsh-critic` runs every 15 minutes. Resume live work
+Heartbeat `okc-research-and-harsh-critic` is PAUSED (previously every 15 minutes). Resume live work
 first; notify only meaningful verified gain/rank change, material failure,
 rule/deadline change, completion or required user action. Commit compact evidence,
 keep scratch bounded and close owned processes. Turn-start physical free space

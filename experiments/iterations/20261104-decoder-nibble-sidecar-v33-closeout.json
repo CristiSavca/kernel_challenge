@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "time_utc": "2026-11-04T23:16:22.512903+00:00",
+  "decision": "DISCARD_FIXED_CANDIDATE_AND_CLOSE_CONSUMER_REPAIR_COMPLETION_LINE",
+  "job": "60b61041d08a4880",
+  "source_sha256": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090",
+  "score": 1.9740118155311333,
+  "score_ci": [
+    1.9444016382981661,
+    2.0036219927641
+  ],
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "flags": [],
+  "resource_observations": 22,
+  "all_observed_COMP_local_bytes_zero": true,
+  "activation": [
+    {
+      "parent": "7a8c4941741645ee",
+      "counts_by_case": [
+        1,
+        1,
+        2,
+        2,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "parent": "b2a773e2d7194de8",
+      "counts_by_case": [
+        1,
+        1,
+        2,
+        2,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "comparison_summary": [
+    {
+      "affected_weighted_load_GM_speedup_ratio": 0.8644899223932531,
+      "control_weighted_load_GM_latency_ratio": 1.0082007578447656,
+      "whole_score_ratio": 0.9050188330482859,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p04": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p025": false
+      }
+    },
+    {
+      "affected_weighted_load_GM_speedup_ratio": 0.8666087790425081,
+      "control_weighted_load_GM_latency_ratio": 1.0068514332879093,
+      "whole_score_ratio": 0.90690178905549,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p04": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p025": false
+      }
+    }
+  ],
+  "interpretation": "Codec passes official correctness and some compressed paths activate, but both original incumbent comparisons fail. Fewer observed registers and zero local memory are not a whole-decoder gain. More sidecar requests are a plausible cost, not an established cause. No score, identical retry, forced selection or post-result shape rescue.",
+  "gpu_cost": {
+    "provider": "official check",
+    "modal_usd": 0,
+    "out_of_pocket_usd": 0
+  },
+  "public_incumbent_unchanged": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "next": "PAUSED by user. See HANDOFF_CLAUDE.md; V34 diagnostic and additional-credit implementation are unfinished drafts, not allocation or submission approval.",
+  "critic": {
+    "tools/DECODER_NIBBLE_SIDECAR_V33_RESULT_CRITIC_20261104.md": "8eaa16439e7cd292058d9b98397ca7235f2ca00ba717791840a4cf3068496ce1",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-result-critic.json": "f0c5e1c8e1dfcd645d9a2d36f68f4962b97b7e31ce434233945c689c17b91112"
+  }
+}
