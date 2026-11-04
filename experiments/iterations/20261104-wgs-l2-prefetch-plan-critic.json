@@ -1,0 +1,78 @@
+{
+  "decision": "GO_FIXED_CPU_IMPLEMENTATION_CONDITIONAL_GPU_REVIEW",
+  "authorization_limit": "Root accepted this exact fixed plan and consistency screen and authorized CPU implementation. A frozen-source review and independent CPU proof remain required before any official check.",
+  "plan": {
+    "path": "tools/WGS_BULK_L2_PREFETCH_FEASIBILITY_20261104.md",
+    "sha256": "57bad98b470fdef5db2d70ec3c42f48b8b5a6d908ebb9fdc29b61a253e5d1cab"
+  },
+  "parent": {
+    "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+    "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+  },
+  "mechanism": "After each existing real TMA issue, request the weight stage exactly three positions later in the same rotated phase sequence when that future item exists. Retain the full parent scale encoding, ring, producer waits, real-copy order and arithmetic.",
+  "primary_source": {
+    "url": "https://docs.nvidia.com/cuda/archive/13.2.2/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch",
+    "reviewed_section": "PTX ISA9.2 9.7.9.25.4.3",
+    "facts": "The plain bulk L2 prefetch form dates to PTX8.0, requires sm90, uses a 16-byte-aligned source and byte count divisible by16, and is a nonblocking weak hint. It provides no replacement for the actual TMA completion dependency."
+  },
+  "independent_bounded_arithmetic": {
+    "ranges": 20584,
+    "future_address_matches": 1264340,
+    "wrapped_future_targets": 24601,
+    "job_boundary_targets": 2189,
+    "scope": "Both phases; short/empty ranges; all g0 in0..63 plus directed unit, job and last-bank boundaries; lengths0..129 within88 jobs. Direct list sequence checked against proposed future-address expression with varying expert IDs. This is plan arithmetic, not an actual candidate/native-source proof.",
+    "wrong_wrap_detected": true,
+    "current_instead_of_future_expert_detected": true
+  },
+  "correctness_findings": [
+    "i+3<N ensures N>3. One subtraction/wrap is sufficient and matches the A trailing-partial-first order and ordinary B order.",
+    "The hint address derives from the future job and its own expert ID; using the current expert would fail when lookahead crosses a job boundary.",
+    "No hint is issued for empty/N<=3 ranges or for the final three iterations. The hint never crosses the current phase range.",
+    "Prepared weight banks and published routing metadata are immutable during this use; the new instruction needs no shared destination or new completion participation.",
+    "Keep the exact original actual-copy bytes, addresses, mbarrier expectations/arrivals, waits, slot phase bits and activation dependency. No correctness path may rely on hint effectiveness.",
+    "No global-zero-job support, new small-GPU target, or changed grid-domain guarantee is inferred."
+  ],
+  "performance_critique": [
+    "This is distinct from prior shared-A transport, compact geometry, queue depth and SC6. It attempts cache lookahead without additional shared rings or changed compute.",
+    "A small source delta is not zero work: nearly one extra cache request per weight stage raises combined real weight+activation request instruction count by roughly50%, plus a shared job-ID lookup and address arithmetic.",
+    "Hint byte requests are not necessarily additional DRAM traffic. Hits, ignored hints, delayed hints, evictions and redundant DRAM fetches are all possible; no cache-hit-rate or throughput forecast follows.",
+    "No saved measurement establishes an exposed L2/TMA latency bottleneck. Nonetheless a cheap fixed hint experiment can gather information without demanding a proven bottleneck or a large architectural gain.",
+    "Actual registers, spills and compiler scheduling can change. Query valid launch capacity for both BIG pointers; local bytes and compiler warnings are evidence, not automatic speed rejection.",
+    "Preserve one fixed distance3/plain-policy choice. A failed screen does not automatically justify a distance sweep, cache-policy sweep or combination with rejected SC6."
+  ],
+  "recommended_prespecified_screen": {
+    "comparators": [
+      "d24dd50196cb4158",
+      "bcb761dfca264db0"
+    ],
+    "affected_M": [
+      32,
+      128,
+      256
+    ],
+    "control_M": [
+      1,
+      8,
+      16
+    ],
+    "affected_geomean_relative_speedup_min_vs_each": 1.01,
+    "minimum_joint_positive_affected_cases": 2,
+    "each_affected_normalized_latency_max": 1.02,
+    "control_GM_normalized_latency_interval": [
+      0.98,
+      1.02
+    ],
+    "status": "Accepted by root before implementation, unchanged from the recommended screen. Operational consistency screen, not a significance test."
+  },
+  "source_review_requirements": [
+    "Whole parent restoration except inserted hint block, unique extension name and bounded resource helper.",
+    "Extract actual producer source for native real-copy and future-hint trace comparisons, including phase rotation, ragged tails and large job/expert boundaries.",
+    "Negative controls for missing tail guard, wrong wrap, reused current expert ID and changed real-copy/barrier sequence.",
+    "Preprocessed non-WGS controls unchanged; full scale/math/dispatch/PDL and scratch equality.",
+    "Final frozen source hash plus independent CPU run, then exactly one root-authorized private check."
+  ],
+  "candidate_written": false,
+  "official_calls": 0,
+  "gpu_allocations": 0,
+  "root_authorized_fixed_scope": "v17 from exact247888; distance3 plain hint after real copy; no SC6; bounded LPFR admission helper for576threads/231168dynamic bytes; WGS compiler verbosity; no distance or cache-policy sweep."
+}

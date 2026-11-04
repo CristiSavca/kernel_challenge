@@ -1,0 +1,130 @@
+{
+  "decision": "GO_ONE_ROOT_AUTHORIZED_PRIVATE_CHECK",
+  "scope": "Exact frozen v17 source only. Root independent CPU completion remains a required operational gate. No public promotion, decoder integration, distance/cache-policy sweep or SC6 combination is approved.",
+  "evidence": {
+    "candidate": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_l2_prefetch_v17.py",
+      "sha256": "85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759"
+    },
+    "parent": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+    },
+    "plan": {
+      "path": "tools/WGS_BULK_L2_PREFETCH_FEASIBILITY_20261104.md",
+      "sha256": "57bad98b470fdef5db2d70ec3c42f48b8b5a6d908ebb9fdc29b61a253e5d1cab"
+    },
+    "plan_critic": {
+      "path": "experiments/iterations/20261104-wgs-l2-prefetch-plan-critic.json",
+      "sha256": "2db9d38e5bfe57c48101d0127c4809df304425c295e58020216210e9e5e5dad9"
+    },
+    "builder": {
+      "path": "tools/build_wgs_l2_prefetch_candidate.py",
+      "sha256": "e1cb45198d185922fee7bafd6d0b594a41716cb2249dfa533c1fdf88da9503b5"
+    },
+    "verifier": {
+      "path": "tools/test_wgs_l2_prefetch_cpu.py",
+      "sha256": "4583f2e913d83678cb6412ccd478580e85de2d083d8e4f6a854d54a546ac92f3"
+    },
+    "author_report": {
+      "path": "experiments/iterations/20261104-wgs-l2-prefetch-cpu.json",
+      "sha256": "79ba61d2084fa4a36c09ca77358531cb783b87c11b0331a2af0763b26f9e1b4c"
+    },
+    "independent_critic_report": {
+      "path": "experiments/iterations/20261104-wgs-l2-prefetch-critic-cpu.json",
+      "sha256": "79ba61d2084fa4a36c09ca77358531cb783b87c11b0331a2af0763b26f9e1b4c"
+    }
+  },
+  "independent_review": [
+    "Complete candidate-parent diff and builder read.",
+    "Entire frozen focused verifier read, including actual-source translations, native event oracle, mutation controls and reused host-resource mock.",
+    "Independent frozen suite run exited0 and produced byte-identical author/critic JSON.",
+    "Primary PTX semantics and plan sequence arithmetic independently reviewed before source implementation."
+  ],
+  "source_findings": {
+    "scope": "Only CUDA_SRC and _ext AST nodes differ. Removing the exact hint/resource additions restores the parent CUDA byte for byte; namespace/verbosity normalization restores _ext. All41 other named Python nodes remain identical.",
+    "future_target": "The hint follows the current actual weight TMA and targets the third future item within the current phase. A-phase rotated order is preserved, future expert lookup is used, and the final three items/short/empty phase ranges issue no hints.",
+    "data_lifetime": "Targets are immutable prepared weight-bank bytes; routing metadata was published by the unchanged WS_JOIN. The hint introduces no shared destination or cross-phase readiness assumption.",
+    "ordering": "Real-copy source/destination/byte count, expected-tx arrivals, empty-slot waits, phase bits and slot progression are unchanged. Neither consumers nor producers rely on hint completion.",
+    "math_and_dispatch": "Weight encoding, scale reconstruction, MMA instruction sequence, all compute and finalizer code, scratch, PDL and Python state/dispatch stay exact247888. No rejected SC6 encoding is present.",
+    "resource_gate": "Bounded LPFR helper queries both exact BIG pointers after setting unchanged dynamic shared231168, using unchanged576 threads. API failures/occupancy<1 throw before attr success is cached. Register/local diagnostics are informative, not an automatic performance rejection.",
+    "compile_support": "The plain instruction is specified for sm90+ in PTX8.0 onward, with16-byte address/size alignment. Actual CUDA assembly acceptance still requires the official build."
+  },
+  "proof_results": {
+    "status": "PASS",
+    "source_sha256": "85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759",
+    "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "cuda_sha256": "69c70b9d35c0708c953f20c7b85d782ffc1ad3b965ddccb91acc46e702ccfbf9",
+    "conformance": {
+      "restored_parent_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+      "unchanged_python_nodes": 41,
+      "non_wgs_preprocessed_builds": 16,
+      "packing_dispatch_MMA_math_and_all_other_device_functions_preserved": true
+    },
+    "native_producer_trace": {
+      "range_pair_cases": 9660,
+      "identical_real_copies": 1314672,
+      "correct_future_hints": 1261152,
+      "identical_waits": 1286460,
+      "empty_phase_ranges": 1208,
+      "rotated_wrap_hints": 20708,
+      "cross_job_hints": 2100,
+      "nonproducer_lane_returns": 19320
+    },
+    "host_resources": {
+      "modes": 10,
+      "records": 20,
+      "max_record_bytes": 100,
+      "local_allocation_does_not_reject": true,
+      "actual_first_call_failure_propagates": true,
+      "failed_call_does_not_cache_success": true,
+      "successful_attributes_cached": true
+    },
+    "negative_controls": [
+      "missing_tail_guard",
+      "wrong_rotated_wrap",
+      "current_expert_for_future_job",
+      "changed_expected_bytes",
+      "changed_real_copy_bytes",
+      "wrong_future_distance"
+    ],
+    "limits": "Native execution of actual producer/split control flow and address expressions uses uint64 byte-address and CUDA-operation shims. It proves emitted requests, bounds and ordering in these finite cases; not CUDA compilation, hardware asynchrony, hint execution/effectiveness, cache behavior, GPU tensor correctness or speed. Full source restoration proves the arithmetic/packing and other device paths unchanged; no new MMA or lifecycle simulator is used."
+  },
+  "coverage_limits": [
+    "The native harness replaces global pointers with uint64 byte addresses and translates CUDA operations into event records; it does not execute CUDA or model hardware asynchrony/cache effects.",
+    "The jE[256] fixture and start65519 cases extend beyond actual FT64 JMAX88. They are supplemental integer/address stress, not legal routing workloads or proof of enlarged production array capacity. The adjacent author note explicitly qualifies the misleading fixture comment.",
+    "Other finite native cases exercise ordinary job boundaries, rotations, empty phases, short/tail ranges and three expert-ID patterns. The earlier independent plan arithmetic separately bounded real88-job addresses.",
+    "No claim of global-zero-job support follows from producer empty-range tests; inherited routing-stage behavior is unchanged.",
+    "Source restoration and identical emitted real-request traces do not predict compiled register allocation, achieved occupancy, hint effectiveness, DRAM traffic or latency."
+  ],
+  "accepted_performance_gate": {
+    "comparators": [
+      "d24dd50196cb4158",
+      "bcb761dfca264db0"
+    ],
+    "affected_M": [
+      32,
+      128,
+      256
+    ],
+    "controls_M": [
+      1,
+      8,
+      16
+    ],
+    "affected_geomean_relative_speedup_min_vs_each": 1.01,
+    "minimum_affected_cases_faster_vs_both": 2,
+    "each_affected_normalized_latency_ratio_max": 1.02,
+    "control_geomean_normalized_latency_interval_vs_each": [
+      0.98,
+      1.02
+    ],
+    "required_official_evidence": "Clean setup,5 tests,6 benchmarks,6 profiles with source/evaluator/case identity; actual valid resource admission; activation inferred only from pinned source/log/profile premises.",
+    "interpretation": "Root accepted before implementation. Operational consistency screen, not statistical significance or permission to choose a better-looking subset after the result."
+  },
+  "performance_risk": "Almost one extra cache request per real weight stage plus future-address work can be ignored, contend with demand traffic or cause cache pollution. The fixed experiment is justified by its small isolated mechanism and information value, not by a measured stall or a speed forecast.",
+  "primary_source": "https://docs.nvidia.com/cuda/archive/13.2.2/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch",
+  "candidate_edits_by_reviewer": false,
+  "official_calls_by_reviewer": 0,
+  "gpu_allocations_by_reviewer": 0
+}

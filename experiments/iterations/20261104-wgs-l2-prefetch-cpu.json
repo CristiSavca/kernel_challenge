@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "source_sha256": "85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "cuda_sha256": "69c70b9d35c0708c953f20c7b85d782ffc1ad3b965ddccb91acc46e702ccfbf9",
+  "conformance": {
+    "restored_parent_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "unchanged_python_nodes": 41,
+    "non_wgs_preprocessed_builds": 16,
+    "packing_dispatch_MMA_math_and_all_other_device_functions_preserved": true
+  },
+  "native_producer_trace": {
+    "range_pair_cases": 9660,
+    "identical_real_copies": 1314672,
+    "correct_future_hints": 1261152,
+    "identical_waits": 1286460,
+    "empty_phase_ranges": 1208,
+    "rotated_wrap_hints": 20708,
+    "cross_job_hints": 2100,
+    "nonproducer_lane_returns": 19320
+  },
+  "host_resources": {
+    "modes": 10,
+    "records": 20,
+    "max_record_bytes": 100,
+    "local_allocation_does_not_reject": true,
+    "actual_first_call_failure_propagates": true,
+    "failed_call_does_not_cache_success": true,
+    "successful_attributes_cached": true
+  },
+  "negative_controls": [
+    "missing_tail_guard",
+    "wrong_rotated_wrap",
+    "current_expert_for_future_job",
+    "changed_expected_bytes",
+    "changed_real_copy_bytes",
+    "wrong_future_distance"
+  ],
+  "limits": "Native execution of actual producer/split control flow and address expressions uses uint64 byte-address and CUDA-operation shims. It proves emitted requests, bounds and ordering in these finite cases; not CUDA compilation, hardware asynchrony, hint execution/effectiveness, cache behavior, GPU tensor correctness or speed. Full source restoration proves the arithmetic/packing and other device paths unchanged; no new MMA or lifecycle simulator is used."
+}
