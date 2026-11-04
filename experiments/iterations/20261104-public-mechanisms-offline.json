@@ -1,0 +1,303 @@
+{
+  "schema": 1,
+  "experiment": "public_mechanism_offline_proposals",
+  "status": "proposal_only_no_candidate_no_gpu",
+  "timeline_source": "experiments/modal/20261104T043758Z-24108d21/result.json",
+  "timeline_source_sha256": "6337501753ec31196380807668a96229b53784b5c0a9f4b6195bbdc0a0444df4",
+  "official_profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.4b216098993e4112.json",
+  "official_profile_sha256": "848e23f2913e7577300bae4329090a1d63bc420ff114c6292172f722d9f7e722",
+  "tail_definition": "max(all CTA final end stamps) - max(all4*G added WG phase-B-return stamps), ns/1000",
+  "tail_limitations": [
+    "Fixed-B-return-time counterfactual only, not general MFIN bound.",
+    "Whole-B last epilogue stores may still be pending at the WG timestamp; it is not an all-output-visible marker.",
+    "Standalone routes, four instrumented replays, write-flush conditions; no decoder timeline attribution.",
+    "Added completion atomics/barriers, finalizer contention, and compiler changes may alter B returns.",
+    "Absolute/fraction transfers are illustrative conditional deletion of all observed tail, not forecasts; official profile/bench times are distinct measurements."
+  ],
+  "per_case": [
+    {
+      "M": 32,
+      "input_seed": 7301,
+      "probe_perturbation_above_5pct": true,
+      "tail_us": [
+        5.088,
+        4.48,
+        4.96,
+        5.472
+      ],
+      "median_tail_us": 5.024,
+      "tail_fraction": [
+        0.0370197904540163,
+        0.03264164140825368,
+        0.03697519083969465,
+        0.039292279411764705
+      ],
+      "median_tail_fraction": 0.03699749064685548
+    },
+    {
+      "M": 32,
+      "input_seed": 7302,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        5.248,
+        4.64,
+        6.304,
+        5.76
+      ],
+      "median_tail_us": 5.504,
+      "tail_fraction": [
+        0.03895486935866983,
+        0.034939759036144574,
+        0.047095386086540764,
+        0.04293893129770992
+      ],
+      "median_tail_fraction": 0.04094690032818987
+    },
+    {
+      "M": 32,
+      "input_seed": 7303,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        5.44,
+        5.12,
+        4.448,
+        5.536
+      ],
+      "median_tail_us": 5.28,
+      "tail_fraction": [
+        0.036193314881839474,
+        0.03460956089119619,
+        0.029675491033304868,
+        0.03633690401176223
+      ],
+      "median_tail_fraction": 0.03540143788651783
+    },
+    {
+      "M": 128,
+      "input_seed": 7301,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        4.96,
+        4.896,
+        4.928,
+        4.672
+      ],
+      "median_tail_us": 4.912,
+      "tail_fraction": [
+        0.024162120031176928,
+        0.023921200750469045,
+        0.02394278606965174,
+        0.022791133312519512
+      ],
+      "median_tail_fraction": 0.023931993410060394
+    },
+    {
+      "M": 128,
+      "input_seed": 7302,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        5.856,
+        4.736,
+        4.608,
+        5.184
+      ],
+      "median_tail_us": 4.96,
+      "tail_fraction": [
+        0.028937381404174574,
+        0.02362707535121328,
+        0.022959183673469385,
+        0.02566133375574212
+      ],
+      "median_tail_fraction": 0.0246442045534777
+    },
+    {
+      "M": 128,
+      "input_seed": 7303,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        4.992,
+        4.8,
+        4.8,
+        5.024
+      ],
+      "median_tail_us": 4.896,
+      "tail_fraction": [
+        0.025930851063829786,
+        0.024683231857824582,
+        0.024970867321458298,
+        0.025950413223140498
+      ],
+      "median_tail_fraction": 0.025450859192644042
+    },
+    {
+      "M": 256,
+      "input_seed": 7301,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        7.808,
+        8.096,
+        7.84,
+        7.84
+      ],
+      "median_tail_us": 7.84,
+      "tail_fraction": [
+        0.03315667889658921,
+        0.03411542610571737,
+        0.03311705866450392,
+        0.03354326396495071
+      ],
+      "median_tail_fraction": 0.03334997143076996
+    },
+    {
+      "M": 256,
+      "input_seed": 7302,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        7.968,
+        7.872,
+        7.744,
+        7.584
+      ],
+      "median_tail_us": 7.808,
+      "tail_fraction": [
+        0.036537050623624355,
+        0.03605980650835532,
+        0.03517441860465116,
+        0.03463393248575186
+      ],
+      "median_tail_fraction": 0.03561711255650324
+    },
+    {
+      "M": 256,
+      "input_seed": 7303,
+      "probe_perturbation_above_5pct": false,
+      "tail_us": [
+        8.192,
+        8.704,
+        8.0,
+        7.936
+      ],
+      "median_tail_us": 8.096,
+      "tail_fraction": [
+        0.035575319622012234,
+        0.03798882681564246,
+        0.035156799324989454,
+        0.03481190342504211
+      ],
+      "median_tail_fraction": 0.03536605947350084
+    }
+  ],
+  "official_loads": {
+    "decode 1": {
+      "weight": 62,
+      "bench_us_weighted_sum": 4540.415046803321,
+      "moe_us_weighted_sum": 1407.1999999999998,
+      "bench_us": 73.23250075489229,
+      "moe_profile_us": 22.696774193548386
+    },
+    "decode 16": {
+      "weight": 62,
+      "bench_us_weighted_sum": 9505.5747024689,
+      "moe_us_weighted_sum": 4759.2,
+      "bench_us": 153.31572100756293,
+      "moe_profile_us": 76.76129032258065
+    },
+    "decode 32": {
+      "weight": 62,
+      "bench_us_weighted_sum": 12232.878483958546,
+      "moe_us_weighted_sum": 5034.6,
+      "bench_us": 197.30449167675073,
+      "moe_profile_us": 81.20322580645161
+    },
+    "verify 1": {
+      "weight": 62,
+      "bench_us_weighted_sum": 6811.159707128309,
+      "moe_us_weighted_sum": 3395.0,
+      "bench_us": 109.85741463110175,
+      "moe_profile_us": 54.75806451612903
+    },
+    "verify 16": {
+      "weight": 62,
+      "bench_us_weighted_sum": 17352.016489699163,
+      "moe_us_weighted_sum": 9320.8,
+      "bench_us": 279.8712337048252,
+      "moe_profile_us": 150.33548387096772
+    },
+    "verify 32": {
+      "weight": 62,
+      "bench_us_weighted_sum": 22917.124368655415,
+      "moe_us_weighted_sum": 12439.6,
+      "bench_us": 369.6310382041196,
+      "moe_profile_us": 200.63870967741937
+    }
+  },
+  "conditional_transfers": [
+    {
+      "name": "median",
+      "items": [
+        {
+          "load": "decode 32",
+          "tail_us": 5.344,
+          "fraction": 0.03626510944680085,
+          "absolute_transfer_load_reduction": 0.027085039750413892,
+          "fraction_transfer_load_reduction": 0.014925376742709275
+        },
+        {
+          "load": "verify 16",
+          "tail_us": 4.912,
+          "fraction": 0.024422675944500753,
+          "absolute_transfer_load_reduction": 0.017550928457265427,
+          "fraction_transfer_load_reduction": 0.013118871693018385
+        },
+        {
+          "load": "verify 32",
+          "tail_us": 7.904,
+          "fraction": 0.03498435137501578,
+          "absolute_transfer_load_reduction": 0.021383485646665885,
+          "fraction_transfer_load_reduction": 0.018989788176036314
+        }
+      ],
+      "absolute_transfer_aggregate_reduction": 0.011068422082664564,
+      "fraction_transfer_aggregate_reduction": 0.007871518568770997
+    },
+    {
+      "name": "max",
+      "items": [
+        {
+          "load": "decode 32",
+          "tail_us": 6.304,
+          "fraction": 0.047095386086540764,
+          "absolute_transfer_load_reduction": 0.03195061575348226,
+          "fraction_transfer_load_reduction": 0.019382717739101645
+        },
+        {
+          "load": "verify 16",
+          "tail_us": 5.856,
+          "fraction": 0.028937381404174574,
+          "absolute_transfer_load_reduction": 0.02092390819335227,
+          "fraction_transfer_load_reduction": 0.01554398848987646
+        },
+        {
+          "load": "verify 32",
+          "tail_us": 8.704,
+          "fraction": 0.03798882681564246,
+          "absolute_transfer_load_reduction": 0.023547806056247452,
+          "fraction_transfer_load_reduction": 0.020620641684966873
+        }
+      ],
+      "absolute_transfer_aggregate_reduction": 0.012824979644173173,
+      "fraction_transfer_aggregate_reduction": 0.009302347041856396
+    }
+  ],
+  "kperm_cpu_proof": {
+    "per_stage_permutation_bijective": true,
+    "gather_map_exact_all256_elements": true,
+    "all_fragment_indices_match": true,
+    "scale_block_independent_of_load_group": true,
+    "phase_A_output_row_map_bijective_4096": true,
+    "phase_B_256_column_readiness_stage_preserved": true,
+    "downloaded_code_executed": false,
+    "gpu_numerical_validation": false
+  },
+  "priority": "KPERM3-only viability review > SC6-only natural-K secondary margin > MFIN-only secondary margin; no gain assertion"
+}
