@@ -20,6 +20,43 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
+Latest continuation, November 4 after 18:25 UTC: the user-requested Lean
+methodology is implemented as an independent source-bound MULDEC integer
+fragment proof. `formal/README.md` documents the exact scope and command.
+Lean 4.35 checks the four output identities for every uint32 word, the position
+bijection, and supporting lemmas; generated definitions bind actual source
+constants. All 11 audited theorem dependencies are standard Lean axioms only.
+Three wrong arithmetic variants are rejected by real Lean; seven binding/axiom
+tests and three mocked upload-gate tests pass. Independent critic found and
+resolved C++ line-splicing and direct map/macro mutation weaknesses. Report
+`experiments/iterations/20261104-lean-dq4-proof.json` pins source, verifier,
+proof contract and toolchain. Use `--verify-ptx` on compatible future MoE
+experiments; unsupported syntax requires a separately reviewed proof extension.
+No complete PTX interpreter, numerical, race, compilation or performance
+guarantee is claimed. No author Lean package was publicly located. Public
+247888/97af/87a9 sources are unchanged.
+
+Broader serving-finalizer H200 run `20261104T182526Z-3d547341` failed at
+`finite_cancellation` (T3/K3/H511). Its exact three comparison metrics were lost:
+recovery ran after Modal app teardown and returned NotFoundError. The trace
+implies 74 prior cases and six activation profiles completed, but their detailed
+metrics were not recovered; 15 later cases and stream/graph tests were not
+reached. Do not infer which implementation failed from this trace. Frozen
+helper91e6173b and worker c94c3134 remain unchanged. The context lifetime repair
+has a test that failed the old runner and passes the new one. Root's fixed
+diagnostic plan is `20261104-finalizer-checkpoint-recovery-plan.json`; a rerun
+requires its independent review and fresh credit guard. No tolerance relaxation,
+helper promotion or scored submission is allowed from the missing evidence.
+
+The first run reserved the full $1.78, retained in the journal, and terminated
+sandbox sb-BHZ31i8GcWhRCU4Fj2iHnb. Fresh billing shows gross4.15/billed0 and
+app ap-UCpGz56A1SD41NRAlvUGgL stopped with zero tasks. Preserve the higher
+known provider floor4.16434237. After this reservation the conservative working
+budget is7.18565763 before any newer provider increase; this is not a live
+balance or permission to skip the next guard. Current board18:25: overall and
+decoder402, MoE303, unchanged own scores. Kernel cutoff remains Nov5 08:00UTC;
+serving opens Nov10 17:00UTC, closes Nov20 08:00UTC. Goal remains unachieved.
+
 Latest continuation, November 4: official private MoE job `1a2a2a31f96f43e3`
 is terminal. Frozen v21 `4fcf108f…` passes correctness but fails its fixed speed
 gate: score2.23813914, MAIN normalized latency +12.39%/+13.42% versus public/

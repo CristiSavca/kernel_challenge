@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-04T18:31:35.803692+00:00",
+  "hypothesis": "A universal source-bound uint32 proof rejects wrong packed decoder changes locally before GPU allocation. It does not improve runtime.",
+  "upstream": "https://arxiv.org/html/2611.04447v1",
+  "implementation": "Independent Lean4.35 BitVec specification and kernel-checked proofs; no released author Lean package found.",
+  "source_sha256": {
+    "tools/verify_ptx.py": "15fd3774d9ac873d7db25edac11c6046a24d947311a9aa133e7c98bc069c86b2",
+    "tools/experiments.py": "490f9d5482982b5079c9ad83c0d954937e47d27f6ef23e4f35817f28e3284830",
+    "tools/test_verify_ptx.py": "ed9d3c17459b617839c0ced845d69b78b509bce84a86624f2958676bc4075316",
+    "tools/test_experiments_formal_gate.py": "2e44277aec76cd43621e863cb891bc9e6c3daa9203935d8a6dfee7d07bb47407",
+    "formal/OKC/Dq4.lean": "203f9527f1b94e85a79388b3030d74566a1a9f4809c833b5c9e5e26057d57bbd",
+    "formal/proof-contract.json": "3c847640f80f3bed6328cf7132b15be6357aba0016c1e50a46606169c6edc226",
+    "experiments/iterations/20261104-lean-dq4-proof.json": "2c033ec23e0d2606202a398dabaa07b2b0778ff0025bdc9ceffb4a08ac0707a0"
+  },
+  "incumbent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "correctness": "Four universal output identities for all 2^32 words; source-position bijection; two supporting lemmas; four generated-source identities; 11 axiom reports with standard dependencies only.",
+  "tests": {
+    "binding_and_axiom": 7,
+    "workflow_mocked_remote": 3,
+    "real_lean_incumbent": "pass",
+    "real_lean_wrong_constants_rejected": 3
+  },
+  "critic_findings_resolved": [
+    "C++ backslash-newline splicing precedes comment stripping; LF/CRLF regression fixtures added.",
+    "Direct packing-map mutations and modeled macro overrides rejected; indirect aliases and surrounding environment explicitly outside certification.",
+    "Default native bitvector checker removed; retained kernel proof uses bit extensionality, simp, omega and finite decide.",
+    "Leading-zero/octal literals rejected to avoid decimal/C++ interpretation differences."
+  ],
+  "critic": "tools/PTX_LEAN_CRITIC_20261104.md",
+  "GPU_cost_usd": 0,
+  "official_jobs": [],
+  "performance": "No runtime source change; direct speed gain zero.",
+  "decision": "Keep as source-bound fragment preflight. Unsupported expressions require a reviewed new model; full numerics, memory, dispatch and concurrency remain unproved.",
+  "next": "Use --verify-ptx on future compatible MoE candidates; extend only for concrete rewrite contracts and retain official GPU validation."
+}

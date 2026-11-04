@@ -1,0 +1,54 @@
+{
+  "recorded_at": "2026-11-04T18:32:10.257803+00:00",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_FOR_LIMITED_SOURCE_LEVEL_UNSIGNED32_FRAGMENT_VERIFIER",
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "pins": {
+    "tools/verify_ptx.py": "15fd3774d9ac873d7db25edac11c6046a24d947311a9aa133e7c98bc069c86b2",
+    "tools/experiments.py": "490f9d5482982b5079c9ad83c0d954937e47d27f6ef23e4f35817f28e3284830",
+    "tools/test_verify_ptx.py": "ed9d3c17459b617839c0ced845d69b78b509bce84a86624f2958676bc4075316",
+    "tools/test_experiments_formal_gate.py": "2e44277aec76cd43621e863cb891bc9e6c3daa9203935d8a6dfee7d07bb47407",
+    "formal/proof-contract.json": "3c847640f80f3bed6328cf7132b15be6357aba0016c1e50a46606169c6edc226",
+    "formal/OKC/Dq4.lean": "203f9527f1b94e85a79388b3030d74566a1a9f4809c833b5c9e5e26057d57bbd",
+    "formal/lakefile.toml": "566ab786977175ee71b2cfb21288d10436a3ed863ce4a479af170dac271188f2",
+    "formal/lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c",
+    "experiments/iterations/20261104-lean-dq4-proof.json": "2c033ec23e0d2606202a398dabaa07b2b0778ff0025bdc9ceffb4a08ac0707a0"
+  },
+  "independent_checks": {
+    "binding_tests": 7,
+    "workflow_tests": 3,
+    "direct_final_lean_file": "PASS exit 0; seven theorem audits contain only permitted standard axioms",
+    "fresh_full_verifier": "PASS proved_fragment; 9.142 seconds; seven base and four generated theorem audits",
+    "generated_lean_sha256": "7aa29f6094c32630ad878795677d895ec70f7bfec49264203bdccd6770550eb5"
+  },
+  "root_saved_real_negative_controls": [
+    "rotate3_to4",
+    "extra_mask_bit",
+    "multiplier4228_to4224"
+  ],
+  "review_found_and_fixed": [
+    "C++ backslash-newline splicing must precede comment removal, including CRLF",
+    "direct packing-map mutations escaped the original Name Store test",
+    "modeled-identifier macros could change compiled arithmetic without changing parsed constants",
+    "Leading-zero nonhex literals now fail closed rather than treating C++ octal spelling as decimal"
+  ],
+  "direct_runtime_speedup_percent": 0,
+  "trusted_assumptions": [
+    "Reviewed AST/regex translation and independent bit-placement specification",
+    "Ordinary uint32 and builtin funnel-shift semantics, immutable maps and distinct output registers",
+    "Reviewed local proof contract and installed verified toolchain bundle, not hostile filesystem attestation"
+  ],
+  "not_proved": [
+    "Full Python packing/tensor coordinate pipeline or indirect alias mutation",
+    "Floating-point interpretation, scales, MMA, PTX/SASS/compiler correctness",
+    "Memory safety, synchronization, termination, dispatch, numerical outputs or performance"
+  ],
+  "official_or_gpu_calls": false,
+  "reviewed_incremental_refresh": {
+    "prior_verifier_sha256": "326a615e3ece1b96b2797379de099cc3eae9f3003f42a04b278bbee2c6125151",
+    "change": "Reject leading-zero nonhex constants to avoid C++ octal/decimal translation ambiguity; no generated proof/formal statement change",
+    "independent_final_binding_tests": 7,
+    "root_final_integration": "PASS incumbent; three mutants rejected by real Lean",
+    "independent_full_verifier_execution_was_previous_version": true
+  }
+}

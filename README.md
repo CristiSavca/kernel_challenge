@@ -1,14 +1,14 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 17:56 UTC.
+Status updated November 4, 2026, 18:25 UTC (board), with subsequent validation below.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
 ## Latest measured state
 
-CristiSavca is 401st overall. Public scores are dense projections 1.4868×,
+CristiSavca is 402nd overall. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
@@ -18,15 +18,29 @@ five correctness tests, six timed cases and clean checks. Compared with the
 same-run stock Marlin component, latency fell 32.6%/21.4%/18.0% at 1/8/16 tokens;
 larger controls stayed within 0.05%. Both independent analyses passed the fixed
 gate. This is a serving-component improvement, not a faster native kernel entry
-or a measured full-model gain. Generic GPU/concurrent-graph tests and the full
-serving check remain outstanding. No scored promotion or paid GPU allocation
-followed this result.
+or a measured full-model gain. Broader free-credit H200 validation subsequently
+failed the generic H511 cancellation case; the first runner lost its detailed
+checkpoint after application teardown. The recovery lifetime is repaired and
+covered by a regression test. Numerical attribution and generic graph coverage
+remain unresolved; this component is held from serving promotion. No public
+kernel score/source was replaced. See
+[the failure evidence](tools/SERVING_FINALIZER_VALIDATION_FAILURE_20261104.md).
 
 Fresh arXiv, X/release, DeepSeek, Hugging Face and CUTLASS research is linked in
 [the active handoff](tools/RESEARCH_LOOP.md). Current official receipts and
 research retain exact sources, licenses, evaluator identity and measured limits.
-The next focused experiment is broader validation of the preserved finalizer;
-research leads need an actual compatible code path before a new optimization.
+The next focused diagnostic preserves the same finalizer/cases/tolerances and
+recovers the missing comparison metrics with the repaired runner. Research leads
+need an actual compatible code path before a new optimization.
+
+The user-requested Lean methodology now has a working first implementation:
+[source-bound packed-decoder proof](formal/README.md). Lean checks all four
+MULDEC integer outputs for every 32-bit word and the packing-position bijection.
+The real source passes; three deliberately broken constant variants fail Lean.
+Seven source/axiom tests and three upload-gate tests pass. `--verify-ptx` runs
+the proof before an official upload and keeps its exact report hash in the
+receipt. This is our independent fragment implementation, not an imported SF
+Tensor model or a full PTX/CUDA correctness proof. No kernel timing changed.
 
 ## Earlier setup and November 3 results
 
