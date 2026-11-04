@@ -27,7 +27,7 @@ A 2.60× result would roughly separate scores with their minimum ±1.5%
 intervals; this is a target, not a prediction. The live top-50 decoder cutoff
 was 2.3442×, requiring about 8.28% less latency.
 
-The overall board ranked us 393/1,946. Overall positions 1–549 matched decoder
+The November 4 04:30 UTC snapshot ranked us 393/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
 wording describes the speedup of the best runs together, but a precise combining
 formula was not exposed. Do not claim overall always equals decoder. A better
@@ -114,10 +114,9 @@ Sources: [updates](https://openkernelchallenge.dev/llms.txt),
 ## Completed first comparison: reject V8
 
 Candidate `muse_decode_layer/candidates/native_wgs_split_final_v8.py`, SHA-256
-`9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b`, has
-passed static review only. The critic found no blocking source defect but
-requires fresh graph replay, scratch-transition tests and confirmation that
-`moe_finalize` appears in the trace. Its predecessor hash `6a8ec...` differs
+`9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b`, passed static review and the local comparison described below. The critic
+required fresh graph replay, scratch-transition tests and confirmation that
+`moe_finalize` appears in the trace; all were included. Its predecessor hash `6a8ec...` differs
 only in the corrected provenance comment; executable code is identical.
 
 Modal comparison started 2026-11-04 04:09 UTC:
@@ -157,11 +156,13 @@ The existing DBG A/B stamps are from warpgroup 0, without a preceding CTA
 barrier. Thus DBG3→DBG4 includes both local-warpgroups and grid waiting.
 Record phase-A and phase-B completion from all four consumer warpgroups with
 `globaltimer`, preserving existing slots. Do not compare independent SM
-`clock64` counters as global timestamps. For each warpgroup i, let A_i and B_i
-be its completion stamps and L=max(A_i). A conservative removable-dependency
-allowance is D_i=min(B_i−A_i, max(0,L−A_i)); the optimistic makespan benefit is
-max(B_i)−max(B_i−D_i). Below 15% of MoE wall time, reject a readiness-only
-rewrite. A positive bound is not proof that all of that time is waiting.
+`clock64` counters as global timestamps. The first proposed per-warpgroup
+subtraction formula was rejected by the critic: B split-unit dependencies can
+propagate another CTA's earlier waiting beyond the final A completion, so the
+formula is not a global upper bound. It may be reported only as a descriptive
+phase-window heuristic. Neither a low nor high value proves whether a scheduler
+can recover 15%; a causal claim needs dependency and fixup intervals. Diagnose
+instrumentation perturbations in both directions, not only slowdowns.
 
 Bandwidth also constrains this decision. Active WGS packed weights occupy
 exactly 27 MiB per expert; all 32 require 864 MiB, a 188.744 µs weight-only
@@ -178,11 +179,43 @@ are 27 MiB*U; TMA requests are 27 MiB*J, not measured HBM traffic because
 repeated jobs may reuse L2. Compare only raw expert timing with the conditional
 weight floor, not paired-ratio-normalized `median_ns`.
 
-`decoder_research` is implementing a small separate guarded MoE diagnostic
-driver using the exact decoder CUDA source inside the standalone expert shell.
-It will use three fresh standalone route seeds; these are not decoder router
-distributions. A positive result requires whole-decoder confirmation. It will
-not be eligible for official submission. No next GPU run has started yet.
+The guarded diagnostic completed as
+`experiments/modal/20261104T043758Z-24108d21`: all 72 checks passed across
+nine cases, with identical control/probe output hashes. Three fresh standalone
+route seeds produced U/J counts of 16/16–18/18 at M32, 23/24–26/26 at M128,
+and 23/26–27/27 at M256. These are not decoder router distributions.
+Control medians were 138–154, 198–211 and 223–240 microseconds respectively.
+The probe/control median difference was +0.09–3.39% in eight cases; the first
+M32 case was +12.25% and is unsuitable for precise trace claims. Event/device
+span discrepancies suggest outside-kernel jitter, not proven probe cost.
+
+The critic found no positive evidence for a 15% scheduler gain. This is not
+proof that a different scheduler cannot help. Pivot to one bounded comparison
+of existing dense backends inside a complete decoder graph. In the earlier V8
+profile, `rq_deep_tma_pooler` was actually the unpooler despite its generic
+name; both traces used the combined pooler/router path. Its 21.719 versus
+21.926 microseconds does not itself identify a faster backend.
+
+The diagnostic exited zero after 142.47 seconds, terminated its sandbox
+`sb-GfLnCojLeZN5VBzPDXuvvp`, and app `ap-StGphqaF7rdObjH1OKpumg` is stopped
+with zero tasks. Billing after both experiments shows $1.06 metered and $0
+billed, covered by credits. Both conservative $2.42 reservations remain used.
+All local old timings used a 128 MiB write flush, so the conditional HBM floors
+must not be presented as verified cold-memory bounds. Future general-runner
+comparisons use an explicit read sweep with observable sums, before timing.
+Neither protocol measures actual candidate DRAM traffic.
+
+### Pending official attention check
+
+Private job `998dcd09fb9249a9`, submitted November 4 04:40 UTC, is queued as
+of 04:44 UTC. Its exact frozen SHA is
+`2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd`, from
+`muse_attention_decode/candidates/native_q1_fp8_qk_v5.py`. Resume this receipt;
+do not upload it again. V5 changes only the full-attention q1 path to native
+FP8 QK instructions, with BF16/FP8 query-rounding risk still requiring the
+official numerical tests. It preserves every key and FP16 PV. Instruction
+counts do not prove speed. The active attention source remains `87a9bddc...`;
+the active decoder remains `80a4eaa3...`. No pending Modal allocation remains.
 
 A fresh public-source check found both original pinned upstreams unchanged.
 Lee's Apache-licensed v56 at `c565e373d34575c5f7df862b05f8be7619078b0f`

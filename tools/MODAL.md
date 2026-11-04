@@ -112,7 +112,11 @@ All weights/inputs are synthetic. No model download is required.
 Correctness uses the public reference, including returned cache entries when
 the problem supplies `collect`. It checks two fresh eager inputs, then every
 fresh CUDA graph replay. Candidate and baseline use separate state and inputs;
-timing alternates their order with a 128 MiB L2 flush before each measurement.
+timing alternates their order with a 128 MiB read sweep before each measurement.
+The sweep uses Triton `.ca` loads and observable per-block sums; it compiles
+and verifies those sums before capture. It runs on the same stream, outside
+timing. This intends to evict L2 but does not measure candidate DRAM traffic.
+Earlier frozen experiments used a write flush and retain that limitation.
 The replay overhead is retained. Whole-decoder expert-bank scalar metadata is
 fixed per case so it remains compatible with the captured graph.
 
@@ -131,3 +135,9 @@ These check resource bounds, cleanup after failure, explicit upload boundaries
 and dry runs. They do not establish candidate CUDA compilation or numerical
 correctness. The smoke now verifies H200 allocation and cleanup; each candidate
 still needs its own benchmark and official check.
+
+The separate reviewed `tools/moe_wgs_diagnostic.py` entry point uses the same
+mandatory credit guard. See `tools/MOE_WGS_DIAGNOSTIC.md` for its descriptive
+trace limits; it is never eligible for submission. Its first run passed all
+72 checks and terminated. After that run, account billing showed $1.06 covered
+by credits and $0 billed. These figures are a dated snapshot, not a fresh budget.

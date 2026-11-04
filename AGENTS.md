@@ -33,7 +33,8 @@ balance and account activation before running. Keep jobs within available credit
 The user authorized the ongoing #1 research loop and major rewrites on November 3.
 Read tools/RESEARCH_LOOP.md and use an independent critic for substantive iterations.
 Modal is verified with $30 included credit and a passing H200 smoke. All local
-allocations must go through tools/modal_h200.py and its credit/overlap guard.
+allocations must go through tools/modal_h200.py or the independently reviewed
+tools/moe_wgs_diagnostic.py, using the same mandatory credit/overlap guard.
 Never delete or recreate experiments/modal/.allocation.lock while work may run,
 or delete/reset the credit reservation journal to bypass the working budget.
 Preserve failed experiments and use official GPU checks if the free-credit guard

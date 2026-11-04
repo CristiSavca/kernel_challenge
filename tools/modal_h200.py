@@ -99,7 +99,9 @@ def run_worker(payload_path: str) -> None:
 
     report = {
         "status": "running", "official": False,
-        "protocol": "public-reference subset; paired cold-L2 CUDA graphs; replay overhead retained",
+        "protocol": "public-reference subset; paired CUDA graphs with pre-replay L2 read sweep; replay overhead retained",
+        "cache_preconditioning": {"method": "128 MiB Triton read sweep, .ca loads, observable block sums",
+                                  "outside_timing": True, "dram_traffic_measured": False},
         "image": payload["image"], "problem": payload["problem"],
         "source_sha256": payload["source_sha256"], "file_sha256": payload["file_sha256"],
         "comparison_baseline": payload["comparison_baseline"],
@@ -118,13 +120,34 @@ def run_worker(payload_path: str) -> None:
             ["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
             capture_output=True, text=True, check=True, timeout=15).stdout.strip()
         import triton
+        import triton.language as tl
         report["triton"] = triton.__version__
         reference, baseline, candidate = (load(name) for name in ("reference", "baseline", "candidate"))
         weighted = hasattr(reference, "generate_weights")
         weights = reference.generate_weights(payload["weight_seed"]) if weighted else None
         # Independent copies protect the reference and the other implementation from prepare mutation.
         states = [module.prepare(clone(weights)) if weighted else None for module in (baseline, candidate)]
-        flush = torch.empty(128 * 1024 * 1024, device="cuda", dtype=torch.uint8)
+        # Read through L2 instead of relying on writes to allocate cache lines.
+        # Every loaded element contributes to an observable per-block sum. This
+        # is cache preconditioning, not a measurement of candidate HBM traffic.
+        flush = torch.ones(128 * 1024 * 1024 // 4, device="cuda", dtype=torch.int32)
+        flush_sums = torch.empty(flush.numel() // 4096, device="cuda", dtype=torch.int32)
+
+        @triton.jit
+        def read_sweep(source, output):
+            block = tl.program_id(0)
+            values = tl.load(source + block * 4096 + tl.arange(0, 4096), cache_modifier=".ca")
+            tl.store(output + block, tl.sum(values, 0))
+
+        def sweep_l2():
+            read_sweep[(flush_sums.numel(),)](flush, flush_sums)
+
+        # Compile and verify before capturing or timing any candidate graph.
+        sweep_l2()
+        torch.cuda.synchronize()
+        if not bool(torch.all(flush_sums == 4096).item()):
+            raise RuntimeError("L2 read sweep failed its observable-sum check")
+        report["cache_preconditioning"]["sum_check_passed"] = True
 
         def generate(case, seed):
             return reference.generate_input(**case, seed=seed)
@@ -181,7 +204,7 @@ def run_worker(payload_path: str) -> None:
                     name = ("baseline", "candidate")[side]
                     data, graph, output = captures[side]
                     copy_into(data, fresh)
-                    flush.zero_()  # Runs before the start event; exceeds H200 L2 capacity.
+                    sweep_l2()  # Same stream, before the start event; exceeds H200 L2 capacity.
                     begin, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                     begin.record()
                     graph.replay()
@@ -204,7 +227,7 @@ def run_worker(payload_path: str) -> None:
                 for name, (data, graph, output) in zip(("baseline", "candidate"), captures):
                     try:
                         copy_into(data, profile_fresh)
-                        flush.zero_()
+                        sweep_l2()
                         torch.cuda.synchronize()
                         with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CUDA]) as profile:
                             graph.replay()
