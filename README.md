@@ -11,7 +11,7 @@ earn serving-queue priority for the overall top 50.
 - All five official problems are initialized; the first Git commit preserves
   their original starters, references and SGLang baselines.
 - Four kernel boards have passing scored entries: projections **1.1303×**,
-  attention **1.1345×**, experts **1.3383×**, and the whole decoder **1.0813×**.
+  attention **1.2087×**, experts **1.3383×**, and the whole decoder **1.0813×**.
 - Native CUDA attention, experts and projections passed all official private
   correctness tests at **2.6425×**, **2.3605×** and **1.4774×** respectively.
   Their exact sources are active and submitted for scoring; those results are
@@ -33,7 +33,7 @@ earn serving-queue priority for the overall top 50.
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
 | Dense projections | `8c992affff0e45b8` passed | 1.4774× | `3caa02bd72da4c49` queued; hybrid V3 `b5538a0dd25d46be` passed 1.1303× |
-| Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` queued; earlier V3 `52117bcc7137435e` also queued; V1 passed 1.1345× |
+| Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` queued; own V3 `52117bcc7137435e` passed 1.2087× |
 | Routed experts | `143f8587286e4384` passed | 2.3605× | `3c15b408fdb04c44` queued; compact V4 `d674d6a1ada44d16` passed 1.3383× |
 | Whole decoder layer | `41920b5cf4bf423f` passed | 1.1582× | Attribution-complete variant in private check; `846bf3fd98c54703` passed 1.0813× |
 | Prefill layer | Official starter | — | — |

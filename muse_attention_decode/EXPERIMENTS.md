@@ -91,3 +91,10 @@ equivalent derived from paired ratios. For full decode batch 32 it is 145.99 us,
 whereas raw candidate replay median minus replay overhead is 165.872 us,
 consistent with the 166.3 us profiler duration. The baseline distribution has
 a slower mode whose cause is not established by these records.
+
+## Earlier own V3 scored confirmation
+
+Scored run `52117bcc7137435e` passed at **1.2087290925×**, CI
+[1.1905981561, 1.2268600289], with no flags or errors. This agrees with its
+1.2050× private result. It remains a validated fallback; active native V4
+is substantially faster in its private check and still awaits its scored run.
