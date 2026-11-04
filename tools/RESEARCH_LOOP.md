@@ -542,3 +542,19 @@ activationspermutedinsidetimedkernels only. NoGPU/officialsubmitbyauthor.
 Officialprivatequotasremainavailable; #1goalactive andnotachieved.
 
 06:34UTC authoritative refresh: overall/decoder396,2.1502x; leader2.5401x, top50cutoff2.3493x. Privatejob88f84f79fb11462d remainsqueued/check, notmissingorfailed; pollsamejoblater, neverresubmit. AllModalappsconfirmedstopped; noactiveGPU/localprocess. Latestcommittedresearch7e8b474. Thisgoalturnmadeconcreteprogress(tworesourceexperiments, astructuralrevision, separatelyapprovedofficialcheck, newlicensedKPERMlead); goalnotcompleteandnoblockingcondition.
+
+06:41 UTC follow-up: authenticated CLI again verifies CristiSavca and four public
+scored rows. Overall/decoder rank396 (2.1502x), attention278 (2.6120x), MoE341
+(2.3561x), projections357 (1.4868x). Exact public job IDs remain unchanged.
+Snapshot: experiments/leaderboards/20261104T064143-public-entries.json. User was
+again told explicitly that private checks do not publish and official submit does.
+Latest V11 status at06:39 remained queued/check; no duplicate submitted.
+
+KPERM3 plan has independent critic GO. decoder_research is implementing
+muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py and an actual packed-byte
+CPU inverse proof for both stored layouts. Source is in progress, not frozen or
+uploaded. Root inspected the focused diff and requested current packing docs
+and self-contained upstream NOTICE comments. Critic reactivated for exact-source
+review and one private-check recommendation after the author finishes. Root alone
+submits. Preserve unchanged encodings0..11, tiny/MID/fallback dispatch, WGS
+barriers/GS2/FCI3/NTT1 and math precision. No new Modal allocation. Goal active.
