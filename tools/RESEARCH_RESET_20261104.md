@@ -113,3 +113,32 @@ storage in its fit guard before upload. Require real preparation-selection logs
 and useful GPU timing; its extensive CPU proof does not establish a speedup.
 This is a small parallel experiment. The broader next investigation targets
 small-batch expert execution, which affects half the scored decoder loads.
+
+## 15:02 UTC targeted paper refresh
+
+[RaMP v2](https://arxiv.org/html/2604.26039v2), revised October 30, selects
+configurations on the GPU from active experts, tile counts and waves. It holds
+a small menu within one occupancy class, keeping graph launch parameters fixed.
+Its reported H200 implementation uses FP8 block scaling; the paper says kernel
+release is future work. Its gains are not evidence for our W4A16 kernel. Our
+current code already uses routing-dependent NTT and work-range costs. The useful
+question is whether a remaining discrete choice has independently measured
+route-dependent winners without worsening the combined resource footprint.
+No such training set or candidate is established here. An independent reviewer
+is comparing this with the retained route counts and forthcoming current-source
+counters. No surrogate model or extra GPU search follows from the paper alone.
+
+[QFactory, ATC2025](https://www.usenix.org/system/files/atc25-zhang-qihao.pdf)
+uses algebraic dequantization transformations and differentiated tile loading.
+This supports checking where scales can be reused, but is not a direct NVFP4
+replacement: our per-row/per-16-K scales cannot simply move outside the full
+4096-K sum. Current KPERM already changes packing and scale reuse. Any further
+transformation needs a concrete equivalent expression and resource/cost proof
+before it becomes an experiment.
+
+[RankLane](https://arxiv.org/abs/2611.00421), submitted October 30, targets
+static-capacity prefill execution on Cloud AI100Ultra with MXFP6. Its load-ranked
+capacity lanes and overflow recovery are not an immediate replacement for the
+current persistent H200 decode kernel. This refresh found no implementation-ready
+new candidate. Sparse quantization and surrogate-expert approximation search
+results were excluded because this task preserves supplied weights and all routes.

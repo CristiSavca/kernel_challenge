@@ -201,6 +201,59 @@ def recover_attention_v10_checkpoint(sandbox, destination: Path, manifest: dict)
         manifest["attention_v10_retrieval_error_type"] = type(exc).__name__
 
 
+HARDWARE_READ_CHECKPOINT = """import sys
+with open(sys.argv[1], "rb") as stream:
+    data = stream.read(int(sys.argv[2]) + 1)
+if len(data) > int(sys.argv[2]):
+    raise ValueError("hardware checkpoint exceeds byte limit")
+sys.stdout.buffer.write(data)
+"""
+
+
+def recover_hardware_checkpoints(sandbox, destination: Path, manifest: dict) -> None:
+    """Best effort, at most two capped reads; preserve the original failed status.
+
+    The filesystem read_text API has no caller byte/timeout bound. These fixed
+    read-only commands cap data before transfer and run for at most 10s each.
+    They never execute the worker/NCU again or classify a checkpoint as a result.
+    """
+    from modal_hardware_metrics import SOURCE_SHA, NATIVE_SHA
+    recovered = manifest["hardware_checkpoint_recovery"] = []
+    for remote, local, cap, statuses in (
+        ("/tmp/okc-result.json", "hardware-recovered-result.json", 4 * 1024 * 1024,
+         ("hardware_running", "hardware_complete", "hardware_unavailable")),
+        ("/tmp/okc-hardware-child.json", "hardware-recovered-child.json", 1024 * 1024,
+         ("hardware_child_running", "hardware_child_complete", "hardware_child_failed")),
+    ):
+        record = {"remote_path": remote, "local_file": local, "limit_bytes": cap,
+                  "status": "unavailable", "complete_measurement_claimed": False}
+        recovered.append(record)
+        try:
+            if manifest.get("source_sha256") != SOURCE_SHA:
+                raise ValueError("Hardware recovery manifest source mismatch")
+            process = sandbox.exec("python3", "-c", HARDWARE_READ_CHECKPOINT, remote, str(cap), timeout=10)
+            content = process.stdout.read()
+            process.stderr.read()
+            process.wait()
+            record["remote_exit_code"] = process.returncode
+            if process.returncode != 0:
+                raise RuntimeError("Hardware checkpoint read failed")
+            if type(content) is not str or len(content.encode("utf-8")) > cap:
+                raise ValueError("Hardware checkpoint exceeds local byte limit")
+            checkpoint = json.loads(content)
+            if (type(checkpoint) is not dict or checkpoint.get("source_sha256") != SOURCE_SHA
+                    or checkpoint.get("status") not in statuses):
+                raise ValueError("Hardware checkpoint source/status mismatch")
+            if remote == "/tmp/okc-result.json" and checkpoint.get("native_source_sha256") != NATIVE_SHA:
+                raise ValueError("Hardware checkpoint native source mismatch")
+            save(destination / local, checkpoint)
+            record.update(status="recovered_checkpoint", checkpoint_status=checkpoint["status"],
+                          bytes=len(content.encode("utf-8")))
+        except Exception as exc:
+            # Never replace the original exception or promote partial evidence.
+            record["error_type"] = type(exc).__name__
+
+
 def sha(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
@@ -616,7 +669,7 @@ def main() -> None:
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
     parser.add_argument("--profile", action="store_true", help="Record CUDA kernel names from separate diagnostic graph replays")
     parser.add_argument("--resources", action="store_true", help="Record cuobjdump resources from module-owned _EXTS shared objects")
-    parser.add_argument("--hardware-issue", action="store_true", help="Add the fixed optional issue/stall metric group if every metric is available")
+    parser.add_argument("--hardware-issue", action="store_true", help="Query the fixed issue/stall and backpressure groups; include each complete available group")
     parser.add_argument("--cases", type=Path, help="JSON list of explicit reference.generate_input kwargs")
     parser.add_argument("--repeats", type=int, default=6)
     parser.add_argument("--seed", type=int)
@@ -650,7 +703,7 @@ def main() -> None:
         payload = build_attention_v10_payload(ROOT, uuid.uuid4().hex[:16],
             variant="v11" if args.mode == "attention-v11-screen" else "v10")
     if args.mode == "hardware-profile":
-        from modal_hardware_metrics import CASES, FILES, POLICY, PROFILE_SEEDS, SOURCE_SHA, REQUIRED, ISSUE, validate_payload
+        from modal_hardware_metrics import CASES, FILES, POLICY, PROFILE_SEEDS, SOURCE_SHA, REQUIRED, ISSUE, BACKPRESSURE, validate_payload
         if (args.problem not in (None, "muse_moe_w4a16") or args.candidate or args.cases
                 or args.seed is not None or args.weight_seed != 7311 or args.repeats > 6):
             parser.error("hardware-profile has fixed source/cases/seeds; repeats must be 2..6")
@@ -662,7 +715,7 @@ def main() -> None:
         payload = {"problem": "muse_moe_w4a16", "files": files, "image": IMAGE,
                    "hardware_profile": True, "hardware_issue": args.hardware_issue,
                    "hardware_budget_seconds": args.timeout - 40, "hardware_policy": POLICY,
-                   "hardware_required_metrics": REQUIRED, "hardware_optional_metrics": ISSUE if args.hardware_issue else (),
+                   "hardware_required_metrics": REQUIRED, "hardware_optional_metrics": ISSUE + BACKPRESSURE if args.hardware_issue else (),
                    "source_sha256": SOURCE_SHA, "file_sha256": {k: sha(v) for k, v in files.items()},
                    "cases": list(CASES), "repeats": args.repeats, "seed": 7202, "weight_seed": 7311,
                    "hardware_input_seeds": list(PROFILE_SEEDS), "comparison_baseline": "single_frozen_incumbent",
@@ -791,6 +844,8 @@ def main() -> None:
             manifest.update(status="failed", error=str(exc))
             if payload and payload.get("attention_v10_screen") is True and sandbox is not None:
                 recover_attention_v10_checkpoint(sandbox, destination, manifest)
+            if payload and payload.get("hardware_profile") is True and sandbox is not None:
+                recover_hardware_checkpoints(sandbox, destination, manifest)
             if sandbox is None:
                 manifest["sandbox_created"] = False
             raise

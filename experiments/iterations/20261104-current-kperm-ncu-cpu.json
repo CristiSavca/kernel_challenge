@@ -1,0 +1,140 @@
+{
+  "status": "CPU_PASS_DRY_RUN_READY",
+  "gpu_or_provider_calls": false,
+  "files_sha256": {
+    "tools/modal_hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff",
+    "tools/modal_h200.py": "7be4fe22daeb57dd96aaaaeb4848e3e807d557c4cdbaa968d2a0a83557835471",
+    "tools/test_modal_hardware_metrics.py": "3aca637195e904efb04a84324c3fd66a60820d9f921af71bf2942fa57398fcff",
+    "tools/test_modal_h200.py": "b6e11531b1423e07d21be94b4ceab6b9e7f0885470513e237eee5689e610e657"
+  },
+  "focused_suite": {
+    "command": ".venv-modal/bin/python -m unittest discover -s tools -p test_modal_hardware_metrics.py -v",
+    "tests": 64,
+    "passed": 64,
+    "limitations": "Includes inherited/imported lifecycle tests; not 64 independent mechanisms. CPU mocks/native checkpoint-reader only; no fresh NCU availability or GPU result."
+  },
+  "unchanged_execution": {
+    "tools/modal_hardware_metrics.py:run_child": "exact_AST_unchanged",
+    "tools/modal_hardware_metrics.py:POLICY": "exact_AST_unchanged",
+    "tools/modal_hardware_metrics.py:run_bounded": "exact_AST_unchanged",
+    "tools/modal_hardware_metrics.py:route_summary": "exact_AST_unchanged",
+    "tools/modal_h200.py:run_hardware_worker": "exact_AST_unchanged",
+    "tools/modal_hardware_metrics.py:collection_command.return": "exact_AST_unchanged",
+    "tools/modal_h200.py:Sandbox.create": "exact_AST_unchanged"
+  },
+  "dry_run": {
+    "command": [
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/.venv-modal/bin/python",
+      "tools/modal_h200.py",
+      "hardware-profile",
+      "--hardware-issue",
+      "--repeats",
+      "6",
+      "--timeout",
+      "900",
+      "--dry-run"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "manifest": {
+      "mode": "hardware-profile",
+      "gpu": "H200:1",
+      "timeout_seconds": 900,
+      "official": false,
+      "status": "prepared",
+      "worker_sha256": "7be4fe22daeb57dd96aaaaeb4848e3e807d557c4cdbaa968d2a0a83557835471",
+      "problem": "muse_moe_w4a16",
+      "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+      "hardware_profile": true,
+      "hardware_issue": true,
+      "hardware_budget_seconds": 860,
+      "hardware_policy": {
+        "replay_mode": "kernel",
+        "cache_control": "all",
+        "clock_control": "none",
+        "graph_profiling": "node",
+        "profile_from_start": "off",
+        "launch_count": 2,
+        "requested_pass_count": null,
+        "pass_count_policy": "NCU chooses passes for the fixed metric list; actual counts required; no collection retry",
+        "scope": "standalone MoE only; not decoder routing, decoder PDL, or benchmark speedup",
+        "ordinary_timing_limitation": "Collected with profiling disabled inside an NCU-injected process; not independent benchmark evidence",
+        "cache_limitation": "NCU cache-control all flushes caches on replay; distinct from the ordinary read sweep and official benchmark conditions",
+        "interpretation_limit": "Low bandwidth and aggregate stall percentages do not establish a removable critical path or justify a shared-dequant rewrite; no source-PC attribution is collected"
+      },
+      "hardware_required_metrics": [
+        "dram__bytes_read.sum",
+        "dram__bytes_write.sum",
+        "gpu__time_duration.sum",
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed"
+      ],
+      "hardware_optional_metrics": [
+        "smsp__issue_active.avg.pct_of_peak_sustained_active",
+        "smsp__warps_eligible.avg.per_cycle_active",
+        "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active",
+        "smsp__warp_issue_stalled_barrier_per_warp_active.pct",
+        "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct",
+        "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct",
+        "smsp__warp_issue_stalled_wait_per_warp_active.pct",
+        "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct",
+        "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct",
+        "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct"
+      ],
+      "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "file_sha256": {
+        "baseline.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+        "hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff",
+        "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+        "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+        "reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44"
+      },
+      "cases": [
+        {
+          "bs": 32,
+          "sharding": "ep8",
+          "dist": "normal",
+          "rank": "busiest"
+        },
+        {
+          "bs": 256,
+          "sharding": "ep8",
+          "dist": "normal",
+          "rank": "busiest"
+        }
+      ],
+      "repeats": 6,
+      "seed": 7202,
+      "weight_seed": 7311,
+      "hardware_input_seeds": [
+        7302,
+        9302
+      ],
+      "comparison_baseline": "single_frozen_incumbent",
+      "incumbent": {
+        "path": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+        "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+      }
+    }
+  },
+  "production_guard_sha256_observed_only": "cb604f7ad5ace935f43dfcf3a0c1bda1743f73f6aab10dea4056b5a5f68cc9a7",
+  "test_fixture_note": "Only synthetic LifecycleTests set REVIEWED_OVERLAP_SHA256=None; production guard unchanged by this task.",
+  "bounds": {
+    "sandbox_seconds": 900,
+    "worker_exec_seconds": 880,
+    "hardware_budget_seconds": 860,
+    "profiled_launches": 2,
+    "collection_processes": 1,
+    "recovery_max_remote_commands": 2,
+    "recovery_timeout_seconds_each": 10,
+    "recovery_max_bytes": [
+      4194304,
+      1048576
+    ]
+  },
+  "limitations": [
+    "Metric group availability awaits fixed on-GPU query.",
+    "Aggregate backpressure is not source-PC attribution or recoverable latency.",
+    "Recovered checkpoints never replace outer failure status.",
+    "No permission to allocate was exercised."
+  ]
+}

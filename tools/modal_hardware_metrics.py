@@ -17,9 +17,9 @@ import subprocess
 import sys
 import time
 
-SOURCE_SHA = "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a"
-NATIVE_SHA = "af4f0dba97e347f8afa8f27508e40d5c03f60b402825cadba9a9537700b20d6e"
-DECODER_SHA = "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+SOURCE_SHA = "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+NATIVE_SHA = "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c"
+DECODER_SHA = "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2"
 NCU = "/usr/local/cuda/bin/ncu"
 FOLDER = Path("/tmp/okc-input")
 PAYLOAD = Path("/tmp/okc-payload.json")
@@ -41,6 +41,13 @@ ISSUE = (
     "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct",
     "smsp__warp_issue_stalled_wait_per_warp_active.pct",
 )
+BACKPRESSURE = (
+    "smsp__warp_issue_stalled_math_pipe_throttle_per_warp_active.pct",
+    "smsp__warp_issue_stalled_mio_throttle_per_warp_active.pct",
+    "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct",
+)
+# Each optional group is independently all-or-none; no metric substitutions.
+METRIC_SETS = (REQUIRED, REQUIRED + ISSUE, REQUIRED + BACKPRESSURE, REQUIRED + ISSUE + BACKPRESSURE)
 POLICY = {
     "replay_mode": "kernel", "cache_control": "all", "clock_control": "none",
     "graph_profiling": "node", "profile_from_start": "off", "launch_count": 2,
@@ -72,7 +79,7 @@ def validate_payload(payload: dict) -> None:
     if payload.get("cases") != list(CASES):
         raise ValueError("Hardware cases must be exactly M32 and M256")
     if payload.get("source_sha256") != SOURCE_SHA or digest(payload["files"]["baseline.py"]) != SOURCE_SHA:
-        raise ValueError("Hardware mode requires the exact frozen ef7 incumbent")
+        raise ValueError("Hardware mode requires the exact frozen 247888 KPERM incumbent")
     for name, source in payload["files"].items():
         if not isinstance(source, str) or digest(source) != payload["file_sha256"][name]:
             raise ValueError(f"Hardware payload hash mismatch: {name}")
@@ -149,14 +156,14 @@ def available_metrics(output: str) -> set[str]:
 
 
 def query_command(metrics: tuple[str, ...]) -> list[str]:
-    if metrics not in (REQUIRED, ISSUE):
+    if metrics not in (REQUIRED, ISSUE, BACKPRESSURE):
         raise ValueError("Metric query is not a predeclared group")
     bases = list(dict.fromkeys(name.split(".", 1)[0] for name in metrics))
     return [NCU, "--query-metrics-mode", "suffix", "--metrics", ",".join(bases)]
 
 
 def collection_command(metrics: list[str]) -> list[str]:
-    if metrics not in (list(REQUIRED), list(REQUIRED + ISSUE)):
+    if tuple(metrics) not in METRIC_SETS:
         raise ValueError("Collection metrics are not a predeclared group")
     return [NCU, "--profile-from-start", "off", "--target-processes", "application-only",
             "--replay-mode", "kernel", "--cache-control", "all", "--clock-control", "none",
@@ -169,7 +176,7 @@ def collection_command(metrics: list[str]) -> list[str]:
 
 def parse_counters(output: str, metrics: list[str]) -> dict:
     """Accept NCU long or raw-wide CSV; require two complete, unambiguous launches."""
-    if metrics not in (list(REQUIRED), list(REQUIRED + ISSUE)):
+    if tuple(metrics) not in METRIC_SETS:
         raise ValueError("Unexpected requested metric set")
     header, layout, units = None, None, None
     launches = {}
@@ -304,13 +311,17 @@ def run_profile(payload: dict) -> None:
             raise RuntimeError("Required NCU metrics unavailable")
         metrics = list(REQUIRED)
         if payload["hardware_issue"]:
-            optional_query = command(query_command(ISSUE))
-            report["preflight"]["optional_metric_query"] = optional_query
-            missing_optional = sorted(set(ISSUE) - available_metrics(optional_query["stdout"] + optional_query["stderr"]))
-            if command_ok(optional_query) and not missing_optional:
-                metrics.extend(ISSUE)
-            else:
-                report["optional_group_omitted"] = {"missing": missing_optional, "query_ok": command_ok(optional_query)}
+            for group, query_key, omitted_key in (
+                (ISSUE, "optional_metric_query", "optional_group_omitted"),
+                (BACKPRESSURE, "backpressure_metric_query", "backpressure_group_omitted"),
+            ):
+                optional_query = command(query_command(group))
+                report["preflight"][query_key] = optional_query
+                missing_optional = sorted(set(group) - available_metrics(optional_query["stdout"] + optional_query["stderr"]))
+                if command_ok(optional_query) and not missing_optional:
+                    metrics.extend(group)
+                else:
+                    report[omitted_key] = {"missing": missing_optional, "query_ok": command_ok(optional_query)}
         report["selected_metrics"] = metrics
         write_json(RESULT, report)
         if CHILD_RESULT.exists():
@@ -326,7 +337,8 @@ def run_profile(payload: dict) -> None:
             report["permission_denied"] = "ERR_NVGPUCTRPERM" in combined
             raise RuntimeError("NCU collection failed, timed out, or exceeded its output bound; no retry")
         child = report["child"]
-        if not child or child.get("status") != "hardware_child_complete" or child.get("profiled_sizes") != [32, 256]:
+        if (not child or child.get("status") != "hardware_child_complete"
+                or child.get("source_sha256") != SOURCE_SHA or child.get("profiled_sizes") != [32, 256]):
             raise RuntimeError("Child did not complete both checked launch windows")
         report["counters"] = parse_counters(collected["stdout"] + "\n" + collected["stderr"], metrics)
         report["status"] = "hardware_complete"

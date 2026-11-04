@@ -47,6 +47,11 @@ class Sandbox:
 
 class LifecycleTests(unittest.TestCase):
     def setUp(self):
+        # The production certificate binds the real project, not synthetic test
+        # roots. Exercise the original conservative guard in these fixtures.
+        overlap_pin = patch.object(budget, "REVIEWED_OVERLAP_SHA256", None)
+        overlap_pin.start()
+        self.addCleanup(overlap_pin.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name).resolve()
         problem = self.root / "muse_moe_w4a16"
