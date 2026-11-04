@@ -1501,3 +1501,23 @@ v18 implemented/reviewed/submitted, serving patch audited), and this turn adds
 terminal evidence. #1 goal remains active and unachieved. Separate bounded
 source reviews now seek actual duplicate work/intermediate traffic removal in
 the whole decoder and MoE, not variants of the closed fixed experiments.
+
+## Final route-scalar sharing closed — November 4, 15:00 UTC
+
+Private bf28693eb41f41e7/sourcee849 passed1setup/5tests/6benchmarks/6profiles
+with score2.3698692914, CI[2.3343212520,2.4054173308]. Root and independent
+critic20d9cbf0 reproduce full evaluator/source/profile identities and fixed gates.
+MAIN speed ratios are0.9947040823 public/0.9856520708 private, with zero jointly
+positive cases. PrivateM256 exceeds2%normalizedlatency cap; controls staywithin2%.
+Both FSRentries admit576threads/231168dynamicbytes/96registers/zero local/occ1.
+Close fixed attempt; no repeat, decoderport or publicpromotion. The reduction
+in duplicate source arithmetic did not produce a measured benefit in this check;
+CIs overlap and no SASS/source-PC proof establishes the hardware cause.
+
+The Modal billing/report attribution was independently obtained and audited.
+A fixed3.74posted-cost overlap correction retains all21.14originalreservations
+and3.90423640providerhighwater, plus5reserve. Certificate7b93 is now activated
+after independent/root41CPUchecks. It does not refund unusedreservations.
+Fresh provider, exact-intervallineitem, stopped-app, cleanup andlockchecks still
+gate everyallocation. No allocation follows merely from correctingaccounting.
+A separatelyreviewed boundedcurrent247888 hardwareprofile is inpreparation.

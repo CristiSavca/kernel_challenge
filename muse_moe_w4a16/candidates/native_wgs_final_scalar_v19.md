@@ -74,3 +74,20 @@ times separately from SGLang-relative normalized ratios. One private check follo
 frozen-source review and root CPU reproduction; no depth/geometry sweep or failed
 attempt retry. Decoder integration requires a useful checked result. Public
 promotion additionally requires actual aggregate improvement.
+
+## Official terminal result — November 4, 14:53 UTC
+
+Private check `bf28693eb41f41e7` passed 5 tests, 6 benchmarks and 6 profiles
+with clean checks. Score **2.3698692914**, CI [2.3343212520, 2.4054173308].
+Affected M32/128/256 GM speed ratios are **0.9947040823** versus public and
+**0.9856520708** versus private; zero affected cases improve against both.
+Private M256 additionally exceeds the 2% normalized-latency cap. Unchanged
+controls remain within 2%. The fixed screen fails; no repeat, decoder port
+or public promotion. Active sources remain unchanged.
+
+Both first-launch FSR entries report 576 threads, 231168 dynamic shared bytes,
+96 registers, zero local/static bytes, occupancy capacity 1 and API success.
+Retained compiler output reports zero stack/spills; no C75 is visible, but full
+absence is not established. No SASS/source-PC evidence establishes arithmetic
+instruction removal. The overlapping intervals do not prove a causal slowdown.
+Root evidence: `experiments/iterations/20261104-wgs-final-scalar-root-result.json`.

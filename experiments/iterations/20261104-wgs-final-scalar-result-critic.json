@@ -1,0 +1,237 @@
+{
+  "kind": "independent_wgs_final_scalar_terminal_critic",
+  "recorded_at_utc": "2026-11-04T14:57:59.949632+00:00",
+  "verdict": "REJECT_AND_CLOSE_FIXED_V19; no retest, public promotion or decoder integration",
+  "candidate": {
+    "job": "bf28693eb41f41e7",
+    "source_sha256": "e849120b4f93b8eac82ce05f127dc405bb90312fa9d516bcc3a13e43754b9863",
+    "receipt_sha256": "d5995d0ae3e17161e00ccb5b8f478ff2bf86ded0d0bfb8fc1252befc64a6a0ab",
+    "receipt": "experiments/runs/bf28693eb41f41e7.json",
+    "source": "experiments/candidates/muse_moe_w4a16/e849120b4f93b8eac82ce05f127dc405bb90312fa9d516bcc3a13e43754b9863.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/e849120b4f93b8eac82ce05f127dc405bb90312fa9d516bcc3a13e43754b9863.bf28693eb41f41e7.json",
+    "profile_sha256": "ee6045dbe0ce563e69145a62cbbc87d44c924911ebd5e52cddf435fe0e35d619",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "official_score": 2.3698692914008426,
+  "official_score_ci": [
+    2.33432125202983,
+    2.405417330771855
+  ],
+  "clean_counts": {
+    "setup": 1,
+    "test": 5,
+    "benchmark": 6,
+    "profile": 6
+  },
+  "full_evaluator_inventory_and_image": {
+    "code_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+      "problems/muse_moe_w4a16/reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+      "problems/muse_moe_w4a16/task.yml": "cc6870087c1a115e69f40093478553e0a03c1b3e92f527c2e55c4115e2db42ad"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "comparisons": [
+    {
+      "parent": {
+        "job": "d24dd50196cb4158",
+        "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+        "receipt_sha256": "dc6ecf5b212644f29ae8b9da1dc8307245ea7f304311d6959d0a910545c226f1",
+        "receipt": "experiments/runs/d24dd50196cb4158.json",
+        "source": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+        "profile": "experiments/candidates/muse_moe_w4a16/profiles/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.d24dd50196cb4158.json",
+        "profile_sha256": "563d259d696c429ea45d51195184f53e0dd9f61b81fe0123877394d2cd71a682",
+        "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+      },
+      "cases": [
+        {
+          "index": 0,
+          "M": 1,
+          "affected": false,
+          "speedup_ratio": 1.0078718039525627,
+          "normalized_latency_ratio": 0.9921896773759401
+        },
+        {
+          "index": 1,
+          "M": 16,
+          "affected": false,
+          "speedup_ratio": 1.0061751456375463,
+          "normalized_latency_ratio": 0.9938627527579867
+        },
+        {
+          "index": 2,
+          "M": 32,
+          "affected": true,
+          "speedup_ratio": 0.9983495509739005,
+          "normalized_latency_ratio": 1.0016531775113129
+        },
+        {
+          "index": 3,
+          "M": 8,
+          "affected": false,
+          "speedup_ratio": 0.9922946075020966,
+          "normalized_latency_ratio": 1.007765226616821
+        },
+        {
+          "index": 4,
+          "M": 128,
+          "affected": true,
+          "speedup_ratio": 0.9928275993794489,
+          "normalized_latency_ratio": 1.0072242155889242
+        },
+        {
+          "index": 5,
+          "M": 256,
+          "affected": true,
+          "speedup_ratio": 0.992945089773554,
+          "normalized_latency_ratio": 1.0071050356148645
+        }
+      ],
+      "affected_speedup_ratio_GM": 0.9947040823361599,
+      "affected_normalized_latency_ratio_GM": 1.0053241137317965,
+      "control_normalized_latency_ratio_GM": 0.9979148742084404,
+      "aggregate_speedup_ratio": 0.9983899534920649,
+      "affected_GM_min_1_005_pass": false,
+      "every_affected_latency_max_1_02_pass": true,
+      "control_GM_in_0_98_to_1_02_pass": true,
+      "parent_CI": [
+        2.338085678712093,
+        2.4092964100434258
+      ],
+      "CI_overlap": true,
+      "same_node": false
+    },
+    {
+      "parent": {
+        "job": "bcb761dfca264db0",
+        "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+        "receipt_sha256": "9c8f1bc53cbb66947ac22ad61199e90b8e4d1ec9fd14dc88155408e92dfe95e2",
+        "receipt": "experiments/runs/bcb761dfca264db0.json",
+        "source": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+        "profile": "experiments/candidates/muse_moe_w4a16/profiles/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.bcb761dfca264db0.json",
+        "profile_sha256": "df99864c5d69498f6369a3f2a2a4156ea050ff4e5bc12d1837bf7f107c6c824f",
+        "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+      },
+      "cases": [
+        {
+          "index": 0,
+          "M": 1,
+          "affected": false,
+          "speedup_ratio": 1.007225057483148,
+          "normalized_latency_ratio": 0.9928267695194141
+        },
+        {
+          "index": 1,
+          "M": 16,
+          "affected": false,
+          "speedup_ratio": 0.9888049125223035,
+          "normalized_latency_ratio": 1.0113218364269039
+        },
+        {
+          "index": 2,
+          "M": 32,
+          "affected": true,
+          "speedup_ratio": 0.9970243124272643,
+          "normalized_latency_ratio": 1.0029845687167762
+        },
+        {
+          "index": 3,
+          "M": 8,
+          "affected": false,
+          "speedup_ratio": 0.997079429993495,
+          "normalized_latency_ratio": 1.0029291247203085
+        },
+        {
+          "index": 4,
+          "M": 128,
+          "affected": true,
+          "speedup_ratio": 0.9806400393632657,
+          "normalized_latency_ratio": 1.01974216823668
+        },
+        {
+          "index": 5,
+          "M": 256,
+          "affected": true,
+          "speedup_ratio": 0.9793897306685971,
+          "normalized_latency_ratio": 1.0210439916674774
+        }
+      ],
+      "affected_speedup_ratio_GM": 0.9856520708444267,
+      "affected_normalized_latency_ratio_GM": 1.0145567889319007,
+      "control_normalized_latency_ratio_GM": 1.0023307070584402,
+      "aggregate_speedup_ratio": 0.9916451716265249,
+      "affected_GM_min_1_005_pass": false,
+      "every_affected_latency_max_1_02_pass": false,
+      "control_GM_in_0_98_to_1_02_pass": true,
+      "parent_CI": [
+        2.353988421282795,
+        2.425683500103591
+      ],
+      "CI_overlap": true,
+      "same_node": false
+    }
+  ],
+  "fixed_gate": {
+    "affected_GM_speed_ratio_both_min": 1.005,
+    "joint_positive_affected_min": 2,
+    "joint_positive_M": [],
+    "every_affected_normalized_latency_max": 1.02,
+    "control_normalized_latency_GM_range": [
+      0.98,
+      1.02
+    ]
+  },
+  "resources": {
+    "FSR": [
+      {
+        "v": 1,
+        "big": 0,
+        "ntl": 576,
+        "dyn": 231168,
+        "regs": 96,
+        "local": 0,
+        "static": 0,
+        "maxdyn": 231168,
+        "occ": 1,
+        "set": 0,
+        "attr": 0,
+        "cap": 0
+      },
+      {
+        "v": 1,
+        "big": 1,
+        "ntl": 576,
+        "dyn": 231168,
+        "regs": 96,
+        "local": 0,
+        "static": 0,
+        "maxdyn": 231168,
+        "occ": 1,
+        "set": 0,
+        "attr": 0,
+        "cap": 0
+      }
+    ],
+    "log_sha256": "2b3455699a4168eb9f862344d6e12e9b2f7604176a6b5615f10b98340b566153",
+    "log_bytes": 6067,
+    "exact_saved_log_receipt_match": true,
+    "valid_admission": true,
+    "visible_C75_diagnostics": [],
+    "compiler": "Both BIG entries report96registers/16barriers, with zero stack/spill bytes. Retained log is bounded; no visibleC75 diagnostic does not prove absence.",
+    "scope": "Queries of exact compiled BIG pointers establish admission in the observed module, not achieved occupancy or a per-case pointer trace."
+  },
+  "inference_limits": [
+    "Different saved nodes and fresh seeds; aggregate intervals overlap both parents. Controls remain within the preset drift band.",
+    "Exact source, full evaluator/image, normal WGS flags/namespace and resource markers support intended MAIN selection. Generic profile names alone do not prove per-case pointer identity.",
+    "Source-level rsqrt/arithmetic reuse does not establish emitted instruction reduction or exposed critical-path savings. No SASS/source-PC counter evidence was gathered by this check."
+  ],
+  "independent_method": "Used existing strict read_run only for source/receipt/profile binding; independently recomputed all six ratios and fixed0.5% gates, ignoring the shared helper own SS-A3% gate. Parsed raw FSR/log separately."
+}
