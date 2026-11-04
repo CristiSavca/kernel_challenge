@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:10 UTC after V29 official check was accepted.
+Updated November 4, 2026 at 22:20 UTC after V29 closed and V30 was accepted.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -13,34 +13,37 @@ leader 2.5761628684 in the 21:51 UTC snapshot. Doubling means 4.3623662701;
 that is an objective, not a forecast. Official GPUs remain available. Modal
 is blocked by the current conservative free-credit ledger; no paid allocation.
 
-**V29 is running: inspect existing job `185fee4d182f41dd`; never duplicate.**
-Frozen decoder source `bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c`
-in `muse_decode_layer/candidates/decoder_exact_patch_v29/`, committed `9fb56e8`.
-The architecture restores exceptional BF16 operands exactly in registers before
-MMA, with raw sidecars for units with multiple exceptions, and removes separate
-correction warps. Author, root and critic CPU reports match: 36,241,408 BF16 bit
-comparisons, stage mappings and negative lifetime controls. CUDA numerics,
-compiler resource use and speed remain unverified. Root plan and source critic
-are saved under `experiments/iterations/20261104-decoder-exact-patch-v29-*`.
-Run `tools/analyze_decoder_v29.py JOB SHA` only after the receipt/profile exists.
-Fixed gate against both 97af parent receipts: whole score >=1.025, affected four
-load GM speed >=1.04, each affected/control latency <=1.03, control GM latency
-in [.97,1.03], clean full coverage and exact compressed-template activation.
-No retry, shape rescue, or gate changes after measurement. Score only after a
-useful clean check and independent result review. Root owns official polling.
+**V29 closed; no score or identical retry.** Official `185fee4d182f41dd`
+passed 1 setup/13 tests/12 benchmarks/12 profiles with clean flags, but score
+1.8985960692 (CI1.8701171281..1.9270750102) regresses against both exact97af
+parents: whole ratio .870443/.872254; affected four-load speed GM .818498/.820504.
+All eight affected cases fail the latency cap; controls pass. Critically, ZERO
+compressed V29 instances appear in those profiles. Dense work falls back to
+other kernels; renamed COMP0 router still runs. Four packing logs have normal
+raw rates .122..250%, so byte fallback is not the demonstrated cause. Do not
+call this a measured repair-kernel slowdown. Selftest exceptions/errors and
+tuning choices were silent. Root and independent critic agree the fixed attempt
+failed activation and speed, while the exact path's eligibility remains unknown.
+Source bbbc37f8 and all raw evidence/critics are preserved. New V31 will expose
+those existing decisions without changing math, geometry, thresholds or selection;
+it is a single diagnostic-only experiment, never scored or a noise retry.
 
-**V30 implementation is in progress**, isolated in
-`muse_moe_w4a16/candidates/moe_arch_v30/`; do not upload until author freeze,
-independent source review and root CPU proof. It replaces MAIN Stream-K with
-complete-K tiles, distinct 128-row cold / 256-row hot geometry, six ordered
-launches and no cross-CTA reductions/polling. Author is `moe_research_reset`;
-source critic is `attention_paper_reset`; `result_and_strategy_critic` owns
-standalone result analyzer while awaiting V29 results. Root alone owns official
-calls. Fixed V30 gate against exact 247888 public/private: affected three-load
-speed GM >=1.04, whole >=1.02, all individual latency <=1.03, control GM [.97,1.03],
-clean5tests/6benchmarks/6profiles, six-kernel activation and observed cold>=2 /
-hot>=1 occupancy. Component success still requires a separate decoder port/check.
-Serving V27 and its stock-only diagnostic remain preserved backlog.
+**V30 accepted as official check `d0510bc0412a4537`; inspect it, never duplicate.**
+Exact source ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4
+in `muse_moe_w4a16/candidates/moe_arch_v30/`. Complete-K tiles replace MAIN
+Stream-K with cold/hot geometry and six ordered launches. Author/root/critic
+CPU reports match eb785e69; all10 analyzer fixtures pass. Fixed gate: affected
+three-load GM>=1.04, whole>=1.02 against both247888 parents, all case latency<=1.03,
+controlsGM [.97,1.03], full coverage/cleanflags, six active kernels and observed
+cold>=2/hot>=1 block capacity. A useful component still needs a decoder port/check.
+Plan and sources committed dd4b6bc. Plan explicitly records an ordering mistake:
+missing optional README made root plan/commit commands fail, but orchestration
+continued to upload reviewed source; plan was written immediately after acceptance,
+before result observation. Source/gates/reviews were fixed beforehand and unchanged.
+
+Root owns all GPU calls. `moe_research_reset` builds V31 eligibility diagnostics;
+`attention_paper_reset` independently reviews that delta. `result_and_strategy_critic`
+reviews V30 terminal evidence. No Modal allocation; serving work stays backlog.
 
 
 **V28 closed; no score or retry.** Exact decoder source

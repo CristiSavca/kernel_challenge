@@ -1,0 +1,472 @@
+{
+  "schema": 1,
+  "reviewed_at_utc": "2026-11-04T22:18:31.313404+00:00",
+  "verdict": "CLOSE_FIXED_ATTEMPT_ACTIVATION_AND_PERFORMANCE_FAILED",
+  "job": "185fee4d182f41dd",
+  "source_sha256": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+  "score": 1.898596069159545,
+  "score_ci": [
+    1.8701171281221518,
+    1.9270750101969378
+  ],
+  "official_numerical_status": "PASS_ON_ACTUALLY_SELECTED_BACKENDS",
+  "record_counts": {
+    "setup": 1,
+    "test": 13,
+    "benchmark": 12,
+    "profile": 12
+  },
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "flags": [],
+  "pins": {
+    "experiments/runs/185fee4d182f41dd.json": "c9c946601e08bde3fa33bdd449bc06273a108dea5d715f9adf197894bcfadf9b",
+    "experiments/candidates/muse_decode_layer/profiles/bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c.185fee4d182f41dd.json": "9347e067e3b031351028090fad3160e98ab4866e2defef6c211eb6c81c30da23",
+    "experiments/candidates/muse_decode_layer/profiles/bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c.185fee4d182f41dd.log": "e5de57bf75b0ec921b95aab19fe5598b4bedd8ab22c87f940795b8c50bd8b011",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/submission.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "experiments/iterations/20261104-decoder-exact-patch-v29-root-plan.json": "4fb1c5c73235f92606da48c5dd5ece38d4f0e4b8f876c896b015fbd0fb42b98b",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38"
+  },
+  "evaluator_inventory_image_sha256": "ab57e5573198233408991967e228c65aa70cade6402ce6647ba78fd22d2b5fca",
+  "comparisons": [
+    {
+      "parent_job": "7a8c4941741645ee",
+      "parent_receipt_sha256": "442b6b85121027ee51d7c3038fb25ba4ffa07d38a666073e3dcea341ab3f6f63",
+      "parent_score": 2.181183135031857,
+      "whole_score_ratio": 0.870443218942189,
+      "affected_four_load_speed_GM": 0.8184981690646594,
+      "control_two_load_latency_GM": 1.0158137462856969,
+      "loads": [
+        {
+          "name": "decode 1",
+          "speed_ratio": 0.7548647516138675,
+          "normalized_latency_ratio": 1.3247406212332
+        },
+        {
+          "name": "decode 16",
+          "speed_ratio": 0.8201560135980054,
+          "normalized_latency_ratio": 1.219280214276578
+        },
+        {
+          "name": "decode 32",
+          "speed_ratio": 0.8834385590873488,
+          "normalized_latency_ratio": 1.1319406309738924
+        },
+        {
+          "name": "verify 1",
+          "speed_ratio": 0.8205950221250421,
+          "normalized_latency_ratio": 1.2186279139378209
+        },
+        {
+          "name": "verify 16",
+          "speed_ratio": 0.9892497728318718,
+          "normalized_latency_ratio": 1.0108670504288864
+        },
+        {
+          "name": "verify 32",
+          "speed_ratio": 0.9796385565660967,
+          "normalized_latency_ratio": 1.0207846488864993
+        }
+      ],
+      "cases": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.3432623287280714,
+          "candidate_median_us": 96.8800939467696,
+          "parent_median_us": 71.60626340150985
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.276034132984297,
+          "candidate_median_us": 101.00330345571541,
+          "parent_median_us": 78.20872829338322
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.2599971782829673,
+          "candidate_median_us": 161.63031714381887,
+          "parent_median_us": 128.23900848718233
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.1468480683022901,
+          "candidate_median_us": 237.07703971115905,
+          "parent_median_us": 204.58418756305937
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.1763999456954304,
+          "candidate_median_us": 168.83373610328442,
+          "parent_median_us": 145.12449811573936
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.0717190691807803,
+          "candidate_median_us": 325.228736621009,
+          "parent_median_us": 305.9795603649358
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.2153067854800867,
+          "candidate_median_us": 131.54947203173018,
+          "parent_median_us": 110.34668913522762
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.2268653452492837,
+          "candidate_median_us": 142.4563861882588,
+          "parent_median_us": 111.15443590516288
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "affected": false,
+          "normalized_latency_ratio": 1.0182153460075285,
+          "candidate_median_us": 249.85513562235138,
+          "parent_median_us": 248.6737007269938
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "affected": false,
+          "normalized_latency_ratio": 0.9951600212777316,
+          "candidate_median_us": 331.7809816204977,
+          "parent_median_us": 334.272849369229
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "affected": false,
+          "normalized_latency_ratio": 1.0265217339506827,
+          "candidate_median_us": 319.6450933981179,
+          "parent_median_us": 312.2398952704211
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "affected": false,
+          "normalized_latency_ratio": 1.0103407300629035,
+          "candidate_median_us": 480.3625831201162,
+          "parent_median_us": 483.89859509241955
+        }
+      ],
+      "reported_CIs_disjoint_below_parent": true,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p04": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p025": false
+      }
+    },
+    {
+      "parent_job": "b2a773e2d7194de8",
+      "parent_receipt_sha256": "1b2616abd7e31b5023792af228ac5bd5aa723e05b50611d58acb12c0af5056c3",
+      "parent_score": 2.176654450739374,
+      "whole_score_ratio": 0.8722542379267517,
+      "affected_four_load_speed_GM": 0.8205043003601227,
+      "control_two_load_latency_GM": 1.0144542328927635,
+      "loads": [
+        {
+          "name": "decode 1",
+          "speed_ratio": 0.7471337323961627,
+          "normalized_latency_ratio": 1.338448468646784
+        },
+        {
+          "name": "decode 16",
+          "speed_ratio": 0.8316026061499787,
+          "normalized_latency_ratio": 1.202497433996318
+        },
+        {
+          "name": "decode 32",
+          "speed_ratio": 0.8910631545684633,
+          "normalized_latency_ratio": 1.122254909624553
+        },
+        {
+          "name": "verify 1",
+          "speed_ratio": 0.8186547269836958,
+          "normalized_latency_ratio": 1.2215161862980557
+        },
+        {
+          "name": "verify 16",
+          "speed_ratio": 0.9864707960982267,
+          "normalized_latency_ratio": 1.013714753599686
+        },
+        {
+          "name": "verify 32",
+          "speed_ratio": 0.9850331583407901,
+          "normalized_latency_ratio": 1.0151942516172963
+        }
+      ],
+      "cases": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.3567906414558402,
+          "candidate_median_us": 96.8800939467696,
+          "parent_median_us": 70.5315664903839
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.290618285834287,
+          "candidate_median_us": 101.00330345571541,
+          "parent_median_us": 77.88439619653866
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.2367875053134756,
+          "candidate_median_us": 161.63031714381887,
+          "parent_median_us": 133.52119686420778
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.1405433175682007,
+          "candidate_median_us": 237.07703971115905,
+          "parent_median_us": 212.19036879792802
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.1566780279714104,
+          "candidate_median_us": 168.83373610328442,
+          "parent_median_us": 150.81336513604072
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.0767045581579169,
+          "candidate_median_us": 325.228736621009,
+          "parent_median_us": 304.6023843841093
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "affected": true,
+          "normalized_latency_ratio": 1.2185535252847453,
+          "candidate_median_us": 131.54947203173018,
+          "parent_median_us": 106.62321832649656
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "affected": true,
+          "normalized_latency_ratio": 1.229554077749431,
+          "candidate_median_us": 142.4563861882588,
+          "parent_median_us": 115.47284189767629
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "affected": false,
+          "normalized_latency_ratio": 1.0198878808817893,
+          "candidate_median_us": 249.85513562235138,
+          "parent_median_us": 244.8635521247409
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "affected": false,
+          "normalized_latency_ratio": 1.0006748578587397,
+          "candidate_median_us": 331.7809816204977,
+          "parent_median_us": 333.40275193398367
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "affected": false,
+          "normalized_latency_ratio": 1.0167197545271955,
+          "candidate_median_us": 319.6450933981179,
+          "parent_median_us": 316.62998000260194
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "affected": false,
+          "normalized_latency_ratio": 1.012433188653359,
+          "candidate_median_us": 480.3625831201162,
+          "parent_median_us": 482.10882557864346
+        }
+      ],
+      "reported_CIs_disjoint_below_parent": true,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p04": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p025": false
+      }
+    }
+  ],
+  "independent_score_reproduction_matches_root_analyzer": true,
+  "activation": {
+    "expected_compressed_instances": [
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      3,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "observed_new_compressed_instances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "new_noncompressed_router_cases": [
+      4,
+      5
+    ],
+    "passed": false,
+    "visible_alternatives": [
+      "Triton _gemm_splitk",
+      "cuBLAS nvjet kernels",
+      "separate boundary/route kernels"
+    ],
+    "interpretation": "No timed affected profile exposes the intended COMP=true implementation. Clean official tests validate selected alternatives, not standalone correctness or speed of the new repair kernel."
+  },
+  "packing_statistics": {
+    "records": [
+      {
+        "layer": "o",
+        "units": 16384,
+        "single_repair_units": 910,
+        "raw_units": 21,
+        "requested_bytes": 12669952,
+        "raw_unit_fraction": 0.00128173828125,
+        "single_unit_fraction": 0.0555419921875,
+        "extra_requested_fraction_vs_primary_768": 0.006917317708333259,
+        "whole_raw_byte_gate_eligible": true
+      },
+      {
+        "layer": "pooler",
+        "units": 65536,
+        "single_repair_units": 4278,
+        "raw_units": 164,
+        "requested_bytes": 50761728,
+        "raw_unit_fraction": 0.00250244140625,
+        "single_unit_fraction": 0.065277099609375,
+        "extra_requested_fraction_vs_primary_768": 0.008544921875,
+        "whole_raw_byte_gate_eligible": true
+      },
+      {
+        "layer": "qkv_gate",
+        "units": 36864,
+        "single_repair_units": 2473,
+        "raw_units": 92,
+        "requested_bytes": 28553216,
+        "raw_unit_fraction": 0.002495659722222222,
+        "single_unit_fraction": 0.06708441840277778,
+        "extra_requested_fraction_vs_primary_768": 0.00853587962962954,
+        "whole_raw_byte_gate_eligible": true
+      },
+      {
+        "layer": "unpooler",
+        "units": 65536,
+        "single_repair_units": 3128,
+        "raw_units": 80,
+        "requested_bytes": 50675712,
+        "raw_unit_fraction": 0.001220703125,
+        "single_unit_fraction": 0.0477294921875,
+        "extra_requested_fraction_vs_primary_768": 0.0068359375,
+        "whole_raw_byte_gate_eligible": true
+      }
+    ],
+    "source": "Four retained SK2_PATCH_V29 preparation lines; no preparation/case identity is recorded. Do not assign these counts to every benchmark weight set.",
+    "saved_log_bytes": 327,
+    "receipt_tail_bytes": 2283,
+    "saved_log_exact_prefix_of_receipt_tail": true
+  },
+  "resources": {
+    "actual_COMP_registers": "UNKNOWN",
+    "actual_COMP_local_bytes": "UNKNOWN",
+    "actual_COMP_occupancy": "UNKNOWN",
+    "compiler_failure": "NOT_ESTABLISHED",
+    "reason": "No resource/disabled-set/selftest-error/tuner-time diagnostics retained. The new COMP=false router belongs to the same generated extension, supporting successful module compile/load, but not successful compressed-path launch/admission."
+  },
+  "causal_verdict": {
+    "rejected": "This fixed end-to-end configuration met neither activation nor performance gates. All eight affected benchmark cases exceeded the 3% normalized latency cap versus both parents. Controls remained within the declared limits.",
+    "not_falsified": "The performance premise that eliminating correction work could pay for exact repairs was not directly tested in timed selected COMP profiles. Do not attribute this regression to repair overhead, raw fallback frequency, spilling or occupancy.",
+    "source_supported_failure_path": "bfp__selftest silently disables a custom path after RuntimeError or relative-error failure; bfp__autotune and outer selection may choose alternatives. Retained evidence cannot distinguish these causes.",
+    "team_failure": "CPU packing/geometry proof plus successful compilation is insufficient evidence that the proposed backend survived numerical eligibility and selection. The fixed activation gate correctly prevented a false performance conclusion."
+  },
+  "next_distinct_action": {
+    "primary": "Proceed with the separately designed V30 phase-separated whole-K MoE architecture, under its own frozen gates; it tests removal of Stream-K partial reductions and cross-phase waits, not this dense codec.",
+    "dense_followup": "Preserve this closed attempt. Any separately authorized future dense implementation needs an explicit prepared/eligible/selected backend contract that retains per-path rejection reasons before timing. No V29 rescue, identical retry or retrospective shape selection is authorized by this result.",
+    "prediction": "V30 must independently preserve whole-K output ownership and actual cold two-CTA admission and beat both exact MoE parents; V29 supplies no V30 speed evidence."
+  },
+  "public_promotion": false,
+  "retry": false,
+  "public_sources_changed": false,
+  "limits": [
+    "Different runs, seeds and possible hardware states; official normalization is not same-input A/B.",
+    "Profile durations can include PDL overlap/waits; no duration sum is treated as a causal critical-path decomposition.",
+    "Preparing an exact codec does not establish timed kernel selection."
+  ]
+}
