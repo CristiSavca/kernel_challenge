@@ -1,0 +1,41 @@
+# V27: actual serving adapter for the passing V26 core
+
+Isolated implementation against SGLang `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f`. The overlay, baseline copies, reproducible builder, patch and CPU evidence live in `serving/candidates/native_serving_v27/`. The production checkout and V26 are unchanged. V26's official component pass is inherited evidence for the core, not validation of this new loader/forward/lifetime integration.
+
+## Exact change boundary
+
+The new installed module is `sglang.kernels.ops.muse_spark_v12.native_serving_v27`. It retains V26 `prepare_native`, `Workspace`, `expert_outputs`, packing helpers and the complete CUDA/CPP unit. Nine overlong CUDA asm-operand constraint lines are split after commas; reversing those whitespace edits reconstructs the CUDA string byte-for-byte. The extension cache namespace changes to V27. Only preparation-domain errors become `NativeUnsupported`, a ValueError subclass, so unsupported metadata/scale formats can decline before mutation while unexpected compile/CUDA/OOM errors propagate. Official-problem `prepare/kernel_fn` are omitted. No MMA, private-partial, numeric, cooperative-launch or resource policy changes are bundled.
+
+Three existing source files change:
+
+1. `MuseSparkNvFp4FusedMoEMethod._process_weights_for_marlin` first calls `try_install_native(layer)`. Success returns without stock aliases/repacking; decline executes the exact original method.
+2. `MuseSpark1xFp4Experts._forward_marlin` selects `native_forward` only for an installed bank, after its original missing-post-norm check. Uninstalled layers follow the original code. The original norm setter's weight=None device lookup uses the native bank's device when installed; its ones/BF16/epsilon/form math is unchanged.
+3. `MuseSpark1xModel` owns one `NativeModelOwner`, attached to its NVFP4 expert layers before postload. No global owner or current-stream cache is introduced.
+
+The patch is source-only under `python/sglang/`, excludes `srt/model_loader/`, preserves the original finalizer and attribution/license text, and is below409,600 bytes with every added line <=400 characters. It does not bundle the dirty checkout's alignment or V22 finalizer edits. The builder writes only this isolated directory and verifies pinned source hashes through the manifest.
+
+## Preparation and atomic ownership transfer
+
+The actual Muse model already rejects interleaved W13 checkpoints. Local raw tensors map directly to V26, using `source_is_local=True`, actual `local_expert_offset/num_local_experts`, and `globals_prepared=False`. Qualification checks SM90 BF16 Marlin, H=I4096, topK8, group16, global256 and contiguous <=32 local experts. The actual `_expert_map` must equal the declared contiguous rank map before packing. V26's existing qualification covers all nonnegative finite FP8 block scales, including its exact zero/subnormal LUT; finite global scales preserve stock gate-only/BF16 preparation.
+
+Before packing, the resolved execution policy declines PDMUX, two/single-batch overlap, SP, EPLB, weight offload, memory saver, legacy torch.compile and resolved `tc_piecewise` phase backends. Missing/unrecognized phase configuration also declines. Supported ordinary full/breakable/eager graph settings are selected without an environment switch. This is a real default-path hook for the documented TP8/EP8 Marlin serving configuration, subject to runtime qualification.
+
+The installer builds and initializes the complete bank and model-owned workspace before changing source tensor registries. Five derived bank tensors are registered as nonpersistent layer buffers, metadata is published, and exactly the six raw weight/scale/global parameters are released. Unexpected commit failures restore the parameter/buffer/nonpersistent registries and remove the marker. Source arrays remain intact on a preparation or workspace exception. Unsupported metadata returns False before transfer; the outer quant hook then performs normal stock preparation. A second install on converted state raises. There is no fallback to freed Marlin weights, no hot-reload/device-migration claim, and no generic recovery from a failed CUDA process.
+
+## Forward and lifetime
+
+`native_forward` applies the original pre-norm once, refreshes the existing effective post-norm cache, and uses the actual epsilon and weight-first flag. It returns combined BF16 output. The original router, all8 routes, score bits, FP8 cache, outer rank all-reduce and projection remain untouched. Chunks <=384 execute core→original finalizer before the next chunk reuses scratch. Whole-call T>=32 keeps the large-token finalizer branch even for a short tail by the already-reviewed masked32-row padding. T0 returns empty output without launching the core. No input-derived value is read by the host or cached.
+
+The workspace owner is the concrete model object, keyed by device and a logical execution lane. Production uses only its ordinary `serial` lane. The separate capture stream and scheduler replay stream intentionally share that logical lane; using current CUDA stream as the identity would allocate the wrong owner. Workspace construction/zeroing and device synchronization happen before capture. A first allocation attempted during capture raises. Different model instances and explicit separate lanes get distinct storage.
+
+This is a **serialized SGLang forward contract**, not automatic GPU mutual exclusion. Pinned scheduler forwards use its forward stream, ordinary captures use the capture stream, and the router side stream joins before experts. External simultaneous replay/use of the same model lane is unsupported. Policy changes detected in Python forwards raise rather than invoke dead stock buffers; Python checks do not run on graph replay. Models, weights, maps and execution configuration must remain stable until all referencing graphs are destroyed. Separate workspaces have not yet been validated under concurrent cooperative launches. Do not infer graph safety from the CPU owner mock.
+
+## Memory and remaining validation
+
+Retained bank payload is864MiB/layer plus128B globals and1024B LUT for32 experts; one logical-lane workspace is129,005,088B (123.028839MiB). The workspace is shared across this model's serial layers rather than multiplied per layer/bucket. Preparation still overlaps raw+new weights (at least1.6875GiB for a full layer) and repack temporaries, including one64MiB int64 slab. Actual full-model allocated/reserved peaks and sparse-layer count must be measured. A one-bank design is not a contest mandate; any later selective dual-retention/prefill tradeoff requires separate memory/performance evidence.
+
+At16,384 tokens the current adapter executes43 core and43 large-finalizer launches and allocates128MiB combined output, avoiding a1GiB whole-route buffer. V26's six timed cases ended at256 tokens: prefill/TTFT performance remains unknown. No whole-model gain is asserted.
+
+`test_cpu.py` executes the actual new installer, original modified quant hook, norm setter, native forward, original modified forward selector, and model-owner attachment statements with CPU tensor/module mocks. Coverage includes all8 offsets, canonical/mismatched maps, unsupported runtime/format metadata, preparation/registration/deletion rollback, default stock fallback, shared serial versus separate owner/lane storage, capture-time allocation rejection,24 norm/chunk cases through16384 tokens, None-effective-weight semantics and runtime policy changes. Source checks reverse every stock-file edit, reconstruct CUDA/CPP, compare inherited Python functions, reproduce the build and apply the actual patch to a bounded synthetic base. These are source/control/metadata checks, not numerical CUDA, allocator, stream or graph proofs.
+
+Next is one separately reviewed bounded GPU integration validation against the actual pinned serving Marlin caller: representative ranks/skew, all-remote→live→all-remote reuse, poisoned masked outputs, PRMT/LUT, chunk boundaries, changed-input graph replay, two-layer sharing, distinct-workspace concurrency and stock-after-candidate state checks. Then full8-H200 load/memory, DFlash buckets, prefill/TTFT, output equality and concurrency1/4/16/32. No allocation, submission, automatic retry, production apply or score promotion is authorized by this artifact.

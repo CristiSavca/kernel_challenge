@@ -1,0 +1,143 @@
+{
+  "analyzer_review": {
+    "activation": "Unique MAIN marker in six affected cases; unchanged small marker in six controls; raw receipt/profile/source/evaluator equality required.",
+    "received_ack_fix": "Only absent board/mode on received is allowed; explicit mismatch rejected; pending has no metrics. Terminal identities remain strict.",
+    "status": "PASS_FOCUSED_FIXTURES_AND_STATIC_SCORER_REVIEW",
+    "thresholds": {
+      "affected_load_GM_min": 1.03,
+      "control_load_GM_latency_max": 1.03,
+      "control_load_GM_latency_min": 0.97,
+      "each_affected_latency_max": 1.03,
+      "each_control_latency_max": 1.03,
+      "whole_score_ratio_min": 1.015
+    },
+    "weighted_formula": "For each load sum baseline_ns*weight and median_ns*weight over sliding46/full16, form speedup; compare relative speedups and geometric means over three affected/control loads. Full score is six-load GM."
+  },
+  "candidate_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+  "conditional_ROI_not_forecast": {
+    "entire_affected_MAIN_latency_reduction_10pct_whole_score_increase_pct": 2.5519,
+    "entire_affected_MAIN_latency_reduction_5pct_whole_score_increase_pct": 1.2515,
+    "limits": "Author source/profile scenarios, not actual decoder route histogram, recoverable critical-path fraction, physical upper bound or forecast."
+  },
+  "falsifiable_predictions": [
+    "Clean13test/12benchmark/12profile official result with exact affected/control activation.",
+    "Affected weighted-loadGM>=1.03 and whole>=1.015 vsBOTHparent jobs, allcase<=1.03latency and controlGM in[.97,1.03]."
+  ],
+  "independent_CPU": {
+    "execution": "Imported unchanged verifier and invoked run(expected_sha) without writing author report; full returned object equals frozen CPU report.",
+    "result": {
+      "limits": [
+        "No CUDA compilation, GPU memory-order/progress, numerical-tolerance or speed proof.",
+        "Exact actual range/phase/store/owner snippets execute onCPU forWG0/WT0; affine complete slices check otherwarpgroups/lanes.",
+        "Explicit RN/FTZ FP32 addition uses a CPU scalar shim matching the public global reduction policy; changed CTA-order association is not bit-equivalent to native vector-atomic arrival order.",
+        "The zero-range helper tests do not establish arbitrary all-remote global routing support; inherited dispatch remains unchanged."
+      ],
+      "manifest_sha256": "d257616c0ad45c32696bf15804f7deb108ede4753bc1039638f35ebdf927482b",
+      "memory": {
+        "added_scratch_bytes": 20971520,
+        "initialization": "Original scratch allocation, larger by20MiB; no per-replay private-payload clearing.",
+        "private_payload_bytes": 41943040
+      },
+      "native_schedule_and_payload": {
+        "cases": 92,
+        "empty_ranges": 1208,
+        "float4_loads": 70863,
+        "limits": "Exact range/phase/store/owner source executed with CPU memory and FP32-add shim; GPU publication, progress, atomics and WGMMA are not emulated.",
+        "native_source_sha256": "fef5bace996481ec5db882474210ac1edfb98792f414272ed8da4241f37fa2c4",
+        "partial_contributions": 17347,
+        "rotated_ranges": 2852,
+        "split_units": 5919,
+        "two_boundary_ctas": 4882,
+        "verified_float_values": 283452
+      },
+      "negative_controls": [
+        {
+          "caught": true,
+          "mutant": "wrong_boundary",
+          "returncode": -6
+        },
+        {
+          "caught": true,
+          "mutant": "lost_range_carry",
+          "returncode": -6
+        },
+        {
+          "caught": true,
+          "mutant": "read_empty",
+          "returncode": -6
+        }
+      ],
+      "source_checks": {
+        "build_reproducible": true,
+        "changed_python_nodes": [
+          "MOE_CUDA_SRC",
+          "_ma_ext",
+          "WGS_FIXF"
+        ],
+        "complete_parent_restoration": true,
+        "counter_bytes": 5120,
+        "doneAs_bytes": 8704,
+        "native_public_vector_atomic_replaced": true,
+        "non_wgs_preprocessed_builds": 8,
+        "payload_bytes": 41943040,
+        "per_partial_MMA_and_epilogue_unchanged": true,
+        "publication_owner_election_and_reset_source_unchanged": true,
+        "unchanged_device_functions": [
+          "void dq4(",
+          "void wgs_epi_tile(",
+          "void wgs_wproducer(",
+          "void wgs_xproducer(",
+          "void wgs_gather(",
+          "void route(",
+          "int wgs_split(",
+          "void wgs_prefix(",
+          "int wgs_stage_at(",
+          "void wgs_range(",
+          "void wgs_ranges(",
+          "int wgs_cta_of(",
+          "void wgs_phase(",
+          "moe_fused(Params"
+        ],
+        "weights_scales_pdl_build_flags_routing_and_finalizer_unchanged": true
+      },
+      "source_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+      "status": "PASS",
+      "verifier_sha256": "64d00cf05e2c216810e28ba6fe778718d9be1080270b9e18ca893b9cea42c531"
+    }
+  },
+  "kill_criteria": [
+    "Any compilation/numerical/provenance/flags/activation failure.",
+    "Any fixed affected/control/whole gate failure closes this fixed attempt; no identical retry, threshold relaxation or hidden shape rescue."
+  ],
+  "limits": [
+    "No local GPU/provider/official calls or candidate modifications by critic.",
+    "CPU native helper runs are representative WG0/WT0 arithmetic plus affine full-slice bounds, not exhaustive WGMMA or GPU memory-order/progress proof.",
+    "G513/528 are isolated CPU helper stress outside actual host launch domain. Zero helper ranges do not prove new global-zero-route support.",
+    "Actual compiled register/local/resource costs and performance remain unknown.",
+    "Cross-run fresh seed/node ratios and overlapping confidence intervals do not establish statistical significance.",
+    "No serving arithmetic/compatibility or full-service/#1 claim."
+  ],
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "pins": {
+    "muse_decode_layer/candidates/decoder_private_partials_v28/build.py": "bf79f1685471eb424de3280300fe6fc5b0973f4420dc434d77fea7cddece327e",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/cpu_result.json": "b33329ffc377132f0fefc3af0c01f1ea3a7c32d0ea3e39701f2f2fac29cfbb9e",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/edits.json": "0cb8e69858508028af1bf11c4a0f0a6c60bfd4b2b09f17679a01b996d0eba16b",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/manifest.json": "d257616c0ad45c32696bf15804f7deb108ede4753bc1039638f35ebdf927482b",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/submission.py": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/test_cpu.py": "64d00cf05e2c216810e28ba6fe778718d9be1080270b9e18ca893b9cea42c531",
+    "tools/DECODER_V28_HYPOTHESIS_20261104.md": "1ef21c370baa3ac78c418c92c73490ff1710a85798fc1038dac45167722482ef",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "tools/test_analyze_decoder_v28.py": "e0dd24d8574dfbff0cb6f5d95295c6af71d8f923da10eb75b377e2e1ff8ecbbe"
+  },
+  "schema": 1,
+  "source_review": [
+    "Exact whole-file restoration to97af and unchanged per-partial MMA, epilogue, producers, ranges, route, finalizer, PDL, launch geometry and compiler flags established.",
+    "Payload uses phase/CTA/two-boundary/WG affine slices; all complete slices disjoint, counters and doneAs follow expanded payload.40MiB payload adds20MiB to state.",
+    "First/tail boundary addressing agrees between writer and owner; increasing CTA ranges and carried endpoints skip empty/nonintersecting contributors despite phase-A rotated execution.",
+    "Inherited128-thread publication barrier, release/acquire counter protocol, owner election and reset remain byte-identical. Private payload remains immutable until invocation completes; no new slot reuse or producer handback.",
+    "Final add.rn.ftz.f32 restores public global reduction subnormal policy. Withdrawn draft add.rn.f32 was inappropriate transfer of serving non-FTZ policy. Deterministic association remains different and requires official numerical validation.",
+    "Eight small/non-WGS preprocessed controls equal parent. WGS-only function macro provides exact MAIN profile identity with no wrapper."
+  ],
+  "status": "GO_FOR_ONE_FIXED_OFFICIAL_PRIVATE_CHECK",
+  "strongest_counterhypothesis": "Public parent already uses vector global reduction and saved current routes have only two contributors. Atomic service may be hidden; doubled owner payload loads plus FP32 sums/range enumeration/register demand and20MiB scratch can regress. V26 gains over scalarCAS do not estimate V28 performance."
+}

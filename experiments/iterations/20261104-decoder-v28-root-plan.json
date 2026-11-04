@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "iteration": "decoder-v28",
+  "created_at": "2026-11-04T21:15:50.240878+00:00",
+  "source_review_status": "GO_FOR_OFFICIAL_CHECK",
+  "candidate_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+  "candidate_path": "muse_decode_layer/candidates/decoder_private_partials_v28/submission.py",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parents": [
+    {
+      "job": "7a8c4941741645ee",
+      "mode": "run"
+    },
+    {
+      "job": "b2a773e2d7194de8",
+      "mode": "check"
+    }
+  ],
+  "hypothesis": "Replace only public WGS MAIN vector-atomic split accumulation with immutable boundary partials and ordered owner reduction; reduced atomic service/zeroing may outweigh extra owner loads/additions. Preserve public arithmetic, PDL, fused finalization and all small paths.",
+  "fixed_gate": {
+    "affected_load_GM_min": 1.03,
+    "each_affected_latency_max": 1.03,
+    "control_load_GM_latency_min": 0.97,
+    "control_load_GM_latency_max": 1.03,
+    "each_control_latency_max": 1.03,
+    "whole_score_ratio_min": 1.015
+  },
+  "aggregation": "Within each official load, sum baseline_ns*weight and median_ns*weight over sliding46/full16, then form load speedup; geometric mean over three affected or three control loads. Individual case caps apply to all twelve cases. Whole1.015 is intentionally slightly stricter than sqrt1.03 at unchanged controls.",
+  "affected_indices": [
+    4,
+    5,
+    8,
+    9,
+    10,
+    11
+  ],
+  "control_indices": [
+    0,
+    1,
+    2,
+    3,
+    6,
+    7
+  ],
+  "main_profile_marker": "okc::moe_private_partials_v28<",
+  "falsifiable_predictions": [
+    "Official13tests/12benchmarks/12profiles clean with new MAIN visible exactly in six affected cases and old small core in controls.",
+    "At least3% weighted affected-load gain against both same-source public/private parents, whole-score gain>=1.5%, all case latency caps preserved."
+  ],
+  "strongest_failure_reason": "Public parent already uses vector red.global.add.v4, not V25 scalar CAS. Two-contributor splits may be efficient; private payload doubles owner loads and adds FP32 instructions/register demand. V26 timing is not evidence of V28 gain.",
+  "upper_bound_estimate": {
+    "type": "Conditional profile-derived scenario, not physical bound, forecast or measured recoverable time",
+    "hypothetical_entire_affected_MAIN_elimination_whole_score_ratio": 1.40775,
+    "assumptions": "Treat each separate profile MAIN share as its benchmark critical fraction, delete it, hold six controls fixed, recompute exact46:16 six-load score; overlap/PDL and cache differences can invalidate assumptions.",
+    "whole_score_ratio_if_affected_MAIN_10pct_faster": 1.025519,
+    "whole_score_ratio_if_affected_MAIN_20pct_faster": 1.053126,
+    "saved_leader_matching_MAIN_reduction_fraction": 0.5743,
+    "interpretation": "No measured atomic-service fraction supports a57.43% MAIN reduction; this fixed candidate does not credibly promise to close the full gap alone."
+  },
+  "kill_criteria": [
+    "Any actual-source ownership/precision/lifetime defect before upload.",
+    "Any official numerical/compilation/flags/rejection failure.",
+    "Any fixed affected/control/whole/activation gate failure; no identical retry, gate relaxation or hidden shape-policy rescue."
+  ],
+  "scope_limits": [
+    "Kernel decoder candidate, not serving-compatible arithmetic claim",
+    "Cross-run normalized incumbent comparisons have fresh seeds/nodes",
+    "Actual speed requires official evidence; compile/CPU success is not a pass"
+  ],
+  "resources": {
+    "official_private_checks_planned": 1,
+    "Modal_allocations_planned": 0,
+    "scored_submissions_automatic": false,
+    "out_of_pocket_authorized_usd": 0
+  },
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_private_partials_v28/manifest.json": "d257616c0ad45c32696bf15804f7deb108ede4753bc1039638f35ebdf927482b",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/build.py": "bf79f1685471eb424de3280300fe6fc5b0973f4420dc434d77fea7cddece327e",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/edits.json": "0cb8e69858508028af1bf11c4a0f0a6c60bfd4b2b09f17679a01b996d0eba16b",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/test_cpu.py": "64d00cf05e2c216810e28ba6fe778718d9be1080270b9e18ca893b9cea42c531",
+    "muse_decode_layer/candidates/decoder_private_partials_v28/cpu_result.json": "b33329ffc377132f0fefc3af0c01f1ea3a7c32d0ea3e39701f2f2fac29cfbb9e",
+    "experiments/iterations/20261104-decoder-v28-source-critic.json": "1353ca11e5dc3e16f4e77765f013f6deb40ea190ad3ebebdb54947783437b663",
+    "experiments/iterations/20261104-decoder-v28-root-cpu.json": "b33329ffc377132f0fefc3af0c01f1ea3a7c32d0ea3e39701f2f2fac29cfbb9e",
+    "experiments/iterations/20261104-decoder-v28-hypothesis.json": "aca63be09e96bb405c1adf947f066d06aa842fccc678149d2041b4ec7d3c120f",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "tools/test_analyze_decoder_v28.py": "e0dd24d8574dfbff0cb6f5d95295c6af71d8f923da10eb75b377e2e1ff8ecbbe"
+  },
+  "frozen_at": "2026-11-04T21:20:57.977636+00:00",
+  "premeasurement_critic_resolution": {
+    "issue": "Copied serving non-FTZ add differed from public global vector reduction FTZ policy.",
+    "fix": "Use add.rn.ftz.f32, add directed signed-subnormal operand/result checks; ordered association still GPU-unverified.",
+    "withdrawn_unsubmitted_draft_sha256": "7bf537763b39ee33e6d0559d4bf0f80d0edfb91a9b81090ebc4946f7cf9f669f"
+  }
+}

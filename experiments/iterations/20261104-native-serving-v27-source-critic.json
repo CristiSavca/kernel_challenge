@@ -1,0 +1,94 @@
+{
+  "V26_source": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "accepted_repairs": [
+    "Resolved decode/prefill graph backend qualification rejects tc_piecewise, rather than relying only on legacy enable_torch_compile.",
+    "EPLB disabled and actual int32 expert map exactly equals contiguous rank mapping before packing.",
+    "Original None-effective-weight norm setter uses prepared-bank device after raw parameter deletion.",
+    "Actual model attachment, quant postload and forward hooks execute in CPU mocks, including stock fallback without native owner."
+  ],
+  "bound_reason": "Component score and six small loads do not establish full-serving mixture, prefill/TTFT, loader peak, graph/concurrency or eight-H200 bottlenecks.",
+  "direct_adapter_speed_gain_estimate": null,
+  "early_findings": [
+    "ForwardContext only carries attn_backend and is a single-thread process global; not a model/lane identity.",
+    "PDMUX capture indexes independent stream groups and green-context SM partitions; existing full-device cooperative grid cannot be assumed valid there.",
+    "Ordinary graph capture uses a different stream from replay, so current-stream keys are insufficient for model-wide serial workspace ownership.",
+    "ModelRunner creates forward_stream before model loading; ordinary scheduler forward and graph replay use the established lane.",
+    "MuseSpark1xModel constructor can attach a model-owned identity across all serial expert layers before quantization postload.",
+    "Reject resolved PDMUX/TBO/SP/offload/memory-saver/unsupported compile modes before destructively replacing weights.",
+    "Stock set_post_expert_norm references raw gate_up_proj.device when effective weight is None; qualify actual norm before deleting raw weights.",
+    "Read dirty files through git show HEAD; do not export existing V22 finalizer/alignment changes."
+  ],
+  "estimated_full_serving_speed_bound": null,
+  "falsifiable_prediction": "The isolated adapter reaches unchanged V26 core and original finalizer through the actual serving entry, replaces raw code/scale tensors with one bank, and finalizes each chunk before scratch reuse while preserving actual serving norm/score/rank semantics.",
+  "independent_execution": {
+    "counts": {
+      "failure_atomicity": 5,
+      "forward_cases": 24,
+      "metadata_declines": 6,
+      "policy_declines": 12,
+      "rank_installs": 8
+    },
+    "method": "Executed verifier source_checks with builder.build replaced only by reading the frozen manifest, avoiding all shared source writes; patch application occurred only in verifier temporary directory. Executed unchanged run_mocks. Both outputs exactly equal frozen author report. Did not claim independent regeneration.",
+    "status": "PASS"
+  },
+  "iteration": "native-serving-v27",
+  "kill_criteria": [
+    "Unsupported execution lane is discovered only after original weights are gone.",
+    "Workspace aliases concurrently replayable model/lane graphs without an explicit GPU ordering contract.",
+    "Norm or rank mapping differs from stock, or fallback touches released tensors.",
+    "Actual runtime entry is unwired or exported patch violates current restrictions."
+  ],
+  "next_action": "Review the isolated actual-adapter GPU worker before root allocation; no full-engine or serving promotion approval.",
+  "no_gpu_provider_official_calls": true,
+  "read_only_parent_source_pins": {
+    "python/sglang/srt/layers/layernorm_sp.py": "ffdde97e6282103614d7cec20cc29fb3cf0157d051778e315b03a99bb8e81090",
+    "python/sglang/srt/layers/muse_spark_fp4_moe.py": "1d377424e4c1f486f72a0e8ea67ea41dca4bd3f6929aa3729f5f7480861ed352",
+    "python/sglang/srt/layers/quantization/muse_spark_nvfp4_moe.py": "c09e0b4e32b7d5ac7af30caf74121dc0897e14e44f0e4503ea33a7acaf8f35a0",
+    "python/sglang/srt/model_executor/forward_context.py": "63900e43eaf683bcc50991e56dac6d194566b9fcef2ed452ff8e5818e503d2d0",
+    "python/sglang/srt/model_executor/model_runner.py": "191062bf3607d5f87367ceb9c2f773653241a7e65bcba1a9d985b957fc80f92d",
+    "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py": "4236fc6ef87c2fb7a019d7525342d74d4e0964f036c61bf32bc53e3699c6db0b",
+    "python/sglang/srt/model_executor/runner_backend/full_cuda_graph_backend.py": "737f6d589845a10a934e32bc06bfb4836fe028dcd73850ecf6f2241c57df8c9d",
+    "python/sglang/srt/model_loader/post_load.py": "566638279a4c27d66a000b046f52b970a3e9b614802651f74c46ce5484ad5b88",
+    "python/sglang/srt/models/muse_spark.py": "7e5018b3cb2ef41ee6cf09407e91e28dde069e5a33719ea58beb0d7137087355",
+    "python/sglang/srt/multiplex/pdmux_context.py": "1ce3a20c12c9bcca6108093e368cb9a40d631c3930c02384666ecd30341a2608",
+    "python/sglang/srt/runtime_context.py": "b8510f48bb90fa22474a64f6769c1e71e3fb47a95dd313cffb11df7bf414c975"
+  },
+  "remaining_limits": [
+    "CPU tensors and registry mocks do not execute CUDA, Marlin decoding, graph capture/replay, concurrent GPU scheduling or full model loading.",
+    "Workspace is safe only under the supported serial model lane. Concurrent external calls using the same owner/lane are unsupported; different owners do not prove model scheduler integration.",
+    "Model loader staging may retain original tensors transiently while the new bank is built; peak memory, all-layer headroom and TTFT remain unmeasured.",
+    "The worker must compare actual stock preparation/call bodies and preserve an untouched baseline owner; private policy fixtures must be labeled rather than treated as full runtime validation.",
+    "V26 official component score1.68511 is below public native2.37369 and cannot predict full-serving speed. No defensible numeric full-serving upper bound is established."
+  ],
+  "required_tests": [
+    "Decline unsupported flags/types/geometry/norm/map before packing or deleting any raw tensor.",
+    "Prepare/compile failure does not fall through to stock on a partially installed layer; marker is published only after complete validated bank ownership.",
+    "Two serial layers share one model-owned workspace; separate model/lane owners do not alias.",
+    "Actual pre-Marlin postload and _forward_marlin native branches are wired; ordinary paths restore to pinned source.",
+    "All rank offsets use local source tensors once and retain global-ID/FP32-score semantics.",
+    "Chunk boundaries including T0,31/32,383/384/385 retain finalizer branch, output ownership and no unconsumed scratch overwrite.",
+    "Unsupported post-install norm/lifecycle change fails explicitly, without accessing deleted raw/Marlin tensors.",
+    "Export patch changes only allowed source/JSON under python/sglang, no model_loader, no line>400, size<=409600."
+  ],
+  "reviewed_pins": {
+    "serving/candidates/native_serving_v27/build.py": "f18e5f2f60c21d4626cd4d4768b7dd86a2e4df3a8ef9f832f1805dad1fe2a820",
+    "serving/candidates/native_serving_v27/candidate/python/sglang/kernels/ops/muse_spark_v12/native_serving_v27.py": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+    "serving/candidates/native_serving_v27/cpu_result.json": "d3db07da5e4c50da04f99650eaf9d19c7ac34a17880ef44a2146fdbeaa457ce8",
+    "serving/candidates/native_serving_v27/integration.py.inc": "a29258dcd21bd0c168a8012f12bd23f61620f9922ee4d24bb0405c81835c1f66",
+    "serving/candidates/native_serving_v27/manifest.json": "b23fdd9023b8325165ba1ac46bfa33e4509cfdf50c2488179ba060ce15ef304c",
+    "serving/candidates/native_serving_v27/native_serving_v27.patch": "c0ca4e41e595df59046ccb67d3641053148090b9ed4019dc534eb229522700c6",
+    "serving/candidates/native_serving_v27/test_cpu.py": "85b26056b778bc2b36518359954051ef0edb246b411620946a238cc2d483b049"
+  },
+  "schema": 1,
+  "scope": "Model/execution ownership and installation qualification; no GPU or candidate edits.",
+  "serving_parent": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+  "source_findings": [
+    "Full inherited V26 CUDA literal restores exactly after nine whitespace-only constraint-line reversals; CPP exact; retained Python core exact except typed preparation declines and extension namespace.",
+    "Bank and synchronized workspace preparation precede registry commit; unsupported preparation returns to stock without releasing raw tensors; unexpected compile/device errors propagate. Registry insertion/deletion failures restore parameters/buffers.",
+    "One model-owned logical serial lane shares workspace across layers. Distinct model/lane keys separate storage; capture cannot allocate a missing workspace. This is an explicit scheduler contract, not a Python-lock GPU synchronization claim.",
+    "Actual resolved backend values are strings in pinned model_executor/cuda_graph_config.py; full/breakable/disabled checks apply to the real schema.",
+    "Pre-norm applied once, cached actual effective BF16 norm/epsilon/weight-first passed to original finalizer; short final prefill chunk padded to retain original large-finalizer branch. Each chunk is finalized and copied before workspace reuse.",
+    "Export is 213160 bytes, only four allowed Python source files, no model_loader or finalizer edits and no added line above 400 characters."
+  ],
+  "status": "GO_FOR_BOUNDED_DEVICE_VALIDATION_NOT_DEPLOYMENT"
+}

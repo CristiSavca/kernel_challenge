@@ -1,0 +1,27 @@
+[
+  {
+    "path": "python/sglang/srt/layers/quantization/muse_spark_nvfp4_moe.py",
+    "old": "    def _process_weights_for_marlin(self, layer):\n",
+    "new": "    def _process_weights_for_marlin(self, layer):\n        from sglang.kernels.ops.muse_spark_v12.native_serving_v27 import (\n            try_install_native,\n        )\n\n        if try_install_native(layer):\n            return\n"
+  },
+  {
+    "path": "python/sglang/srt/layers/muse_spark_fp4_moe.py",
+    "old": "                device=self.gate_up_proj.device,\n",
+    "new": "                device=(self._native_v27_bank['device']\n                        if getattr(self, '_native_v27_bank', None) is not None\n                        else self.gate_up_proj.device),\n"
+  },
+  {
+    "path": "python/sglang/srt/layers/muse_spark_fp4_moe.py",
+    "old": "        if pre_expert_norm is not None:\n            hidden_states = pre_expert_norm(hidden_states)\n        expert_outputs, local_topk_ids = self._marlin_expert_outputs(\n",
+    "new": "        if getattr(self, '_native_v27_bank', None) is not None:\n            from sglang.kernels.ops.muse_spark_v12.native_serving_v27 import (\n                native_forward,\n            )\n\n            return native_forward(\n                self, hidden_states, topk_scores, topk_ids,\n                post_expert_norm, pre_expert_norm,\n            )\n        if pre_expert_norm is not None:\n            hidden_states = pre_expert_norm(hidden_states)\n        expert_outputs, local_topk_ids = self._marlin_expert_outputs(\n"
+  },
+  {
+    "path": "python/sglang/srt/models/muse_spark.py",
+    "old": "        self.layers = nn.ModuleList()\n",
+    "new": "        self.layers = nn.ModuleList()\n        from sglang.kernels.ops.muse_spark_v12.native_serving_v27 import (\n            NativeModelOwner,\n        )\n\n        self._native_v27_owner = NativeModelOwner()\n"
+  },
+  {
+    "path": "python/sglang/srt/models/muse_spark.py",
+    "old": "                layer.mlp.side_stream = side_stream\n",
+    "new": "                layer.mlp.side_stream = side_stream\n                if layer.mlp.nvfp4_checkpoint:\n                    layer.mlp.experts._native_v27_owner = self._native_v27_owner\n"
+  }
+]

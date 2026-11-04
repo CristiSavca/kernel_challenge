@@ -1,0 +1,42 @@
+[
+  [
+    "constexpr size_t WGS_FIXF = (size_t)2 * WGS_SLOTS * 4 * WGS_FIXW",
+    "constexpr size_t WGS_FIXF = (size_t)4 * WGS_SLOTS * 4 * WGS_FIXW"
+  ],
+  [
+    "__device__ __forceinline__ float* wgs_fix(const Params& p, int pb) {\n  return p.ybuf + (size_t)EMAX * HD + (size_t)pb * WGS_SLOTS * 4 * WGS_FIXW;\n}\n",
+    "// Two immutable boundary payloads per CTA/phase; full units need no payload.\n__device__ __forceinline__ float* wgs_partial(const Params& p, int pb, int c, int boundary, int wg) {\n  return p.ybuf + (size_t)EMAX * HD + (size_t)(((pb * WGS_SLOTS + c) * 2 + boundary) * 4 + wg) * WGS_FIXW;\n}\n__device__ __forceinline__ float v28_sum(float a, float b) {\n  float value;\n  asm volatile(\"add.rn.ftz.f32 %0, %1, %2;\\n\" : \"=f\"(value) : \"f\"(a), \"f\"(b));\n  return value;\n}\n__device__ __forceinline__ int wgs_stage_at(const Smem& S, int nj, int pb, uint32_t x);\n__device__ __forceinline__ int wgs_cta_of(const Smem& S, int pb, int s, int G);\n"
+  ],
+  [
+    "return reinterpret_cast<int*>(p.ybuf + (size_t)EMAX * HD + (size_t)2 * WGS_SLOTS * 4 * WGS_FIXW)",
+    "return reinterpret_cast<int*>(p.ybuf + (size_t)EMAX * HD + (size_t)4 * WGS_SLOTS * 4 * WGS_FIXW)"
+  ],
+  [
+    "  float* fb = wgs_fix(p, PB) + (size_t)(pd.slot * 4 + wg) * WGS_FIXW + wt * 4;\n  const int ntt = (S.jC[j] + 7) >> 3, r16 = ub * 16 + wg * 4 + wp;\n  // two n-tiles' loads in flight before their zeroing stores and epilogues (the scout): one at a time, each load\n  // waits behind the previous tile's stores (they may alias), ntt serialized L2 round trips under full HBM load\n  for (int nt0 = 0; nt0 < ntt; nt0 += 2) {\n    float4 v[2];\n#pragma unroll\n    for (int k = 0; k < 2; ++k)\n      if (nt0 + k < ntt) v[k] = __ldcg(reinterpret_cast<const float4*>(fb + (nt0 + k) * 512));\n#pragma unroll\n    for (int k = 0; k < 2; ++k)\n      if (nt0 + k < ntt) {\n        *reinterpret_cast<float4*>(fb + (nt0 + k) * 512) = make_float4(0.f, 0.f, 0.f, 0.f);\n        const float d4[4] = {v[k].x, v[k].y, v[k].z, v[k].w};\n        wgs_epi_tile<PB>(p, S, j, r16, nt0 + k, d4);\n      }\n  }\n",
+    "  const int ntt = (S.jC[j] + 7) >> 3, r16 = ub * 16 + wg * 4 + wp;\n  const int nj = S.njF + S.njS, G = (int)gridDim.x;\n  const int begin = pd.u << 4, end = begin + 16;\n  const int first = pd.slot, last = wgs_cta_of(S, PB, end - 1, G);\n  const uint32_t total = PB ? S.wtotB : S.wtot;\n  // Preserve the inherited publication protocol above. Every contributing WG\n  // has finished its immutable stores before the owner reads these payloads.\n  // Increasing CTA ranges are increasing original K-stage ranges, even when\n  // phase A executes its trailing boundary first.\n  for (int nt0 = 0; nt0 < ntt; nt0 += 2) {\n    float sum[2][4] = {};\n    int g0 = wgs_stage_at(S, nj, PB, total * (uint32_t)first / (uint32_t)G);\n#pragma unroll 1\n    for (int c = first; c <= last; ++c) {\n      const int g1 = c == G - 1 ? (nj << (9 - PB)) :\n          wgs_stage_at(S, nj, PB, total * (uint32_t)(c + 1) / (uint32_t)G);\n      if (g0 < end && g1 > begin && g1 > g0) {\n        const int boundary = (g0 >> 4) == pd.u ? 0 : 1;\n        const float* fb = wgs_partial(p, PB, c, boundary, wg) + wt * 4;\n#pragma unroll\n        for (int k = 0; k < 2; ++k) {\n          if (nt0 + k < ntt) {\n            const float4 v = __ldcg(reinterpret_cast<const float4*>(fb + (nt0 + k) * 512));\n            sum[k][0] = v28_sum(sum[k][0], v.x);\n            sum[k][1] = v28_sum(sum[k][1], v.y);\n            sum[k][2] = v28_sum(sum[k][2], v.z);\n            sum[k][3] = v28_sum(sum[k][3], v.w);\n          }\n        }\n      }\n      g0 = g1;\n    }\n#pragma unroll\n    for (int k = 0; k < 2; ++k)\n      if (nt0 + k < ntt) wgs_epi_tile<PB>(p, S, j, r16, nt0 + k, sum[k]);\n  }\n"
+  ],
+  [
+    "    float* fb = wgs_fix(p, PB) + (size_t)(slot * 4 + wg) * WGS_FIXW + wt * 4;\n#pragma unroll\n    for (int nt = 0; nt < NTT; ++nt)\n      asm volatile(\"red.global.add.v4.f32 [%0], {%1, %2, %3, %4};\\n\" ::\"l\"(fb + nt * 512), \"f\"(d[nt][0]), \"f\"(d[nt][1]),\n                   \"f\"(d[nt][2]), \"f\"(d[nt][3]) : \"memory\");\n",
+    "    const int boundary = u == (S.wgr[2 * PB] >> 4) ? 0 : 1;\n    float* fb = wgs_partial(p, PB, (int)blockIdx.x, boundary, wg) + wt * 4;\n#pragma unroll\n    for (int nt = 0; nt < NTT; ++nt)\n      *reinterpret_cast<float4*>(fb + nt * 512) = make_float4(d[nt][0], d[nt][1], d[nt][2], d[nt][3]);\n"
+  ],
+  [
+    "p.doneAs = reinterpret_cast<int*>(p.ybuf + (size_t)okc::EMAX * okc::HD + (size_t)2 * okc::WGS_SLOTS * 4 * okc::WGS_FIXW)",
+    "p.doneAs = reinterpret_cast<int*>(p.ybuf + (size_t)okc::EMAX * okc::HD + (size_t)4 * okc::WGS_SLOTS * 4 * okc::WGS_FIXW)"
+  ],
+  [
+    "WGS_FIXF = 2 * 160 * 4 * 4096 + 2 * 160 * 4 + 136 * 16   # moe WGS_FIXF: stream-K fixups + doneAs after ybuf (zero between calls)",
+    "WGS_FIXF = 4 * 160 * 4 * 4096 + 2 * 160 * 4 + 136 * 16   # two immutable boundary payloads per CTA/phase; counters reset between calls"
+  ],
+  [
+    "name=f\"dl_okc_moe_kperm3_v12_{tag}_sm{arch}\"",
+    "name=f\"dl_okc_moe_private_partials_v28_{tag}_sm{arch}\""
+  ],
+  [
+    "template <bool BIG>\n__global__ void __launch_bounds__(NTL, 1) moe_fused(Params p)",
+    "#if OKC_WGS\n#define moe_fused moe_private_partials_v28\n#endif\ntemplate <bool BIG>\n__global__ void __launch_bounds__(NTL, 1) moe_fused(Params p)"
+  ],
+  [
+    "# okc: problem=muse_decode_layer\n",
+    "# okc: problem=muse_decode_layer\n# V28: immutable private split partials, ordered FP32 owner sum; exact 97af parent otherwise.\n# V26 supplies reduction code only; public weights, arithmetic, PDL and fused finalizer are retained.\n"
+  ]
+]

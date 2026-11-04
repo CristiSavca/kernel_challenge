@@ -1,0 +1,79 @@
+{
+  "status": "PASS",
+  "source_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+  "manifest_sha256": "d257616c0ad45c32696bf15804f7deb108ede4753bc1039638f35ebdf927482b",
+  "verifier_sha256": "64d00cf05e2c216810e28ba6fe778718d9be1080270b9e18ca893b9cea42c531",
+  "source_checks": {
+    "complete_parent_restoration": true,
+    "build_reproducible": true,
+    "changed_python_nodes": [
+      "MOE_CUDA_SRC",
+      "_ma_ext",
+      "WGS_FIXF"
+    ],
+    "unchanged_device_functions": [
+      "void dq4(",
+      "void wgs_epi_tile(",
+      "void wgs_wproducer(",
+      "void wgs_xproducer(",
+      "void wgs_gather(",
+      "void route(",
+      "int wgs_split(",
+      "void wgs_prefix(",
+      "int wgs_stage_at(",
+      "void wgs_range(",
+      "void wgs_ranges(",
+      "int wgs_cta_of(",
+      "void wgs_phase(",
+      "moe_fused(Params"
+    ],
+    "per_partial_MMA_and_epilogue_unchanged": true,
+    "publication_owner_election_and_reset_source_unchanged": true,
+    "native_public_vector_atomic_replaced": true,
+    "non_wgs_preprocessed_builds": 8,
+    "weights_scales_pdl_build_flags_routing_and_finalizer_unchanged": true,
+    "payload_bytes": 41943040,
+    "counter_bytes": 5120,
+    "doneAs_bytes": 8704
+  },
+  "native_schedule_and_payload": {
+    "cases": 92,
+    "partial_contributions": 17347,
+    "split_units": 5919,
+    "empty_ranges": 1208,
+    "rotated_ranges": 2852,
+    "two_boundary_ctas": 4882,
+    "float4_loads": 70863,
+    "verified_float_values": 283452,
+    "native_source_sha256": "fef5bace996481ec5db882474210ac1edfb98792f414272ed8da4241f37fa2c4",
+    "limits": "Exact range/phase/store/owner source executed with CPU memory and FP32-add shim; GPU publication, progress, atomics and WGMMA are not emulated."
+  },
+  "negative_controls": [
+    {
+      "mutant": "wrong_boundary",
+      "caught": true,
+      "returncode": -6
+    },
+    {
+      "mutant": "lost_range_carry",
+      "caught": true,
+      "returncode": -6
+    },
+    {
+      "mutant": "read_empty",
+      "caught": true,
+      "returncode": -6
+    }
+  ],
+  "memory": {
+    "private_payload_bytes": 41943040,
+    "added_scratch_bytes": 20971520,
+    "initialization": "Original scratch allocation, larger by20MiB; no per-replay private-payload clearing."
+  },
+  "limits": [
+    "No CUDA compilation, GPU memory-order/progress, numerical-tolerance or speed proof.",
+    "Exact actual range/phase/store/owner snippets execute onCPU forWG0/WT0; affine complete slices check otherwarpgroups/lanes.",
+    "Explicit RN/FTZ FP32 addition uses a CPU scalar shim matching the public global reduction policy; changed CTA-order association is not bit-equivalent to native vector-atomic arrival order.",
+    "The zero-range helper tests do not establish arbitrary all-remote global routing support; inherited dispatch remains unchanged."
+  ]
+}

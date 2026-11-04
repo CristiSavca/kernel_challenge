@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "exact_author_report_match": true,
+  "source_report_sha256": "d3db07da5e4c50da04f99650eaf9d19c7ac34a17880ef44a2146fdbeaa457ce8",
+  "verifier_sha256": "85b26056b778bc2b36518359954051ef0edb246b411620946a238cc2d483b049",
+  "result": {
+    "status": "PASS",
+    "source": {
+      "restoration": "all three stock files exact",
+      "core": "CUDA literal exact after nine whitespace reversals; CPP exact",
+      "unchanged_python_functions": [
+        "Config",
+        "Inputs",
+        "Weights",
+        "Workspace",
+        "_ext",
+        "_marlin_scale_lut",
+        "_pack_codes_nat",
+        "_stored_pos_mul",
+        "_wgs_copy",
+        "_wgs_kperm_codes",
+        "_wgs_kperm_index",
+        "_wgs_kperm_rows",
+        "expert_outputs",
+        "prepare_native"
+      ],
+      "patch_applies": true,
+      "patch_bytes": 213160
+    },
+    "mocks": {
+      "checks": [
+        "eight rank offsets; actual quant hook installs without stock repack; double install rejected",
+        "shared serial owner; distinct models/lanes; capture forbids first allocation",
+        "actual model owner/attachment statements share only NVFP4 expert layers",
+        "12 unsupported policies +6 metadata declines; actual fallback invokes stock hook",
+        "format decline; compile/allocation/register/delete failures preserve original registries",
+        "24 chunk/norm cases; exact setter None-weight device; runtime policy changes fail closed",
+        "actual _forward_marlin selects native only when installed; unchanged default selects stock"
+      ],
+      "counts": {
+        "rank_installs": 8,
+        "policy_declines": 12,
+        "metadata_declines": 6,
+        "failure_atomicity": 5,
+        "forward_cases": 24
+      },
+      "limits": "Python control/metadata and source conformance only; no numeric CUDA, cross-stream or graph replay proof."
+    },
+    "manifest_sha256": "b23fdd9023b8325165ba1ac46bfa33e4509cfdf50c2488179ba060ce15ef304c",
+    "verifier_sha256": "85b26056b778bc2b36518359954051ef0edb246b411620946a238cc2d483b049"
+  },
+  "scope": "CPU/source only; no GPU proof"
+}
