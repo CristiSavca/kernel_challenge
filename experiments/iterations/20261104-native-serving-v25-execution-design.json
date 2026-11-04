@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "status": "source_design_not_runtime_validation",
+  "iteration": "native-serving-v25",
+  "source_hashes": {
+    "serving/sglang/python/sglang/srt/managers/scheduler.py": "c1edcfe6f85e49bf85faf1f79129f4452445585de17cf1cdcc821de5008b1491",
+    "serving/sglang/python/sglang/srt/speculative/dflash_worker_v2.py": "7d462f5f175828bcc3b4d47fcdfa33cb6af4b14669ef016eeb79b1a5191eec8c",
+    "serving/sglang/python/sglang/srt/models/muse_spark.py": "7e5018b3cb2ef41ee6cf09407e91e28dde069e5a33719ea58beb0d7137087355",
+    "serving/sglang/python/sglang/srt/layers/muse_spark_fp4_moe.py": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b",
+    "muse_moe_w4a16/submission.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+  },
+  "serial_forward_evidence": [
+    {
+      "file": "serving/sglang/python/sglang/srt/managers/scheduler.py",
+      "line": 4395,
+      "finding": "Overlap-scheduler model_worker.forward_batch_generation executes inside forward_stream_ctx after waiting for schedule_stream."
+    },
+    {
+      "file": "serving/sglang/python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 2314,
+      "finding": "DFlash target prefill calls target_worker.forward_batch_generation; draft_model_runner.forward at2651 and target verify at2835 have no alternate CUDA-stream context in this file."
+    },
+    {
+      "file": "serving/sglang/python/sglang/srt/models/muse_spark.py",
+      "line": 1139,
+      "finding": "A model-owned side stream is shared across layers; each MoE joins its side work before returning. This is useful precedent for an explicitly owned workspace, not proof that arbitrary graph replays are serialized."
+    }
+  ],
+  "remaining_runtime_obligations": [
+    "Verify all serving graph-backend replay streams and any concurrent/model-worker invocation paths.",
+    "A model-owned shared workspace requires serialization of every use and retained ownership for every captured graph.",
+    "Different explicit workspaces can avoid pointer races; they do not fix ordinary full-grid spin-barrier admission."
+  ],
+  "cooperative_launch": {
+    "design": "Dedicated cooperative launch for the fixed WGS implementation; no ordinary-launch fallback, no PDL overlap path.",
+    "requirements": [
+      "Query cudaDevAttrCooperativeLaunch on the actual device.",
+      "Query occupancy for each selected compiled kernel using the exact block size and dynamic shared memory; grid must not exceed active blocks per SM times actual SM count.",
+      "Pass the actual current CUDA stream; check launch return.",
+      "Remove inactive griddepcontrol markers consistently; preserve all required intrakernel barriers and memory ordering.",
+      "Validate capture and fresh replay on the deployed CUDA stack before integration."
+    ],
+    "sources": [
+      "https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cooperative-groups.html#when-to-use-cudalaunchcooperativekernel",
+      "https://developer.nvidia.com/blog/cuda-11-features-revealed/",
+      "https://developer.nvidia.com/blog/?p=22770",
+      "https://docs.nvidia.com/cuda/cuda-runtime-api/cuda_runtime_api/group__CUDART__HIGHLEVEL.html"
+    ],
+    "scope": "NVIDIA documents whole-grid cooperative admission and capture support; concurrent cooperative kernels run only when their combined resources fit. This addresses admission, not arithmetic or shared workspace safety."
+  },
+  "storage": {
+    "native_one_code_scale_bank_gib_per_layer": 0.84375,
+    "retained_marlin_plus_one_native_bank_gib_for60_nvfp4_layers": 101.25,
+    "stock_launch_mem_fraction_static": 0.85,
+    "count60_is_source_scenario_not_loaded_checkpoint": true,
+    "not_included": [
+      "BF16 target layers and projections",
+      "draft model",
+      "KV cache",
+      "CUDA graphs",
+      "activation/output and workspace memory",
+      "repack transient peaks"
+    ],
+    "deployment_gate": "Either replace the packed representation with a complete supported path, including large prefill, or demonstrate startup and required-cache headroom for retained fallback on the actual model. A one-copy component does not establish this."
+  },
+  "metadata_fetch": {
+    "url": "https://huggingface.co/meta-models/Muse-Spark-Open-816B-A42B-NVFP4/raw/main/config.json",
+    "result": "HTTP401; no credentials requested, no weights downloaded",
+    "consequence": "Loaded-checkpoint dimensions remain unverified; source-default scenarios are estimates."
+  }
+}

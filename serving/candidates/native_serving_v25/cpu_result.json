@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "component_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "manifest_sha256": "51cf275edfe862c0bdf504ff1ca0074373e10a6ddf980037d7aed351ace8b32c",
+  "conformance": {
+    "complete_cuda_restoration": true,
+    "exact_packing_helpers": [
+      "_pack_codes_nat",
+      "_stored_pos_mul",
+      "_wgs_copy",
+      "_wgs_kperm_codes",
+      "_wgs_kperm_index",
+      "_wgs_kperm_rows"
+    ],
+    "dq4_unchanged": true,
+    "two_preprocessed_prmt_builds_sha256": [
+      "8939637721c88c8f046c17d3d44aa9aa5239ee231beda08ba0ed1f0a042be13d",
+      "8942088c33c6bfbbc78328183cddc5d37353ca54089fa281d0e2a7209919004d"
+    ],
+    "reachable_old_weight_norm_inter_pointers_absent": true,
+    "formal_certificate": "none: composition outside existing strict Lean source binder"
+  },
+  "packing": {
+    "actual_slab_loop_matches_complete_pack": true,
+    "one_expert_checks": [
+      {
+        "phase": "gate_up",
+        "packed_bytes": 18874368,
+        "inverse_coordinate_assertions": "PASS"
+      },
+      {
+        "phase": "down",
+        "packed_bytes": 9437184,
+        "inverse_coordinate_assertions": "PASS"
+      }
+    ],
+    "retained_full32_bank_bytes": 905969664,
+    "temporary_slab_rows": 2048
+  },
+  "arithmetic": {
+    "scale_bytes": 127,
+    "normal_prmt_entries": 119,
+    "scale_pairs": 16129,
+    "sf_times128_counterexample_bytes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "two_round_bf16_bits": 16257,
+    "incorrect_one_round_bits": 16258,
+    "cas_add_subnormal_bits": 4194304,
+    "cas_result_after_prepared_global": 0.00390625,
+    "activation_ftz_counterexample": {
+      "ordinary_bf16_bits": 128,
+      "stock_ftz_bf16_bits": 0
+    },
+    "limit": "NumPy IEEE model; not CUDA WGMMA, exp/div, atomic interleavings or GPU numerical validation."
+  },
+  "routing_and_output": {
+    "unique_live_route_output_coordinates": 8519680,
+    "job_sizes": 64,
+    "zerojob_actual_range_entry_ctas": 132,
+    "rank_mapping_values": 2056,
+    "zerojob_limit": "Source participation unchanged; no GPU barrier/counter reuse execution."
+  },
+  "memory_and_host": {
+    "workspace_parts_bytes": {
+      "counters": 4128,
+      "fixup": 20985344,
+      "xA_xB": 61865984,
+      "expert_out": 25165824,
+      "local_ids": 12288
+    },
+    "workspace_total_bytes": 108033568,
+    "full_weight_copy_bytes": 905969664,
+    "grid_policy_boundaries": 6,
+    "host_API_status_checked": true,
+    "limits": "Host source and policy boundaries, not CUDA runtime API execution."
+  },
+  "limits": [
+    "No CUDA compilation or GPU correctness/performance evidence.",
+    "Original stock finalizer image/source binding is a deployment/evaluator gate, not established by local module import.",
+    "Reusable workspace is serial in this component; overlapping reuse or shared capture pools are unsupported without owner proof.",
+    "No full-serving buffer replacement, model-memory fit, prefill/TTFT or eight-rank claim."
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "actual_source_review": {
+    "cooperative_host": "Both BIG pointers queried at exact576threads/sharedbytes; cooperative support + occupancy >=1; SM grid<160; selected pointer admission rechecked; checked current-stream cooperative call; no ordinary fallback/PDL.",
+    "final_activation": "Explicit mul.rn.ftz.f32 only at final SiLU/up product, no global fast-math; exp/div intrinsics still require GPU validation.",
+    "finalizer_binding": "Identical qualified import in official baseline and candidate establishes same-run dependency; installed source hash and dirty-checkout serving behavior are not certified.",
+    "fixup": "Every original scalar address retained. Integer CAS compares bits (including NaN) around explicit add.rn.f32, preserving subnormal scalar addition; unchanged wgs_flush release/acquire/barrier protocol and float4 final reset. Actual GPU ordering remains untested.",
+    "no_gpu_correctness_claim": true,
+    "open_material_issue": null,
+    "output": "PhaseB writes BF16 live values through original S.ent slots; unchanged stock masked finalizer consumes complete local IDs. Short final prefill chunk padded to32 only when wholeT>=32 to preserve large-path selection; added work remains timed.",
+    "ownership": "Reusable workspace is owned by isolated component state under serial-call/graph ordering. Concurrent generic callers need distinct workspaces; same-workspace overlap unsupported.",
+    "packing": "One retained code/scale bank; six parent packing helpers retained; bounded2048-row preparation blocks; no original source weights retained in bank.",
+    "unresolved_gpu_questions": [
+      "Actual cooperative CUDA admission/capture",
+      "WGMMA accumulation and intrinsic lowering versus stock within unchanged tolerance",
+      "CAS concurrency/progress and inherited release/counter behavior",
+      "New all-M WGS performance and compiler resources"
+    ],
+    "zero_jobs": "Prefix totals zero, all four ranges zero before stage lookup/division; gather sees jrow0=0; producer and consumer phases empty but joins/grid barrier/flag reset retained; CTA0 writes complete local-ID mask."
+  },
+  "author_proposal": "One WGS KPERM3/MULDEC format for all M; exact Marlin-derived scale-LUT; explicit zero jobs; serving GEMM/SiLU arithmetic; emits BF16[T,8,H] then exact stock9b816e97 finalizer. NoV22 integration.",
+  "budget_snapshot": {
+    "600s_reservation_usd": "1.78",
+    "fresh_allocation_checks_still_required": true,
+    "separate_headroom_usd": "5.00",
+    "sha256": "2ae77bacf8f1ebd2bbdc2049ec18295724dcb2ae339abc3be80cb28693c874fa",
+    "source": "experiments/modal/20261104T194033Z-c834b1b0/billing-after.json",
+    "working_usd": "1.29"
+  },
+  "candidate_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "cooperative_launch_review": {
+    "limit": "Solves admission premise, not scratch races/numerical equivalence/performance.",
+    "primary_urls": [
+      "https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cooperative-groups.html#when-to-use-cudalaunchcooperativekernel",
+      "https://developer.nvidia.com/blog/cuda-11-features-revealed/",
+      "https://developer.nvidia.com/blog/?p=22770"
+    ],
+    "required_gates": [
+      "Actual device cooperativeLaunch attribute",
+      "Actual selected pointer occupancy at exact block size/dynamic shared bytes",
+      "Grid <= actual SM count * cooperative resident capacity",
+      "Current stream, checked cudaLaunchCooperativeKernel return, no ordinary fallback",
+      "Remove inactive PDL markers/attribute path consistently"
+    ],
+    "verdict": "SUPPORTED_DESIGN_REMEDY_ACTUAL_SOURCE_REVIEW_PENDING"
+  },
+  "cpu_label_only_refresh": {
+    "candidate_unchanged": true,
+    "exact_previous_hash_reconstruction_verified": true,
+    "final_report": "aa266717bfb13490f2e4db2bf3f717e8c9b752b23f7dd6763f8f9cc3c7ef94e3",
+    "final_verifier": "cb9952efbc11a07e2dbb266a963731413795e2f98b855d0d541d4f712fabd697",
+    "independently_executed_verifier": "7711f3d446a17c4d9f473f48847f8b62a54bd5d69c3e300ddc6e7910fd875b5e",
+    "independently_matched_report": "14ace628a8a89c5be437f8877b74b9d86b058187baee098da13dd4c39bdb92a1",
+    "inverse_assertions_unchanged": true
+  },
+  "early_blockers": [
+    "Pre-global BF16 rounding and processed BF16 global scale, plus gate/up collapse, are required; endpoint casts alone are insufficient.",
+    "One-copy replacement or proven full-model headroom; retaining a native bank plus Marlin fallback is not free.",
+    "Capture-aware scratch lifetime/initialization accounting and actual serial-grid progress contract.",
+    "All-remote zero jobs, real EP maps, arbitrary token counts/chunks and norm metadata must have defined behavior."
+  ],
+  "fixed_initial_official_screen": {
+    "all_cases_affected": true,
+    "behind_native247888_no_public_promotion": true,
+    "benchmarks": 6,
+    "clean_flags_and_complete_provenance": true,
+    "each_case_candidate_stock_latency_max": 1.02,
+    "no_automatic_retry_or_policy_sweep": true,
+    "passing_tests": 5,
+    "profiles": 6,
+    "required_activation": "WGS core and unchanged original stock finalizer on all six shapes",
+    "same_run_official_stock_geomean_speedup_min": 1.15,
+    "unchanged_controls": false
+  },
+  "frozen_review_pins": {
+    "serving/candidates/native_serving_v25/adapter.py.inc": "06bb11353e4c65f721a2ddf0f5c319f87e9cfcf13b8ef9edccb81c5a78ccccb9",
+    "serving/candidates/native_serving_v25/build.py": "669369d3cf4f06722e1bd10e6217969fbe3a2efec5853e0e4beaee562fc2cb57",
+    "serving/candidates/native_serving_v25/component.py": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+    "serving/candidates/native_serving_v25/cpu_result.json": "aa266717bfb13490f2e4db2bf3f717e8c9b752b23f7dd6763f8f9cc3c7ef94e3",
+    "serving/candidates/native_serving_v25/host.cpp.inc": "e0301938e2b8273fff2848d9db52f69b866b15fcf64e0bd6a749de8182d2751a",
+    "serving/candidates/native_serving_v25/manifest.json": "51cf275edfe862c0bdf504ff1ca0074373e10a6ddf980037d7aed351ace8b32c",
+    "serving/candidates/native_serving_v25/test_cpu.py": "cb9952efbc11a07e2dbb266a963731413795e2f98b855d0d541d4f712fabd697",
+    "tools/SERVING_NATIVE_MOE_V25_LAYOUT_20261104.md": "cdf0b30e1377f8224806ee724dcda346b62d2a8022563bd813e7a64932fab95d",
+    "tools/analyze_native_serving_v25.py": "8915b50b4dbd70c3df6a9069e903c21388fa0ded5bf6f9fd03b542ebd1fb058c",
+    "tools/test_analyze_native_serving_v25.py": "6c4679995d90df5b3e4906a12bc749424da21921d6f4b9d605b7cd6dbf1e150b"
+  },
+  "gate_status": "Frozen source and author CPU proof independently pass. Root may issue exactly one private official check under the pre-result fixed gate. No Modal allocation/public promotion/full-serving approval.",
+  "hypothesis": "Reuse native fused computation with actual serving math and one retained representation to improve the full stock-Marlin expert stage.",
+  "independent_cpu_execution": {
+    "actual_slab_vs_full_pack_experts": {
+      "down": 1,
+      "gate_up": 1
+    },
+    "actual_zerojob_range_entry_cta_indices": 132,
+    "author_report_identical": true,
+    "full_cuda_restoration": true,
+    "host_policy_formula_boundaries": 6,
+    "inverse_code_coordinates": 50331648,
+    "inverse_scale_coordinates": 3145728,
+    "job_sizes": 64,
+    "no_atomic_interleaving_or_CUDA_execution": true,
+    "no_shared_result_write": true,
+    "normal_prmt_entries": 119,
+    "output_formula_coordinates": 8519680,
+    "rank_formula_values": 2056,
+    "scale_bytes": 127,
+    "scale_pairs": 16129,
+    "status": "PASS",
+    "two_preprocessed_builds": true
+  },
+  "iteration": "V25",
+  "kill_pivot": [
+    "Reject naive endpoint-only arithmetic adapter.",
+    "Reject dangling Marlin fallbacks after bank replacement or unbudgeted extra banks/capture workspaces.",
+    "Reject unsafe zero-job/global-barrier/stream behavior.",
+    "A failed fixed performance experiment is closed without automatic sweep/retry."
+  ],
+  "memory": {
+    "candidate_workspace_bytes": 108033568,
+    "candidate_workspace_mib": 103.02883911132812,
+    "candidate_workspace_parts_bytes": {
+      "counter": 4128,
+      "expert_output": 25165824,
+      "fixup": 20985344,
+      "local_ids": 12288,
+      "xA_xB": 61865984
+    },
+    "extra_bank_source_default62_layers_gib": 52.3125,
+    "parent_scratch_62_layers_gib": 9.508315026760101,
+    "parent_scratch_bytes_per_layout": 164668960,
+    "parent_scratch_mib": 157.04055786132812,
+    "scope": "Parent allocation arithmetic retained as historical; current f026 draft workspace sum independently evaluated from actual constant AST and allocation shapes. Full-model ownership and capture retention remain unproved.",
+    "single_packed_bank_bytes": 905969664,
+    "single_packed_bank_gib": 0.84375
+  },
+  "no_candidate_source_edits": true,
+  "no_provider_gpu_official_calls": true,
+  "notes_path": "tools/SERVING_NATIVE_MOE_V25_CRITIC_20261104.md",
+  "notes_sha256": "17eb1afdc3c11ff4f34dec2e589928784b05d2dc9ea8b267cffe881f1377c9e4",
+  "numeric_compiler_gate": "No inherited globalfastmath/FTZ in tiny-domain GEMM/fixup without justification; keep stock activation explicit fast intrinsics separate.",
+  "performance_analyzer_review": {
+    "fixed_thresholds_unchanged": true,
+    "fixtures_independently_passed": 6,
+    "full_chain_gate_added": true
+  },
+  "performance_upper_bound": null,
+  "performance_upper_bound_reason": "Originalnative score differs in arithmetic/dispatch; suppliedofficialstock also differs from actualserving block-size/alignment scheduling. No defensible full-serving speed bound.",
+  "predictions_to_test": [
+    "Exact prepared operand decode and required BF16 rounding boundaries survive adversarial finite/subnormal examples.",
+    "Complete chain uses the intended WGS binary and reproduces stock outputs across all ranks, zero-local routes and chunk boundaries.",
+    "Retained model weight/scratch bytes stay within a predeclared full-model envelope.",
+    "Matched stock complete-chain timing meets a frozen gate including small-token cases and all added work."
+  ],
+  "raised_floor_review": {
+    "actual_local_helper_executed": true,
+    "exact_three_literal_reversal": true,
+    "full_reservations_usd": "32.74",
+    "guard_and_journal_unchanged": {
+      "experiments/modal/credit-reservations-2026-11.jsonl": "2c4f5a729665235fe590c7e7366ed0af13ef5c9b986f013fea2ca116a76e17a1",
+      "tools/modal_credit_budget.py": "9f70c5006d8afd6e4a077cec8f3fe3baada2620703479bebf87ea0a333f0c9b2"
+    },
+    "journal_rows": 17,
+    "new_evidence": {
+      "path": "experiments/iterations/20261104-native-serving-v25-preflight.json",
+      "sha256": "590e57bb356ff05afd4e7af5f9a6dbdb2151e58329dceafa4d81aa7762b0167f",
+      "usd": "4.25390221"
+    },
+    "new_runner_sha256": "b781140b9d543e0fcdf80a9288340fc78170f1b22c5ee724060ebcdf6d3cfa07",
+    "no_provider_calls": true,
+    "old_runner_sha256": "d5bff0165db68b7de45b1117f6b2c401372f2674dc593db16f969434d3ee6ed4",
+    "old_usd": "4.22000000",
+    "separate_headroom_usd": "5.00",
+    "unchanged_A_usd": "3.74",
+    "unchanged_E_usd": "9.51",
+    "working_usd": "1.25609779"
+  },
+  "reference_contract_pins": {
+    "experiments/iterations/20261104-native-serving-v25-precision.json": "08ac2f749e9a083baf945d051d4cd6ed98d24831bf927ee284c7ff548ce287b4",
+    "muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+    "tools/SERVING_NATIVE_MOE_V25_LAYOUT_20261104.md": "a4ffe93821e0b569f26482493a52c0f81632b2093d3b7caaf4483809ec853a26",
+    "tools/SERVING_NATIVE_MOE_V25_PRECISION_20261104.md": "d993576efe653c6a5a39b6a03fdd497015e7e2ea9eb7c0f138817ead58cd6aa2"
+  },
+  "reviewed_draft_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "route_output_contract": "BF16[T,8,H] live outputs inoriginalS.ent route slots; correctlynegative localIDs allow originalfinalizer to mask uninitializedremote slots. Poison/duplicates/chunkboundaries required.",
+  "schema": 1,
+  "source_pins": {
+    "experiments/iterations/20261104-native-serving-port-feasibility.json": "956c18297daaf22bae7ef91e7b9390a499de8247f50ad4dd1dae4139548c64ef",
+    "muse_moe_w4a16/submission.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "serving/sglang/python/sglang/kernels/jit/csrc/gemm/marlin/dequant.h": "f07f0e1284431bd630d605b438c054509573c495d66d3a2b2e017396d84887a0",
+    "serving/sglang/python/sglang/kernels/jit/csrc/gemm/marlin_moe/marlin_template.h": "6b43bc72d64a591bc86f62df2db14bdea5adce7b70b00af1a3e601a3c0d24fdb",
+    "serving/sglang/python/sglang/srt/layers/moe/flashinfer_megamoe.py": "00653efc6c663a5b787763c2a594408b43e899645f4bc4b20594161412599c00",
+    "serving/sglang/python/sglang/srt/layers/muse_spark_fp4_moe.py": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b",
+    "serving/sglang/python/sglang/srt/layers/quantization/marlin_utils_fp4.py": "a9011b5af7f8c9d25755d2ea4125e9fbdad06b862138be3ca27c85fc2f8a8e08",
+    "serving/sglang/python/sglang/srt/layers/quantization/modelopt_quant.py": "59fd4dd7a9395e63ab4a8a844486e7751fbde77e2755b36a640e221c456e5db8",
+    "serving/sglang/python/sglang/srt/layers/quantization/muse_spark_nvfp4_moe.py": "c09e0b4e32b7d5ac7af30caf74121dc0897e14e44f0e4503ea33a7acaf8f35a0"
+  },
+  "stage": "frozen_source_independently_reviewed",
+  "stock_comparator_caveat": {
+    "M": [
+      32,
+      128,
+      256
+    ],
+    "conclusion": "Official component qualification is not matched actual-serving timing or full-model validation.",
+    "existing_serving_alignment_patch_experts": 32,
+    "official_alignment_experts": 256,
+    "official_baseline_block_m": [
+      16,
+      48,
+      64
+    ],
+    "official_heuristic_divisor": 32,
+    "serving_block_m": [
+      8,
+      8,
+      16
+    ],
+    "serving_heuristic_divisor": 256
+  },
+  "verdict": "GO_FOR_ONE_OFFICIAL_PRIVATE_COMPONENT_CHECK"
+}

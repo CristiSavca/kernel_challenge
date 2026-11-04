@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "iteration": "native-serving-v25",
+  "candidate_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "source_review_status": "GO_FOR_OFFICIAL_COMPONENT_CHECK",
+  "fixed_gate": {
+    "GM_same_run_speed_min": 1.15,
+    "every_case_normalized_latency_max": 1.02
+  },
+  "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+  "core_profile_name": "native_serving_v25",
+  "hypothesis": "One WGS code/scale bank, cooperative fused alignment plus both GEMMs and SiLU, preserving Marlin operand domain/two BF16 epilogue roundings and original stock finalizer, can improve the official stock component across all six loads.",
+  "falsifiable_predictions": [
+    "All five official correctness tests and six timed/profiled cases pass with no flags/rejections.",
+    "Every timed shape executes the new WGS core followed by original stock finalization.",
+    "Geometric mean same-run speedup is at least1.15 and no candidate/stock case latency ratio exceeds1.02."
+  ],
+  "kill_criterion": "Any source-contract violation, official numerical/rule failure, missing activation, or fixed performance-gate failure closes this candidate. No tolerance/threshold/shape-policy rescue.",
+  "performance_upper_bound_estimate": "No defensible numerical full-serving bound yet. Public native score2.373691 is motivation, not an upper bound for new arithmetic, tiny-M WGS or serving. Need fraction-of-request-time and actual model/graph/memory data.",
+  "comparators": [
+    "same-run official stock baseline is component qualification comparator",
+    "public native247888 is separate leaderboard incumbent; it is not a serving-compatible replacement",
+    "actual serving has different alignment/blocksize and requires matched subsequent measurement"
+  ],
+  "scope_limit": "Not a full serving check, model memory proof, generic concurrency proof or automatic scored promotion.",
+  "resources": {
+    "expected_official_private_checks": 1,
+    "planned_Modal_allocations": 0,
+    "out_of_pocket_authorized_usd": 0
+  },
+  "next_after_pass": "Generic rank/empty/scale/numerical and multistream/graph validation, followed by post-load single-bank ownership and full-serving prefill/TTFT/memory gates.",
+  "original_finalizer_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "activation_evidence_contract": {
+    "large_M_at_least32": "native_serving_v25 plus _post_expert_norm_weighted_sum_kernel",
+    "small_M_below32": "native_serving_v25 plus where_kernel_impl, MeanOps, sum_functor from actual stock-source mask/mean/slot-sum chain; no fixed launch count",
+    "stock_profile_reference": "experiments/modal/20261104T183437Z-9826c968/result-checkpoint.json",
+    "stock_profile_reference_sha256": "e5ba29486796ba4d01c92388b3437c680c73358bb0e3bbdeee98d42e9052be95",
+    "stock_helper_reference_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "static_chain": "Frozen source must import and call original finalizer with BF16 expert outputs, effectiveBF16 norm weight, allslot weights and localIDmask."
+  },
+  "formal_gate": {
+    "status": "unsupported_composition_no_certificate",
+    "draft_report": "experiments/formal/native-serving-v25-draft.json",
+    "reason": "Narrow incumbent source binder requires _pack_codes; the WGS-only candidate retains _pack_codes_nat and removes the unused helper. The verifier rejected it before Lean. No dead code was added and no binding rule was weakened.",
+    "scope": "Existing247888MULDECproofremainsvalid. Newcandidateisnotadvertisedassource-boundformallyverified."
+  },
+  "root_source_review": {
+    "precision_findings_resolved_before_freeze": [
+      "Two BF16 GEMM epilogue roundings before/after preparedglobal multiplication.",
+      "ExactMarlinLUT forzero/subnormalFP8, normalPRMT bias.",
+      "SplitglobalF32atomicFTZ replacedbybitwiseCAS andexplicitnonFTZadd.rn.f32.",
+      "FinalSiLUproduct useslocalmul.rn.ftz.f32 matchingstockactivationwithoutglobalFTZ.",
+      "FullT>=32shortchunkspreservestocklargefinalizerbranch throughmaskedpadding."
+    ],
+    "ownership": "ExplicitWorkspace inserialcomponentstate; distinctworkspaceperconcurrentcaller, noimplicitglobalpool. ActualSGLanggraph/modelownershipremainsunimplemented.",
+    "launch": "Cooperativecurrent-streamlaunch with actualcompiledpointer/exactthreads/dynamicsmemoccupancychecks; noordinaryfallback orPDL."
+  },
+  "candidate_path": "serving/candidates/native_serving_v25/component.py",
+  "source_freeze_note": "Exact source passed root CPU rerun and separate precision/critic review; one private check authorized. No scored or serving promotion.",
+  "source_only_limitations": [
+    "New component does not carry the existing Lean source-binding certificate.",
+    "One bank and explicit workspace do not establish whole-model memory fit.",
+    "Serving export still needs all patch and line-length rules checked.",
+    "Standalone component is197263bytes and has9 lines over400characters; future serving export must satisfy its separate line-length rule."
+  ],
+  "frozen_at": "2026-11-04T20:23:19.000766+00:00",
+  "evidence_sha256": {
+    "serving/candidates/native_serving_v25/manifest.json": "51cf275edfe862c0bdf504ff1ca0074373e10a6ddf980037d7aed351ace8b32c",
+    "serving/candidates/native_serving_v25/test_cpu.py": "cb9952efbc11a07e2dbb266a963731413795e2f98b855d0d541d4f712fabd697",
+    "serving/candidates/native_serving_v25/cpu_result.json": "aa266717bfb13490f2e4db2bf3f717e8c9b752b23f7dd6763f8f9cc3c7ef94e3",
+    "experiments/iterations/20261104-native-serving-v25-precision.json": "e8863fd039c75085aaf5b086806f23a8cb14ad5a5104f92e51556a2eceae3c6c",
+    "experiments/iterations/20261104-native-serving-v25-source-critic.json": "d565ae8fc446caa79d09e7e13c0d3b2e877265ee633e77d68ad2361379c08d8b",
+    "tools/analyze_native_serving_v25.py": "8915b50b4dbd70c3df6a9069e903c21388fa0ded5bf6f9fd03b542ebd1fb058c"
+  },
+  "root_CPU_rerun": {
+    "status": "PASS",
+    "exact_report_match": true,
+    "packed_code_values_checked": 50331648,
+    "packed_scale_values_checked": 3145728,
+    "output_coordinates_checked": 8519680,
+    "scale_pair_cases": 16129,
+    "no_CUDA_validation": true
+  }
+}
