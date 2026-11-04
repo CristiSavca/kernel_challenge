@@ -1402,3 +1402,34 @@ normalized latency<=1.02, and control M1/8/16 latency GM within[0.98,1.02].
 Clean official correctness, provenance and launch admission are required. Failure
 closes this fixed attempt without a distance/policy sweep. No public entry or
 Modal reservation changed. The #1 goal remains active and unachieved.
+
+## L2 prefetch rejected after official timing — November 4, 14:00 UTC
+
+Official `ea811fae5f6648bf` completed with5/6/6 clean test/benchmark/profile
+coverage. Score2.2783223373 versus public2.3736910444 and private2.3898359607.
+Affected normalized latency GM is9.0334% worse than public and10.0348% worse
+than private. All three changed workloads regress against both; controls remain
+stable within the fixed gate. Root analysis`f1d09c0f` and independent critic
+`c69406d2` agree: reject, close conditional decoder integration, no retest or
+distance/cache-policy sweep. No public score was replaced by this private check.
+
+Both actual LPFR entries admit576 threads and231168 dynamic shared bytes,
+96registers/zero local/static bytes, occupancy capacity1 and API success.
+Compiler reports zero stack/spills; no C75 is visible, complete absence unknown.
+Exact source/evaluator/profile checks pass. This supports activation by source
+inference but does not measure cache-hint effectiveness or isolate the hardware
+cause. The selected parent remains the better measured source.
+
+New public-source refresh reviewed bemler's Nov4 release and Aravind's Nov3
+MoE release. No implementation-ready transfer was found: the positive ticket
+fix targets an absent dynamic queue, the pair-add saving removes an ATen kernel
+absent from our selected path, and added WGMMA variants were not selected.
+Known licensed donor heads remain unchanged. Exact public links and evidence
+are retained in tools/PUBLIC_SOURCE_AFTERNOON_SCOUT_20261104.md.
+
+Fresh14:00 board: overall395/1968, decoder395/1267 at2.1812 versus leader2.5510;
+MoE297/1397 at2.3737 versus2.7817. Active97af/247888 sources remain exact.
+Rank changed as other entries moved; our public scores did not decrease.
+No official job is live and no Modal allocation was made. Distinct attention
+instruction/traffic removal is now under bounded read-only review; no candidate
+or GPU call is authorized by that review alone. #1 remains active and unachieved.

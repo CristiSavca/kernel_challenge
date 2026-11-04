@@ -4,9 +4,9 @@
 encoding, geometry, arithmetic or pipeline changes. Root accepted fixed plan
 `tools/WGS_BULK_L2_PREFETCH_FEASIBILITY_20261104.md` (57bad98b) after critic review.
 Independent frozen-source review and root CPU reproduction passed. Official
-private check `ea811fae5f6648bf` was submitted at13:52 UTC and is queued;
-CUDA correctness, resource admission and timing remain pending. Active submissions
-remain unchanged.
+private check `ea811fae5f6648bf` passed correctness but failed the fixed performance
+screen. This attempt and its conditional decoder port are closed. Active
+submissions remain unchanged.
 
 Source SHA256: `85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759`.
 Parent: `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`;
@@ -71,3 +71,26 @@ normalized latency<=1.02. Control M1/8/16 GM normalized latency must be within
 [0.98,1.02], with all five tests/six benchmarks clean. No distance, cache-policy
 or SC6 combination sweep follows a failed result. A useful standalone outcome
 requires a separately reviewed decoder integration and complete decoder check.
+
+## Terminal outcome
+
+Official result observed13:57 UTC:5 tests,6 benchmarks and6 profiles passed;
+clean checks and no flags. Score2.2783223373, CI[2.2441475022,2.3124971723].
+Affected-case normalized latency GM increased9.0334% against public247888 and
+10.0348% against private247888. All three affected cases slowed against both;
+zero joint positives, and every affected case exceeded the2% slowdown cap.
+Controls stayed close: latency GM0.9955393 and0.9999446. Aggregate score ratios
+were0.9598226 and0.9533384. Both baseline score intervals are above this interval.
+
+Both LPFR entries report576 threads,231168 dynamic shared bytes,96 registers,
+zero local/static bytes, one-CTA capacity and successful APIs. Both compiled
+entries report zero stack/spill stores/spill loads. No C75 diagnostic is visible;
+its complete absence is not established. Pinned source, compile flags and logs
+support MAIN activation by inference, not direct per-case module-pointer tracing.
+The result does not measure whether hardware honored the hints or isolate cache
+pollution, request contention or address overhead as the cause.
+
+Root and independent critic`c69406d2` agree to reject. Retain performance,
+resource, root-result and result-critic JSON under
+`experiments/iterations/20261104-wgs-l2-prefetch-*`. No retry, distance/policy
+sweep, SC6 combination, decoder port or scored promotion follows this result.
