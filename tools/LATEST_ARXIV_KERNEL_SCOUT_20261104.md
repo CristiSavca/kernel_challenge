@@ -42,6 +42,16 @@ Released [Apache-2.0 code](https://github.com/PKU-DAIR/PipeLink/blob/4d8ebab9f15
 
 ## One bounded experiment derived from the released source
 
+**Subsequent independent review supersedes the initial warp-vote sketch below.**
+Use a simple `if (alpha != 1.f)` around only the output multiplies as the
+preferred proposal, introducing no collective. The review identifies five
+affected cases and seven controls: Q1 B1 sliding already selects ONE and skips
+this work. The initial six-Q1 selection screen below was never accepted or run;
+choose and freeze a corrected screen before any candidate submission. See
+[the exact-rescale critic](ATTENTION_EXACT_RESCALE_RESEARCH_CRITIC_20261104.md)
+for the actual dispatch coverage, numerical requirements and limited modeled
+whole-decoder effect. This remains below generic serving-finalizer validation.
+
 Parent: exact attention `87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c`, at `experiments/candidates/muse_attention_decode/87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c.py`.
 
 At lines2903–2921, the ordinary Q1 branch computes the existing `alpha = ex2(m_old - m_new)`, updates the row sum using `l * alpha + ls`, and unconditionally multiplies sixteen FP32 output accumulators per thread by alpha. `OKC_LAZY1=0` is the default at693. The alternate lazy-offset branch is recorded as neutral and changes offset/probability scaling; it is **not** this proposal. Q8 already uses rare offset rescaling, so leave it untouched.

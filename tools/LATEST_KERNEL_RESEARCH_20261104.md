@@ -62,6 +62,12 @@ still survive the official evaluator and preserve the active incumbents.
 The critic identified a concrete issue with the naive warp-vote version:
 the enclosing Q1 branch is only known to be quad-uniform, so an unconditional
 full-mask vote inside it cannot be assumed safe. No such code was introduced.
+The [independent rescale review](ATTENTION_EXACT_RESCALE_RESEARCH_CRITIC_20261104.md)
+instead recommends a simple scalar conditional, subject to numerical/compiler
+validation. It identifies five affected cases and seven controls. A hypothetical
+10% reduction in those attention kernels models only about0.79% whole-decoder
+latency reduction; that is a scenario, not a prediction. This supports retaining
+the finalizer as the higher-priority measured work.
 
 At 17:56 UTC, CristiSavca remained 401st overall/decoder; decoder 2.1812× versus
 leader 2.5762×. MoE was 303rd at 2.3737×. The #1 objective remains unachieved.

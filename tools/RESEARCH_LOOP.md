@@ -86,6 +86,11 @@ the already-computed rescale is exactly one. Current Q1 has this work, but a
 full-mask warp vote inside its quad-uniform branch is not established safe.
 Do not implement that naive placement. Preserve row-sum arithmetic, actual
 rescaling and Q8 behavior; source/semantic review precedes any GPU candidate.
+The independent `ATTENTION_EXACT_RESCALE_RESEARCH_CRITIC_20261104.md` prefers
+a simple scalar conditional with no collective, and corrects the case partition
+to five affected/seven controls (Q1 B1 sliding already uses ONE). Its suggested
+screen is not yet a root-approved experiment. A modeled10% affected-attention
+cut gives only about0.79% whole-decoder latency reduction, not a forecast.
 
 Next concrete experiment: focused GPU correctness for exact helper91e6173b,
 including ragged H/K/T within its generic guard, auxiliary dtypes and strides,
