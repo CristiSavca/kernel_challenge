@@ -23,7 +23,8 @@ The raw original, evaluation and license are retained.
 The original compact adaptation points to the retained license. The separate
 `public_local_align_v7_licensed.py` now embeds the complete upstream MIT notice
 inside the uploaded file; its AST including docstrings is identical to V4.
-Its exact source is in private check `cac648f3b3904842`. The analogous
+Its private check `cac648f3b3904842` passed at 1.3494×; it is retained as a
+fallback without scoring because native V6 is substantially faster. The analogous
 `public_alignment_v6_licensed.py` has AST equality against decoder V3. V3
 passed at 1.1582×; the complete-notice source is now in private check
 `83d9b48acd01462e` before scored promotion.

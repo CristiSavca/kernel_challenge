@@ -60,7 +60,7 @@ for serving priority, so it is lower priority during this pass.
 | Experts | `7d7d9292e9054337` passed 1.3348× | Public local alignment and fused finalizer, original source/license preserved |
 | Attention | `c21d391dbf604bb5` passed 2.6425× | Reviewed public CUDA attention with fresh output and full-batch traversal guard |
 | Experts | `143f8587286e4384` passed 2.3605× | Reviewed public CUDA packed-weight experts; diagnostics removed |
-| Experts | `cac648f3b3904842` pending | Compact V4 with the full upstream MIT notice embedded; identical executable AST |
+| Experts | `cac648f3b3904842` passed 1.3494×; not scored | Compact V4 with the full upstream MIT notice embedded; identical executable AST, slower than native V6 |
 | Whole decoder | `41920b5cf4bf423f` passed 1.1582× | Passing V2 decoder with the public V4 expert alignment/finalization |
 | Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
 | Projections | `8c992affff0e45b8` passed 1.4774× | Reviewed native CUDA with lossless BF16 weight compression |

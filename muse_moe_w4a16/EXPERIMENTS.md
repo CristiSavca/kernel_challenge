@@ -191,3 +191,11 @@ The report lacks a breakdown of weight traffic, compute and barrier stalls;
 no specific tile or dispatch-threshold adjustment is justified. Retain V6.
 Profiler duration and the paired-ratio-normalized benchmark time are distinct
 measurements; their difference is not removable launch overhead.
+
+## Compact V7 control resolved
+
+Attribution-complete V7 check `cac648f3b3904842` passed at 1.3493640589×,
+CI [1.3291235980, 1.3696045197], with no flags. Its executable AST is identical
+to V4, so the small timing difference is not a code optimization. Retain this
+fully attributed fallback, but do not score it: native V6's validated 2.3605×
+is substantially faster and its scored rerun is already queued.
