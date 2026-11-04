@@ -293,14 +293,14 @@ Decision: `experiments/iterations/20261104-dense-chain-v9.json`.
 Fresh billing after the run showed $2.60 covered by credits, $0 billed; the
 app was stopped with zero tasks. The journal reservation remains consumed.
 
-The next prepared, statically reviewed experiment is whole-unit phase-A
+The now-completed, rejected experiment was whole-unit phase-A
 publication, using the exact original incumbents (no GS4/dense/V5 mixing):
 `muse_moe_w4a16/candidates/native_wgs_early_a_publish_v8.py`, SHA
 `2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488`.
 Its decoder counterpart SHA is
 `102c0d1509d39bb44d3884ea41ea9eef9624bf6465527eeee7d5bcec9ef3eb3a`.
-The early-A GPU screen is now running; see the handle below. One bounded
-screen only, no CI-index sweep.
+The early-A GPU screen is terminal; see its rejection below. Do not rerun or
+start a CI-index sweep.
 
 User asked how submissions appear on the board. Verified `okc whoami` is
 CristiSavca, and the actual public browser row is #395 on decoder at 2.15×,
@@ -356,3 +356,42 @@ Next actionable work (no GPU currently allocated):
 
 All four active scored sources are unchanged. Current overall/decoder standing
 remains the last verified #395 at 2.1502×; no new public score was claimed.
+
+Continuation at 05:34–05:40 UTC revalidated all Modal apps stopped; no GPU
+allocation is running. Provider billing revised its aggregate to $3.12
+(resource breakdown $3.12322333), still $0 billed; prior $3.18 snapshot is
+preserved as observed, and reservations are not refunded. A fresh 05:35
+leaderboard snapshot still places CristiSavca #395, leader 2.5401× and top-50
+cutoff 2.3493×. The previous turn was progress: early-A completed and was
+rejected from independently checked paired evidence.
+
+NCU helper `tools/modal_hardware_metrics.py` is under active author review;
+root found an EOF/normal-process-exit race before allocation, which the author
+is fixing with a subprocess regression test. Intended profile seeds are 7302
+at M32 and 9302 at M256, weight seed 7311; exactly two controlled-cold kernel
+captures (possibly multiple replay passes each), no source instrumentation. The eventual runtime must validate metrics,
+complete launch records, units and actual pass counts. No hardware counter run
+has happened yet. Attention's exact decoder build overrides PK2=0, so its
+prototype must preserve per-K32-half rescale ordering instead of macro defaults.
+
+Hardware-counter run started 05:46 UTC:
+`experiments/modal/20261104T054636Z-ea14816c`, sandbox
+`sb-RanXWKIxQCFs7pCilXezr6`, app `ap-kuUj734njDBhlU0tspu85c`, local session
+`83063`. It is running; root owns polling, billing and allocation. Resume the
+same session, never a duplicate. Exact runner `105c5ace...`, helper `6e9ac592...`
+passed root/author CPU suites and independent critic static review. The new
+suite has 51 test executions including inherited tests, not 51 unique checks.
+Command: hardware-profile --hardware-issue --timeout 900. One exact ef7
+prepare, two profiled sizes M32/M256, seeds 7302/9302, weight 7311. Policy:
+controlled-cold kernel replay, no clock changes, at most two matching launches,
+no profiler retry, 860-second subprocess budget inside the 900-second sandbox.
+The guard reserved $2.42, leaving $4.93677667 in its conservative working
+budget. Actual counter availability remains a runtime gate.
+
+Attention prototype `native_q8_role_pipeline_v10.py` and adjacent CUH/CPU
+verification files now exist but are under active static review and may change.
+Do not freeze or test the initial candidate hash. Its exact-layout and modeled
+schedule checks passed; actual compiler resources and two-CTA occupancy still
+need a reviewed GPU verification path. Source runtime outside the q8-full path
+must remain intact. Root has requested explicit resource verification rather
+than assuming it from the CPU budgets.

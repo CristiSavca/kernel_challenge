@@ -327,24 +327,52 @@ def run_worker(payload_path: str) -> None:
         raise SystemExit(1)
 
 
+def run_hardware_worker(payload: dict) -> None:
+    """Stage only the reviewed diagnostic payload, then run its fixed entrypoint."""
+    import importlib.util
+    expected = {"baseline.py", "reference.py", "checks.py", "nvfp4.py", "hardware_metrics.py"}
+    try:
+        if set(payload.get("files", {})) != expected or set(payload.get("file_sha256", {})) != expected:
+            raise ValueError("Unexpected hardware payload file set")
+        folder = Path("/tmp/okc-input")
+        folder.mkdir(exist_ok=True)
+        for name, source in payload["files"].items():
+            if not isinstance(source, str) or sha(source) != payload["file_sha256"][name]:
+                raise ValueError(f"Hardware payload hash mismatch: {name}")
+            (folder / name).write_text(source)
+        spec = importlib.util.spec_from_file_location("hardware_metrics", folder / "hardware_metrics.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.run_profile(payload)
+    except Exception as exc:
+        save(Path("/tmp/okc-result.json"), {"status": "hardware_unavailable", "official": False,
+             "diagnostic_only": True, "error": f"{type(exc).__name__}: {exc}"})
+        raise
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
     parser.add_argument("--profile", action="store_true", help="Record CUDA kernel names from separate diagnostic graph replays")
     parser.add_argument("--resources", action="store_true", help="Record cuobjdump resources from module-owned _EXTS shared objects")
+    parser.add_argument("--hardware-issue", action="store_true", help="Add the fixed optional issue/stall metric group if every metric is available")
     parser.add_argument("--cases", type=Path, help="JSON list of explicit reference.generate_input kwargs")
     parser.add_argument("--repeats", type=int, default=6)
-    parser.add_argument("--seed", type=int, default=7301)
+    parser.add_argument("--seed", type=int)
     parser.add_argument("--weight-seed", type=int, default=7311)
     parser.add_argument("--timeout", type=int, default=300, help="Benchmark sandbox lifetime, 60..900 seconds")
     parser.add_argument("--payload", help=argparse.SUPPRESS)
     parser.add_argument("--dry-run", action="store_true", help="Validate inputs and print manifest; no Modal call")
     args = parser.parse_args()
     if args.mode == "worker":
-        run_worker(args.payload)
+        payload = json.loads(Path(args.payload).read_text())
+        if payload.get("hardware_profile") is True:
+            run_hardware_worker(payload)
+        else:
+            run_worker(args.payload)
         return
     if not 2 <= args.repeats <= 30 or not 60 <= args.timeout <= 900:
         parser.error("repeats must be 2..30 and timeout 60..900")
@@ -354,7 +382,30 @@ def main() -> None:
         parser.error("--profile requires benchmark mode")
     if args.resources and args.mode != "benchmark":
         parser.error("--resources requires benchmark mode")
+    if args.hardware_issue and args.mode != "hardware-profile":
+        parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
+    if args.mode == "hardware-profile":
+        from modal_hardware_metrics import CASES, FILES, POLICY, PROFILE_SEEDS, SOURCE_SHA, REQUIRED, ISSUE, validate_payload
+        if (args.problem not in (None, "muse_moe_w4a16") or args.candidate or args.cases
+                or args.seed is not None or args.weight_seed != 7311 or args.repeats > 6):
+            parser.error("hardware-profile has fixed source/cases/seeds; repeats must be 2..6")
+        source_path = ROOT / "experiments/candidates/muse_moe_w4a16" / f"{SOURCE_SHA}.py"
+        files = {"baseline.py": source_path.read_text(),
+                 "hardware_metrics.py": (ROOT / "tools/modal_hardware_metrics.py").read_text()}
+        for name in sorted(FILES - files.keys()):
+            files[name] = (ROOT / "muse_moe_w4a16" / name).read_text()
+        payload = {"problem": "muse_moe_w4a16", "files": files, "image": IMAGE,
+                   "hardware_profile": True, "hardware_issue": args.hardware_issue,
+                   "hardware_budget_seconds": args.timeout - 40, "hardware_policy": POLICY,
+                   "hardware_required_metrics": REQUIRED, "hardware_optional_metrics": ISSUE if args.hardware_issue else (),
+                   "source_sha256": SOURCE_SHA, "file_sha256": {k: sha(v) for k, v in files.items()},
+                   "cases": list(CASES), "repeats": args.repeats, "seed": 7202, "weight_seed": 7311,
+                   "hardware_input_seeds": list(PROFILE_SEEDS), "comparison_baseline": "single_frozen_incumbent",
+                   "incumbent": {"path": str(source_path.relative_to(ROOT)), "sha256": SOURCE_SHA}}
+        validate_payload(payload)
+        for name, source in files.items():
+            compile(source, name, "exec")
     if args.mode == "benchmark":
         if not args.problem or not args.candidate:
             parser.error("benchmark requires --problem and --candidate")
@@ -390,7 +441,7 @@ def main() -> None:
             parser.error("set seed with --seed; device is always CUDA")
         payload = {"problem": args.problem, "files": files, "image": IMAGE,
                    "source_sha256": sha(source), "file_sha256": {k: sha(v) for k, v in files.items()},
-                   "cases": cases, "repeats": args.repeats, "seed": args.seed, "weight_seed": args.weight_seed,
+                   "cases": cases, "repeats": args.repeats, "seed": args.seed if args.seed is not None else 7301, "weight_seed": args.weight_seed,
                    "comparison_baseline": "incumbent" if incumbent else "official_public_baseline",
                    "incumbent": incumbent, "profile": args.profile, "resources": args.resources}
     worker_source = Path(__file__).read_text()
