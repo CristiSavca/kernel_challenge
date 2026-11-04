@@ -146,3 +146,13 @@ the saved observation of $4.16434237 to billing-after evidence
 Fresh provider costs can only increase that debit. The actual sandbox request
 remains one H200, fixed four CPUs/32GiB, network blocked, 600 seconds; no model
 weights are needed. This review performed no allocation or provider query.
+
+## Actual GPU outcome and review correction
+
+The first run, `experiments/modal/20261104T182526Z-3d547341`, **failed** at the frozen `finite_cancellation` case. This supersedes any inference that source review established generic numerical validity. The original GO above authorized a falsifiable test; it was not GPU acceptance. I independently checked the archived helper/original/worker hashes, manifest, stderr and exact worker control flow. The helper and test definitions are unchanged. The sandbox is recorded terminated; no result or checkpoint JSON survived.
+
+This is case index74 of90: T3/K3/H511, seed20268578, BF16 inputs and norm weights, FP32 scores, all-local IDs, norm-before-weight and epsilon1e-8. The trace reaches the assertion after the worker computes all three comparisons. It does not reveal which pair failed or any absolute/relative error. Fixed control flow implies74 earlier numerical cases and six activation checks completed; surviving stderr has six profiler start/stop pairs. Detailed kernel events and per-case metrics remain unavailable. Fifteen later numerical cases and the stream/graph tests were not reached.
+
+The reviewed runner339a85ef attempted recovery after leaving `app.run`; ephemeral app teardown could remove the sandbox first. Its manifest records `NotFoundError`. **My initial runner review missed that context-lifetime defect** because the mocks retained a usable sandbox after app exit. Earlier statements about preserved partial checkpoints describe intended behavior and were disproved by this run. The new lifecycle fixture invalidates the sandbox on app exit; the separately reviewed repair recovers inside the app context. The recovery reviewer owns the new frozen-runner verdict.
+
+The numerical failure is material and remains unattributed. Candidate/original, candidate/oracle and original/oracle are three independent records; a failure of any one triggers this same assertion. Different normalization/reduction associations can be amplified by near-zero cancellation, but that is a source-supported hypothesis, not a measured diagnosis or permission to weaken tolerances. A fixed diagnostic rerun may recover those same records after the observability repair. Keep the helper, case seed, inputs, limits and thresholds unchanged; preserve this failed run and never turn an incomplete rerun into PASS. No production/general-helper promotion follows from the earlier official H4096/K8 component result.

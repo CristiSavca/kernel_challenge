@@ -100,6 +100,41 @@
   },
   "review_note": {
     "path": "tools/SERVING_FINALIZER_GPU_VALIDATION_CRITIC_20261104.md",
-    "sha256": "024d9890ddfeec8f5a9e519d140ab60399fc6e7e29b0bc6614a5faadd72be8da"
+    "sha256": "df3150408eb8f249b304228d106a499d95de49c0073c0d1859f98243391127f3"
+  },
+  "observed_gpu_outcome": {
+    "audited_at_utc": "2026-11-04T18:33:03.583262+00:00",
+    "run": "experiments/modal/20261104T182526Z-3d547341",
+    "status": "FAILED_NUMERICAL_VALIDATION_WITH_MISSING_CHECKPOINT",
+    "exit_code": 1,
+    "case": "finite_cancellation",
+    "case_index_zero_based": 74,
+    "total_cases": 90,
+    "shape": [
+      3,
+      3,
+      511
+    ],
+    "seed": 20268578,
+    "comparison_attribution": "UNKNOWN",
+    "error_magnitudes": "UNKNOWN",
+    "previous_completed_cases_inferred_from_pinned_control_flow": 74,
+    "completed_profiles_inferred_from_pinned_control_flow": 6,
+    "detailed_metrics_and_profile_events_retained": false,
+    "remaining_numerical_cases_not_reached": 15,
+    "streams_graphs_reached": false,
+    "recovery_error": "NotFoundError",
+    "sandbox_terminated_recorded": true,
+    "source_review_miss": "Recovery was outside app.run; original mock did not invalidate sandbox at app exit. Initial runner review missed this lifetime bug.",
+    "prior_go_is_historical_test_authorization_not_gpu_acceptance": true,
+    "generic_helper_acceptance": false,
+    "evidence_sha256": {
+      "manifest.json": "88338abf399ab29bcb8a52c8476858cc294a4607fdbe5df6b98569a7ce6fe2bf",
+      "stderr.log": "a0dbbdaa1f053a9015f80e480b5f61515c99a0546d5aa711ff5c6dae1fe8b593",
+      "candidate.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+      "baseline.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+      "finalizer_validation.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+      "worker.py": "339a85ef3a539c4bd4d5f8fb21fb3dfb6c9227b9a870da8d6ae8507cc5397a85"
+    }
   }
 }

@@ -1,5 +1,6 @@
 """Fixed result-reader and mocked lifecycle checks; no provider, CUDA or allocation."""
 import copy
+import contextlib
 import io
 import json
 from pathlib import Path
@@ -11,6 +12,7 @@ import unittest
 from unittest.mock import patch
 
 import modal_h200 as runner
+import modal_credit_budget as budget
 import serving_finalizer_validation_worker as worker
 import test_modal_h200 as inherited
 
@@ -206,6 +208,42 @@ class FinalizerLifecycleTests(unittest.TestCase):
         self.billing = AssertionError("provider called")
         self.assertEqual(self.invoke_finalizer(None, dry_run=True), [])
         self.assertFalse((self.root / "experiments").exists())
+
+    def test_checkpoint_recovered_before_app_context_teardown(self):
+        payload = worker.build_payload(ROOT)
+        sandbox = ValidationSandbox(payload, worker_exit=1, result_status="failed")
+        events = []
+        alive = {"value": False}
+        original_exec = sandbox.exec
+        def execute(*args, **kwargs):
+            if args == ("python3", "-c", runner.FINALIZER_READ_RESULT):
+                events.append("checkpoint_read")
+                if not alive["value"]: raise RuntimeError("sandbox disappeared on app context exit")
+            return original_exec(*args, **kwargs)
+        sandbox.exec = execute
+        @contextlib.contextmanager
+        def app_run(**kwargs):
+            alive["value"] = True
+            try: yield
+            finally:
+                events.append("app_exit")
+                alive["value"] = False
+        fake = types.SimpleNamespace(__version__="test", enable_output=contextlib.nullcontext,
+            App=lambda name: types.SimpleNamespace(run=app_run),
+            Image=types.SimpleNamespace(from_registry=lambda ref: ref),
+            Sandbox=types.SimpleNamespace(create=lambda *args, **kwargs: sandbox))
+        argv = ["modal_h200.py", "serving-finalizer-validation", "--timeout", "600"]
+        with patch.object(runner, "ROOT", self.root), patch.object(sys, "argv", argv), \
+             patch.object(budget, "modal_json", self.modal_json), patch.dict(sys.modules, {"modal": fake}), \
+             patch.object(worker, "build_payload", return_value=copy.deepcopy(payload)), \
+             patch.object(runner, "finalizer_observed_floor", return_value={"usd": "4.16434237"}), \
+             contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), \
+             self.assertRaisesRegex(RuntimeError, "Remote process exited 1"):
+            runner.main()
+        self.assertEqual(events, ["checkpoint_read", "app_exit"])
+        self.assertTrue(self.manifest()["validation_checkpoint_recovered"])
+        self.assertEqual(self.manifest()["status"], "failed")
+        self.assertTrue(sandbox.terminated)
 
 
 if __name__ == "__main__": unittest.main()

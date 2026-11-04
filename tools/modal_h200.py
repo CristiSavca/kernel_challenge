@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -772,6 +773,25 @@ def retrieve_finalizer_validation_result(sandbox, destination: Path, payload: di
     return result
 
 
+@contextmanager
+def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payload: dict):
+    """Exit before app.run: that context may destroy the sandbox on failure."""
+    try:
+        yield
+    except BaseException:
+        sandbox = get_sandbox()
+        if sandbox is not None:
+            manifest["validation_recovery_inside_app_context"] = True
+            try:
+                if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
+                    retrieve_finalizer_validation_result(sandbox, destination, payload, recovery=True)
+                manifest["validation_checkpoint_recovered"] = True
+            except Exception as recovery_error:
+                manifest["validation_checkpoint_recovered"] = False
+                manifest["validation_retrieval_error_type"] = type(recovery_error).__name__
+        raise  # Preserve the original worker/validation failure.
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "worker"))
@@ -947,7 +967,11 @@ def main() -> None:
         app = modal.App("okc-h200-bounded")
         sandbox = None
         try:
-            with modal.enable_output(), app.run(environment_name=credit["environment"]):
+            recovery_scope = (finalizer_live_recovery(lambda: sandbox, destination, manifest, payload)
+                              if payload and payload.get("serving_finalizer_validation") is True else nullcontext())
+            # Contexts exit in reverse order: recover while the app still owns
+            # a live sandbox, then allow app.run to perform its cleanup.
+            with modal.enable_output(), app.run(environment_name=credit["environment"]), recovery_scope:
                 sandbox = modal.Sandbox.create("sleep", str(manifest["timeout_seconds"]), app=app, image=image,
                                               gpu=None if compile_mode else "H200", cpu=(4, 4), memory=(32768, 32768), block_network=True,
                                               timeout=manifest["timeout_seconds"], idle_timeout=manifest["timeout_seconds"])
@@ -1019,14 +1043,6 @@ def main() -> None:
                 except Exception as recovery_error:
                     manifest["compile_checkpoint_recovered"] = False
                     manifest["compile_retrieval_error_type"] = type(recovery_error).__name__
-            if payload and payload.get("serving_finalizer_validation") is True and sandbox is not None:
-                try:
-                    if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
-                        retrieve_finalizer_validation_result(sandbox, destination, payload, recovery=True)
-                    manifest["validation_checkpoint_recovered"] = True
-                except Exception as recovery_error:
-                    manifest["validation_checkpoint_recovered"] = False
-                    manifest["validation_retrieval_error_type"] = type(recovery_error).__name__
             if sandbox is None:
                 manifest["sandbox_created"] = False
             raise

@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "at": "2026-11-04T18:34:21.406988+00:00",
+  "reviewer": "/root/moe_research_reset",
+  "verdict": "GO_ONE_FIXED_600S_DIAGNOSTIC_RERUN_SUBJECT_TO_FRESH_CREDIT_GUARD",
+  "scope": "Independent source and CPU-test review of finalizer checkpoint recovery placement only. No provider, GPU, allocation or official calls.",
+  "source_sha256": {
+    "tools/modal_h200.py": "6f3f61a480d0e48b298eea23b0f1b63b36bd2ccc0850ce775f890321a13b0f16",
+    "tools/test_modal_finalizer_validation_runner.py": "c97fc56960be97a0c36ecd845893790830be38ebd5ded66bb3371be7396038dd",
+    "tools/test_modal_h200.py": "eb127462958ef6c223e7b8ba5505c48507aa673db2c4c253ecf1b787d3e4f45e",
+    "tools/serving_finalizer_validation_worker.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+    "tools/SERVING_FINALIZER_VALIDATION_FAILURE_20261104.md": "dbbda4d4540fc243231b7d7678b3c821d17f26128ba42becac7252b3d0d390f7",
+    "experiments/iterations/20261104-finalizer-checkpoint-recovery-plan.json": "0384f1635e5876d5e183a8d7b843d446cd4f895b1f39a3b8a8e62c5953f51050",
+    "serving/sglang/python/sglang/kernels/ops/muse_spark_v12/fused_post_expert_norm_weighted_sum_triton.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98"
+  },
+  "old_runner_sha256": "339a85ef3a539c4bd4d5f8fb21fb3dfb6c9227b9a870da8d6ae8507cc5397a85",
+  "predecessor": {
+    "path": "experiments/modal/20261104T182526Z-3d547341",
+    "status": "failed",
+    "exit_code": 1,
+    "observed_worker_failure": "Numerical failure: finite_cancellation",
+    "checkpoint_recovered": false,
+    "retrieval_error_type": "NotFoundError",
+    "sandbox_terminated": true,
+    "numerical_pair_and_metrics": "UNKNOWN: failure result was not recovered; no attribution to candidate or baseline is established."
+  },
+  "independent_tests": [
+    {
+      "command": ".venv-modal/bin/python -m unittest discover -s tools -p test_modal_finalizer_validation_runner.py -v",
+      "tests": 13,
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": ".venv-modal/bin/python -m unittest discover -s tools -p test_modal_h200.py -v",
+      "tests": 18,
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "New context-teardown fixture against exact HEAD runner loaded in memory",
+      "tests": 1,
+      "expected_failures": 1,
+      "errors": 0,
+      "result": "EXPECTED_NEGATIVE_PASS",
+      "actual_events": [
+        "app_exit",
+        "checkpoint_read"
+      ],
+      "required_events": [
+        "checkpoint_read",
+        "app_exit"
+      ],
+      "source_files_written": false
+    }
+  ],
+  "source_findings": [
+    "The new recovery context is entered after app.run in the same with statement. Reverse exit order invokes its exception handler while app.run is still active; exact new regression fixture validates this order.",
+    "The earlier HEAD runner performs the identical finalizer read from the outer exception block after app.run teardown. The newly added test demonstrably fails on that exact source, not only on a synthetic mutation.",
+    "Only finalizer recovery lifetime and its regression test changed. Frozen validation worker, helper, original baseline, cases, seeds, comparisons and tolerances are unchanged; no kernel or financial policy is changed.",
+    "Nonzero worker exit and stderr log are recorded before checkpoint retrieval. Recovery errors are separately recorded by type; bare raise preserves the original worker failure. Outer status remains failed even if the recovered child status is pass.",
+    "Recovery reads only the fixed result path with a 10-second remote bound; the script reads at most 1048577 bytes and rejects over 1048576 before printing. Local size, JSON and source/case/image provenance checks remain enforced.",
+    "Recovered or non-pass output is saved as result-checkpoint.json. A recovered pass does not create canonical result.json or promote the failed manifest.",
+    "An already validated local result/checkpoint avoids a duplicate read. A normal read failure can cause one additional bounded checkpoint read, never a second worker execution or sandbox allocation.",
+    "The existing finally path still attempts sandbox termination and persists the manifest. A termination failure remains an explicit failed outcome, not silently successful cleanup.",
+    "No evidence from this CPU review establishes numerical correctness, concurrency safety, end-to-end serving benefit or performance promotion."
+  ],
+  "limitations": [
+    "Mocked lifetime ordering establishes the local control flow; a sandbox that has independently expired or disappeared may still be unreadable. Runtime evidence remains required.",
+    "Original cancellation failure has not been numerically diagnosed. This rerun must retain the same case and tolerance and is expected to expose the failing comparison, not assumed to pass.",
+    "The 31 focused tests cover runner/recovery/resource lifecycle. This review does not rerun or relabel prior GPU correctness or performance results."
+  ],
+  "authorized_next_action_conditions": {
+    "max_runs": 1,
+    "gpu": "H200",
+    "timeout_seconds": 600,
+    "fresh_credit_guard_required": true,
+    "full_reservation_usd": "1.78",
+    "headroom_usd": "5.00",
+    "helper_worker_cases_tolerances_unchanged": true,
+    "automatic_retry": false,
+    "performance_or_serving_promotion": false,
+    "stop_after_diagnostic": "Recover and inspect the existing comparison failure; if evidence is missing again, close this same-source retry. Any numerical source fix requires its own reviewed change."
+  },
+  "blocking_findings": []
+}

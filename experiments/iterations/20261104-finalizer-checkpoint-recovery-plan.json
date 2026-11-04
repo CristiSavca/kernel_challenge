@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-04T18:30:43.460565+00:00",
+  "hypothesis": "Recovery inside app.run preserves the failed cancellation comparison metrics before Modal app teardown. No numerical or performance gain is predicted.",
+  "predecessor": "experiments/modal/20261104T182526Z-3d547341",
+  "prior_observation": "Worker raised Numerical failure: finite_cancellation. Recovery attempted after app.run and failed NotFoundError; numerical pair/metrics unknown.",
+  "changed": "Runner recovery context lifetime only; candidate/baseline/worker/cases/tolerances unchanged.",
+  "source_sha256": {
+    "tools/modal_h200.py": "6f3f61a480d0e48b298eea23b0f1b63b36bd2ccc0850ce775f890321a13b0f16",
+    "tools/test_modal_finalizer_validation_runner.py": "c97fc56960be97a0c36ecd845893790830be38ebd5ded66bb3371be7396038dd",
+    "tools/serving_finalizer_validation_worker.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede"
+  },
+  "coverage": "same90cases; stopfirstfailure; sixactivationprofiles, streams andgraphs onlyifearliercasespass",
+  "kill": "No same-source retry if comparison evidence still missing. No promotion regardless of rerun outcome; resolve source/numerical findings before next candidate.",
+  "resource": "one H200,600secondcap, freshcreditguard, full1.78reservation,$5headroom, noautoallocationretry",
+  "expected": "Samefinite_cancellation failure with actualcandidate/original/oracle metrics; a pass is not assumed.",
+  "verification": "Newcontextteardowntest failedoldrunner;13runner/18lifecycle/12workertestsPASS; reviewerGOrequiredbeforeallocation"
+}
