@@ -997,3 +997,24 @@ active and unachieved; no completion or blocked declaration.
 The11:12 UTC final board refresh ranks our unchanged decoder2.1812 at391
 (overall also391); leader remainsLeshengJin2.5510. MoE remainsrank292 at2.3737.
 One additional entrant moved ahead; no public source replacement occurred.
+
+### Accounting review and next independent feasibility
+
+MODAL_PROVEN_OVERLAP_PROPOSAL.md preserves every original reservation and only
+permits removing double counting proved by exact provider-attributed charges
+included in observed usage. Current proved overlap is0: saved evidence lacks
+run attribution/inclusion proof. Existing guard remains unchanged; no allocation
+or automatic refund/recycling is authorized by this conditional proposal.
+
+A separate bounded source/CPU feasibility review now considers smallerR16 SK2
+output-row units across QKV and pooler. It must preserve losslessweights,UV and
+routerfusion. The fused-pooler design specifically needs eight eighth-K router
+pieces (rather than four quarters),2routerstages,larger of main/router payload
+forringallocation, and correct eight-way ordered partial reduction/counter reset.
+Actualnewregisters/occupancy/performance stayunknown. Quantify duplicated input
+traffic,copy/stage events,reducedlookahead and wholedecoderscope before proposing
+implementation. No parameter sweep, sourcecandidate or GPU check is approved.
+The5% decoder target is a prioritization heuristic, not a user-imposed minimum;
+any smaller gain still needs evidence strong enough to distinguish it from noise.
+Authorattention_paper_reset owns the study; result_and_strategy_critic reviews
+independently. Existing incumbent and closed failed hypotheses remain preserved.
