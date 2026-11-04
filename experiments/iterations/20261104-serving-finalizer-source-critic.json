@@ -1,0 +1,77 @@
+{
+  "verdict": "GO_ONE_ROOT_OWNED_PRIVATE_DIAGNOSTIC",
+  "scope": "Independent serving finalizer source and readable official-baseline embedding review; no GPU execution or serving promotion.",
+  "serving_base": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+  "source": {
+    "path": "serving/sglang/python/sglang/kernels/ops/muse_spark_v12/fused_post_expert_norm_weighted_sum_triton.py",
+    "sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+    "original_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591"
+  },
+  "verifier": {
+    "path": "tools/test_serving_finalizer_cpu.py",
+    "sha256": "3d339b2ae5bb685f4faf34631c621a23d2d1a9735b0704acf2a90f4b7ded7f89",
+    "command": ".venv-modal/bin/python tools/test_serving_finalizer_cpu.py",
+    "independent_exit_code": 0,
+    "numpy_version": "2.5.4",
+    "metadata_cases": 400,
+    "directed_auxiliary_metadata_cases": 11,
+    "actual_kernel_host_array_cases": 288,
+    "nonfinite_zero_slot_cases": 18,
+    "original_fallback_and_large_path_AST_unchanged": true,
+    "contiguous_auxiliary_copies_present": true
+  },
+  "diagnostic": {
+    "path": "muse_moe_w4a16/candidates/serving_finalizer_v22.py",
+    "sha256": "c3c4f49cc76a675d4cd47122746e4af47f16d5faa80a50fb35df9899733ee00a",
+    "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+    "baseline_bytes_preserved": true,
+    "appended_helper_bytes_exact": true,
+    "one_prepare_and_one_kernel_fn": true,
+    "candidate_owned_finalizer_binding": true,
+    "loaded_module_monkeypatch": false
+  },
+  "source_findings": [
+    "M1/H4096/K8/BF16/CUDA with caller-compatible FP32 scores, BF16 weight and int32 local IDs satisfies the metadata guard; M32/128/256 retain the original kernel.",
+    "Two kernels retain weight inside the FP32 norm, inverse-only scratch, original separate FP32 element multiplies and final BF16 cast; fusion disabled on both launches.",
+    "Invalid IDs mask x loads to positive zero; zero-slot norm and score arithmetic is retained, including exceptional-value propagation.",
+    "Scores, weights and IDs are made contiguous; unsupported shape/device/dtype metadata falls back. All inverse and output positions are written without shared global scratch.",
+    "The complete original baseline remains byte-identical inside the diagnostic. Its functions resolve only the appended local finalizer; no imported module or reference is modified."
+  ],
+  "fixed_gate": {
+    "correctness_tests": 5,
+    "benchmarks": 6,
+    "profiles": 6,
+    "affected_tokens": [
+      1,
+      8,
+      16
+    ],
+    "affected_geomean_speedup_at_least": 1.05,
+    "all_affected_speedups_at_least": 1.0,
+    "at_least_two_affected_speedups_at_least": 1.05,
+    "control_tokens": [
+      32,
+      128,
+      256
+    ],
+    "control_geomean_normalized_latency_bounds": [
+      0.98,
+      1.02
+    ],
+    "each_control_normalized_latency_at_most": 1.03,
+    "activation": "Both new kernel names in affected profiles; old kernel in controls.",
+    "comparator": "Same-run official stock baseline, not the faster247888 incumbent.",
+    "interpretation": "Practical predeclared consistency gate, not statistical significance or end-to-end serving evidence; failure closes the fixed design except a concrete correctness fix."
+  },
+  "limits": [
+    "Actual Triton compilation, reduction/rsqrt/FTZ behavior, BF16 GPU numerical agreement and resources remain untested.",
+    "CPU pointer/mask adapter and loose host tolerance are not GPU correctness proof.",
+    "Auxiliary stride handling has source/copy and metadata checks; no real GPU strided-tensor or two-stream/captured-graph test ran.",
+    "Official first diagnostic only covers the stock Marlin BF16/H4096/K8 boundary and its official shapes.",
+    "No provider, official API, GPU, account, budget or serving source mutation by this reviewer."
+  ],
+  "note": {
+    "path": "tools/SERVING_FINALIZER_CRITIC_20261104.md",
+    "sha256": "c013fff3189f634fd8c254491415ffa26374d286c484f1d80589a08f78db5edb"
+  }
+}

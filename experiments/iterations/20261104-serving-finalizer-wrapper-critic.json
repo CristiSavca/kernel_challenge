@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_ONE_PRIVATE_COMPONENT_DIAGNOSTIC_EXACT_FROZEN_WRAPPER",
+  "builder_sha256": "ce9ebd5e50a5f45df91d865ff01245a1d69997b572372bc4a68650ff89fed6b4",
+  "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+  "original_helper_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "helper_snapshot_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "helper_snapshot_is_final": true,
+  "source_composition_checked_in_memory": true,
+  "all_original_baseline_bytes_preserved": true,
+  "own_module_redefinition": true,
+  "global_binding_overlap": {
+    "fused_post_expert_norm_weighted_sum": {
+      "baseline": "from sglang.kernels.ops.muse_spark_v12.fused_post_expert_norm_weighted_sum_triton import fused_post_expert_norm_weighted_sum",
+      "helper": "FunctionDef"
+    },
+    "torch": {
+      "baseline": "import torch",
+      "helper": "import torch"
+    }
+  },
+  "kernel_fn_looks_up_candidate_global_finalizer": true,
+  "no_module_attribute_assignment_in_helper_top_level": true,
+  "no_prepare_or_kernel_fn_shadowing": true,
+  "rules_review": [
+    "The source owns its finalizer definition and leaves imported SGLang module objects unchanged.",
+    "The local builder git-show subprocess is not copied into the submission; the emitted module has no builder I/O or subprocess.",
+    "All original baseline statements and preparation/Marlin math remain byte-preserved. New helper numerical behavior is separately reviewed by its assigned critic.",
+    "No fresh input work is moved into prepare, no harness inspection, no output caching or benchmark-specific dispatch is introduced by this wrapper."
+  ],
+  "root_accepted_pre_result_gate": {
+    "scope": "Component diagnostic against each run's stock SGLang baseline, not247888 or97af.",
+    "clean_counts": {
+      "setup": 1,
+      "test": 5,
+      "benchmark": 6,
+      "profile": 6
+    },
+    "affected_M": [
+      1,
+      8,
+      16
+    ],
+    "affected_GM_speed_ratio_min": 1.05,
+    "every_affected_speed_ratio_min": 1.0,
+    "affected_cases_at_least_1p05_min": 2,
+    "control_M": [
+      32,
+      128,
+      256
+    ],
+    "control_GM_latency_range": [
+      0.98,
+      1.02
+    ],
+    "every_control_latency_ratio_max": 1.03,
+    "activation": "Both new kernel names in affected profiles; original large finalizer in controls.",
+    "all_source_evaluator_profile_identities_pinned": true
+  },
+  "evidence_limits": [
+    "Final candidate and helper hashes are now pinned. This GO covers wrapper provenance/isolation and one private diagnostic; helper numerical source has a separate assigned critic.",
+    "Official five-test/six-case check covers Marlin/BF16/H4096/TOPK8 and selected small batches; it does not validate arbitrary helper dimensions/dtypes/nonfinite inputs/concurrent streams.",
+    "Graph and full serving validation, including communication and realistic capture padding, remain separate.",
+    "A passing diagnostic is not a public native-kernel promotion and does not establish speed over247888 or the current97af whole decoder."
+  ],
+  "candidate": "muse_moe_w4a16/candidates/serving_finalizer_v22.py",
+  "candidate_sha256": "fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f",
+  "candidate_bytes": 27639,
+  "build_report_sha256": "c6c98e4f9ebc88c1c6010b86ca4d43fa7dbbe61f9e9071b1af056c81b392bf67",
+  "independent_final_reconstruction": "Every final candidate byte independently equals prior reviewed prefix+baseline+helper plus exact full license rendered as comments. Reconstructed prior source hashes to c3c4f49c; full Python AST is identical. No executable change.",
+  "candidate_written_or_executed_by_critic": false,
+  "license_only_refresh": {
+    "previous_reviewed_candidate_sha256": "c3c4f49cc76a675d4cd47122746e4af47f16d5faa80a50fb35df9899733ee00a",
+    "complete_upstream_license_sha256": "1495e1e757ef4d0925a2350563cf5754bb23c51701a8ec4fb3c5cdcbedae6747",
+    "license_appended_as_comments_only": true,
+    "full_byte_reconstruction_of_prior_and_final": true,
+    "complete_python_AST_identical": true,
+    "helper_unchanged_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98"
+  }
+}

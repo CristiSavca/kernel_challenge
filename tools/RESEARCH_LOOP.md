@@ -20,14 +20,29 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-Latest continuation, November 4 17:39 UTC: official private MoE job
-`1a2a2a31f96f43e3` is running for frozen v21 source `4fcf108f…`. Root owns
-polling this handle; do not resubmit. It changes only the steady-stage `lg`
-unroll hint and extension namespace. Both independent source reviews and the
-reproduced 13,440-case CPU trace are preserved. Fixed pre-result gates are in
-`WGS_STEADY_LG_V21_PLAN.md`; new owned-SASS tooling was deferred so the actual
-candidate could be tested. No Modal allocation was made. Current public source
-hashes remain 247888 MoE / 97af decoder / 87a9 attention.
+Latest continuation, November 4: official private MoE job `1a2a2a31f96f43e3`
+is terminal. Frozen v21 `4fcf108f…` passes correctness but fails its fixed speed
+gate: score2.23813914, MAIN normalized latency +12.39%/+13.42% versus public/
+private247888, zero jointly positive cases. Controls remain within the fixed
+band. Root and independent critic agree to close without retry, unroll sweep,
+decoder port or public promotion. Compiler resources/code-size behavior are
+unknown because this run's log has no compiler diagnostics. New owned-SASS
+tooling was deferred. No Modal allocation was made. Current public source
+hashes remain247888 MoE /97af decoder /87a9 attention.
+
+The next frozen component diagnostic is serving finalizer v22 `fc2fc6b5…`,
+27,639 bytes including the full upstream Apache license. It preserves exact
+official stock-Marlin baseline bytes and locally defines the new readable
+finalizer; it never modifies an imported module. Helper `91e6173b…` adds two
+kernels for generic small CUDA BF16 batches, with inverse-only FP32 scratch,
+preserved multiply/BF16 boundaries and masked-zero arithmetic. Both original
+fallback and large-batch ASTs remain exact. Root/critic reproduced400metadata,
+11auxiliary,288host-array and18exceptional checks usingNumPy2.5.4 in the existing
+venv. These are CPU proxies, not GPU results. The fixed same-run stock-baseline
+5% gate is `20261104-serving-finalizer-root-plan.json`. This is a serving
+component test, not a candidate to replace the much faster native MoE entry.
+Finalizer-only and combined draft patches are saved under `serving/candidates/`;
+the original1549-byte `serving/patch.diff` remains intact.
 
 Fresh 17:32 snapshot: overall and decoder #401, decoder 2.1812 versus leader
 2.5762; MoE #302 at 2.3737 versus 2.7817. These are unchanged own public scores.
@@ -37,6 +52,13 @@ Fresh Modal billing moved down to displayed 4.13/component 4.12650025, billed0.
 Preserve known provider high-water 4.16434237 and existing immutable financial
 evidence. Do not treat the lower display as restored budget; all attribution,
 certificate and cleanup checks still apply before any next allocation.
+
+User-requested release/paper research is recorded in
+`UPSTREAM_KERNEL_SERVING_RESEARCH_20261104.md`. SGLang.22/.23 headlines were
+checked against actual PRs and the pinned checkout. Relevant41251 additions
+are already present;40762 is an EAGLE-only allowlist fix unused byDFlash;
+43363 targetsCUTLASS instead of the selectedMarlin;44972 needs itsDSPARK/cache
+stack. No wholesale upgrade or unsupported transfer speedup is claimed.
 
 The new dictionary feasibility artifacts are retained under
 `DENSE_UNIT_DICTIONARY_FEASIBILITY_20261104.md`: exact CPU representation works,

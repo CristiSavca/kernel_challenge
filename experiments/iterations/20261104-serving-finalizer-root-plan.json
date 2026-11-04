@@ -1,0 +1,48 @@
+{
+  "utc": "2026-11-04T17:47:22.434199+00:00",
+  "kind": "private_serving_component_diagnostic",
+  "candidate": "muse_moe_w4a16/candidates/serving_finalizer_v22.py",
+  "candidate_sha256": "fc2fc6b51822e0e91eb6905790476ced13aa4c8599954dac2bb20edbf45fd39f",
+  "helper_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+  "scope": "Only finalizer differs from official stock Marlin; current native incumbents untouched.",
+  "fixed_gate": {
+    "all_official_tests_and_checks_pass": true,
+    "counts": {
+      "setup": 1,
+      "test": 5,
+      "benchmark": 6,
+      "profile": 6
+    },
+    "affected_M": [
+      1,
+      8,
+      16
+    ],
+    "affected_GM_same_run_speed_min": 1.05,
+    "every_affected_speed_min": 1.0,
+    "affected_cases_speed_at_least_1p05_min": 2,
+    "control_M": [
+      32,
+      128,
+      256
+    ],
+    "control_GM_normalized_latency_range": [
+      0.98,
+      1.02
+    ],
+    "every_control_normalized_latency_max": 1.03,
+    "profiles": "Both new helper kernels in every affected case, original finalizer in every control case"
+  },
+  "failure_action": "Close fixed performance attempt; no threshold relaxation or automatic identical retest. Fix only a concrete correctness/packaging defect under a new reviewed source.",
+  "limits": [
+    "Component latency only; no full-serving or native-incumbent speedup claim.",
+    "Private kernel evaluator covers BF16 H4096 TOPK8 Marlin. Generic dtype/stride/shape and two-stream/graph ownership still require focused GPU tests.",
+    "Serving check remains necessary once the track opens."
+  ],
+  "allocation": {
+    "Modal": false,
+    "official_private_checks": 1,
+    "out_of_pocket_usd": 0
+  }
+}
