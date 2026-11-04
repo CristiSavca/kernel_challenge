@@ -1,0 +1,138 @@
+{
+  "status": "cpu_static_validation_passed_gpu_untested",
+  "scope": "whole phase-A kind1 publication only; no GS4/attention/dense changes",
+  "records": [
+    {
+      "problem": "muse_decode_layer",
+      "parent_path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+      "parent_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+      "candidate_path": "muse_decode_layer/candidates/native_wgs_early_a_publish_v10.py",
+      "candidate_sha256": "102c0d1509d39bb44d3884ea41ea9eef9624bf6465527eeee7d5bcec9ef3eb3a",
+      "parent_cuda_sha256": "d0d950c33764d6b1193ea0caac9db9fb6cde4d986cd07fa862adab7f830fa39d",
+      "candidate_cuda_sha256": "f488b818ddbd80300a823b54f88984846d1cb926bdc1014f5d4abd93b27e81c8",
+      "changed_python_ast_nodes": [
+        "MOE_CUDA_SRC",
+        "_ma_ext"
+      ],
+      "extension_prefix": "dl_okc_moe_earlya1_v10_",
+      "cuda_diff": [
+        "--- parent_cuda",
+        "+++ candidate_cuda",
+        "@@ -2895,6 +2895,11 @@",
+        "       default: wgs_seg<PB, 8>(p, S, ring, u, s0, s1, slot, seq, pd); break;",
+        " #endif",
+        "     }",
+        "+    // Publish completed whole A units before the next segment can wait for its inputs.",
+        "+    // Split-unit records and every phase-B flush retain their existing deferred ordering.",
+        "+    if constexpr (!PB) {",
+        "+      if (pd.kind == 1) wgs_flush<false>(p, S, pd);",
+        "+    }",
+        "     gs += s1 - s0;",
+        "   }",
+        "   wgs_flush<PB>(p, S, pd);"
+      ],
+      "changed_native_functions": [
+        "wgs_phase"
+      ],
+      "native_function_delta": [
+        "--- parent_wgs_phase",
+        "+++ candidate_wgs_phase",
+        "@@ -27,6 +27,11 @@",
+        "       default: wgs_seg<PB, 8>(p, S, ring, u, s0, s1, slot, seq, pd); break;",
+        " #endif",
+        "     }",
+        "+    // Publish completed whole A units before the next segment can wait for its inputs.",
+        "+    // Split-unit records and every phase-B flush retain their existing deferred ordering.",
+        "+    if constexpr (!PB) {",
+        "+      if (pd.kind == 1) wgs_flush<false>(p, S, pd);",
+        "+    }",
+        "     gs += s1 - s0;",
+        "   }",
+        "   wgs_flush<PB>(p, S, pd);"
+      ]
+    },
+    {
+      "problem": "muse_moe_w4a16",
+      "parent_path": "experiments/candidates/muse_moe_w4a16/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.py",
+      "parent_sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+      "candidate_path": "muse_moe_w4a16/candidates/native_wgs_early_a_publish_v8.py",
+      "candidate_sha256": "2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488",
+      "parent_cuda_sha256": "af4f0dba97e347f8afa8f27508e40d5c03f60b402825cadba9a9537700b20d6e",
+      "candidate_cuda_sha256": "5668da85f8b812890c13e79924c6c3cc0e265ff6280136efbed0f23b9f0771b8",
+      "changed_python_ast_nodes": [
+        "CUDA_SRC",
+        "_ext"
+      ],
+      "extension_prefix": "okc_moe_earlya1_v8_",
+      "cuda_diff": [
+        "--- parent_cuda",
+        "+++ candidate_cuda",
+        "@@ -2895,6 +2895,11 @@",
+        "       default: wgs_seg<PB, 8>(p, S, ring, u, s0, s1, slot, seq, pd); break;",
+        " #endif",
+        "     }",
+        "+    // Publish completed whole A units before the next segment can wait for its inputs.",
+        "+    // Split-unit records and every phase-B flush retain their existing deferred ordering.",
+        "+    if constexpr (!PB) {",
+        "+      if (pd.kind == 1) wgs_flush<false>(p, S, pd);",
+        "+    }",
+        "     gs += s1 - s0;",
+        "   }",
+        "   wgs_flush<PB>(p, S, pd);"
+      ],
+      "changed_native_functions": [
+        "wgs_phase"
+      ],
+      "native_function_delta": [
+        "--- parent_wgs_phase",
+        "+++ candidate_wgs_phase",
+        "@@ -27,6 +27,11 @@",
+        "       default: wgs_seg<PB, 8>(p, S, ring, u, s0, s1, slot, seq, pd); break;",
+        " #endif",
+        "     }",
+        "+    // Publish completed whole A units before the next segment can wait for its inputs.",
+        "+    // Split-unit records and every phase-B flush retain their existing deferred ordering.",
+        "+    if constexpr (!PB) {",
+        "+      if (pd.kind == 1) wgs_flush<false>(p, S, pd);",
+        "+    }",
+        "     gs += s1 - s0;",
+        "   }",
+        "   wgs_flush<PB>(p, S, pd);"
+      ]
+    }
+  ],
+  "case_path": "muse_moe_w4a16/candidates/native_wgs_early_a_publish_v8.cases.json",
+  "case_sha256": "2abf6883b58034ed89980aaa883a8ed5145c1343d2a79a283fc5a8504deee0b6",
+  "checks": [
+    "exact frozen parents verified",
+    "Python compile without imports",
+    "top-level AST delta restricted to native CUDA string and extension builder",
+    "native CUDA equals parent after removing one exact insertion",
+    "full executable Python AST equals parent after reversing native insertion and extension namespace",
+    "all active submission bytes unchanged",
+    "only native function wgs_phase changed in each source",
+    "decoder and standalone wgs_phase bodies identical"
+  ],
+  "runner_dry_run": {
+    "status": "prepared",
+    "gpu_launched": false,
+    "mode": "benchmark",
+    "repeats": 6,
+    "seed": 7202,
+    "weight_seed": 7311,
+    "timeout_seconds": 900,
+    "profile": true,
+    "resources": true,
+    "worker_sha256": "3f0934100558146733b397ec2a082898c4e7e99c9da49420c3345b062cb44142"
+  },
+  "independent_review": {
+    "agent": "/root/leaderboard_critic",
+    "verdict": "bounded_screen_go",
+    "gpu_tested": false,
+    "verified_final_hashes": true,
+    "independently_reversed_native_insertion_and_extension_rename": true,
+    "complete_parent_ast_equality": true,
+    "syntax_without_imports_passed": true,
+    "scope": "one screen if dense V9 is null; not promotion approval"
+  }
+}

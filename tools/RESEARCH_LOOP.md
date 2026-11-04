@@ -279,13 +279,54 @@ particular cause for the slowdown or absence of WGMMA serialization. Runtime
 was 379.77 seconds; prepare took 187.12/185.19 seconds including weight clones.
 The sandbox terminated and the app is stopped. No official attempt is warranted.
 
-Dense V9 started at 05:06 UTC in
-`experiments/modal/20261104T050629Z-62c33804`, sandbox
-`sb-CIaIZOy169rvKZqFdQvkGt`, local session `11768`. Resume it; do not allocate
-a duplicate. The nine-case combined file includes six held-out timing cases
-and three nearby/scale/outlier checks, six fresh replays per case (144 planned
-checks), profiles, and bounded prepare-policy metadata. Weight seed is 92011;
-input seed base is 91021. The exact candidate remains `3d5b3462...`.
-Only one H200 is allocated, at most 900 seconds. Latest billing before this run
-was $2.02 metered, all covered by credits, and $0 billed. The credit guard
-reserved the next run conservatively before allocation.
+Dense V9 completed at 05:15 UTC in
+`experiments/modal/20261104T050629Z-62c33804`; local session `11768` is terminal.
+All 144 checks passed, and the sandbox terminated. The four affected sliding
+cases had a paired geometric mean of 1.000152720×, below the 1.03 gate.
+Independent review confirms all 12 selector coordinates ran: 38 alternatives,
+31 timed, seven conservative route/numeric rejections, zero accepted changes.
+The best synthetic three-seed geometric mean was about 1.00147. This is a
+completed null experiment, not a skipped or unexercised selector. The cold
+parent preparation (494.43 seconds) versus warm candidate (11.64 seconds)
+does not validate cold prepare compliance. Do not upload or retest V9.
+Decision: `experiments/iterations/20261104-dense-chain-v9.json`.
+Fresh billing after the run showed $2.60 covered by credits, $0 billed; the
+app was stopped with zero tasks. The journal reservation remains consumed.
+
+The next prepared, statically reviewed experiment is whole-unit phase-A
+publication, using the exact original incumbents (no GS4/dense/V5 mixing):
+`muse_moe_w4a16/candidates/native_wgs_early_a_publish_v8.py`, SHA
+`2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488`.
+Its decoder counterpart SHA is
+`102c0d1509d39bb44d3884ea41ea9eef9624bf6465527eeee7d5bcec9ef3eb3a`.
+The early-A GPU screen is now running; see the handle below. One bounded
+screen only, no CI-index sweep.
+
+User asked how submissions appear on the board. Verified `okc whoami` is
+CristiSavca, and the actual public browser row is #395 on decoder at 2.15×,
+job `4b216098993e4112`. Their browser had shown the projection board's first ten
+rows. Switched to decoder, expanded through 410, and left their row visible.
+Screenshot: `experiments/leaderboards/cristisavca-visible-20261104.jpg`.
+This was a status question, not cancellation of ongoing research.
+
+Fresh 05:22 UTC boards: CristiSavca remains #395 overall and on decoder.
+The new decoder leader is gauravjain14 at 2.5401× (job `bd4cc135d74d43c6`),
+with screened speedup 2.50984561×; use the published leaderboard score for
+standing. Our 2.150186× entry needs approximately 15.35% lower normalized
+latency to equal 2.5401×, before allowance for uncertainty. Snapshots saved
+in `experiments/leaderboards/20261104T052250Z-overall.json` and
+`experiments/leaderboards/20261104T052251Z-decoder.json`.
+The previous goal turn made progress: completed dense evidence changed the
+next action and verified the user's public leaderboard identity.
+
+Early-A screen started 05:22 UTC:
+`experiments/modal/20261104T052256Z-4c806134`, sandbox
+`sb-eoBGNWklvCQepCwpqWyEM8`, app `ap-8V65gdkp3rQmiGPkRp7EFQ`,
+local session `34776`. Resume this session; do not start a duplicate. Exact
+standalone candidate `2931be20...` versus frozen `ef7b210b...`, five cases
+M32 → M128 → M256 → M16 → M32, six fresh paired replays, seed 7202,
+weight seed 7311, profiles and compiler resources enabled. Timeout 900 seconds.
+Require at least 3% complete-MoE improvement at M128 or M256, without more
+than 1% systematic loss elsewhere, and a second paired confirmation before
+whole-decoder integration. The independent critic owns terminal result audit;
+root owns polling and billing. No official attempt has been made.

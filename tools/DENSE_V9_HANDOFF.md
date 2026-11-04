@@ -28,6 +28,13 @@ still dominate cost. The runner now records prepare wall time including
 weight cloning, which is a conservative comparison with the 300-second
 official preparation allowance.
 
+The parent prepares first. Because V9 preserves the embedded kernels, its
+prepare can reuse the parent's compiled extensions. Record both durations,
+but do not treat a fast second prepare as proof that a fresh V9 build fits
+300 seconds. In particular, its 270-second selector cutoff may skip work in
+a cold official build. Useful local gains still require an official check
+that actually exercises the changed selection.
+
 The optional second file, `experiments/dense_v9_correctness_cases.json`,
 covers T24/page64/outliers, T33/mixed lengths, and T32/q_len8/cache-scale1/64.
 These probe nearby dispatch, a changed query-block layout, and scale handling.

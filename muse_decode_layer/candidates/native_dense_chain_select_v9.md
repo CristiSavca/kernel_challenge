@@ -1,13 +1,68 @@
 # Full-chain dense backend selection, V9
 
-Status: isolated, CPU source-preservation checks passed; independent critic
-approved a bounded local comparison. Preparation runtime, CUDA correctness
-and performance remain unverified. Active decoder and attention V5 are frozen.
+Status: **rejected for promotion after a null local comparison**. All 144
+local numerical checks passed, but the selector accepted no dispatch changes
+and the target whole-decoder paired ratios remained near 1.0. Cold candidate
+preparation remains unvalidated. No official upload or repeat V9 run is planned;
+retain the frozen decoder.
 
 Candidate: `native_dense_chain_select_v9.py`, SHA-256
 `3d5b34620a05faa628c30077728328a28e362b4c9dfc54dbb9ee6d5f6dd4d58c`.
 Parent: scored decoder `4b216098993e4112`, SHA-256
 `80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c`.
+
+## Completed comparison and independent decision
+
+Result: `experiments/modal/20261104T050629Z-62c33804/result.json`, SHA-256
+`757b1485ff903b421540f4c0530bb3064865c8cdc51ed794e111aeb130b06343`.
+The single-H200 run finished in 523.68 seconds, passed 144/144 checks across
+nine cases, and terminated successfully. The read-sweep selfcheck passed.
+
+All 12 coordinates (T16/T32/T128/T256 × O/pooler-router/unpooler) were visited.
+The selector completed in 2.821 seconds without exhausting its budget or
+falling back. It attempted 38 alternatives: 31 were timed and seven failed
+the conservative exact-route/1% numerical gate. T32 O's three alternatives
+all failed that gate, so that coordinate had no alternate timing. Such a
+rejection does not establish an official numerical failure. Every coordinate
+logged `selected=None` and identical before/after outer and inner choices.
+The largest three-seed geometric mean among timed alternatives was only
+approximately 1.00147, below the internal 1.02 selection threshold.
+
+Six fresh paired whole-decoder replays per case gave these median ratios
+(baseline time divided by candidate time):
+
+| Case | Tokens | Paired ratio |
+| --- | ---: | ---: |
+| Sliding B16, q1 | 16 | 1.000495× |
+| Sliding B16, q8 | 128 | 0.998581× |
+| Sliding B1, q8 control | 8 | 1.000297× |
+| Sliding B32, q1 | 32 | 0.999988× |
+| Sliding B32, q8 | 256 | 1.001549× |
+| Full B16, q8 | 128 | 0.997990× |
+| Full B3, q8, outliers | 24 | 1.010397× |
+| Full B33, q1 | 33 | 1.003037× |
+| Sliding B4, q8, scale 1/64 | 32 | 1.009634× |
+
+All nine separate profile kernel-name/count maps match. Inner BFP policy,
+MoE picks, module policy, feature availability and fused boundaries match.
+The original independent tuners produced some different T64 outer choices,
+overridden `gluev2` choices and unused Marlin settings; those are not accepted
+V9 selections. Expert define sets match despite different insertion order.
+Matching kernel names/counts does not itself prove identical generated code.
+
+Preparation including weight cloning took **494.43 seconds for the cold
+parent and 11.64 seconds for the warm candidate**. Identical native source
+and extension names permit compiled-cache reuse in this sequential run.
+The candidate's short warm time does not validate cold preparation; a cold
+build that passes 270 seconds could skip the selector. This remains a
+limitation, not a reason to retest a policy with no accepted gains.
+
+Independent critic `leaderboard_critic` rejects promotion: no distinct V9
+policy was selected and no useful 3% whole-decoder gain was demonstrated.
+This does not prove all dense backends optimal or justify relaxing the gate
+after seeing the result. The next distinct proposal is whole-A early
+publication, subject to root's bounded allocation guard. Decision record:
+`experiments/iterations/20261104-dense-chain-v9.json`.
 
 ## Evidence, hypothesis and kill gate
 
@@ -121,12 +176,12 @@ parent hash, and exercises the pure candidate enumerator without loading
 Torch or Triton. Python AST and whitespace checks passed. No CUDA allocation,
 compile, upload or official check was initiated by this agent.
 
-The next run should preserve the prepared dispatch logs for both sources,
-check that the selector changed actual launches, report preparation time,
-and compare all scored token counts with fresh inputs and cold-L2 graphs.
-Keep the parent and V9 expert backend identical. Report route counts and
-identities outside timing. Do not interpret an internal 2% post-attention
-tuner result as a 3% whole-decoder result.
+The completed run preserved both prepared policies, detailed selector trials,
+preparation times and separate profiles. It exercised all proposed selector
+coordinates and found no accepted change. Keep the frozen parent; do not
+repeat V9 or spend an official check. The nine-case local subset is not a
+complete scored six-load metric, and an internal 2% post-attention tuner
+result would not itself constitute a 3% whole-decoder gain.
 
 Storage added: one ~800 KB source candidate, one small verifier and this
 note. No source assets, active files or result evidence were deleted.

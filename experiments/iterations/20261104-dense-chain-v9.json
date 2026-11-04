@@ -1,0 +1,409 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T05:20:26.722859+00:00",
+  "experiment": "dense_chain_select_v9",
+  "decision": "reject_for_promotion_no_selected_policy_or_useful_gain",
+  "critic": "leaderboard_critic",
+  "hypothesis": "Existing dense backends selected in the post-attention chain yield at least 3% whole-decoder gain.",
+  "run": "experiments/modal/20261104T050629Z-62c33804",
+  "result_sha256": "757b1485ff903b421540f4c0530bb3064865c8cdc51ed794e111aeb130b06343",
+  "candidate_sha256": "3d5b34620a05faa628c30077728328a28e362b4c9dfc54dbb9ee6d5f6dd4d58c",
+  "incumbent": {
+    "path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+    "sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+  },
+  "official": false,
+  "checks_passed": 144,
+  "elapsed_seconds": 523.6838753440001,
+  "exit_code": 0,
+  "sandbox_terminated": true,
+  "cache_preconditioning": {
+    "method": "128 MiB Triton read sweep, .ca loads, observable block sums",
+    "outside_timing": true,
+    "dram_traffic_measured": false,
+    "sum_check_passed": true
+  },
+  "prepare_wall_seconds_including_weight_clone": {
+    "baseline": 494.431472144,
+    "candidate": 11.637316647999967
+  },
+  "cold_candidate_preparation_validated": false,
+  "prepare_limitation": "Parent prepared first with cold compilation (494.43s); candidate shares identical native source/extension names and reused the warm cache (11.64s). This does not establish cold candidate prepare compliance; cold compilation could pass its 270s cutoff and skip selection.",
+  "selector": {
+    "coordinates_expected": 12,
+    "coordinates_logged": 12,
+    "alternatives_attempted": 38,
+    "alternatives_timed": 31,
+    "route_or_numeric_gate_rejections": 7,
+    "selected_changes": 0,
+    "elapsed_seconds_from_stdout": 2.821,
+    "budget_exhausted": false,
+    "largest_timed_three_seed_geomean_from_rounded_ratios": 1.0014679406449485,
+    "coordinates": [
+      {
+        "T": 16,
+        "coordinate": "o",
+        "trials": 3,
+        "timed": 1,
+        "gate_rejections": 2,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 16,
+        "coordinate": "pr",
+        "trials": 4,
+        "timed": 4,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfpf",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 16,
+        "coordinate": "un",
+        "trials": 3,
+        "timed": 3,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 32,
+        "coordinate": "o",
+        "trials": 3,
+        "timed": 0,
+        "gate_rejections": 3,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 32,
+        "coordinate": "pr",
+        "trials": 4,
+        "timed": 4,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 32,
+        "coordinate": "un",
+        "trials": 3,
+        "timed": 3,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "sk2"
+        ]
+      },
+      {
+        "T": 128,
+        "coordinate": "o",
+        "trials": 2,
+        "timed": 1,
+        "gate_rejections": 1,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "rq_lt"
+        ]
+      },
+      {
+        "T": 128,
+        "coordinate": "pr",
+        "trials": 4,
+        "timed": 4,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": false,
+        "inner": [
+          "rq_tma"
+        ]
+      },
+      {
+        "T": 128,
+        "coordinate": "un",
+        "trials": 3,
+        "timed": 3,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "rq_lt"
+        ]
+      },
+      {
+        "T": 256,
+        "coordinate": "o",
+        "trials": 2,
+        "timed": 1,
+        "gate_rejections": 1,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "torch"
+        ]
+      },
+      {
+        "T": 256,
+        "coordinate": "pr",
+        "trials": 4,
+        "timed": 4,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": false,
+        "inner": [
+          "rq_lt"
+        ]
+      },
+      {
+        "T": 256,
+        "coordinate": "un",
+        "trials": 3,
+        "timed": 3,
+        "gate_rejections": 0,
+        "selected": null,
+        "outer": "bfp",
+        "inner": [
+          "rq_lt"
+        ]
+      }
+    ]
+  },
+  "prepared_policy_comparison": {
+    "bfp_metadata_equal": true,
+    "moe_pick_equal": true,
+    "module_policy_equal": true,
+    "features_equal": true,
+    "fused_boundaries_equal": true,
+    "built_expert_define_sets_equal": true,
+    "mm_pick_differences": {
+      "(64, 'qkv')": {
+        "baseline": false,
+        "candidate": true
+      },
+      "(64, 'o')": {
+        "baseline": "bfp",
+        "candidate": true
+      },
+      "(64, 'un')": {
+        "baseline": "bfp",
+        "candidate": false
+      }
+    },
+    "other_differences": "Original tuner also chose different gluev2 entries (overridden by FORCE_GLUEV2=False) and Marlin settings (unused because all MoE picks are agent). Expert define insertion order differs but the sets are equal.",
+    "all_nine_profile_kernel_name_count_maps_equal": true
+  },
+  "rows": [
+    {
+      "case_index": 0,
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "soft",
+        "local_start": 0
+      },
+      "tokens": 16,
+      "paired_speedup": 1.0004954758299316,
+      "median_us": {
+        "baseline": 140.19199460744858,
+        "candidate": 140.9600004553795
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 1,
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "soft",
+        "local_start": 64
+      },
+      "tokens": 128,
+      "paired_speedup": 0.9985809412008912,
+      "median_us": {
+        "baseline": 283.29600393772125,
+        "candidate": 282.4319899082184
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 2,
+      "case": {
+        "batch": 1,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "local_start": 64
+      },
+      "tokens": 8,
+      "paired_speedup": 1.0002970666787312,
+      "median_us": {
+        "baseline": 117.88799986243248,
+        "candidate": 117.07199737429619
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 3,
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "soft",
+        "local_start": 0
+      },
+      "tokens": 32,
+      "paired_speedup": 0.9999879406213031,
+      "median_us": {
+        "baseline": 184.09600108861923,
+        "candidate": 176.55999958515167
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 4,
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "soft",
+        "local_start": 64
+      },
+      "tokens": 256,
+      "paired_speedup": 1.0015488057249176,
+      "median_us": {
+        "baseline": 341.96799993515015,
+        "candidate": 341.12000465393066
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 5,
+      "case": {
+        "batch": 16,
+        "ctx": 8192,
+        "layer": "full",
+        "q_len": 8,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "soft",
+        "local_start": 64
+      },
+      "tokens": 128,
+      "paired_speedup": 0.997990029400458,
+      "median_us": {
+        "baseline": 284.04800593852997,
+        "candidate": 286.22400760650635
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 6,
+      "case": {
+        "batch": 3,
+        "ctx": 3000,
+        "layer": "full",
+        "q_len": 8,
+        "page": 64,
+        "dist": "outliers",
+        "local_start": 160
+      },
+      "tokens": 24,
+      "paired_speedup": 1.0103966233049344,
+      "median_us": {
+        "baseline": 206.78400248289108,
+        "candidate": 203.0399963259697
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 7,
+      "case": {
+        "batch": 33,
+        "ctx": 2048,
+        "layer": "full",
+        "q_len": 1,
+        "page": 1,
+        "spread": "mixed",
+        "dist": "soft",
+        "local_start": 0
+      },
+      "tokens": 33,
+      "paired_speedup": 1.0030371570925172,
+      "median_us": {
+        "baseline": 223.29600155353546,
+        "candidate": 222.06399589776993
+      },
+      "profile_kernel_name_counts_equal": true
+    },
+    {
+      "case_index": 8,
+      "case": {
+        "batch": 4,
+        "ctx": 4096,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "spread": "mixed",
+        "dist": "soft",
+        "kv_scale": 0.015625,
+        "local_start": 64
+      },
+      "tokens": 32,
+      "paired_speedup": 1.00963414294131,
+      "median_us": {
+        "baseline": 190.49600511789322,
+        "candidate": 187.00800091028214
+      },
+      "profile_kernel_name_counts_equal": true
+    }
+  ],
+  "conclusions": [
+    "All 12 coordinates were visited without timeout/fallback, but none changed outer or inner dispatch.",
+    "T32 O was visited but all three alternatives failed the route-or-numeric gate; no alternative timing was measured for that coordinate. These conservative rejections are not official numerical failures.",
+    "The 31 timed alternatives all remained below the internal 1.02 selection threshold; the largest three-seed geometric mean was approximately 1.00147.",
+    "Representative target whole-decoder paired ratios range from 0.99799 to 1.00155, with identical kernel-name/count profile maps. No useful 3% gain was demonstrated.",
+    "Minor policy differences arise in the pre-existing independent tuners; there is no accepted V9 policy change to promote. Cold-prepare limitations are an additional unresolved risk, not the reason to spend another test."
+  ],
+  "limitations": [
+    "One prepared weight seed and six fresh pairs per case; no official score or confidence interval.",
+    "The nine cases are a diagnostic subset, not the complete scored six-load metric.",
+    "Same kernel names/counts do not prove identical binary instructions or eliminate timing noise.",
+    "Exact-route/1% coordinate checks can reject otherwise officially valid alternatives; this null does not prove all dense choices optimal.",
+    "Separate latency medians are not the median of paired ratios; decisions use paired ratios."
+  ],
+  "next_action": "Retain frozen decoder. Do not upload, rerun, or relax the selector after this null. Next distinct proposal is the statically approved whole-A early-publication screen, subject to root credit/overlap guard."
+}
