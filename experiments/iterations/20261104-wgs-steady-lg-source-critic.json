@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "decision": "GO for one root-owned official private check of the frozen source; no promotion claim",
+  "candidate": "muse_moe_w4a16/candidates/native_wgs_steady_lg_v21.py",
+  "candidate_sha256": "4fcf108fc860865b0284031075c9e35461b761eb11f5cd4681917e44165871da",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "verifier_sha256": "7a0f51083fe73530f9e0ec48aad466535446ae0046b06fed2a95bd8ec07b8798",
+  "author_cpu_report_sha256": "cef2aa12e4d9282da849b855c6724079163a77dc5b1add5d2f21d59a558a1cb6",
+  "independent_full_parent_restoration": true,
+  "root_independent_cpu_pass": "Root reported the same frozen targeted proof passed; no duplicate full model execution by this reviewer.",
+  "source_findings": [
+    "The complete diff is exactly one lg unroll hint and a unique extension prefix. All executable statements, packing, producer, geometry, dispatch and non-WGS code are unchanged.",
+    "FIRST true requests full four-iteration unroll; FIRST false requests no unroll. h and jj remain unrolled with GS2, so ci=2*lg+h keeps af parity and NTT1 accumulator selection dependent only on h.",
+    "The lg loop and its bounds are uniform across a participating warpgroup. Weight arrival remains at lg3 after the last code load; previous-X release remains after wait1 at ci0 only.",
+    "First-stage mma0 for both NTT1 accumulators, FCI3 flush, wait1 ordering, final wait0 and final X release remain unchanged. No new collective or shared lifetime is introduced.",
+    "The source and finite trace proof do not establish NVCC pragma compliance, allocation, outlined calls, WGMMA serialization or actual GPU correctness/performance. Those remain experiment outcomes."
+  ],
+  "proof_scope": {
+    "cases": 13440,
+    "events": 5871216,
+    "event_sha256": "43fc82912e8c13c07b629bc82695715bedafd93248fb75135d6a7b97562beaf4",
+    "negative_controls": [
+      "one_bank",
+      "release_before_wait"
+    ],
+    "limits": "Model binds source schedule and conservative group retirement, not arbitrary GPU interleavings/global grid progress; inherited global zero-job limitation remains."
+  },
+  "evidence_limits": [
+    "Parent 340480-byte BIG1 text is total code, not a measured instruction-cache hot set or bottleneck.",
+    "No extra SASS collector is required for the private check. A score cannot prove why code generation changed.",
+    "Any future bounded owned-symbol code-only dump can establish size/loop structure; static instruction counts cannot establish dynamic stall or speedup."
+  ],
+  "provider_calls": false,
+  "gpu_calls": false,
+  "source_changed_by_reviewer": false
+}
