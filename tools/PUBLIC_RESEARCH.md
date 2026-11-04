@@ -52,7 +52,8 @@ Reviewed adaptations now in official private checks:
   were independently reviewed. Global scratch needs separate ownership before
   overlapping-stream serving integration. Our private run passed all 16
   numerical tests at 2.6425×, CI 2.5935–2.6822; exact-source scored submission
-  `8f9e5971f95841a0` is pending.
+  `8f9e5971f95841a0` passed at 2.6120×, CI 2.5728–2.6511, and is confirmed
+  as our current attention leaderboard entry.
 - Experts `public_cuda_v6.py`, `143f8587286e4384`: production CUDA/CPP strings
   and dispatch constants unchanged, unused diagnostics/timers removed, licenses
   embedded. CPU packing/decode checks covered 10,129 words per packed layout

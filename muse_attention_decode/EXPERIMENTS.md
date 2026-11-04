@@ -98,3 +98,12 @@ Scored run `52117bcc7137435e` passed at **1.2087290925×**, CI
 [1.1905981561, 1.2268600289], with no flags or errors. This agrees with its
 1.2050× private result. It remains a validated fallback; active native V4
 is substantially faster in its private check and still awaits its scored run.
+
+## Native V4 scored confirmation
+
+Scored run `8f9e5971f95841a0` passed at **2.6119701145×**, CI
+[2.5727905628, 2.6511496662], with no flags or errors. It uses the exact source
+that passed the 2.6425× private check. The leaderboard observation at
+2026-11-04 01:56:37 UTC confirms this job as CristiSavca's entry at rank 268
+on the attention board; ranks remain live. The compact observation is saved
+in `experiments/leaderboards/muse_attention_decode.latest.json`.
