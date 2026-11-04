@@ -111,7 +111,7 @@ Sources: [updates](https://openkernelchallenge.dev/llms.txt),
 [decoder board](https://openkernelchallenge.dev/api/v1/leaderboard/muse_decode_layer),
 [decoder task](https://openkernelchallenge.dev/api/v1/problems/muse_decode_layer).
 
-## Active handoff: first local comparison
+## Completed first comparison: reject V8
 
 Candidate `muse_decode_layer/candidates/native_wgs_split_final_v8.py`, SHA-256
 `9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b`, has
@@ -127,10 +127,22 @@ It uses the exact passing decoder as incumbent, seven cases ordered M16 → M32
 → M16 → M17 → M128 → M256 → M8, four fresh timed replays per implementation,
 and separate CUDA profiles. Sandbox timeout is 900 seconds after allocation;
 the first registry-image build is separate. $2.42 was reserved conservatively.
-At this handoff the remote image was preparing; no performance result exists.
-Poll this process/manifest before starting anything else. Do not retry while
-the app is active. After completion, confirm sandbox termination, inspect every
-correctness result and actual kernel trace, then have the critic judge timings.
+The run completed in 595.05 seconds after allocation. All 84 local checks
+passed and the actual `moe_finalize` kernel appears at M17/M32/M128/M256.
+The sandbox was terminated; the app is stopped with zero tasks. Do not resume
+or restart session 74081. Billing showed $0.90 total metered usage, covered by
+credits, and $0 billed. The conservative $2.42 reservation remains consumed.
+
+The independent critic rejected promotion: M32/M128/M256 whole-decoder paired
+ratios were 0.987678× / 1.000261× / 0.998414× against our incumbent. Expert
+profile time (including the new finalizer) changed 105.844→103.756 µs,
+178.449→189.535 µs and 227.224→232.210 µs. This provides no evidence of the
+required 10% expert improvement. Four paired timing samples and one profile
+per case do not establish precise regressions; dense autotuning differs at
+M128. One prepared weight/router seed was used. No official check or scored
+submission was spent on V8. Preserve it as a rejected experiment.
+
+Machine-readable decision: `experiments/iterations/20261104-v8-split-final.json`.
 
 The runner guard/incumbent/profile changes passed 18 CPU tests. All four active
 scored submissions still match the completed native audit. The candidate has
@@ -138,3 +150,49 @@ not been promoted or submitted. A separate diagnostic design is being developed
 by `/root/decoder_research`; `OKC_WGSPROF` in the imported source is a dead
 declaration, so enabling it would not measure anything. Keep `OKC_WGSFIT` off
 when interpreting the existing debug timestamp slots.
+
+## Next gate: measured scheduling and bandwidth headroom
+
+The existing DBG A/B stamps are from warpgroup 0, without a preceding CTA
+barrier. Thus DBG3→DBG4 includes both local-warpgroups and grid waiting.
+Record phase-A and phase-B completion from all four consumer warpgroups with
+`globaltimer`, preserving existing slots. Do not compare independent SM
+`clock64` counters as global timestamps. For each warpgroup i, let A_i and B_i
+be its completion stamps and L=max(A_i). A conservative removable-dependency
+allowance is D_i=min(B_i−A_i, max(0,L−A_i)); the optimistic makespan benefit is
+max(B_i)−max(B_i−D_i). Below 15% of MoE wall time, reject a readiness-only
+rewrite. A positive bound is not proof that all of that time is waiting.
+
+Bandwidth also constrains this decision. Active WGS packed weights occupy
+exactly 27 MiB per expert; all 32 require 864 MiB, a 188.744 µs weight-only
+streaming floor at H200's 4.8 TB/s peak. Actual active expert counts were not
+saved in our official results. Raw scored verify-32 expert profiles are
+194.6 µs sliding / 218.0 µs full. Inverting the reference's modeled floor
+suggests nominal distinct-expert targets near 21, not necessarily 32; this is
+an inference, not an observed histogram. Do not budget a uniform 35–40% MoE
+gain as physically established.
+
+The next diagnostic must record actual local counts c_e, U=count(c_e>0),
+J=sum(ceil(c_e/64)), and padded job rows outside timing. Unique packed bytes
+are 27 MiB*U; TMA requests are 27 MiB*J, not measured HBM traffic because
+repeated jobs may reuse L2. Compare only raw expert timing with the conditional
+weight floor, not paired-ratio-normalized `median_ns`.
+
+`decoder_research` is implementing a small separate guarded MoE diagnostic
+driver using the exact decoder CUDA source inside the standalone expert shell.
+It will use three fresh standalone route seeds; these are not decoder router
+distributions. A positive result requires whole-decoder confirmation. It will
+not be eligible for official submission. No next GPU run has started yet.
+
+A fresh public-source check found both original pinned upstreams unchanged.
+Lee's Apache-licensed v56 at `c565e373d34575c5f7df862b05f8be7619078b0f`
+has a distinct complete-output-unit atomic queue, busiest expert first, with
+one-unit lookahead. That is a possible rewrite only if the measured completion
+tail justifies it. Its ring interleaving and dependency prefetch are dormant;
+its whole-expert readiness is coarser than our existing per-stage readiness.
+Published timings are unverified. If the scheduling gate fails, pivot to
+whole-decoder dense-path selection and attention improvements.
+
+Sources: [H200 hardware specification](https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html),
+[Lee pinned expert source](https://github.com/lee101/openkernels/blob/c565e373d34575c5f7df862b05f8be7619078b0f/muse_moe_w4a16/submission.py),
+[Lee license](https://github.com/lee101/openkernels/blob/c565e373d34575c5f7df862b05f8be7619078b0f/LICENSE).

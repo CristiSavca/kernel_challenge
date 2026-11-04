@@ -1,0 +1,1591 @@
+{
+  "status": "passed_subset",
+  "official": false,
+  "protocol": "public-reference subset; paired cold-L2 CUDA graphs; replay overhead retained",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "problem": "muse_decode_layer",
+  "source_sha256": "9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b",
+  "file_sha256": {
+    "candidate.py": "9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b",
+    "baseline.py": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+    "reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf"
+  },
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+    "sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+  },
+  "profile_requested": true,
+  "python": "3.12.3",
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA H200",
+  "gpu_memory_bytes": 150101688320,
+  "device_capability": [
+    9,
+    0
+  ],
+  "cases": [
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 8.656e-03 (worst row 1.610e-02) [bound 0.137]; attention input relative L2 error 6.306e-03 (worst row 1.216e-02) [bound 0.093]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 8.656e-03 (worst row 1.610e-02) [bound 0.137]; attention input relative L2 error 6.306e-03 (worst row 1.216e-02) [bound 0.093]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.437e-02 (worst row 4.206e-02) [bound 0.127]; attention input relative L2 error 9.514e-03 (worst row 2.616e-02) [bound 0.081]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.437e-02 (worst row 4.206e-02) [bound 0.127]; attention input relative L2 error 9.514e-03 (worst row 2.616e-02) [bound 0.081]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.222e-03 (worst row 8.374e-03) [bound 0.148]; attention input relative L2 error 5.324e-03 (worst row 6.556e-03) [bound 0.099]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.221e-03 (worst row 8.374e-03) [bound 0.148]; attention input relative L2 error 5.324e-03 (worst row 6.556e-03) [bound 0.099]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.169e-02 (worst row 3.447e-02) [bound 0.144]; attention input relative L2 error 8.345e-03 (worst row 2.583e-02) [bound 0.097]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.168e-02 (worst row 3.447e-02) [bound 0.144]; attention input relative L2 error 8.345e-03 (worst row 2.583e-02) [bound 0.097]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 7.235e-03 (worst row 1.095e-02) [bound 0.133]; attention input relative L2 error 5.102e-03 (worst row 7.153e-03) [bound 0.085]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 7.235e-03 (worst row 1.095e-02) [bound 0.133]; attention input relative L2 error 5.102e-03 (worst row 7.153e-03) [bound 0.085]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 7.627e-03 (worst row 1.488e-02) [bound 0.136]; attention input relative L2 error 5.327e-03 (worst row 9.573e-03) [bound 0.088]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 7.627e-03 (worst row 1.488e-02) [bound 0.136]; attention input relative L2 error 5.327e-03 (worst row 9.573e-03) [bound 0.088]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          180.12799322605133,
+          147.45600521564484,
+          164.67200219631195,
+          176.12800002098083
+        ],
+        "candidate": [
+          178.71999740600586,
+          146.84799313545227,
+          165.12000560760498,
+          172.7679967880249
+        ]
+      },
+      "median_paired_speedup": 1.0060093200339277,
+      "median_us": {
+        "baseline": 170.4000011086464,
+        "candidate": 168.94400119781494
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 87.50900000000001
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 19.965000000000146
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, __nv_bfloat16, false, false, true>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.430000000000064
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 10.782999999999902
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 8.7349999999999
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 7.775000000000091
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 6.495000000000118
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.222999999999956
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 86.95100000000002
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 20.506000000000085
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, __nv_bfloat16, false, false, true>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 17.947000000000116
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 11.163999999999987
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 8.573000000000093
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 8.06100000000015
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 6.717999999999847
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.286999999999807
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.195e-03 (worst row 1.354e-02) [bound 0.147]; attention input relative L2 error 5.290e-03 (worst row 8.838e-03) [bound 0.099]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.198e-03 (worst row 1.354e-02) [bound 0.147]; attention input relative L2 error 5.293e-03 (worst row 8.838e-03) [bound 0.099]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.527e-03 (worst row 1.192e-02) [bound 0.140]; attention input relative L2 error 5.402e-03 (worst row 8.794e-03) [bound 0.091]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.527e-03 (worst row 1.192e-02) [bound 0.140]; attention input relative L2 error 5.403e-03 (worst row 8.794e-03) [bound 0.091]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.863e-03 (worst row 1.117e-02) [bound 0.137]; attention input relative L2 error 5.061e-03 (worst row 8.179e-03) [bound 0.090]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.866e-03 (worst row 1.117e-02) [bound 0.137]; attention input relative L2 error 5.063e-03 (worst row 8.179e-03) [bound 0.090]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.416e-03 (worst row 1.256e-02) [bound 0.148]; attention input relative L2 error 5.447e-03 (worst row 8.919e-03) [bound 0.100]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.415e-03 (worst row 1.256e-02) [bound 0.148]; attention input relative L2 error 5.446e-03 (worst row 8.919e-03) [bound 0.100]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 6.914e-03 (worst row 8.790e-03) [bound 0.150]; attention input relative L2 error 5.007e-03 (worst row 6.667e-03) [bound 0.097]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 6.914e-03 (worst row 8.790e-03) [bound 0.150]; attention input relative L2 error 5.007e-03 (worst row 6.667e-03) [bound 0.097]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 7.626e-03 (worst row 1.133e-02) [bound 0.135]; attention input relative L2 error 5.527e-03 (worst row 9.035e-03) [bound 0.090]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 7.626e-03 (worst row 1.133e-02) [bound 0.135]; attention input relative L2 error 5.527e-03 (worst row 9.035e-03) [bound 0.090]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          211.39200031757355,
+          203.10400426387787,
+          197.82400131225586,
+          197.1839964389801
+        ],
+        "candidate": [
+          215.61600267887115,
+          203.87199521064758,
+          199.93600249290466,
+          200.00000298023224
+        ]
+      },
+      "median_paired_speedup": 0.987678290724217,
+      "median_us": {
+        "baseline": 200.46400278806686,
+        "candidate": 201.9359990954399
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 105.84399999999994
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 19.421999999999912
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.01400000000001
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 12.701999999999998
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 10.239000000000033
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 7.135999999999967
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, float, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, float*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 5.534999999999968
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.5750000000000455
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 4.479000000000042
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 4.223999999999933
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 99.4350000000004
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.561999999999898
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 16.608999999999924
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 12.161000000000058
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 11.808999999999742
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 8.833000000000084
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, float, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, float*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 5.440000000000055
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.447999999999865
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 4.416999999999916
+            },
+            {
+              "name": "okc::moe_finalize(okc::Params)",
+              "count": 1,
+              "total_us": 4.321000000000367
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 4.289000000000215
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.975e-03 (worst row 9.963e-03) [bound 0.142]; attention input relative L2 error 4.867e-03 (worst row 7.036e-03) [bound 0.089]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.975e-03 (worst row 9.963e-03) [bound 0.142]; attention input relative L2 error 4.867e-03 (worst row 7.036e-03) [bound 0.089]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 8.053e-03 (worst row 1.742e-02) [bound 0.136]; attention input relative L2 error 6.052e-03 (worst row 1.368e-02) [bound 0.093]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 8.053e-03 (worst row 1.742e-02) [bound 0.136]; attention input relative L2 error 6.052e-03 (worst row 1.368e-02) [bound 0.093]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.253e-03 (worst row 8.561e-03) [bound 0.146]; attention input relative L2 error 5.098e-03 (worst row 6.435e-03) [bound 0.092]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.253e-03 (worst row 8.561e-03) [bound 0.146]; attention input relative L2 error 5.099e-03 (worst row 6.435e-03) [bound 0.092]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.397e-03 (worst row 1.117e-02) [bound 0.139]; attention input relative L2 error 5.331e-03 (worst row 8.617e-03) [bound 0.091]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 7.397e-03 (worst row 1.117e-02) [bound 0.139]; attention input relative L2 error 5.331e-03 (worst row 8.617e-03) [bound 0.091]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 8.694e-03 (worst row 2.136e-02) [bound 0.140]; attention input relative L2 error 5.913e-03 (worst row 1.192e-02) [bound 0.095]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 8.692e-03 (worst row 2.136e-02) [bound 0.140]; attention input relative L2 error 5.911e-03 (worst row 1.192e-02) [bound 0.095]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 1.131e-02 (worst row 3.333e-02) [bound 0.131]; attention input relative L2 error 7.048e-03 (worst row 1.888e-02) [bound 0.084]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 1.131e-02 (worst row 3.333e-02) [bound 0.131]; attention input relative L2 error 7.048e-03 (worst row 1.888e-02) [bound 0.084]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          181.31199479103088,
+          181.05599284172058,
+          167.87199676036835,
+          165.3439998626709
+        ],
+        "candidate": [
+          173.0239987373352,
+          177.72799730300903,
+          167.80799627304077,
+          164.73600268363953
+        ]
+      },
+      "median_paired_speedup": 1.0112079773784433,
+      "median_us": {
+        "baseline": 174.46399480104446,
+        "candidate": 170.415997505188
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 92.18799999999999
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 20.415000000000077
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, __nv_bfloat16, false, false, true>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.41800000000012
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 11.785000000000082
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 8.888000000000034
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 7.406000000000063
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 6.762000000000057
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.218000000000075
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 91.78500000000008
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 20.763000000000034
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, __nv_bfloat16, false, false, true>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.2349999999999
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 10.620999999999981
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 8.638000000000034
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, false, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 7.038000000000011
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 6.3659999999999854
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.479000000000042
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 17,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "mixed",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.227e-03 (worst row 1.073e-02) [bound 0.116]; attention input relative L2 error 5.132e-03 (worst row 7.142e-03) [bound 0.075]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 7.227e-03 (worst row 1.073e-02) [bound 0.116]; attention input relative L2 error 5.132e-03 (worst row 7.142e-03) [bound 0.075]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.617e-03 (worst row 8.616e-03) [bound 0.138]; attention input relative L2 error 4.907e-03 (worst row 6.590e-03) [bound 0.090]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.619e-03 (worst row 8.616e-03) [bound 0.138]; attention input relative L2 error 4.909e-03 (worst row 6.590e-03) [bound 0.090]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.714e-03 (worst row 8.530e-03) [bound 0.142]; attention input relative L2 error 4.957e-03 (worst row 6.286e-03) [bound 0.093]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.714e-03 (worst row 8.530e-03) [bound 0.142]; attention input relative L2 error 4.957e-03 (worst row 6.286e-03) [bound 0.093]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.003e-02 (worst row 2.609e-02) [bound 0.121]; attention input relative L2 error 6.971e-03 (worst row 1.703e-02) [bound 0.082]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 1.002e-02 (worst row 2.609e-02) [bound 0.121]; attention input relative L2 error 6.971e-03 (worst row 1.703e-02) [bound 0.082]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 7.212e-03 (worst row 9.673e-03) [bound 0.143]; attention input relative L2 error 5.233e-03 (worst row 6.964e-03) [bound 0.095]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 7.212e-03 (worst row 9.673e-03) [bound 0.143]; attention input relative L2 error 5.233e-03 (worst row 6.964e-03) [bound 0.095]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.888e-03 (worst row 1.038e-02) [bound 0.136]; attention input relative L2 error 5.064e-03 (worst row 6.575e-03) [bound 0.091]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.888e-03 (worst row 1.038e-02) [bound 0.136]; attention input relative L2 error 5.065e-03 (worst row 6.575e-03) [bound 0.091]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          217.56799519062042,
+          210.11200547218323,
+          195.71200013160706,
+          198.91199469566345
+        ],
+        "candidate": [
+          218.9439982175827,
+          205.79199492931366,
+          196.383997797966,
+          203.67999374866486
+        ]
+      },
+      "median_paired_speedup": 0.9951467092669204,
+      "median_us": {
+        "baseline": 204.51200008392334,
+        "candidate": 204.73599433898926
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 85.10799999999995
+            },
+            {
+              "name": "_gemm_splitk",
+              "count": 2,
+              "total_us": 34.65100000000018
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 18.972999999999956
+            },
+            {
+              "name": "nvjet_sm90_tst_64x24_64x16_4x1_v_bz_splitK_TNT",
+              "count": 1,
+              "total_us": 15.16599999999994
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 12.382000000000062
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 7.774999999999977
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 5.599000000000046
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, float, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, float*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 5.375
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 4.094999999999914
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __nv_bfloat16, float, __nv_bfloat16, false, float, __nv_bfloat16, __nv_bfloat16, true, false, false, false>(cublasLt::cublasSplitKParams<float>, float const*, __nv_bfloat16 const*, float*, __nv_bfloat16*, float const*, float const*, __nv_bfloat16 const*, float const*, __nv_bfloat16*, void*, long, float*, int*, float*, float*, float const*, float const*, float const*, float const*, float const*)",
+              "count": 1,
+              "total_us": 2.0149999999999864
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 80.75599999999986
+            },
+            {
+              "name": "_gemm_splitk",
+              "count": 2,
+              "total_us": 31.58499999999958
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 19.688000000000102
+            },
+            {
+              "name": "nvjet_sm90_tst_64x24_64x16_4x1_v_bz_splitK_TNT",
+              "count": 1,
+              "total_us": 14.969000000000051
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 11.281999999999698
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 7.532999999999902
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 5.625
+            },
+            {
+              "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, float, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, float*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 5.302000000000135
+            },
+            {
+              "name": "okc::moe_finalize(okc::Params)",
+              "count": 1,
+              "total_us": 4.298999999999978
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 4.105999999999767
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __nv_bfloat16, float, __nv_bfloat16, false, float, __nv_bfloat16, __nv_bfloat16, true, false, false, false>(cublasLt::cublasSplitKParams<float>, float const*, __nv_bfloat16 const*, float*, __nv_bfloat16*, float const*, float const*, __nv_bfloat16 const*, float const*, __nv_bfloat16*, void*, long, float*, int*, float*, float*, float const*, float const*, float const*, float const*, float const*)",
+              "count": 1,
+              "total_us": 1.9720000000002074
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.274e-02 (worst row 1.057e-01) [bound 0.150]; attention input relative L2 error 4.225e-02 (worst row 6.282e-02) [bound 0.103]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.274e-02 (worst row 1.057e-01) [bound 0.150]; attention input relative L2 error 4.225e-02 (worst row 6.282e-02) [bound 0.103]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.891e-02 (worst row 8.871e-02) [bound 0.141]; attention input relative L2 error 3.973e-02 (worst row 5.883e-02) [bound 0.095]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.891e-02 (worst row 8.871e-02) [bound 0.141]; attention input relative L2 error 3.973e-02 (worst row 5.883e-02) [bound 0.095]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.213e-02 (worst row 1.026e-01) [bound 0.150]; attention input relative L2 error 4.187e-02 (worst row 7.163e-02) [bound 0.102]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.213e-02 (worst row 1.026e-01) [bound 0.150]; attention input relative L2 error 4.187e-02 (worst row 7.163e-02) [bound 0.102]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.765e-02 (worst row 8.770e-02) [bound 0.141]; attention input relative L2 error 3.858e-02 (worst row 5.915e-02) [bound 0.094]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.765e-02 (worst row 8.770e-02) [bound 0.141]; attention input relative L2 error 3.858e-02 (worst row 5.915e-02) [bound 0.094]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 6.464e-02 (worst row 9.606e-02) [bound 0.150]; attention input relative L2 error 4.302e-02 (worst row 6.705e-02) [bound 0.104]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 6.464e-02 (worst row 9.606e-02) [bound 0.150]; attention input relative L2 error 4.302e-02 (worst row 6.705e-02) [bound 0.104]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.192e-02 (worst row 1.061e-01) [bound 0.150]; attention input relative L2 error 4.165e-02 (worst row 7.216e-02) [bound 0.102]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.192e-02 (worst row 1.061e-01) [bound 0.150]; attention input relative L2 error 4.165e-02 (worst row 7.216e-02) [bound 0.102]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          299.5840013027191,
+          323.2319951057434,
+          313.18399310112,
+          346.0479974746704
+        ],
+        "candidate": [
+          306.91200494766235,
+          322.11199402809143,
+          314.11200761795044,
+          343.8720107078552
+        ]
+      },
+      "median_paired_speedup": 1.0002613242492,
+      "median_us": {
+        "baseline": 318.2079941034317,
+        "candidate": 318.11200082302094
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 178.44900000000007
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "count": 1,
+              "total_us": 25.523999999999887
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+              "count": 1,
+              "total_us": 21.71900000000005
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "count": 1,
+              "total_us": 16.614000000000033
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 10.735000000000127
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+              "count": 1,
+              "total_us": 8.044000000000096
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 5.135999999999967
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 4.796000000000049
+            },
+            {
+              "name": "_route",
+              "count": 1,
+              "total_us": 3.8050000000000637
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __nv_bfloat16, float, __nv_bfloat16, false, float, __nv_bfloat16, __nv_bfloat16, true, false, false, false>(cublasLt::cublasSplitKParams<float>, float const*, __nv_bfloat16 const*, float*, __nv_bfloat16*, float const*, float const*, __nv_bfloat16 const*, float const*, __nv_bfloat16*, void*, long, float*, int*, float*, float*, float const*, float const*, float const*, float const*, float const*)",
+              "count": 1,
+              "total_us": 2.8769999999999527
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 184.77199999999993
+            },
+            {
+              "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+              "count": 1,
+              "total_us": 26.722999999999956
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "count": 1,
+              "total_us": 21.92599999999993
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+              "count": 1,
+              "total_us": 19.022000000000162
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 11.68100000000004
+            },
+            {
+              "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNT",
+              "count": 1,
+              "total_us": 8.190000000000055
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 5.285999999999831
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 5.122000000000071
+            },
+            {
+              "name": "okc::moe_finalize(okc::Params)",
+              "count": 1,
+              "total_us": 4.763000000000147
+            },
+            {
+              "name": "_route",
+              "count": 1,
+              "total_us": 3.9809999999999945
+            },
+            {
+              "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __nv_bfloat16, float, __nv_bfloat16, false, float, __nv_bfloat16, __nv_bfloat16, true, false, false, false>(cublasLt::cublasSplitKParams<float>, float const*, __nv_bfloat16 const*, float*, __nv_bfloat16*, float const*, float const*, __nv_bfloat16 const*, float const*, __nv_bfloat16*, void*, long, float*, int*, float*, float*, float const*, float const*, float const*, float const*, float const*)",
+              "count": 1,
+              "total_us": 3.099999999999909
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 5.733e-02 (worst row 8.415e-02) [bound 0.136]; attention input relative L2 error 3.884e-02 (worst row 5.753e-02) [bound 0.092]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 5.733e-02 (worst row 8.415e-02) [bound 0.136]; attention input relative L2 error 3.884e-02 (worst row 5.753e-02) [bound 0.092]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.024e-02 (worst row 1.001e-01) [bound 0.147]; attention input relative L2 error 4.072e-02 (worst row 7.170e-02) [bound 0.099]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.024e-02 (worst row 1.001e-01) [bound 0.147]; attention input relative L2 error 4.072e-02 (worst row 7.170e-02) [bound 0.099]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.250e-02 (worst row 9.785e-02) [bound 0.150]; attention input relative L2 error 4.179e-02 (worst row 6.495e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 6.250e-02 (worst row 9.785e-02) [bound 0.150]; attention input relative L2 error 4.179e-02 (worst row 6.495e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.215e-02 (worst row 1.044e-01) [bound 0.150]; attention input relative L2 error 4.158e-02 (worst row 7.407e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.215e-02 (worst row 1.044e-01) [bound 0.150]; attention input relative L2 error 4.158e-02 (worst row 7.407e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 5.752e-02 (worst row 8.840e-02) [bound 0.137]; attention input relative L2 error 3.858e-02 (worst row 5.992e-02) [bound 0.092]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 5.752e-02 (worst row 8.840e-02) [bound 0.137]; attention input relative L2 error 3.858e-02 (worst row 5.992e-02) [bound 0.092]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.034e-02 (worst row 1.168e-01) [bound 0.145]; attention input relative L2 error 4.032e-02 (worst row 6.479e-02) [bound 0.097]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 6.034e-02 (worst row 1.168e-01) [bound 0.145]; attention input relative L2 error 4.032e-02 (worst row 6.479e-02) [bound 0.097]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          399.32799339294434,
+          414.40001130104065,
+          376.48001313209534,
+          390.01598954200745
+        ],
+        "candidate": [
+          418.5599982738495,
+          415.6480133533478,
+          376.5439987182617,
+          388.38401436805725
+        ]
+      },
+      "median_paired_speedup": 0.998413762984903,
+      "median_us": {
+        "baseline": 394.6719914674759,
+        "candidate": 402.0160138607025
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 227.22400000000005
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "count": 1,
+              "total_us": 32.909000000000106
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "count": 1,
+              "total_us": 26.2829999999999
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "count": 1,
+              "total_us": 25.64300000000003
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 14.308999999999969
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "count": 1,
+              "total_us": 9.412000000000035
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 8.516000000000076
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 8.098999999999933
+            },
+            {
+              "name": "_route",
+              "count": 1,
+              "total_us": 4.674000000000092
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "count": 1,
+              "total_us": 226.1300000000001
+            },
+            {
+              "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+              "count": 1,
+              "total_us": 32.99000000000001
+            },
+            {
+              "name": "rq_deep_tma_pooler",
+              "count": 1,
+              "total_us": 27.294000000000096
+            },
+            {
+              "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+              "count": 1,
+              "total_us": 24.99000000000001
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 14.271999999999935
+            },
+            {
+              "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+              "count": 1,
+              "total_us": 9.05600000000004
+            },
+            {
+              "name": "_boundary2",
+              "count": 1,
+              "total_us": 8.448000000000093
+            },
+            {
+              "name": "_boundary1",
+              "count": 1,
+              "total_us": 8.096000000000004
+            },
+            {
+              "name": "okc::moe_finalize(okc::Params)",
+              "count": 1,
+              "total_us": 6.079999999999927
+            },
+            {
+              "name": "_route",
+              "count": 1,
+              "total_us": 4.6720000000000255
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 1,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "local_start": 160
+      },
+      "checks": [
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 5.878e-02 (worst row 7.590e-02) [bound 0.142]; attention input relative L2 error 4.002e-02 (worst row 5.159e-02) [bound 0.097]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 5.878e-02 (worst row 7.590e-02) [bound 0.142]; attention input relative L2 error 4.002e-02 (worst row 5.159e-02) [bound 0.097]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.093e-02 (worst row 7.765e-02) [bound 0.150]; attention input relative L2 error 4.065e-02 (worst row 5.481e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "eager",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 6.093e-02 (worst row 7.765e-02) [bound 0.150]; attention input relative L2 error 4.065e-02 (worst row 5.481e-02) [bound 0.101]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 4.748e-02 (worst row 5.995e-02) [bound 0.118]; attention input relative L2 error 3.203e-02 (worst row 3.635e-02) [bound 0.079]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 0,
+          "passed": true,
+          "detail": "update relative L2 error 4.748e-02 (worst row 5.995e-02) [bound 0.118]; attention input relative L2 error 3.203e-02 (worst row 3.637e-02) [bound 0.079]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.853e-02 (worst row 7.716e-02) [bound 0.150]; attention input relative L2 error 3.442e-02 (worst row 4.214e-02) [bound 0.089]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 1,
+          "passed": true,
+          "detail": "update relative L2 error 5.853e-02 (worst row 7.716e-02) [bound 0.150]; attention input relative L2 error 3.443e-02 (worst row 4.214e-02) [bound 0.089]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 5.583e-02 (worst row 6.990e-02) [bound 0.136]; attention input relative L2 error 3.824e-02 (worst row 5.049e-02) [bound 0.094]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 2,
+          "passed": true,
+          "detail": "update relative L2 error 5.583e-02 (worst row 6.990e-02) [bound 0.136]; attention input relative L2 error 3.824e-02 (worst row 5.049e-02) [bound 0.094]"
+        },
+        {
+          "implementation": "candidate",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 5.568e-02 (worst row 7.303e-02) [bound 0.149]; attention input relative L2 error 3.754e-02 (worst row 4.889e-02) [bound 0.100]"
+        },
+        {
+          "implementation": "baseline",
+          "phase": "graph",
+          "seed_step": 3,
+          "passed": true,
+          "detail": "update relative L2 error 5.566e-02 (worst row 7.303e-02) [bound 0.149]; attention input relative L2 error 3.752e-02 (worst row 4.889e-02) [bound 0.100]"
+        }
+      ],
+      "timings_us": {
+        "baseline": [
+          139.0720009803772,
+          124.38400089740753,
+          137.53600418567657,
+          136.48000359535217
+        ],
+        "candidate": [
+          137.1839940547943,
+          126.24000012874603,
+          138.72000575065613,
+          137.63199746608734
+        ]
+      },
+      "median_paired_speedup": 0.9915473540984594,
+      "median_us": {
+        "baseline": 137.00800389051437,
+        "candidate": 137.40799576044083
+      },
+      "profiles": {
+        "baseline": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 85.39499999999998
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 19.965000000000032
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 10.591000000000008
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfloat16 const*, float const*, float const*, float const*, float const*, float const*, float*, __nv_bfloat16*, float*, unsigned int*, float const*, __nv_bfloat16 const*, float const*, float const*, float const*, int, unsigned int, int, unsigned int, unsigned long long*)",
+              "count": 1,
+              "total_us": 8.415000000000191
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 7.999000000000024
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 7.9669999999999845
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 5.567000000000007
+            }
+          ]
+        },
+        "candidate": {
+          "status": "captured",
+          "replays": 1,
+          "kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "count": 1,
+              "total_us": 87.9989999999998
+            },
+            {
+              "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, __nv_bfloat16, false, true, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 19.26299999999992
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 10.592000000000098
+            },
+            {
+              "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, __nv_bfloat16, true, false, false>(CUtensorMap_st, unsigned char const*, __nv_bfloat16 const*, __nv_bfloat16*, int2 const*, int, unsigned int, int, int, int, int, unsigned long long*, unsigned char const*, float*, float*, int*, int, Sk2Bnd, TArgs)",
+              "count": 1,
+              "total_us": 8.063000000000102
+            },
+            {
+              "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfloat16 const*, float const*, float const*, float const*, float const*, float const*, float*, __nv_bfloat16*, float*, unsigned int*, float const*, __nv_bfloat16 const*, float const*, float const*, float const*, int, unsigned int, int, unsigned int, unsigned long long*)",
+              "count": 1,
+              "total_us": 8.0
+            },
+            {
+              "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((anonymous namespace)::Params)",
+              "count": 1,
+              "total_us": 7.744000000000142
+            },
+            {
+              "name": "_route_split",
+              "count": 1,
+              "total_us": 6.016000000000076
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "nvidia_smi": "NVIDIA H200, 610.57.04, 143771 MiB",
+  "triton": "3.8.0",
+  "elapsed_seconds": 595.054351289
+}

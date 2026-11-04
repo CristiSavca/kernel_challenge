@@ -1,0 +1,129 @@
+{
+  "mode": "benchmark",
+  "gpu": "H200:1",
+  "timeout_seconds": 900,
+  "official": false,
+  "status": "passed_subset",
+  "worker_sha256": "1472c33fa6fe6bb9f8493abb7001c200449417a8b4488853525748509f784a3f",
+  "problem": "muse_decode_layer",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "source_sha256": "9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b",
+  "file_sha256": {
+    "candidate.py": "9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b",
+    "baseline.py": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+    "reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf"
+  },
+  "cases": [
+    {
+      "batch": 16,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "dist": "soft",
+      "spread": "agentic"
+    },
+    {
+      "batch": 32,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "dist": "soft",
+      "spread": "agentic"
+    },
+    {
+      "batch": 16,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "dist": "soft",
+      "spread": "agentic"
+    },
+    {
+      "batch": 17,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "dist": "soft",
+      "spread": "mixed"
+    },
+    {
+      "batch": 16,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "dist": "soft",
+      "spread": "agentic"
+    },
+    {
+      "batch": 32,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "dist": "soft",
+      "spread": "agentic"
+    },
+    {
+      "batch": 1,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "dist": "soft"
+    }
+  ],
+  "repeats": 4,
+  "seed": 7301,
+  "weight_seed": 7311,
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+    "sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+  },
+  "profile": true,
+  "modal_client": "1.6.3",
+  "credit_guard": {
+    "run_id": "20261104T040903Z-f1613663",
+    "checked_at": "2026-11-04T04:09:03.992880+00:00",
+    "cycle": "2026-11",
+    "workspace": "cristisavca44",
+    "environment": "main",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "grant_usd": "30.00",
+    "headroom_usd": "5.00",
+    "provider_observed_usd": "0.00276863",
+    "prior_reservations_usd": "0",
+    "reservation_usd": "2.42",
+    "working_budget_remaining_usd": "22.57723137",
+    "estimate_is_provider_cap": false,
+    "billing_summary": {
+      "metered_cost": "0E-8",
+      "billed_cost": "0E-8",
+      "adjustments": {
+        "network_egress_allowance": "0E-8",
+        "credits": "-0E-8",
+        "free_storage": "-0E-8",
+        "plan_cost": "0E-8",
+        "reservation_adjustment": "-0E-8"
+      },
+      "metered_cost_breakdown": {
+        "ephemeral_apps": "0.00276863",
+        "llm_tokens": "0E-8",
+        "volumes": "0E-8",
+        "network_egress": "0E-8"
+      }
+    }
+  },
+  "credit_guard_sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+  "sandbox_id": "sb-ms88Dk7hPt0HvToLsJyqPk",
+  "dashboard": "https://modal.com/id/sb-ms88Dk7hPt0HvToLsJyqPk",
+  "exit_code": 0,
+  "sandbox_terminated": true
+}

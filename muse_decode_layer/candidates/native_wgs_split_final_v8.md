@@ -1,8 +1,10 @@
 # WGS MoE finalizer split experiment
 
-Status: source and CPU/static checks only; CUDA compilation, numerical checks,
-graph replays and performance are unvalidated. No official or Modal job was
-launched by the author of this candidate. The passing incumbent is untouched.
+Status: rejected for promotion after a bounded same-GPU Modal comparison.
+Local CUDA compilation, numerical checks and fresh graph replays passed, but
+there was no useful speedup. No official check or score was submitted.
+The passing incumbent is untouched. Initial design notes follow; the result
+and independent critique are recorded at the end.
 
 Candidate: `native_wgs_split_final_v8.py`, SHA-256
 `9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b`.
@@ -109,3 +111,24 @@ unofficial paired comparison against frozen incumbent `80a4...`. Evidence:
 `ap-fdcwQHJrE5tWvFM50R8ovQ`. The root case file adds the M16 → M32 → M16
 scratch transition, with four fresh timed replays and separate CUDA profiles.
 No result or gain is established yet. The exact candidate hash is unchanged.
+
+## Completed result and critic verdict
+
+The run passed all 84 local numerical checks, including the M16→M32→M16
+scratch transition. Profiles prove that the new finalizer executed on the
+changed path. Sandbox termination and stopped-app state are confirmed.
+
+| M | Whole-decoder paired ratio | Incumbent MoE µs | Split MoE + finalizer µs |
+| --- | ---: | ---: | ---: |
+| 32 | 0.987678× | 105.844 | 103.756 |
+| 128 | 1.000261× | 178.449 | 189.535 |
+| 256 | 0.998414× | 227.224 | 232.210 |
+
+The independent critic rejected promotion: the required 10% expert gain is
+absent. Exact regression percentages are uncertain because there are only
+four paired samples and one profiler replay per case; dense autotune choices
+also differ at M128. This run uses one weight/router seed. No further V8
+confirmation run is justified without a new mechanism. Preserve the evidence
+and measure the original kernel's scheduling headroom before rewriting it.
+
+Decision record: `experiments/iterations/20261104-v8-split-final.json`.

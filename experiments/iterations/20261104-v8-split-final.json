@@ -1,0 +1,155 @@
+{
+  "recorded_at": "2026-11-04T04:28:27.603865+00:00",
+  "hypothesis": "Splitting the persistent expert finalizer reduces barrier/register costs more than added launch/read costs.",
+  "candidate_sha256": "9e8881479fc71c985a0724ef60207cdd4d6df66fc027e8fcfafbe1eba55aa01b",
+  "incumbent": {
+    "path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+    "sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+  },
+  "run": "experiments/modal/20261104T040903Z-f1613663",
+  "official": false,
+  "decision": "discard_for_promotion",
+  "critic": "independent leaderboard_critic confirmed no evidence of required 10% expert improvement at M128/M256",
+  "limitations": [
+    "one prepared weight/router seed",
+    "four paired repetitions",
+    "one profiler replay per case/implementation",
+    "dense autotune choices differ",
+    "standalone local 2K contexts, not full official suite"
+  ],
+  "rows": [
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "paired_speedup": 1.0060093200339277,
+      "expert_profile_us": {
+        "baseline": 87.50900000000001,
+        "candidate": 86.95100000000002
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "paired_speedup": 0.987678290724217,
+      "expert_profile_us": {
+        "baseline": 105.84399999999994,
+        "candidate": 103.75600000000077
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "paired_speedup": 1.0112079773784433,
+      "expert_profile_us": {
+        "baseline": 92.18799999999999,
+        "candidate": 91.78500000000008
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 17,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 1,
+        "page": 1,
+        "dist": "soft",
+        "spread": "mixed",
+        "local_start": 160
+      },
+      "paired_speedup": 0.9951467092669204,
+      "expert_profile_us": {
+        "baseline": 85.10799999999995,
+        "candidate": 85.05499999999984
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "paired_speedup": 1.0002613242492,
+      "expert_profile_us": {
+        "baseline": 178.44900000000007,
+        "candidate": 189.53500000000008
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 32,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "spread": "agentic",
+        "local_start": 160
+      },
+      "paired_speedup": 0.998413762984903,
+      "expert_profile_us": {
+        "baseline": 227.22400000000005,
+        "candidate": 232.21000000000004
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "case": {
+        "batch": 1,
+        "ctx": 2048,
+        "layer": "sliding",
+        "q_len": 8,
+        "page": 1,
+        "dist": "soft",
+        "local_start": 160
+      },
+      "paired_speedup": 0.9915473540984594,
+      "expert_profile_us": {
+        "baseline": 85.39499999999998,
+        "candidate": 87.9989999999998
+      },
+      "checks_passed": 12,
+      "checks_total": 12
+    }
+  ],
+  "next_experiment": "Measure routing U/J and original WGS per-warpgroup completion headroom before readiness scheduling rewrite."
+}
