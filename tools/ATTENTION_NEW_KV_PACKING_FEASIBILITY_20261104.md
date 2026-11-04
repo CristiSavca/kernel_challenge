@@ -43,12 +43,18 @@ helper, not a measured comparison with the scalar cache-write loop.
 
 Primary semantics: [CUDA 13.0.2 FP8 conversion API](https://docs.nvidia.com/cuda/archive/13.0.2/cuda-math-api/cuda_math_api/group__CUDA__MATH__FP8__MISC.html)
 and [PTX cvt](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt).
-Exact scalar-header lowering and NaN sign/payload handling still require the
-critic's pinned-header review before calling the replacement bit-equivalent
-over all FP32 bit patterns. Finite RN/saturation semantics match. The scalar
-intrinsic may itself use a packed instruction with a dummy operand, and ptxas
-may already combine scalar conversions. Actual emitted instruction savings
-are therefore **unknown**, not established by the source call count.
+The critic pinned NVIDIA's CUDA12.8.90 `cuda_fp8.hpp`, SHA
+`e0bebde335eedb623df836803fbef39be81940ba4e760b2a916686336ff6d17d`:
+its sm>=890/SATFINITE/E4M3 scalar branch uses the same paired PTX instruction
+with x in the low lane and0.0 in the high lane, then truncates to the low byte.
+Thus independent conversion lanes receive identical products, including
+signed zeros and NaNs; this argument does not assume particular NaN bits.
+[NVIDIA package metadata](https://pypi.org/pypi/nvidia-cuda-runtime-cu12/12.8.90/json)
+identifies the wheel; its SHA is
+`adade8dcbd0edf427b7204d480d6066d33902cab2a4707dcfc48a2d0fd44ab90`.
+The full header remains local and is not redistributed. The actual evaluator
+header version is unverified. Ptxas may already combine scalar conversions,
+so emitted instruction savings remain **unknown**.
 
 ## Scope and bounded operation counts
 
@@ -102,12 +108,19 @@ standalone proposal changes neither scheduling nor any launch/barrier/store.
 
 ## Review gate and rejected second lead
 
-If authorized, the narrow next step is one isolated standalone replacement,
+Root authorized one isolated standalone replacement after independent review,
 unique extension name, exact source-restoration check and targeted conversion
 ordering/boundary review, then the complete official suite against both exact
 parent receipts. No new diagnostic framework, geometry changes or conversion
-policy sweep is justified. Root/critic must predeclare a suitably modest
-weighted12-case screen; no universal1% requirement or gain is assumed here.
+policy sweep is justified. The final pre-GPU screen uses the actual official
+score: each of six loads sums its two case latencies with weights46(sliding)
+and16(full), then the score is the geometric mean of baseline/candidate load
+ratios. Require aggregate speed ratio>=1.005 versus BOTH87a9 receipts, at least
+three of six weighted loads jointly faster, and every one of twelve case
+normalized latency ratios<=1.02 against both. Subgroup statistics are
+descriptive; all12 cases are affected and there is no unchanged-control claim.
+This operational screen supersedes the earlier8/12/subgroup draft before any
+GPU result; it is not a statistical-significance claim.
 If compiler combining makes this a no-op or full-call timing is unhelpful,
 close the fixed attempt. Device correctness remains unproved until the check.
 

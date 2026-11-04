@@ -1,0 +1,24 @@
+{
+  "decision": "GO_ONE_PRIVATE_CHECK",
+  "source_sha256": "41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663",
+  "source_critic_sha256": "f08e5babccfce9944494d9b70636a2436dae809e223367fc1ebbb2ae5f9177a4",
+  "root_cpu_report": "experiments/iterations/20261104-attention-kv-pack-root-cpu.json",
+  "root_cpu_sha256": "d1f563414fcafc7135723d6f4504abc80de8258a14d3843d67dbe9adc49a1e7f",
+  "review": "Read full delta, builder, verifier, scalar primary CUDA header, candidate note and source critic; independent verifier terminal0 reproduces author exactly. Source restoration confines optimization to two existing helper calls with same FP32 products/byte order. No GPU/SASS/performance claim before official check.",
+  "fixed_screen": {
+    "official_aggregate_ratio_both_parents_min": 1.005,
+    "joint_positive_weighted_loads_min": 3,
+    "weighted_load_count": 6,
+    "every_case_normalized_latency_both_parents_max": 1.02,
+    "case_count": 12,
+    "weights_per_load": {
+      "sliding": 46,
+      "full": 16
+    },
+    "no_unchanged_controls": true,
+    "subgroups_descriptive_only": true,
+    "operational_not_statistical": true
+  },
+  "scoring_verified": "Both parent official scores reproduce GM across6 weighted latency load speedups, with sliding46/full16. Not weighted12case GM.",
+  "public_sources_changed": false
+}

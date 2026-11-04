@@ -1,0 +1,38 @@
+{
+  "boundary_reason": "Both paths apply the same independent-lane RN/satfinite E4M3 PTX operation to identical FP32 products; CPU byte algebra does not emulate conversion.",
+  "boundary_review": [
+    "signed zero",
+    "subnormal/underflow ties",
+    "normal halfway ties",
+    "largest finite/overflow saturation",
+    "infinity",
+    "signed NaN"
+  ],
+  "candidate_sha256": "41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663",
+  "header": {
+    "checked_local_exact_header": true,
+    "sha256": "e0bebde335eedb623df836803fbef39be81940ba4e760b2a916686336ff6d17d",
+    "version": "CUDA 12.8.90; evaluator header version unverified"
+  },
+  "limits": [
+    "No CUDA compile, GPU execution, SASS count or performance evidence.",
+    "No independent GPU NaN encoding oracle; equivalence uses PTX lane independence and pinned-header evidence.",
+    "Actual evaluator header/compiler combining remain unverified."
+  ],
+  "negative_controls": [
+    "reversed_output_arguments",
+    "changed_product",
+    "changed_rounding"
+  ],
+  "opaque_byte_pair_cases": 262144,
+  "source": {
+    "build_reproducible": true,
+    "cuda_candidate_sha256": "0514834a0e080c0d99144488b6f7272a92365dd8b57e45446cd6ef1aec6bccd0",
+    "cuda_parent_sha256": "17ccf33fe224afe1a3470747db337378cd9ec00ed2f7dbf2bd505d7f529ee787",
+    "full_parent_restoration": true,
+    "helper_sha256": "2faacca27e701e294a135a5198bef52dc1cad4cc1559d1b90fb3f93e633d5838",
+    "parent_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+    "unchanged_flags_launch_stores_norm_rope_and_helpers": true
+  },
+  "status": "PASS"
+}

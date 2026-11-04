@@ -1,0 +1,56 @@
+{
+  "kind": "independent_attention_new_kv_pack_frozen_source_critic",
+  "recorded_at_utc": "2026-11-04T14:16:38.409636+00:00",
+  "verdict": "GO_ONE_PRIVATE_CHECK",
+  "source": {
+    "path": "muse_attention_decode/candidates/native_new_kv_pack_v18.py",
+    "sha256": "41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663",
+    "parent_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c"
+  },
+  "evidence_pins": {
+    "tools/ATTENTION_NEW_KV_PACKING_FEASIBILITY_20261104.md": "7e61f36898759a4e437927366e2e4df27500128374d2cf27caf07dd17a0cc22c",
+    "tools/build_attention_kv_pack_candidate.py": "3ba9aa99aa395dabc8b8bb330d26289bbb625b2ac5fe0965730a9e146ccdbe37",
+    "tools/test_attention_kv_pack_cpu.py": "ef80be01a9092c560203e0d2150754591e6fb20f2e7c50c578c2d39a40c3b672",
+    "experiments/iterations/20261104-attention-kv-pack-cpu.json": "d1f563414fcafc7135723d6f4504abc80de8258a14d3843d67dbe9adc49a1e7f"
+  },
+  "independent_static_checks": {
+    "entire_source_restoration": true,
+    "changed_python_ast_nodes": [
+      "CUDA_SRC",
+      "_build"
+    ],
+    "no_candidate_edits": true
+  },
+  "review": [
+    "Read full diff, builder, verifier and author result. Exact executable delta is the two packed helper calls inside the existing has_new/live cache-write path plus extension namespace; provenance comment is accurate.",
+    "Each original x[e]*sc product appears once at the same output byte position. Shared/global uint2 stores, guards, norm, RoPE, reciprocal, synchronization, dispatch and compile flags are identical.",
+    "Existing e4m3x4f and OKC_PACK4=0 are unchanged. Its low/high packed operands agree with primary PTX lane order.",
+    "Pinned NVIDIA12.8.90 scalar conversion uses the same RN/satfinite packed PTX operation with a dummy upper zero; equivalence includes signed zero and NaN conversion behavior without asserting a specific NaN payload representation.",
+    "Verifier checks full restoration and262144 opaque byte layouts plus3 mutated-source negatives; this proves byte assembly, not floating conversion on GPU. No hidden resource or performance claim is attached.",
+    "Actual evaluator header version, CUDA compile success, instruction coalescing/register allocation and measured benefit remain unknown until official result. No added diagnostics or expensive framework is required."
+  ],
+  "validation_limits": [
+    "Critic independently executed source hashes, AST comparison and exact complete-parent restoration. Root owns the independent full lightweight verifier run; critic did not duplicate its exhaustive byte loop.",
+    "No CUDA compilation, GPU execution, official calls, source edits or candidate promotion."
+  ],
+  "fixed_pre_result_screen": {
+    "official_aggregate_ratio_both_parents_min": 1.005,
+    "joint_positive_weighted_loads_min": 3,
+    "weighted_load_count": 6,
+    "every_case_normalized_latency_both_parents_max": 1.02,
+    "case_count": 12,
+    "weights_per_load": {
+      "sliding": 46,
+      "full": 16
+    },
+    "no_unchanged_controls": true,
+    "subgroups_descriptive_only": true,
+    "operational_not_statistical": true
+  },
+  "closed_failure_policy": "No conversion policy sweep, repeat measurement or decoder integration on a failed fixed screen.",
+  "root_independent_cpu_confirmation": {
+    "status": "PASS",
+    "report_sha256": "d1f563414fcafc7135723d6f4504abc80de8258a14d3843d67dbe9adc49a1e7f",
+    "evidence": "Root message confirms independent terminal0 run and report byte identity to author."
+  }
+}
