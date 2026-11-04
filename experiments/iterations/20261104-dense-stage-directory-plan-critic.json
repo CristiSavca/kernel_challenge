@@ -1,0 +1,38 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "plan": "tools/DENSE_STAGE_DIRECTORY_PLAN.md",
+  "plan_sha256": "32f11cc98ca2aae6370ee234bd9e4705025812c35e413b0031080b819884c75a",
+  "parent_decoder_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+  "decision": "GO for bounded CPU-only isolated implementation of this plan. No GPU/check/submission or source approval yet. Require frozen exact-source review afterward.",
+  "accepted_mechanism": "Append immutable per-KST stage offsets to original escape tables and use them only for COMP&&CL1, while preserving shared activation reads, every original stage wait/arrival, correction planes, exact entry/FMA order and final reduction. This is distinct from rejected global activation gather rewrite.",
+  "source_verified_facts": [
+    "Original parent escape warps all scan table indices. Duplicated scanning predates rejected V10.",
+    "The original sharing key includes WSK and UPW, fixing KST within a shared table. Directory boundaries do not depend on NESC. All current compressed SK2 configurations use CL1; the CL3 router is uncompressed.",
+    "Original bfp_sk2_table has one caller, bfp_sk2_prepare, which has weight geometry available. Legacy bfp_build_patch_table serves a separate backend and must remain unchanged.",
+    "The original int2 table count, sorted correction entries, pmax copy count, shared footprint and zero-row offsets permit an aligned metadata tail without changing correction arithmetic."
+  ],
+  "layout_and_lifecycle_requirements": [
+    "Do not sort again. Preserve the original argsort result, including equal-K ordering, count and entries1 through count byte for byte.",
+    "Directory d[s] = 1 + count(k < s*KST), with d[0]=1 and d[S]=count+1. Prove zero, one and dense tables, empty stages and boundary K values, with no lookup beyond S.",
+    "The directory offset uses old_pmax int2 slots. Round the int32 tail to16 bytes so new pmax remains even and every copied CTA stride stays aligned. All reads remain behind pbar. Shared allocation and the zero row move only through new pmax arithmetic.",
+    "For non-owning or empty stages preserve the original full wait, warp synchronization and empty arrival. Handle fused router stages before directory access. Preserve final correction-barrier participants and plane zeroing. Add no CTA barrier after early returns.",
+    "Uncompressed and clustered variants retain old behavior. An absent directory must reproduce exact parent table bytes and traversal.",
+    "Prove KST and minimum NESC against all emitted ordinary, fused, UV and boundary consumers sharing each table, including forced pooler fusion with three ring stages. One benchmark profile is insufficient to establish this consumer set.",
+    "Added bytes must fit every applicable consumer. Use the smaller of the existing232448-byte budget and the actual device opt-in per-block limit, with conservative parent-table fallback if the device property is unavailable. Use the exact existing launch footprint formula. Preserve ring geometry and actual boundary capacity queries with the enlarged pmax."
+  ],
+  "filter_assessment": {
+    "formula": "4*(minNESC-1)*sum(E_i) > ncta*(D+8*S), D=16*ceil(4*(S+1)/16)",
+    "arithmetic": "Original logical traversal loads about8E bytes in the owner and4E in each non-owner. Directory traversal loads8E entry bytes,8S boundary bytes and D copied tail bytes. The filter excludes old boundary lookahead savings and includes all CTA copies, even for zero-escape CTAs.",
+    "judgement": "Acceptable immutable metadata-work heuristic for a single isolated test, not a latency predictor, optimal threshold or proof of DRAM traffic saved. Different memory spaces and cache/broadcast behavior prevent conversion to time. Do not tune this gate after seeing results.",
+    "density_evidence": "Independent CPU Gaussian/sqrt(K), round-to-nearest-even BF16 modeling suggests sparse counts and argues against an unconditional universal K64 directory. Per-KST tails are small enough for plausible qkv/pooler selection while low-count tables fall back. This model is not official weight data and establishes no performance gain.",
+    "required_selection_evidence": "Record selected/fallback geometry, counts, mean/max entry count, original/new pmax, directory bytes and fit decision during immutable weight preparation. An inactive experiment cannot support the mechanism."
+  },
+  "cpu_proof_requirements": [
+    "Execute the actual candidate table builder and compare original correction entries and fallback tables against the actual parent. Preparation may process only immutable weight metadata.",
+    "Compare complete ordered (entry, input address) traces for each escape plane across KST/NESC choices and physical UV rows. Preserve the original shared-memory swizzle formula.",
+    "Preserve ring participation under delayed-warp interleavings, including fused router stages.",
+    "Audit the full Python AST scope and non-target preprocessed CUDA where applicable. Freeze the final source hash before independent source review."
+  ],
+  "roi_verdict": "A limited plausible metadata optimization, not an established broad decoder improvement. Consider one private whole-decoder check only after exact-source approval. Reject inactivity, lost fusion, material regression or no useful whole-decoder gain; no blind threshold or geometry sweep.",
+  "runtime_property_source": "https://github.com/pytorch/pytorch/blob/main/torch/cuda/_utils.py"
+}

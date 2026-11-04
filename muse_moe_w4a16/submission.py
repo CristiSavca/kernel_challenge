@@ -1,4 +1,45 @@
 # okc: problem=muse_moe_w4a16
+# Isolated KPERM3 adaptation over frozen ef7b210b; no SC6/MFIN or pipeline changes.
+# KPERM3 portions Copyright 2026 team keell0renz (Bohdan Agarkov), Apache-2.0.
+# Source: keell0renz/muse-open-kernel-challenge, commit 890809cee421500b00126d084e81b338ef9181ab.
+# The original Apache LICENSE and attribution NOTICE are preserved in third_party/public_scout/keell0renz-890809c/.
+# Changes: paired lossless WGS weight/activation reindex and per-stage scale-pair reuse.
+# Prior upstream notices below remain applicable; see the adjacent experiment record.
+# --- Donor NOTICE (retained verbatim as comments) ---
+# muse-open-kernel-challenge
+# Copyright 2026 team keell0renz (Bohdan Agarkov)
+#
+# This product includes code from the following projects. Each kernel file keeps the original attribution lines.
+#
+# Apache License 2.0:
+# - vjeux/okc-2026 (https://github.com/vjeux/okc-2026, commit f35a41e): the starting point of every board.
+#   "Portions Copyright vjeux, from https://github.com/vjeux/okc-2026 (commit f35a41e), licensed under the Apache License 2.0."
+# - alygg77/okc-muse-spark-kernels (commit 6cae49a): decode layer, MoE, prefill bases; pinned cuBLASLt plans and ctypes
+#   wrapper in the bf16 projections. "Submitted by alygg77 under the Apache License 2.0 with this notice retained."
+# - chenwainuo/okc (muse_bf16_proj/submission.py @ 3d418e1): rs128 GEMVs (bf16 projections, decode layer).
+# - ZhimaoL/sglang (okc/x-vfgpdl, okc/cand12pre, okc/x-n72-naw okc_patch kernels): verify-attention kernels (wst, vfg) and the
+#   prefill FMHA (fmha7, N72).
+# - Madhavan113/ParadigmKernelChallenge (c0f3460, dab77b3, 012d92b): TMA bulk-reduction merge in attention decode.
+# - Matsvei (kernarc user 'matvey', agents.kernarc.com; OKC submissions are licensed under the Apache License 2.0): the
+#   per-thread CUDA-context bind helper and cuBLASLt plan pins.
+#
+# MIT License:
+# - NathenFernandes/muse-bf16-proj (submission.py @ 7385e5d), Copyright (c) 2026 Nathen Fernandes: routertail_small and
+#   ol_projection kernels in kernels/muse_bf16_proj.py, source unchanged.
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#   documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+#   rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+#   persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+#   Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+#   WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+#   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+#   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# --- End donor NOTICE ---
 # Public source: rohanarun/Auto-research-agent, commit 018b7a102348ea3b73701e8be52d24f82d8c91ee.
 # Path: benchmarks/data/candidates/gemini-3.8-flash-opencode/kernel-muse_moe_w4a16/submission.py
 # Original source SHA-256: b59196ac2365cba30cc666cc74f38051ff8f5e19c8fbd9e771adfd4696c40765.
@@ -2836,6 +2877,16 @@ __device__ void wgs_xproducer(const Params& p, Smem& S, unsigned char* ring) {
     }
   }
 }
+// KPERM3: pi(16*(4*lg+j)+c) = 16*(4*t+j)+4*lg+i,
+// t=(c>>1)&3, i=(c&1)|((c>>3)<<1). Four coalesced BF16-pair loads
+// form the same 16-byte destination chunk; no input computation leaves this kernel.
+__device__ __forceinline__ uint4 wgs_kperm_x(const __nv_bfloat16* row, int chunk) {
+  const int g = chunk & 31;
+  const unsigned* src = reinterpret_cast<const unsigned*>(row + (chunk >> 5) * 256)
+                        + (8 * ((g >> 1) & 3) + 2 * (g >> 3) + (g & 1));
+  return make_uint4(__ldg(src), __ldg(src + 32), __ldg(src + 64), __ldg(src + 96));
+}
+static_assert(OKC_WGSSC2 == 1, "KPERM3 WGS uses interleaved j/h scale pairs");
 // phase A's x gather (all consumer threads of every CTA, once, at the start): this CTA's share of the jobs' padded rows
 // copied into xA's per-stage wgmma layout, then counted into xready (padding rows are counted, not written)
 __device__ void wgs_gather(const Params& p, Smem& S) {
@@ -2862,7 +2913,7 @@ __device__ void wgs_gather(const Params& p, Smem& S) {
         if (r < cnt) {
           const int ntt = (cnt + 7) >> 3;
           d[k] = reinterpret_cast<uint4*>(p.xA + (size_t)S.jrow[j] * HD) + ((((tid >> 5) * ntt + (r >> 3)) * 32 + (tid & 31)) * 8 + (r & 7));
-          v[k] = __ldg(reinterpret_cast<const uint4*>(p.x + (size_t)(S.ent[S.jS[j] + r] >> 3) * HD) + tid);
+          v[k] = wgs_kperm_x(p.x + (size_t)(S.ent[S.jS[j] + r] >> 3) * HD, tid);
         }
       }
     }
@@ -2876,10 +2927,10 @@ __device__ void wgs_gather(const Params& p, Smem& S) {
     const int r = q - S.jrow[j], cnt = S.jC[j];
     if (r < cnt) {
       const int ntt = (cnt + 7) >> 3;
-      const uint4* src = reinterpret_cast<const uint4*>(p.x + (size_t)(S.ent[S.jS[j] + r] >> 3) * HD);
+      const __nv_bfloat16* src = p.x + (size_t)(S.ent[S.jS[j] + r] >> 3) * HD;
       uint4* dst = reinterpret_cast<uint4*>(p.xA + (size_t)S.jrow[j] * HD);
       for (int kc = tid; kc < HD / 8; kc += NT) {  // 16 B chunk kc: stage kc >> 5, k8 kc & 31
-        const uint4 v = __ldg(src + kc);
+        const uint4 v = wgs_kperm_x(src, kc);
         dst[(((kc >> 5) * ntt + (r >> 3)) * 32 + (kc & 31)) * 8 + (r & 7)] = v;
       }
     }
@@ -3043,14 +3094,19 @@ __device__ __forceinline__ void wgs_seg(const Params& p, Smem& S, unsigned char*
 #endif
     // codes and scales one 4-step group at a time (fewer live registers)
     uint4 cwn = *reinterpret_cast<const uint4*>(pc + (wp * 32 + lane) * 16);
-    uint2 scn = *reinterpret_cast<const uint2*>(pc + 8192 + (wp * 8 + g) * 8);
+    // KPERM3 gives lane t the same four original scale blocks 4*t+j in every load group.
+    const uint2 scn = *reinterpret_cast<const uint2*>(pc + 8192 + (wp * 32 + lane) * 8);
+    uint32_t scale_pairs[4];
+#pragma unroll
+    for (int j = 0; j < 4; ++j) {
+      const uint32_t sw = j < 2 ? scn.x : scn.y, sb = (uint32_t)(j & 1) * 2u;
+      scale_pairs[j] = __byte_perm(sw, 0u, 0x4040u | sb | ((sb + 1u) << 8)) * k16c + 0x5C005C00u;
+    }
 #pragma unroll
     for (int lg = 0; lg < 4; ++lg) {
       const uint4 cwg = cwn;
-      const uint2 scg = scn;
       if (lg < 3) {
         cwn = *reinterpret_cast<const uint4*>(pc + (((lg + 1) * 4 + wp) * 32 + lane) * 16);
-        scn = *reinterpret_cast<const uint2*>(pc + 8192 + (((lg + 1) * 4 + wp) * 8 + g) * 8);
       } else if (lane == 0) {
         mbar_arrive1(S.bars + BW_E + ws);  // every code and scale of this stage is in registers: weights slot free
       }
@@ -3063,18 +3119,10 @@ __device__ __forceinline__ void wgs_seg(const Params& p, Smem& S, unsigned char*
           const uint32_t q = js == 0 ? cwg.x : js == 1 ? cwg.y : js == 2 ? cwg.z : cwg.w;
           uint32_t r0, r1, r2, r3;
           dq4(q, r0, r1, r2, r3);
-#if OKC_WGSSC2
-          // scales stored [j][h] (rows g, g+8 of step j side by side): one PRMT + one IMAD build both rows' scales in
-          // one bf16x2, and the multiplies broadcast its halves (HMUL2 .H0_H0 / .H1_H1): 2 instructions per k16 fewer
-          const uint32_t sw = js < 2 ? scg.x : scg.y, sb = (uint32_t)(js & 1) * 2u;
-          const uint32_t sgp = __byte_perm(sw, 0u, 0x4040u | sb | ((sb + 1u) << 8)) * k16c + 0x5C005C00u;
+          // The same four exact BF16 scale pairs serve all four load groups.
+          const uint32_t sgp = scale_pairs[js];
           af[ci & 1][jj][0] = bmul2l(r0, sgp); af[ci & 1][jj][1] = bmul2h(r1, sgp);
           af[ci & 1][jj][2] = bmul2l(r2, sgp); af[ci & 1][jj][3] = bmul2h(r3, sgp);
-#else
-          const uint32_t sg = SCDK(scg.x, js, k16c), s8 = SCDK(scg.y, js, k16c);
-          af[ci & 1][jj][0] = bmul2(r0, sg); af[ci & 1][jj][1] = bmul2(r1, s8);
-          af[ci & 1][jj][2] = bmul2(r2, sg); af[ci & 1][jj][3] = bmul2(r3, s8);
-#endif
         }
         wg_fence();
 #pragma unroll
@@ -3870,7 +3918,7 @@ def _ext(defines=None, use_mul=True):
         arch = f"{major}{minor}" + ("a" if major == 9 else "")
         tag = hashlib.sha1("_".join(defines).encode()).hexdigest()[:16]
         _EXTS[defines] = load_inline(
-            name=f"okc_moe_selmul_{tag}_sm{arch}",
+            name=f"okc_moe_kperm3_v9_{tag}_sm{arch}",
             cpp_sources=CPP_SRC,
             cuda_sources=src,
             functions=["okc_run", "okc_set_pdl"],
@@ -4000,11 +4048,41 @@ def _pack_codes_nat(codes, rows, positions=None):
     return word.contiguous().view(-1)
 
 
+def _wgs_kperm_index(device):
+    """Exact permutation of 256 K positions; used only while packing weights."""
+    p = torch.arange(256, device=device)
+    step, c = p >> 4, p & 15
+    lg, j, t, i = step >> 2, step & 3, (c >> 1) & 3, (c & 1) | ((c >> 3) << 1)
+    return 16 * (4 * t + j) + 4 * lg + i
+
+
+def _wgs_kperm_codes(codes):
+    """Permute exact FP4 nibbles within each 256-column stage, without dequantizing."""
+    R, K = codes.shape[0], codes.shape[1] * 2
+    nib = torch.stack((codes & 15, codes >> 4), -1).reshape(R, K // 256, 256)
+    nib = nib.index_select(2, _wgs_kperm_index(codes.device)).reshape(R, K // 2, 2)
+    return (nib[..., 0] | (nib[..., 1] << 4)).contiguous()
+
+
+def _wgs_kperm_rows(rows):
+    """Permute paired W13 gate/up rows so the existing epilogue writes permuted xB."""
+    r = rows.view(-1, 2, 8)
+    gate, up = r[:, 0, :].reshape(-1), r[:, 1, :].reshape(-1)
+    p = torch.arange(gate.numel(), device=rows.device)
+    source = (p >> 8) * 256 + _wgs_kperm_index(rows.device)[p & 255]
+    return torch.stack((gate.index_select(0, source).view(-1, 8),
+                        up.index_select(0, source).view(-1, 8)), 1).reshape(-1)
+
+
 def _wgs_copy(codes, sf, rows, positions=None):
-    """WGS copy (RS-wgmma tiny band, moe -DOKC_WGS=1): [256-row unit][stage (16)][warpgroup q (4)][9216 B]. Warpgroup q
-    owns rows 64q..64q+63 of the unit; stage st holds k16 steps st*16 + (0..15): codes [grp (4)][warp (4)][lane (32)]
-    [4 words] (word (grp, j) = k16 step st*16 + grp*4 + j, natural mma k order), then scales [grp][warp][g][j][h] (the kernel's OKC_WGSSC2 layout)."""
-    wn = _pack_codes_nat(codes, rows, positions)
+    """WGS copy: [256-row unit][stage (16)][warpgroup q (4)][9216 B].
+    Exact code nibbles are KPERM3-ordered within each 256-column stage. Codes use
+    [grp (4)][warp (4)][lane (32)][j (4)] words; scale bytes use [warp][g][t][j][h],
+    where the original scale block 4*t+j is shared by all four code load groups.
+    W13 callers also pass paired gate/up rows in the matching hidden-channel order.
+    This format retains 8-bit scales and both existing code-bit positions mappings.
+    """
+    wn = _pack_codes_nat(_wgs_kperm_codes(codes), rows, positions)
     R = rows.numel()
     nb, nub = R // 16, R // 256
     w = wn.view(nb, 8, 8, 8, 4, 4)                                    # rb16, w8, c8, g, t, s
@@ -4014,7 +4092,7 @@ def _wgs_copy(codes, sf, rows, positions=None):
     cb = w.view(torch.uint8).view(nub, 16, 4, 8192)
     s = sf.view(torch.uint8).index_select(0, rows)                    # [R, 256]: one byte per row per 16 K
     s = s.view(nub, 4, 4, 2, 8, 16, 4, 4)                             # ub, q, warp, h, g, st, grp, j
-    s = s.permute(0, 5, 1, 6, 2, 4, 7, 3).contiguous().view(nub, 16, 4, 1024)  # ub, st, q, grp, warp, g, j, h (OKC_WGSSC2)
+    s = s.permute(0, 5, 1, 2, 4, 6, 7, 3).contiguous().view(nub, 16, 4, 1024)  # ub, st, q, warp, g, t, j, h (KPERM3)
     return torch.cat([cb, s], dim=3).contiguous().view(-1)
 
 
@@ -4064,8 +4142,9 @@ def _prepare_layout(weights, use_mul):
         "lo": lo, "cnt": cnt, "scratch": _make_scratch(dev),
         "grid": torch.cuda.get_device_properties(dev).multi_processor_count,
     }
-    if _wgs_on():  # w[12], w[13]: the WGS copies (one more copy of the weights, laid out per 64-row unit)
-        state["w"].append(torch.cat([_wgs_copy(weights["w13"][e], weights["w13_sf"][e], rowsA, positions) for e in range(lo, lo + cnt)]))
+    if _wgs_on():  # Only WGS entries 12/13 change; the natural skinny/fat/unit entries 0..11 above stay exact.
+        wgs_rowsA = _wgs_kperm_rows(rowsA)
+        state["w"].append(torch.cat([_wgs_copy(weights["w13"][e], weights["w13_sf"][e], wgs_rowsA, positions) for e in range(lo, lo + cnt)]))
         state["w"].append(torch.cat([_wgs_copy(weights["w2"][e], weights["w2_sf"][e], rowsB, positions) for e in range(lo, lo + cnt)]))
     prmt = PRMT_SCALES and _scales_prmt_exact(weights["w13_sf"][lo:lo + cnt], weights["w2_sf"][lo:lo + cnt])
     state["sfx"] = ("-DOKC_PRMTSC=1",) if prmt else ()

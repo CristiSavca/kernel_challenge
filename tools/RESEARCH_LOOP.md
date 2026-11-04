@@ -656,3 +656,38 @@ implement only after critic accepts exact compatibility and a credible static
 cost rationale; no new GPU/official check authorized to agents. A plan is not a
 measured gain. Goal remains active; this turn made concrete research, code,
 validation, rejection and public-submission progress, with no blocking condition.
+
+08:25 UTC: both KPERM public submissions are terminal PASS and active files promoted.
+Standalone d24dd50196cb4158, source247888, score2.3736910444 (previous2.356104),
+all5tests/6benchmarks; live MoE rank288 (was341). Decoder7a8c4941741645ee,
+source97af, score2.1811831350 (previous2.150186), all13tests/12benchmarks;
+live overall/decoder rank381 (was401), leader2.5401. Exact live snapshot:
+experiments/leaderboards/20261104T082347Z-kperm-public-results.json.
+Both active submission.py files now equal their exact scored source snapshots;
+prior80a4 andef7 remain frozen. No repeat of these completedjobs.
+Aggregate intervals still overlap; improvement in officialbest score/rank is
+observed, not proof of a precise causal speedup. MoEM128 absolute latency is
+slightlyslower despite improved relative ratio due baseline movement.
+
+Directory15a7188b exact-source review and rootCPU suite passed; root submitted
+ONEprivate whole-decoder check4b9f33ffa6bc4eed. Local session26671 terminalexit0;
+latestobservedqueued. Keep polling samejob, no duplicate. Preserve preparation
+SK2_STAGE_DIRECTORY logs to prove actual selection, not just renamedkernel.
+This candidate remainsisolatedonold80a4, not new97af. Ifuseful, integrationinto
+newincumbent needs separate exactscopevalidation. CPUfitguard now reserves2048B
+for staticshared/alignment after rootcaught omittedUV arrays+s_rlast.
+
+User challenged pace and rankslippage. Root explained the priorpublicscore had
+stayedunchanged whileothers passed, then verifiednewrank381. Goalstill#1,
+roughly14.1%normalizeddecoderlatencycut needed; don'tredefinesuccessassmallwins.
+New higher-impact research targets tiny/MID MoE paths affectinghalfthescored
+loads. Grid-only2CTA is disproved by savedactual144–149register binaries and
+oversizedsharedallocation. Author examinesNW4/NS2 plus right-sized metadata,
+correctscaleloadcoverage andadmissiongates; no newsource/GPUapprovedyet. SameK
+full weightunit36KiB andthree slots108KiB meansmerelyhalvingNWcannotfit2CTAs.
+Need explicitarchitectureandcriticreview, not silentlyweakenresourceguards.
+NVFP4 S/3S/LUTaudit isclosed asunsupportedcost tradeoff;4,064exactfiniteproducts
+wereverified butno distinct fastermechanism identified. No newModalallocation.
+Upstreamrohan018b/vjeuxf35aheads reconfirmedunchanged08:03UTC; free disk35GiB.
+Previousgoalturnwasprogress, thisturnhas scoredresults,promotions andnewprivate
+check; goalactive, noblockingcondition. Rootalonepolls/submits.

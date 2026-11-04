@@ -95,7 +95,21 @@ rewrite has substantial costs. See `FT128_REUSE_REASSESSMENT.md`.
 After both broad rejections, independent critic approved one public evaluation
 of each already-tested KPERM source. Root submitted MoE `247888` as scored job
 `d24dd50196cb4158`, and decoder `97af3994` as scored job `7a8c4941741645ee`.
-The receipts are received, not completed. This resolves only the earlier
-temporary promotion hold; the overlapping intervals and uncertainty remain.
-Resume those exact receipts and inspect the authenticated leaderboard after
-completion. Latest overall standing before these results is #401 of 1957.
+Both scored runs completed successfully. MoE improved to 2.373691x and rank
+288; the whole decoder improved to 2.181183x and overall/decoder rank381.
+The authenticated snapshot at08:23 UTC is
+`experiments/leaderboards/20261104T082347Z-kperm-public-results.json`.
+Both active submission files now match their exact scored snapshots. The
+reported intervals still overlap; these are observed best-score/rank changes,
+not a precise causal performance estimate. Do not repeat either scored run.
+The leader remains at2.5401x, requiring roughly14.1% less normalized latency
+from the current decoder. The #1 objective remains unachieved.
+
+The separately reviewed stage-directory candidate15a7188b is submitted as one
+private check, `4b9f33ffa6bc4eed`, currently queued. It preserves the old80a4
+parent's correction math and ring, adding only immutable stage-index metadata
+when its work/fit filter permits. Root caught and fixed omitted static shared
+storage in its fit guard before upload. Require real preparation-selection logs
+and useful GPU timing; its extensive CPU proof does not establish a speedup.
+This is a small parallel experiment. The broader next investigation targets
+small-batch expert execution, which affects half the scored decoder loads.

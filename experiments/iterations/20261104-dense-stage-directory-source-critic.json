@@ -1,0 +1,64 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "candidate": "muse_decode_layer/candidates/native_dense_stage_directory_v11.py",
+  "source_sha256": "15a7188b3e35b469565cc2d7eb9b37c0804e341dab5f1a4939a16563efdaa172",
+  "parent_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+  "decision": "GO for one official private whole-decoder check of this exact frozen source. No scored publication or combination with other mechanisms before terminal correctness and performance review.",
+  "basis": "Independent full focused diff and affected source read, complete verifier source review, independent rerun on stable hash, and resource correction review. No blocking static defect remains identified. This is approval to test, not GPU correctness or performance validation.",
+  "cpu_verification": {
+    "command": "/tmp/okc-kperm-cpu-20261104/bin/python tools/test_dense_stage_directory_cpu.py",
+    "session": 5166,
+    "exit_code": 0,
+    "verifier_sha256": "70cd4b4eb2f805d45f59fe4b7d65122cceb459a6e756aa9d15263278ee061910",
+    "author_record": "experiments/iterations/20261104-dense-stage-directory-cpu.json",
+    "author_record_sha256": "78bb1cb9b15eab8ddf067dac6fdbdbab7c697872482cf05f84e9589dc0f278ee",
+    "actual_ast_table_cases": 45,
+    "shared_table_geometries": 9,
+    "actual_emitted_compressed_geometries": 14,
+    "preserved_entry_bytes": 1399712,
+    "extracted_cpp_ordered_entry_address_pairs": 9414880,
+    "extracted_cpp_barrier_events": 1485760,
+    "table_geometry_physical_M_cases": 2640,
+    "randomized_ring_interleavings": 448,
+    "negative_controls": 2,
+    "coverage": "Actual parent/candidate Python table functions execute through a NumPy adapter. Extracted original/candidate C++ escape loops execute through clang with read/event instrumentation. All physical M1..TOKR values use representative first/last valid and first padded lanes, with clustered fallback and fused router stages. This is not all-lane CUDA execution or a GPU numerical oracle.",
+    "limitations": "NumPy sort behavior is not Torch CUDA tie ordering; the exact original argsort expression is retained and no new sorting is introduced. Fake BF16 arithmetic in the C++ harness is not numerical validation; exact ordered entries, input addresses and unchanged arithmetic expressions establish the intended arithmetic sequence."
+  },
+  "scope": {
+    "changed_existing_ast_nodes": [
+      "bfp_SK2_SRC",
+      "bfp__get_ext",
+      "bfp_sk2_table",
+      "bfp_sk2_prepare"
+    ],
+    "added_ast_nodes": [
+      "bfp__sk2_directory_specs"
+    ],
+    "other_source": "All other Python AST nodes unchanged. Embedded SK2 CUDA bytes outside the reviewed traversal and kernel namespace are unchanged. No global-input escape rewrite, compact WGS or KPERM integration.",
+    "namespace": "sk2_stage_directory_kernel; dl_okc_bf16proj_stage_directory_v11_"
+  },
+  "correctness_audit": [
+    "Original table sort and tie ordering retained. Original count and entries1 through count remain byte-identical; only header0.y and an aligned tail change for selected tables.",
+    "Directory boundaries use lower-bound search in the same CTA/K sorted keys, subtract that CTA start and add1. Empty stages, repeated K, boundary K and empty CTAs preserve inclusive start/exclusive count+1 sentinel. A stage visits exactly the same original entries in the same order.",
+    "Non-owning escape warps skip only metadata traversal. They retain the original full wait, warp synchronization and empty arrival for every stage. Owners retain shared activation addressing and FP32 correction expression. Plane zeroing, plane ownership and final reduction order are unchanged.",
+    "The FUSE router branch runs before directory access, so extra router stages cannot overrun the directory. Uncompressed paths do not read the directory; CL>1 forces offset0 and preserves local-stage ownership and original scan.",
+    "The directory is copied by the existing pmax-based transaction before pbar completion. New pmax remains even and CTA strides remain16-byte aligned. Existing pmax arithmetic consistently shifts table end, zero row, dynamic shared allocation and actual boundary capacity queries.",
+    "Weight preparation alone builds immutable metadata and chooses eligibility. Runtime input math remains inside timed kernels. No timing, seed, benchmark or harness-dependent branch was introduced.",
+    "All emitted ordinary, forced fused pooler, UV and boundary consumers are inspected. Shared-table KST is invariant; minimum NESC and maximum fixed dynamic footprint agree with actual generated dispatch. Additional fused static storage is covered by the conservative reserve."
+  ],
+  "resource_guard": {
+    "initial_issue": "Root found the first fit guard compared dynamic bytes alone with opt-in, omitting static shared variables.",
+    "fixed_budget_expression": "max(0, min(232448, actual_shared_memory_per_block_optin) - 2048)",
+    "static_source_inventory": "uv_ra[32] and uv_rs[32]:256B total; s_rlast:4B; dynamic extern alignment1024. Reserve2048 exceeds260 declared bytes plus1023 alignment allowance. No extra static shared declaration is introduced by this change.",
+    "remaining_runtime_checks": "The unchanged launcher subtracts cudaFuncAttributes.sharedSizeBytes when setting dynamic opt-in and queries the actual modified specialization for boundary capacity. CPU reserve is not a measurement of compiled attributes or achieved occupancy.",
+    "fallback": "Missing device property, failed metadata-work gate, insufficient shared budget or ineligible geometry returns original table bytes/pmax. The fallback CUDA path has a new offset read/branch, so it is semantically equivalent, not instruction-identical."
+  },
+  "performance_limits": [
+    "The immutable filter compares logical metadata work across memory spaces; it does not establish latency savings. No threshold sweep is authorized.",
+    "Added metadata bytes, offset loads, branches or register changes may outweigh eliminated repeated scans, including in unchanged-table fallbacks. Actual official escape counts and selection remain unknown.",
+    "Renamed kernel appearance alone does not prove the directory activated. Require retained SK2_STAGE_DIRECTORY preparation records for table selection and fit evidence.",
+    "Complete successful compiler output may be absent. Do not infer zero spills or no forced serialization from missing diagnostics.",
+    "Target at least3% whole-decoder improvement, with coherent affected-case evidence and controls. No useful gain, inactive selection, lost fusion, correctness failure or material regression means reject this source. A weaker result requires an explicit new decision, not claiming the target met."
+  ],
+  "post_check_requirements": "Root alone submits/polls. Inspect actual terminal records (expected13 tests/12 benchmarks/12 profiles), flags/checks, selection output, source/profile identity, per-case raw and normalized timings and weighted six-load aggregate against exact80a4 parents. Preserve result regardless of outcome; no duplicate check."
+}
