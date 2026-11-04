@@ -1141,3 +1141,15 @@ originalworktiles/fullweights/jobs/rounding while trading more sharedtraffic
 and reducedraw-ringlookahead for fewer live register operands. It is a distinct
 source/CPU feasibility, not a retest of quotas or WAIT2. Authorattention_paper_reset
 and independentmoe_research_reset are reviewing before any implementation.
+
+
+Complementary shape-dispatch review2cae13e1fd4cccd491b5884e7b90bc6eedc00f4641a58e8a961cd74af798436a
+found no supported combination:27savedpassingprivate runs,25withmatchingGPU/
+evaluator andcasefieldsapartfromseed,nonehasanycase>=3%fasterthanbothcurrent
+public/privateincumbents. Rootreproduced27sourcehashes,25fullevaluator/GPU/
+casecomparisons and allnegative3%winscreens directlyfromreceipts. Unchanged
+controlnoise isexcludedregardless. LocalGS4,earlyA,splitfinalizer also
+lackrepeatablepositivefamilyevidence. Do notreopenmixeddispatchwithoutnewdata.
+Currentgoalturn remainsprogress: actualR16admissionfailure closed, read-only
+coordination/combinationalternatives assessed, distinctSSoperand designunderreview.
+The#1objective isactive/unachieved, notblocked orcomplete.
