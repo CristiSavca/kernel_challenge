@@ -20,15 +20,15 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-At November 4, 11:56 UTC, the official decoder leader was 2.5510×. Our exact
+At November 4, 12:17 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
-decoder rank was392 (last overall snapshot at11:12 was391). Passing that observed leader needs approximately
+decoder and overall ranks were392. Passing that observed leader needs approximately
 14.50% less normalized latency. This remains an unachieved goal, not a forecast.
 Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank292.
 Both active submission.py files equal their scored snapshots. The preceding
 80a4/ef7 files remain frozen; private experiments never replace these incumbents
 without a useful verified result. See the dated live snapshot in
-`experiments/leaderboards/20261104T115651Z-r16-presubmit.json`.
+`experiments/leaderboards/20261104T121714Z-r16-terminal.json`.
 
 The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
@@ -1131,3 +1131,13 @@ positiveC7511evidence. A freshNVIDIAforumC7514loopdependencyissue is adifferent
 diagnostic and supplies no causal evidence for ourparent. NoGpu/checkapproved
 bythesequestions; actualsourcefeasibility and independentcriticstillrequired.
 Primary source: [NVIDIA compiler engineering reply on C7514 loop analysis](https://forums.developer.nvidia.com/t/ptxas-mysterious-warning-for-wgmma-mma-async-instruction-serialization/340610/8).
+
+
+At12:17UTC fresh official snapshot confirms decoder392/1265,overall392/1962,
+score2.1812 vsleader2.5510. Decoder30private/18scored attempts remain; MoE33/17.
+No official job is pending. Current exact sources unchanged. Next standalone
+MoE feasibility considers SS-WGMMA decodedBF16 A insharedbanks, retaining
+originalworktiles/fullweights/jobs/rounding while trading more sharedtraffic
+and reducedraw-ringlookahead for fewer live register operands. It is a distinct
+source/CPU feasibility, not a retest of quotas or WAIT2. Authorattention_paper_reset
+and independentmoe_research_reset are reviewing before any implementation.
