@@ -54,12 +54,18 @@ payment-verification requirement; an undisclosed private promo is unverified.
 Every allocation now uses `tools/modal_credit_budget.py`. It checks the
 reviewed monthly grant, active profile, fresh billing and running apps, holds
 an exclusive local lock, and reserves conservative compute/build costs before
-allocation. At least $5 is kept outside the working budget. Reservations never
-refund automatically and are additional to observed provider usage, so the
-budget intentionally errs on the conservative side. A separately reviewed,
+allocation. At least $5 is kept outside the working budget. Reservations are not revised automatically and remain additional to observed
+provider usage. One manually reviewed fixed certificate revises only the nine
+completed early-November-4 estimates, retaining their original journal entries.
+It adds 60 seconds to each recorded lifetime, keeps the existing rate margin
+and full build allowance, and reduces their total estimate from $21.14 to
+$11.63. It enforces provider high-water of at least $4.16, counts every newer
+reservation in full, and rejects fresh per-app charges above a revised estimate.
+This is an estimate revision, not final settlement; see
+`MODAL_FINISHED_ESTIMATE_REVIEW_20261104.md`. A separately reviewed,
 immutable certificate now removes $3.74 of proved posted-cost double counting
-from nine completed November 4 sandboxes. All original reservations and the
-$3.90423640 provider high-water remain counted; future reservations retain their
+from nine completed November 4 sandboxes. All original reservation records remain intact; the fixed estimate revision
+above is the only separate adjustment, and future reservations retain their
 full charge. Every allocation rechecks the certificate and fresh exact-interval
 billing attribution. Missing or downward-revised evidence fails closed. See
 `MODAL_OVERLAP_REVIEW_20261104.md` and `modal_credit_overlap_20261104.json`.

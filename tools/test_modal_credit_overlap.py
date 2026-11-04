@@ -81,6 +81,10 @@ class OverlapTests(unittest.TestCase):
         self.initial_journal = self.journal.read_bytes()
         self.pin = patch.object(budget, "REVIEWED_OVERLAP_SHA256", sha(self.cert_path))
         self.pin.start()
+        # These fixtures isolate the original nine-run overlap policy. The
+        # estimate-revision suite separately enables its eleven-record policy.
+        self.no_estimate = patch.object(budget, "REVIEWED_ESTIMATE_SHA256", None)
+        self.no_estimate.start()
         self.clock = patch.object(budget, "datetime", FrozenDatetime)
         self.clock.start()
         self.cli = patch.object(budget, "modal_json", self.modal_json)
@@ -89,6 +93,7 @@ class OverlapTests(unittest.TestCase):
     def tearDown(self):
         self.cli.stop()
         self.clock.stop()
+        self.no_estimate.stop()
         self.pin.stop()
         self.temp.cleanup()
 

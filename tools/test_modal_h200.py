@@ -52,6 +52,9 @@ class LifecycleTests(unittest.TestCase):
         overlap_pin = patch.object(budget, "REVIEWED_OVERLAP_SHA256", None)
         overlap_pin.start()
         self.addCleanup(overlap_pin.stop)
+        estimate_pin = patch.object(budget, "REVIEWED_ESTIMATE_SHA256", None)
+        estimate_pin.start()
+        self.addCleanup(estimate_pin.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name).resolve()
         problem = self.root / "muse_moe_w4a16"

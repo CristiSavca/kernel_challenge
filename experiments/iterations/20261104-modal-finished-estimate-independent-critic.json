@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "GO_FOR_ROOT_MANUAL_ACTIVATION_OF_EXACT_CERTIFICATE_NO_ALLOCATION_BY_REVIEWER",
+  "blocking_findings": [],
+  "reviewed_guard_sha256": "c28d5bb25afee23b1fd99de5df21bc92be36415d1bfac9d6a1338e0029ead143",
+  "reviewed_sha256": {
+    "tools/modal_credit_finished_estimate_20261104.json": "6ba6d283a301213433a67070033dfcafa3d4f115f9a01c2155c938b4e76e726f",
+    "tools/test_modal_finished_estimate.py": "0d7c9dc6a28961416cb4c1e465efe36326f60056970c1a0f2ad53d1831f836e6",
+    "tools/test_modal_credit_overlap.py": "d0310d010ad48a939c4d31526e3601075156a523c72441efe71b590f519feefa",
+    "experiments/iterations/20261104-modal-finished-estimate-cpu.json": "57df0372937b49c445fc8db929a565fd2c25208b84d3e669f56dd0365e829442",
+    "experiments/iterations/20261104-modal-finished-estimate-revision-plan.json": "0c7018ac634114e59600ae83fe809930c5244d865e2795bf9002c7fff3001599"
+  },
+  "root_activation_delta": {
+    "active_guard_sha256": "026499524dc66d158f44393edec15f45738cc9d7c04a7d83120f96198f494aa8",
+    "only_changes": "One comment and REVIEWED_ESTIMATE_SHA256=None to exact6ba6d283 certificate pin; reversing these two edits reproduces reviewedc28d5bb2 bytes.",
+    "activation_by": "root; reviewer made no code changes"
+  },
+  "classification": "Conservative estimate revision, not provider-proved cap or final settlement.",
+  "independent_checks": {
+    "all9_worker_manifest_metadata_and_resource_AST_bindings": "PASS; one exact H200/CPU(4,4)/32GiB allocation per pinned host driver",
+    "all_certificate_evidence_hashes": "PASS",
+    "all9_estimates_recomputed": "PASS; min(originalR,ceil_cent(7.68*(ceil_seconds(finish-created)+60)/3600+0.50))",
+    "original_R_total_usd": "21.14",
+    "revised_U_total_usd": "11.63",
+    "fixed_E_usd": "9.51",
+    "existing_A_usd": "3.74",
+    "P_floor_usd": "4.16",
+    "all11_R_total_usd_at_review": "24.34",
+    "conditional_available_before_future_reservation_usd": "9.75",
+    "conditional_after_CPU600_usd": "8.97",
+    "journal11_prefix_sha256_unchanged": "37bae429fd6f213e2358120fb0b2413ae8a37a60678d21546433037d0f6a1698",
+    "new_end_to_end_tests_independently_passed": 11,
+    "existing_function_AST_unchanged": [
+      "money",
+      "reservation_usd",
+      "modal_json",
+      "provider_spend",
+      "require_stopped_apps",
+      "read_json",
+      "_cost_rows",
+      "verified_overlap"
+    ]
+  },
+  "accounting_review": {
+    "once_only": "available=grant-headroom-Pmax-sum(all original/future R)+fixedA+fixedE. Prior receipts never accumulate E or A.",
+    "nine_only": "Exact nine ordered identities bind original overlap, metadata, full workers and manifests. Immutable eleven-record prefix pins excluded recent H2002.42 and failedCPU0.78; both and all new reservations remain full.",
+    "highwater": "max(existing observed,pinned4.16), with existing allocator maxima across receipts and fresh summary; lower provider readings never enlarge E.",
+    "fresh_report": "Full-cycle hourly resource report extends to current complete UTC hour. Rejects invalid/duplicate rows, missing or downward saved attribution, wrong revised-App environments, total App cost>U, and report not included in current ephemeral summary within inherited rounding tolerance.",
+    "resources": "Exact source hashes and separate allocation AST checks bind resources. Fixed arithmetic parameters,+60s,20% margin and0.50 build allowance cannot be caller overridden.",
+    "failure_lock": "Validation precedes fsynced new reservation. Common lock, cleanup checks and full debit on crash retained; no journal edits/refunds/automatic certificate selection."
+  },
+  "test_evidence": [
+    "Consecutive allocations retain fixedE9.51/A3.74 once and fully debit newCPU.78/H2002.42",
+    "Delayed15:00 old-App cost outside old14:00 overlap interval exceedsU and rejects",
+    "High-water decline preserved at4.16; higher observed usage consumes allowance",
+    "Corrupt evidence/prefix/certificate, changed resource AST and conflicting future certificate reject",
+    "Missing/downward/duplicate/unreconciled/unavailable fresh report rejects before reservation",
+    "Crash retains full new debit; same lock rejects concurrent allocator"
+  ],
+  "limits": [
+    "Finished metadata is not a billing-stop guarantee;60s plus margin/build allowance is an accepted estimate, not proof of final cost.",
+    "Fresh posted-cost bounds detect contradictions but cannot prove unposted charges;5.00 headroom remains.",
+    "Root owns activation/fresh provider guard/any allocation. Reviewer made no provider call, allocation, guard edit or journal write."
+  ]
+}

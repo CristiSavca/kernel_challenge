@@ -1,14 +1,15 @@
 """Fail-closed, local free-credit guard; reservations are estimates, not provider caps.
 
-The reviewed grant must be renewed manually. Reservations are never refunded.
-An optional, separately reviewed certificate can remove proved double counting
-of posted provider charges; it never releases an unused reservation.
+The reviewed grant must be renewed manually. Original journal debits are immutable.
+Separately reviewed, fixed certificates can remove proved posted-charge overlap
+or revise specified completed-run estimates. Neither is final settlement.
 """
 from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
+import ast
 import fcntl
 import hashlib
 import json
@@ -23,11 +24,14 @@ class CreditGuardError(RuntimeError):
 
 
 # Independently reviewed fixed overlap; activation does not settle charges or
-# create a new grant. Every reservation and provider high-water remains counted.
+# create a new grant. Overlap alone retains every original reservation estimate.
 REVIEWED_OVERLAP_SHA256: str | None = "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce"
 OVERLAP_CERTIFICATE = "tools/modal_credit_overlap_20261104.json"
 RESOURCE_H200 = "h200_4cpu_32gib"
 RESOURCE_CPU = "cpu_4cpu_32gib"
+# Manually reviewed fixed revision; this never selects new completed runs.
+REVIEWED_ESTIMATE_SHA256: str | None = "6ba6d283a301213433a67070033dfcafa3d4f115f9a01c2155c938b4e76e726f"
+ESTIMATE_CERTIFICATE = "tools/modal_credit_finished_estimate_20261104.json"
 
 
 def money(value, label: str) -> Decimal:
@@ -94,7 +98,7 @@ def read_json(path: Path):
         raise CreditGuardError(f"Cannot read valid credit evidence: {path}") from exc
 
 
-def _pinned_json(root: Path, reference):
+def _pinned_bytes(root: Path, reference):
     if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
         raise CreditGuardError("Invalid overlap evidence reference")
     relative, expected = reference["path"], reference["sha256"]
@@ -109,6 +113,11 @@ def _pinned_json(root: Path, reference):
             raise CreditGuardError("Overlap evidence hash changed")
     except OSError as exc:
         raise CreditGuardError("Missing overlap evidence") from exc
+    return contents
+
+
+def _pinned_json(root: Path, reference):
+    contents = _pinned_bytes(root, reference)
     # Parse exactly the bytes whose hash was checked, not a second file read.
     try:
         return json.loads(contents, parse_float=Decimal)
@@ -251,6 +260,146 @@ def verified_overlap(root: Path, grant, records, journal: Path, billing, observe
         raise CreditGuardError("Invalid or missing overlap certificate evidence") from exc
 
 
+def verified_estimate_revision(root: Path, grant, records, journal: Path, billing,
+                               observed: Decimal, overlap: Decimal, overlap_pin):
+    """Apply one manually reviewed estimate correction; never edit old debits."""
+    pin = REVIEWED_ESTIMATE_SHA256
+    if pin is None:
+        return observed, Decimal(0), None
+    try:
+        cert = _pinned_json(root, {"path": ESTIMATE_CERTIFICATE, "sha256": pin})
+        if (cert.get("schema") != 1 or cert.get("policy") != "finished-run-conservative-estimate-v1"
+                or cert.get("classification") != "conservative_estimate_not_provider_cap_or_final_settlement"):
+            raise CreditGuardError("Unsupported finished-estimate certificate")
+        if any(cert[k] != grant[k] for k in ("cycle", "workspace", "profile", "environment")):
+            raise CreditGuardError("Estimate certificate does not match grant")
+        if _pinned_json(root, cert["grant"]) != grant:
+            raise CreditGuardError("Estimate grant binding changed")
+        if (overlap_pin is None or cert["overlap_certificate"]["sha256"] != overlap_pin
+                or overlap != money(cert["existing_overlap_usd"], "estimate overlap")
+                or overlap != Decimal("3.74")):
+            raise CreditGuardError("Estimate requires the unchanged posted-overlap certificate")
+        old = _pinned_json(root, cert["overlap_certificate"])
+        _pinned_bytes(root, cert["plan"])
+        _pinned_json(root, cert["plan_evidence"])
+        prefix = cert["journal_prefix"]
+        if prefix["records"] != 11 or len(records) < 11 or cert["revised_count"] != 9 or len(cert["runs"]) != 9:
+            raise CreditGuardError("Estimate scope must remain the original nine and eleven-record prefix")
+        if (root / prefix["path"]).resolve() != journal.resolve():
+            raise CreditGuardError("Estimate journal path mismatch")
+        lines = journal.read_bytes().splitlines(keepends=True)
+        if hashlib.sha256(b"".join(lines[:11])).hexdigest() != prefix["sha256"]:
+            raise CreditGuardError("Estimate journal prefix changed")
+        for record in records[11:]:
+            if record.get("estimate_certificate_sha256", pin) != pin:
+                raise CreditGuardError("Conflicting estimate certificate in journal")
+        excluded = [{"run_id": r["run_id"], "reservation_usd": r["reservation_usd"]} for r in records[9:11]]
+        if excluded != cert["excluded_full_reservations"]:
+            raise CreditGuardError("Newer reservations cannot be revised")
+        parameters = {"resource_kind": RESOURCE_H200, "gpu_hourly_usd": "5.00",
+            "cpu_hourly_usd": "0.15", "cpu_count": 4, "memory_hourly_per_gib_usd": "0.025",
+            "memory_gib": 32, "rate_margin": "1.20", "build_allowance_usd": "0.50",
+            "termination_allowance_seconds": 60}
+        if cert["parameters"] != parameters:
+            raise CreditGuardError("Estimate rates, margin or allowances changed")
+        metadata = _pinned_json(root, cert["metadata"])
+        sandboxes = {s["sandbox_id"]: s for s in metadata["sandboxes"]}
+        if len(sandboxes) != len(metadata["sandboxes"]):
+            raise CreditGuardError("Duplicate estimate sandbox metadata")
+        original_total, revised_total, estimates = Decimal(0), Decimal(0), {}
+        used_sandboxes, used_tasks = set(), set()
+        for index, (entry, record, old_entry) in enumerate(zip(cert["runs"], records[:9], old["runs"])):
+            if (type(entry["record_index"]) is not int or entry["record_index"] != index
+                    or entry["run_id"] != record["run_id"] or entry["run_id"] != old_entry["run_id"]
+                    or entry["manifest"] != old_entry["manifest"]
+                    or record.get("resource_kind", RESOURCE_H200) != RESOURCE_H200):
+                raise CreditGuardError("Estimate original run binding changed")
+            manifest = _pinned_json(root, entry["manifest"])
+            if manifest["credit_guard"] != record or manifest.get("sandbox_terminated") is not True:
+                raise CreditGuardError("Estimate run lacks original reservation or termination")
+            sandbox = sandboxes[manifest["sandbox_id"]]
+            app = entry["app_id"]
+            if (entry["sandbox_id"] != manifest["sandbox_id"] or sandbox["app_id"] != app
+                    or app != old_entry["app_id"] or entry["task_id"] != sandbox["task_id"]
+                    or sandbox["gpu_type"] != "H200" or sandbox["result_status"] != 3
+                    or app in estimates or entry["sandbox_id"] in used_sandboxes or entry["task_id"] in used_tasks):
+                raise CreditGuardError("Estimate provider identity or terminal state changed")
+            used_sandboxes.add(entry["sandbox_id"])
+            used_tasks.add(entry["task_id"])
+            created = money(sandbox["created_at"], "sandbox creation")
+            finished = money(sandbox["finished_at"], "sandbox finish")
+            started = money(sandbox["started_at"], "sandbox start")
+            if (not 0 < created <= started < finished
+                    or created != money(entry["created_at"], "bound creation")
+                    or finished != money(entry["finished_at"], "bound finish")):
+                raise CreditGuardError("Estimate lifetime binding changed")
+            seconds = int((finished - created).to_integral_value(rounding=ROUND_CEILING)) + 60
+            if seconds != entry["lifetime_plus_allowance_seconds"]:
+                raise CreditGuardError("Estimate lifetime allowance changed")
+            worker = _pinned_bytes(root, entry["worker"])
+            expected_worker = (root / entry["manifest"]["path"]).parent / "worker.py"
+            if ((root / entry["worker"]["path"]).resolve() != expected_worker.resolve()
+                    or entry["worker"]["sha256"] != manifest["worker_sha256"]):
+                raise CreditGuardError("Estimate host worker binding changed")
+            calls = [n for n in ast.walk(ast.parse(worker)) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute) and n.func.attr == "create"
+                and isinstance(n.func.value, ast.Attribute) and n.func.value.attr == "Sandbox"]
+            if len(calls) != 1 or any(k.arg is None for k in calls[0].keywords):
+                raise CreditGuardError("Estimate host allocation count changed")
+            limits = {k.arg: ast.literal_eval(k.value) for k in calls[0].keywords
+                if k.arg in ("gpu", "cpu", "memory", "block_network")}
+            if limits != {"gpu": "H200", "cpu": (4, 4), "memory": (32768, 32768), "block_network": True}:
+                raise CreditGuardError("Estimate host resource limits changed")
+            original = money(record["reservation_usd"], "original estimate reservation")
+            revised = min(original, (Decimal("7.68") * seconds / 3600 + Decimal(".50")).quantize(
+                Decimal(".01"), rounding=ROUND_CEILING))
+            amount = money(entry["existing_overlap_usd"], "per-run overlap")
+            if (original != money(entry["original_reservation_usd"], "bound original reservation")
+                    or revised != money(entry["revised_estimate_usd"], "revised estimate")
+                    or amount != money(old_entry["offset_usd"], "original overlap")
+                    or not amount <= revised <= original):
+                raise CreditGuardError("Estimate amount or original overlap changed")
+            original_total += original
+            revised_total += revised
+            estimates[app] = revised
+        correction = original_total - revised_total
+        if (len(estimates) != 9 or original_total != Decimal("21.14") or revised_total != Decimal("11.63")
+                or correction != Decimal("9.51")
+                or original_total != money(cert["total_original_reservations_usd"], "original total")
+                or revised_total != money(cert["total_revised_estimates_usd"], "revised total")
+                or correction != money(cert["total_estimate_correction_usd"], "estimate correction")):
+            raise CreditGuardError("Estimate correction scope or total changed")
+        history = _pinned_json(root, cert["highwater_evidence"])
+        highwater = money(cert["provider_highwater_floor_usd"], "estimate high-water")
+        if highwater < Decimal("4.16") or highwater != provider_spend(history["billing"]):
+            raise CreditGuardError("Estimate high-water is not bound to saved billing")
+        start = datetime.fromisoformat(cert["report_start"]).replace(tzinfo=timezone.utc)
+        minimum_end = datetime.fromisoformat(cert["minimum_report_end"]).replace(tzinfo=timezone.utc)
+        end = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        if (cert["report_start"] != old["report_start"] or cert["minimum_report_end"] != old["report_end"]
+                or end < minimum_end or start >= end):
+            raise CreditGuardError("Estimate full-cycle report interval invalid")
+        saved = _pinned_json(root, cert["provider_evidence"])
+        old_rows = _cost_rows(saved["report"], start, minimum_end)
+        fresh = _cost_rows(modal_json("billing", "report", "--start", cert["report_start"],
+            "--end", end.replace(tzinfo=None).isoformat(), "--resolution", "h", "--show-resources",
+            "--json", "--profile", grant["profile"]), start, end)
+        if any(k not in fresh or fresh[k] < value for k, value in old_rows.items()):
+            raise CreditGuardError("Estimate billing attribution missing or revised downward")
+        for app, revised in estimates.items():
+            selected = {k: v for k, v in fresh.items() if k[0] == app}
+            if not selected or any(k[1] != grant["environment"] for k in selected):
+                raise CreditGuardError("Estimate billing App ID/environment missing or changed")
+            if sum(selected.values(), Decimal(0)) > revised:
+                raise CreditGuardError("Provider cost exceeds revised estimate")
+        component = money(billing["metered_cost_breakdown"]["ephemeral_apps"], "fresh compute cost")
+        if sum(fresh.values(), Decimal(0)) > component + Decimal(".00000001") * (len(fresh) + 1):
+            raise CreditGuardError("Estimate full report is not included in current summary")
+        return max(observed, highwater), correction, pin
+    except (OSError, KeyError, TypeError, ValueError, InvalidOperation, SyntaxError) as exc:
+        raise CreditGuardError("Invalid or missing finished-estimate evidence") from exc
+
+
 @contextmanager
 def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: str = RESOURCE_H200):
     """Hold one project lock from preflight until the caller finishes termination."""
@@ -330,7 +479,9 @@ def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: st
             apps = modal_json("app", "list", "--json", "--limit", "0", "--profile", grant["profile"], "--env", grant["environment"])
             require_stopped_apps(apps)
             observed, overlap, overlap_pin = verified_overlap(root, grant, records, journal, billing, observed)
-            available = ceiling - headroom - observed - reserved + overlap
+            observed, estimate_correction, estimate_pin = verified_estimate_revision(
+                root, grant, records, journal, billing, observed, overlap, overlap_pin)
+            available = ceiling - headroom - observed - reserved + overlap + estimate_correction
             if available < reservation:
                 raise CreditGuardError(f"Free-credit working budget exhausted: ${available:.2f} available, ${reservation:.2f} required; no allocation")
             receipt = {
@@ -345,6 +496,10 @@ def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: st
             }
             if overlap_pin is not None:
                 receipt.update(overlap_certificate_sha256=overlap_pin, proved_overlap_usd=str(overlap))
+            if estimate_pin is not None:
+                receipt.update(estimate_certificate_sha256=estimate_pin,
+                               conservative_estimate_correction_usd=str(estimate_correction),
+                               estimate_correction_is_final_settlement=False)
             # A reservation survives exceptions and process death, before any allocation.
             with journal.open("a") as handle:
                 handle.write(json.dumps(receipt, default=str) + "\n")
