@@ -1,0 +1,205 @@
+{
+  "decision": "PASS abstract lifecycle model",
+  "cases": [
+    {
+      "events": 264,
+      "units": 0,
+      "ctas": 264,
+      "seed": 14,
+      "tail": 1,
+      "jobs": 0
+    },
+    {
+      "events": 264,
+      "units": 0,
+      "ctas": 264,
+      "seed": 15,
+      "tail": 2,
+      "jobs": 0
+    },
+    {
+      "events": 2824,
+      "units": 768,
+      "ctas": 264,
+      "seed": 15,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 2824,
+      "units": 768,
+      "ctas": 264,
+      "seed": 16,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 5648,
+      "units": 1536,
+      "ctas": 528,
+      "seed": 16,
+      "tail": 1,
+      "jobs": 2
+    },
+    {
+      "events": 5648,
+      "units": 1536,
+      "ctas": 528,
+      "seed": 17,
+      "tail": 2,
+      "jobs": 2
+    },
+    {
+      "events": 24444,
+      "units": 6144,
+      "ctas": 132,
+      "seed": 22,
+      "tail": 1,
+      "jobs": 8
+    },
+    {
+      "events": 24180,
+      "units": 6144,
+      "ctas": 132,
+      "seed": 23,
+      "tail": 2,
+      "jobs": 8
+    },
+    {
+      "events": 134904,
+      "units": 33792,
+      "ctas": 264,
+      "seed": 58,
+      "tail": 1,
+      "jobs": 44
+    },
+    {
+      "events": 134376,
+      "units": 33792,
+      "ctas": 264,
+      "seed": 59,
+      "tail": 2,
+      "jobs": 44
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 100,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 101,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 102,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 103,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 104,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 105,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 106,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 107,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 108,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 109,
+      "tail": 2,
+      "jobs": 1
+    },
+    {
+      "events": 3065,
+      "units": 768,
+      "ctas": 7,
+      "seed": 110,
+      "tail": 1,
+      "jobs": 1
+    },
+    {
+      "events": 3051,
+      "units": 768,
+      "ctas": 7,
+      "seed": 111,
+      "tail": 2,
+      "jobs": 1
+    }
+  ],
+  "event_count": 372072,
+  "negative_controls": [
+    {
+      "jobs": 1,
+      "grid": 7,
+      "tail": 2,
+      "seed": 123,
+      "nr": 1
+    },
+    {
+      "jobs": 1,
+      "grid": 264,
+      "tail": 2,
+      "seed": 456,
+      "drop_credit": true
+    }
+  ],
+  "assumptions": [
+    "All CTAs resident, route/ranges initialized, initial PDL wait complete.",
+    "One compute event represents all compute warps completing reads/partial stores and CTA_SYNC.",
+    "TMA completion and helper read/epilogue are independently interleaved.",
+    "Helper credit occurs only after its last A epilogue, with original release/acquire visibility."
+  ],
+  "limits": "Independent model of intended NS2/NRB4 lifecycle, not extracted CUDA, numerical arithmetic, compiler or hardware proof."
+}

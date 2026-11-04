@@ -20,12 +20,15 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-At approximately November 3, 11 pm Eastern, the official decoder leader was
-2.5226×; our exact scored incumbent is 2.150186×, job `4b216098993e4112`.
-Passing that leader needs approximately 14.76% less normalized latency.
-A 2.60× result would roughly separate scores with their minimum ±1.5%
-intervals; this is a target, not a prediction. The live top-50 decoder cutoff
-was 2.3442×, requiring about 8.28% less latency.
+At November 4, 08:23 UTC, the official decoder leader was 2.5401×. Our exact
+scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
+overall/decoder rank was 381. Passing that observed leader needs approximately
+14.13% less normalized latency. This remains an unachieved goal, not a forecast.
+Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank288.
+Both active submission.py files equal their scored snapshots. The preceding
+80a4/ef7 files remain frozen; private experiments never replace these incumbents
+without a useful verified result. See the dated live snapshot in
+`experiments/leaderboards/20261104T082347Z-kperm-public-results.json`.
 
 The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
@@ -35,7 +38,7 @@ whole decoder is the best-supported practical route; winning every component
 board is unnecessary. Refresh the target before allocating experiments.
 
 Independent critic `/root/leaderboard_critic` found these weighted profiler
-shares in our scored decoder (profiler sums, with overlap caveats):
+shares in the preceding 80a4 scored decoder (profiler sums, with overlap caveats):
 
 | Load | Experts | Attention | Dense/fused projections |
 | --- | ---: | ---: | ---: |
@@ -46,7 +49,7 @@ shares in our scored decoder (profiler sums, with overlap caveats):
 | Verify 16 | 55% | 13% | 27% |
 | Verify 32 | 54% | 16% | 24% |
 
-Approximate Amdahl estimates: 25% less expert time gives about 2.43× decoder;
+Historical Amdahl estimates from that 2.150186× parent: 25% less expert time gives about 2.43× decoder;
 35% gives about 2.56×. Combining 25% less expert time, 20% less attention and
 10% less dense time gives about 2.62×. None is measured. Deleting all separate
 routing/boundary time would yield only about 5.2%; attention alone cannot
@@ -691,3 +694,45 @@ wereverified butno distinct fastermechanism identified. No newModalallocation.
 Upstreamrohan018b/vjeuxf35aheads reconfirmedunchanged08:03UTC; free disk35GiB.
 Previousgoalturnwasprogress, thisturnhas scoredresults,promotions andnewprivate
 check; goalactive, noblockingcondition. Rootalonepolls/submits.
+
+08:43 UTC: dense stage-directory check4b9f33ffa6bc4eed is terminal PASS,
+13tests/12benchmarks, score2.149250315, noflags. Reject promotion: -0.044%
+versus its exact80a4 public parent and -0.226% private. Preparation logs prove
+four of nine immutable tables selected the directory; profiles retain parent
+UV/pooler-router fusion. Targeted eight cases show +0.884% public/+0.098% private
+geometric-mean ratios, with mixed individual kernel changes. This supplies no
+useful whole-decoder gain. Preserve the terminal audit and all profiles; do not
+retry, combine with KPERM or score this source. Current97af remains incumbent.
+
+Live refresh08:41 UTC shows overall/decoder rank382, unchanged2.1812; MoE288,
+unchanged2.3737. Snapshot20261104T084126Z-public-incumbent-refresh.json. Rank
+slipped by one while our score stayed fixed. No #1 claim or completed goal.
+
+Small-MoE NW4/NS2 plan passed independent review for one isolated implementation
+from247888. Source is written; actual-source CPU operand checks and independent
+ring-lifecycle review are in progress. Root read scale-group accumulators,
+route/helper/finalizer/resource guards. Two occupancy queries must succeed at
+capacity>=2 before enlarged ordinary or PDL launches. No GPU run yet, no sweep,
+no changes to active submissions. Free disk36GiB; official MoEchecks36 and
+decoderchecks32 remaining. No new Modal allocation or budget reset.
+
+08:51 UTC: small candidate34ee99c242c4ffb5028ec3511fd8740c5f15461e1c73e9c1343ae6611573e3e3
+passed author, root and independent critic actual-source CPU checks:23,592,960
+MMA operands,18 old-build preprocessing controls, complete packed coordinates.
+Root also reran the independent22-schedule/372,072-event ring model, including
+two negative controls. One verifier raw-brace parser bug was repaired before
+the successful runs; it was not a CUDA candidate failure. Final critic GO is
+limited to one private measurement. Root submitted f46b93032b5548c1, nowqueued;
+local submission completed exit0. Resume this exact receipt, no duplicate.
+Actual GPU registers/local memory, occupancy, numeric error and speed are pending.
+Both active public files remain97af/247888. Decoder integration, if justified,
+must preserve its TINY FINPF0 flag; standalone TINY has FINPF1.
+
+Independent next-dense/attention scope analysis found no supported >=5% whole
+gain hypothesis: current profile scenarios need18.86% across all small dense
+rows or33.76% across all attention. These are scenarios, not physical bounds.
+New MAIN MoE feasibility research keeps256-row/K256 units and asks whether
+smaller token tiles/right-sized metadata/NS2/separate finalization can fit two
+576-thread CTAs without compact V10's stage/activation costs. Existing96regs
+would need<=56; this is an unresolved major obstacle, not a proposed speedup.
+No implementation or GPU approved for that feasibility question. Goal active.

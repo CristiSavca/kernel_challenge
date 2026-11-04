@@ -1,0 +1,46 @@
+{
+  "decision": "GO for one CPU-only standalone implementation; no GPU or scored submission authorized by this review",
+  "plan": "tools/SMALL_MOE_TWO_CTA_PLAN.md",
+  "plan_sha256": "c5322412dc91d976f5967586239a0260f6453527a9ed9eb5c6bb00dafac92372",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "verifier": "tools/audit_small_moe_residency.py",
+  "verifier_sha256": "d43ec21cedf80e2c6102a5f791d1e6e4e43c25f0f5c293076e3bc14a5cdc690b",
+  "proof_sha256": "12eaf018a8dff189df103b5b38d8142ab86e669407cde01f77a8a37d24e75d92",
+  "independent_review": [
+    "Read complete plan and proof, and active parent routing, load_x_regs, skinny_ring_ws, ws_helper, FAST1 preissue, run_phase, finalizer, shared-byte and host launch paths.",
+    "Reran author CPU audit; fresh result file written only after all assertions; 524288 packed code comparisons and 32768 scales in both layouts.",
+    "Native host C++ metadata size 27880 rounded27904 plus two36864B rings gives101632 dynamic. Adding inherited1024 static per CTA gives205312B for two CTAs, but actual attributes and occupancy remain mandatory.",
+    "Routing uses contiguous warp ranges and prefix order; at M<=16 both NW values use CH32, so active entry order is unchanged.",
+    "At J<=44 and grids<=528, muldiv_g product maximum44*512*528=11894784<2^24; exact correction remains valid.",
+    "Consumer A work does not wait on other jobs. Helper credits every owned A unit before entering B epilogues. Empty A implies empty B; zero-job helpers take both joins without indexing a job.",
+    "FINCOL FSEG4->8 keeps four columns per thread; M*FSEG<=128<264 means at most one segment per active CTA. Scratch reset stride264*128 equals132*256."
+  ],
+  "candidate_source_gates": [
+    "Scale records must be512B apart; keep all NACC4 accumulators alive across both8-chunk groups. Prove actual source both PRMT and LUT paths, both packed layouts, every K/code/scale/activation coordinate exactly once.",
+    "Existing audit ring sequence is an abstract issue list, not an executable async lifetime proof. Add actual-source conformance and adversarial ring/helper schedules for nB0,nA1/nB1, WSBL1/2, nU<WSBLK and wraparound; prove no overwrite before consumer reads or helper partial consumption.",
+    "Only exact TINY+WS NW4/NS2 branch may remove dead fat allocation, double grid or use two-block launch bound. Retain fat-work trap; ensure no remaining pointer dereference goes outside new dynamic allocation.",
+    "Actual CUDA attributes, opt-in limit, shared-memory and occupancy for both BIG specializations must pass>=2 before BOTH ordinary and PDL enlarged launches. Log evidence once; never fall back silently.",
+    "Preserve inherited PDL wait, trigger, release/acquire fences, helper joins and generation reset. Prior speculative PDL admission cycle was withdrawn.",
+    "Prove unchanged preprocessed MAIN/KPERM, fallback geometries, Python packing, scratch sizes and dispatch thresholds; isolate extension namespace.",
+    "CPU routing/scratch proof across M1..16, zero-local routes, maximum44 jobs, uneven partitions, and transitions to/from main path. GPU numerical validation needed because FP32 grouping changes8->4."
+  ],
+  "risks": [
+    "128 cached activation registers per consumer plus16 accumulators, scale/pointer/epilogue state may cause spilling or prevent2CTA; launch-bound arithmetic does not prove actual resource usage.",
+    "Twice routing/prologue copies, grid arrivals and helper warps, and additional activation-cache reloads may outweigh four versus three aggregate weight lookahead slots.",
+    "Same packed bytes/TMA payload/copy count does not mean unchanged activation or metadata traffic, nor prove DRAM bottleneck.",
+    "Profile-share improvements are scenarios, not bounds or forecasts. Half the decoder loads affected; #1 requires additional gains even under aggressive hypothetical small-path reductions."
+  ],
+  "performance_gate": {
+    "target_small_case_geomean_latency_reduction": 0.15,
+    "maximum_individual_small_case_latency_regression": 0.03,
+    "controls": "M32/M128/M256 MAIN unchanged; compare same-case ratios and controls against exact KPERM public/private evidence.",
+    "decision": "Clear regression or occupancy failure rejects. Weaker coherent result requires explicit whole-decoder payoff review, then exact-source integration check before scoring. No geometry sweep or automatic retry."
+  },
+  "gpu_used": false,
+  "candidate_reviewed": false,
+  "additional_independent_evidence": {
+    "ring_model": "experiments/iterations/20261104-small-moe-ring-critic.json",
+    "preprocess_parity": "experiments/iterations/20261104-small-moe-preprocess-critic.json",
+    "source_review_status": "Current34ee draft full diff reviewed without a blocker. Actual native operand proof awaiting correction of raw brace extraction across mutually exclusive preprocessor loops; no final-source GO yet."
+  }
+}

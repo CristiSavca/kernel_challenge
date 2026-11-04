@@ -1,0 +1,93 @@
+{
+  "decision": "GO for exactly one official private standalone check of frozen source; not a promotion or scored-publication verdict",
+  "candidate": "muse_moe_w4a16/candidates/native_small_nw4_v11.py",
+  "source_sha256": "34ee99c242c4ffb5028ec3511fd8740c5f15461e1c73e9c1343ae6611573e3e3",
+  "cuda_sha256": "72d66697a8000cad91d5d4550798762a4374b3fb9648ac780fe9941b17f1279f",
+  "source_bytes": 207459,
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "verifier": "tools/test_small_nw4_cpu.py",
+  "verifier_sha256": "4634fc03226cba3bd76cbeb14d2fc183e4e2e187f3f07b3d9934c1e6f4e16408",
+  "independent_rerun": "experiments/iterations/20261104-small-nw4-source-cpu-critic-rerun.json",
+  "independent_rerun_sha256": "b528fa89aded620c6a4c65c4f541e01f1f5256b960b6022be37754b7bf21cb7b",
+  "independent_rerun_exit_code": 0,
+  "review": {
+    "scope": "Read entire parent-to-candidate diff and actual routing, loaders, compute loop, helper, preissue, run_phase, finalizer, allocation and host launch paths. Exact Python AST changes are CUDA_SRC, _ext namespace and three small build tuples. All packing, prepare, scratch and shape dispatch nodes unchanged.",
+    "address_and_arithmetic": "NW4 consumes original warp regions2*w and2*w+1. Scale records are512B apart and selected with local chunk0..7; full chunk c0..15 selects correct unchanged packed codes and x registers. NACC4 accumulators are initialized before both groups and reduced afterward. Actual code/dequantization/BF16 scale and activation operands are validated; FP32 grouping8->4 changes and requires GPU numeric tests.",
+    "routing": "For every M1..16, E=8M<=128 and CH32 in both NW8/NW4. The removed four warps only handled empty routing ranges; active entry/prefix order is unchanged. MID splits each local expert into jobs<=8; J<=44 fits JMAX88. Zero local routes skips all ring/job accesses while joining and reaching final grid barrier.",
+    "lifetime": "FAST1<=NS2. Helper fills any remaining initial slot; WSB consumer CTA barrier completes slot reads/partial stores before same-slot refill. Partial buffer release follows helper load into registers. Helper credits all owned A units after last A epilogue and before B, so resident CTAs cannot form an A/B dependency cycle. Final WSBL1/2 tails occupy distinct NRB4 slots, and final join preserves helper stores before grid barrier.",
+    "parity": "Each ring slot advances q by NS and each partial buffer advances by NRB; inherited wait parity uses q/NS and q/NRB. At most one pending owner per slot prevents a full phase wrap bypassing an unread value. Independent model checks unique issue/read/release sequences under reordered completion.",
+    "shared_lifetime": "Only TINY+WS+NW4 returns base+skinny workspace. The reachable path has no fat dereference; nF>0 still traps. Two36KiB ring slots fit after rounded metadata27904B, dynamic101632B. Both helper and consumers use this same xbuf base. FINCOL does not reuse extra fat workspace.",
+    "host_resource_gate": "CUDA shared-memory opt-in must succeed and exact BIG false/true occupancy queries at160threads/dynamic101632 must both return>=2 before attr is marked ready. Grid must equal actual queried SM count and small token cap before grid*=2. Both ordinary and PDL launch branches consume this guarded grid. Occupancy includes actual compiled resource constraints; CPU arithmetic alone is not acceptance.",
+    "PDL": "Initial wait, helper joins, launch_dependents placement, release/acquire grid counter and generation lifecycle are inherited. Prior speculative PDL admission cycle remains withdrawn.",
+    "finalizer_and_scratch": "FINCOL FSEG4->8 preserves four columns per thread and complete4096-column coverage. M*FSEG<=128<264 gives at most one segment per active CTA. Small-path reset stride264*128 equals parent132*256; all doneA/ss entries and alternating-generation barrier counters remain covered. WGS-only fixed slots/grid are unchanged.",
+    "controls": "Independent full CUDA preprocessing under14 inherited build combinations matched byte-for-byte; repaired author suite independently rerun validates18 including MAIN_FALLBACK. Renamed extension is observability/cache isolation only."
+  },
+  "cpu_evidence": {
+    "actual_native_operand_comparisons": 23592960,
+    "native_variants": [
+      {
+        "MULDEC": 0,
+        "PRMTSC": 0,
+        "operand_comparisons": 5898240
+      },
+      {
+        "MULDEC": 0,
+        "PRMTSC": 1,
+        "operand_comparisons": 5898240
+      },
+      {
+        "MULDEC": 1,
+        "PRMTSC": 0,
+        "operand_comparisons": 5898240
+      },
+      {
+        "MULDEC": 1,
+        "PRMTSC": 1,
+        "operand_comparisons": 5898240
+      }
+    ],
+    "packed_addresses": {
+      "code_comparisons": 524288,
+      "scale_comparisons": 32768,
+      "distinct_weight_coordinates": 65536,
+      "distinct_scale_bytes": 4096,
+      "distinct_activation_coordinates": 32768,
+      "encoding_patterns": "four coordinate nibbles uniquely identify all 65536 coordinates; both inherited bit layouts"
+    },
+    "preprocessed_equal_builds": 18,
+    "abstract_schedule": {
+      "job_count_range": [
+        0,
+        44
+      ],
+      "grids": [
+        132,
+        264,
+        396,
+        528
+      ],
+      "range_checks": 59400,
+      "unit_ownership_checks": 3041280,
+      "proof_limit": "Abstract ownership and phase DAG assuming all CTAs resident; not generated CUDA execution or numerical reduction proof."
+    },
+    "independent_async_ring": "experiments/iterations/20261104-small-moe-ring-critic.json",
+    "async_schedules": 22,
+    "async_events": 372072,
+    "negative_controls": 2
+  },
+  "limits": [
+    "CPU native harness validates actual loader/decode/scales/MMA operands, not tensor MMA numerical accumulation, CUDA compiler acceptance, scheduling, hardware memory ordering or performance.",
+    "Abstract async model assumes all CTAs resident and inherited release/acquire semantics; a whole-CTA compute step represents all128 consumers and their barrier.",
+    "Actual register count/local memory and successful two-CTA admission are not known before official GPU run.128 cached activation registers plus accumulators/pointers may force spills under two-block launch bounds.",
+    "Successful compiler warnings may be hidden by load_inline(verbose=False); absence in log_tail does not prove no serialization or spills.",
+    "Source still uses parent single-device extension lifetime assumption. Official target is single H200; no new multi-device behavior is claimed."
+  ],
+  "official_acceptance": {
+    "correctness": "All official tests and benchmarks pass, no rejected flags; retain exact source hash and all terminal records.",
+    "mechanism": "Retain OKC_SMALL_NW4 resource markers for actual exercised small extensions; must show both occupancy>=2. Profile names alone do not identify geometry.",
+    "performance": "Target>=15% geometric-mean normalized latency reduction over M1/M8/M16; no small case worse by>3%; compare M32/M128/M256 unchanged controls and exact KPERM private/public parent records. A clear regression rejects.",
+    "publication": "No scoring or decoder integration from occupancy/source proof alone. A useful standalone result needs fresh exact-source decoder integration review and full-layer check against97af including PDL.",
+    "retries": "One check only. No geometry sweeps, unchanged-source repeats or relaxation of gate."
+  },
+  "gpu_used_by_critic": false
+}

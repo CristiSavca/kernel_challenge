@@ -1,4 +1,17 @@
-# Dense stage directory V11 — frozen CPU candidate
+# Dense stage directory V11 — terminal result: no useful gain
+
+Private job `4b9f33ffa6bc4eed` passed13 correctness tests and12 timed cases, with
+no flags, at2.1492503148x (CI2.1170115601–2.1814890695). This is -0.044% versus
+exact80a4 public and -0.226% versus its private result; current97af public is
+2.1811831350x. **Reject promotion and combination with KPERM.**
+
+Preparation logs prove four of nine tables selected the directory, corresponding
+to18 profiled launches (eight QKV, eight pooler, two T32 unpooler). Small-token
+fusion/dispatch remains intact. Target-case changes are mixed; unchanged controls
+also move. There is no useful aggregate gain or basis to tune the gate from these
+outcomes. Full audit: `tools/DENSE_STAGE_DIRECTORY_RESULT_AUDIT.md` and
+`experiments/iterations/20261104-dense-stage-directory-result-audit.json`.
+The source stays frozen as measured evidence; no repeat run is proposed.
 
 Source SHA-256:
 `15a7188b3e35b469565cc2d7eb9b37c0804e341dab5f1a4939a16563efdaa172`.
