@@ -111,3 +111,10 @@ Exact frozen source
 is now active and was submitted for scoring as `3caa02bd72da4c49` (pending).
 Keep the existing compressed-CL=1 constraint; the unused compressed cluster
 branch remains outside supported configurations.
+
+Matched-shape comparison against both older V3 runs found no useful hybrid.
+Only O/M128, QKV/M256 and O/M256 had slightly better older paired ratios in
+both runs. Even assuming those separate-run ratios transfer perfectly would
+improve the overall result by only about 0.134%, inside measurement uncertainty.
+For QKV/M256, raw corrected elapsed times were effectively equal in one V3 run.
+All substantial repeatable V3 wins are surpassed by native V4; retain V4.
