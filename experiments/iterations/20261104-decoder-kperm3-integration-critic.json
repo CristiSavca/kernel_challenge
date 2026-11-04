@@ -1,0 +1,25 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "candidate": "muse_decode_layer/candidates/native_wgs_kperm3_v12.py",
+  "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parent_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+  "checked_standalone_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "checked_standalone_job": "bcb761dfca264db0",
+  "decision": "GO for one official private decoder check of this exact source; no scored promotion is authorized by this review.",
+  "evidence": [
+    "Independently read the complete focused diff from the frozen decoder parent.",
+    "Independently executed tools/test_decoder_kperm3_integration.py using the bounded NumPy CPU environment; exit 0.",
+    "Every preexisting Python AST node matches the parent except MOE_CUDA_SRC, _ma_ext, _wgs_copy and _ma_prepare; only three reviewed weight-repacking helpers were added.",
+    "The embedded MoE CUDA equals the official-private-passing standalone source except the unchanged BIGM definition's comment.",
+    "The build extension change is only a unique namespace; production compiler flags and dispatch remain unchanged.",
+    "The prepare change permutes only WGS weight layouts. Runtime activation gathering remains inside the timed kernel. Existing encodings and fallback dispatch remain intact.",
+    "Actual packed-byte inversion for decoder MULDEC recovers 50331648 FP4 codes and 3145728 scale bytes over complete W13 and W2 experts.",
+    "WGMIN remains 9; WGSSC2 remains 1; decoder MOE_MULDEC remains True; full reduction, routes and output precision remain intact."
+  ],
+  "limitations": [
+    "CPU structural and packing proofs do not establish CUDA correctness, absence of device races, compiler resource use, or performance.",
+    "KPERM reorders arithmetic reduction terms. Standalone correctness does not cover all decoder activation distributions or integration behavior.",
+    "Standalone aggregate improvement is within overlapping reported confidence intervals. This integration is a separate workload experiment, not a measured whole-decoder improvement.",
+    "The decoder's 13 numerical tests and 12 timed cases must pass, and affected versus unchanged cases must be inspected before any score decision."
+  ]
+}

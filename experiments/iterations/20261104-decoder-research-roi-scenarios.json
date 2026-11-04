@@ -1,0 +1,1126 @@
+{
+  "provenance": {
+    "job": "4b216098993e4112",
+    "receipt": "experiments/runs/4b216098993e4112.json",
+    "receipt_sha256": "95f45350c05884f1ae6c7e4f44db629547e90f6b670edb19f75d0afd8a5dcafc",
+    "profile": "experiments/candidates/muse_decode_layer/profiles/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.4b216098993e4112.json",
+    "profile_sha256": "848e23f2913e7577300bae4329090a1d63bc420ff114c6292172f722d9f7e722",
+    "source_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+    "node": "n-oqjh2x5qkdwydb4hfm23qfgn4r",
+    "speedup": 2.1501860995655244,
+    "speedup_ci": [
+      2.1179333080720415,
+      2.182438891059007
+    ]
+  },
+  "method": "For each case, reduce benchmark median_ns by the assumed fraction of the rounded profile-row sum. Combine sliding/full with case weights 46/16, then take the geometric mean of the six scenario/incumbent load-time ratios. Dense includes fused ub2 and cuBLAS split-K reduce rows.",
+  "limitations": [
+    "These are profile-share scenarios, NOT performance bounds or predictions.",
+    "PDL row durations contain dependency waits and may overlap; profile sums are not wall time or exclusive compute time.",
+    "Profiles and benchmark timings come from different captures and may differ materially.",
+    "No evidence establishes the assumed reductions; precision, bandwidth, resource admission, dependency ordering, and implementation cost can prevent them.",
+    "A 20% latency reduction is different from a 1.2x speedup; these scenarios use the former."
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "case": {
+        "batch": 1,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "decode 1",
+        "page": 1,
+        "repeats": 60,
+        "seed": 3953054836652371582,
+        "weight": 46
+      },
+      "benchmark_us": 71.77184777038983,
+      "groups_us": {
+        "moe": 22.8,
+        "attention": 4.8,
+        "dense": 43.5,
+        "boundary_route": 3.9
+      },
+      "profile_row_sum_us": 75.0,
+      "kernel_count": 7,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 22.8,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+          "duration_us": 18.8,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+          "duration_us": 10.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+          "duration_us": 7.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+          "duration_us": 6.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, false, 13>((an...",
+          "duration_us": 4.8,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.9,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "case": {
+        "batch": 1,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "decode 1",
+        "page": 1,
+        "repeats": 60,
+        "seed": 3953097541376436990,
+        "weight": 16
+      },
+      "benchmark_us": 77.43187808533683,
+      "groups_us": {
+        "moe": 22.4,
+        "attention": 11.1,
+        "dense": 42.3,
+        "boundary_route": 3.8
+      },
+      "profile_row_sum_us": 79.6,
+      "kernel_count": 7,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 22.4,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 8, 1, 6, true, false, 2, 1, _...",
+          "duration_us": 18.1,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, false, 11>((an...",
+          "duration_us": 11.1,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+          "duration_us": 10.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+          "duration_us": 7.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+          "duration_us": 6.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.8,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "decode 16",
+        "page": 1,
+        "seed": 3953140246100502399,
+        "spread": "agentic",
+        "weight": 46
+      },
+      "benchmark_us": 133.50403075105004,
+      "groups_us": {
+        "moe": 82.8,
+        "attention": 7.4,
+        "dense": 54.099999999999994,
+        "boundary_route": 7.2
+      },
+      "profile_row_sum_us": 151.5,
+      "kernel_count": 8,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 82.8,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 19.0,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 18.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+          "duration_us": 10.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+          "duration_us": 7.4,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+          "duration_us": 6.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 3.7,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.5,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "decode 16",
+        "page": 1,
+        "seed": 3953182950824567809,
+        "spread": "agentic",
+        "weight": 16
+      },
+      "benchmark_us": 210.27433049503745,
+      "groups_us": {
+        "moe": 59.4,
+        "attention": 90.0,
+        "dense": 53.9,
+        "boundary_route": 8.2
+      },
+      "profile_row_sum_us": 211.5,
+      "kernel_count": 8,
+      "kernels": [
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+          "duration_us": 90.0,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 59.4,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 18.0,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 17.9,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 3, 1, 4, 2, 5, true, false, 1, 1, ...",
+          "duration_us": 10.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 4, 1, 4, true, false, 2, 1, ...",
+          "duration_us": 7.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 4.2,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 4.0,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "case": {
+        "batch": 32,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "decode 32",
+        "page": 1,
+        "seed": 3953225655548633220,
+        "spread": "agentic",
+        "weight": 46
+      },
+      "benchmark_us": 157.76249658454836,
+      "groups_us": {
+        "moe": 79.5,
+        "attention": 9.3,
+        "dense": 59.39999999999999,
+        "boundary_route": 12.3
+      },
+      "profile_row_sum_us": 160.5,
+      "kernel_count": 10,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 79.5,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+          "duration_us": 18.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+          "duration_us": 16.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+          "duration_us": 11.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, false, 1>((ano...",
+          "duration_us": 9.3,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+          "duration_us": 6.8,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+          "duration_us": 5.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 4.4,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 4.1,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.8,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "case": {
+        "batch": 32,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "decode 32",
+        "page": 1,
+        "seed": 3953268360272698632,
+        "spread": "agentic",
+        "weight": 16
+      },
+      "benchmark_us": 310.9877275668327,
+      "groups_us": {
+        "moe": 86.1,
+        "attention": 169.1,
+        "dense": 60.400000000000006,
+        "boundary_route": 12.8
+      },
+      "profile_row_sum_us": 328.4,
+      "kernel_count": 10,
+      "kernels": [
+        {
+          "name": "void (anonymous namespace)::attn_kernel<1, true, 0>((anon...",
+          "duration_us": 169.1,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 86.1,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 4, 2, 2, 2, 3, true, false, 1, 1, ...",
+          "duration_us": 18.4,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 5, true, false, 1, 1, ...",
+          "duration_us": 17.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 3, 1, 4, 2, 4, true, false, 1, 1, ...",
+          "duration_us": 11.0,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 2, 2, 2, 2, 3, true, false, 1, 1, ...",
+          "duration_us": 8.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<2, 32, 1, 1, 8, 1, 4, false, true, 4, 3, ...",
+          "duration_us": 5.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 4.4,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 4.4,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 4.0,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "case": {
+        "batch": 1,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "verify 1",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953311064996764045,
+        "weight": 46
+      },
+      "benchmark_us": 106.58866179076513,
+      "groups_us": {
+        "moe": 51.3,
+        "attention": 7.3,
+        "dense": 43.300000000000004,
+        "boundary_route": 3.5
+      },
+      "profile_row_sum_us": 105.4,
+      "kernel_count": 7,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 51.3,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 19.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+          "duration_us": 10.3,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+          "duration_us": 7.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, false, 15>((an...",
+          "duration_us": 7.3,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+          "duration_us": 6.1,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.5,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "case": {
+        "batch": 1,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "verify 1",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953353769720829459,
+        "weight": 16
+      },
+      "benchmark_us": 119.25507904706949,
+      "groups_us": {
+        "moe": 64.7,
+        "attention": 14.5,
+        "dense": 44.1,
+        "boundary_route": 3.5
+      },
+      "profile_row_sum_us": 126.80000000000001,
+      "kernel_count": 7,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<false>(okc::Params)",
+          "duration_us": 64.7,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void sk2_kernel<1, 16, 4, 1, 8, 1, 5, true, false, 2, 1, ...",
+          "duration_us": 18.8,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, false, 11>((an...",
+          "duration_us": 14.5,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 3, 1, 4, 2, 6, true, false, 1, 1, _...",
+          "duration_us": 10.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "ub2ns::ub2_kernel(uint4 const*, int const*, int, __nv_bfl...",
+          "duration_us": 8.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void sk2_kernel<1, 8, 4, 1, 4, 1, 4, true, false, 2, 1, _...",
+          "duration_us": 6.6,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_route_split",
+          "duration_us": 3.5,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "verify 16",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953396474444894874,
+        "spread": "agentic",
+        "weight": 46
+      },
+      "benchmark_us": 256.4221439512571,
+      "groups_us": {
+        "moe": 145.2,
+        "attention": 11.6,
+        "dense": 72.9,
+        "boundary_route": 14.2
+      },
+      "profile_row_sum_us": 243.9,
+      "kernel_count": 10,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 145.2,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+          "duration_us": 25.8,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+          "duration_us": 20.9,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+          "duration_us": 15.6,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+          "duration_us": 11.6,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+          "duration_us": 7.5,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 5.2,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 4.8,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route",
+          "duration_us": 4.2,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+          "duration_us": 3.1,
+          "calls": 1,
+          "group": "dense"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "verify 16",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953439179168960290,
+        "spread": "agentic",
+        "weight": 16
+      },
+      "benchmark_us": 347.2873667463335,
+      "groups_us": {
+        "moe": 165.1,
+        "attention": 105.2,
+        "dense": 73.1,
+        "boundary_route": 13.700000000000001
+      },
+      "profile_row_sum_us": 357.09999999999997,
+      "kernel_count": 10,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 165.1,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+          "duration_us": 105.2,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "nvjet_sm90_tss_96x64_64x10_4x2_h_bz_TNN",
+          "duration_us": 26.1,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x64_64x8_1x2_v_bz_coopB_NNN",
+          "duration_us": 21.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_96x64_64x10_4x2_h_bz_splitK_TNN",
+          "duration_us": 15.2,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x64_64x8_1x2_h_bz_TNN",
+          "duration_us": 7.6,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 5.1,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 4.7,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route",
+          "duration_us": 3.9,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, __...",
+          "duration_us": 3.0,
+          "calls": 1,
+          "group": "dense"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "case": {
+        "batch": 32,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "sliding",
+        "load": "verify 32",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953481883893025707,
+        "spread": "agentic",
+        "weight": 46
+      },
+      "benchmark_us": 324.36501946724354,
+      "groups_us": {
+        "moe": 194.6,
+        "attention": 14.9,
+        "dense": 89.6,
+        "boundary_route": 21.8
+      },
+      "profile_row_sum_us": 320.9,
+      "kernel_count": 9,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 194.6,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+          "duration_us": 32.4,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "rq_deep_tma_pooler",
+          "duration_us": 25.4,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+          "duration_us": 22.9,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, false, 3>((ano...",
+          "duration_us": 14.9,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+          "duration_us": 8.9,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 8.5,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 8.0,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route",
+          "duration_us": 5.3,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "case": {
+        "batch": 32,
+        "ctx": 80000,
+        "dist": "soft",
+        "layer": "full",
+        "load": "verify 32",
+        "page": 1,
+        "q_len": 8,
+        "seed": 3953524588617091125,
+        "spread": "agentic",
+        "weight": 16
+      },
+      "benchmark_us": 499.77084207263823,
+      "groups_us": {
+        "moe": 218.0,
+        "attention": 186.1,
+        "dense": 91.1,
+        "boundary_route": 21.1
+      },
+      "profile_row_sum_us": 516.3,
+      "kernel_count": 9,
+      "kernels": [
+        {
+          "name": "void okc::moe_fused<true>(okc::Params)",
+          "duration_us": 218.0,
+          "calls": 1,
+          "group": "moe"
+        },
+        {
+          "name": "void (anonymous namespace)::attn_kernel<8, true, 0>((anon...",
+          "duration_us": 186.1,
+          "calls": 1,
+          "group": "attention"
+        },
+        {
+          "name": "nvjet_sm90_tss_80x128_64x8_4x2_h_bz_TNN",
+          "duration_us": 33.0,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "rq_deep_tma_pooler",
+          "duration_us": 25.7,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_96x64_64x10_2x4_h_bz_TNN",
+          "duration_us": 22.8,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "nvjet_sm90_tst_128x128_64x6_2x1_v_bz_coopA_TNN",
+          "duration_us": 9.6,
+          "calls": 1,
+          "group": "dense"
+        },
+        {
+          "name": "_boundary2",
+          "duration_us": 8.5,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_boundary1",
+          "duration_us": 8.0,
+          "calls": 1,
+          "group": "boundary_route"
+        },
+        {
+          "name": "_route",
+          "duration_us": 4.6,
+          "calls": 1,
+          "group": "boundary_route"
+        }
+      ]
+    }
+  ],
+  "scenarios": {
+    "20pct_lower_attention_rows_only_indices9_11": {
+      "normalized_latency_reduction": 0.007393107938534649,
+      "hypothetical_score": 2.1662010578024256,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 4540.415046803321
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 9505.5747024689
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 12232.878483958548
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 6811.159707128308
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 17024.626909353363
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 22340.66972625546
+        }
+      }
+    },
+    "20pct_lower_MoE_rows_only_tokens_over16": {
+      "normalized_latency_reduction": 0.05121055981176803,
+      "hypothetical_score": 2.26624160060102,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 4540.415046803321
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 9505.5747024689
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 11253.04180621466
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 6811.159707128308
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 15433.790253905885
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 20432.206232880846
+        }
+      }
+    },
+    "25pct_lower_dense_rows_all_cases": {
+      "normalized_latency_reduction": 0.08738231693069476,
+      "hypothetical_score": 2.356064471963817,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 3897.1054431291054
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 8742.976391193632
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 11332.639506273383
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 6141.690259711826
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 16186.25927108408
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 21522.864432363156
+        }
+      }
+    },
+    "20pct_lower_MoE_rows_all_cases": {
+      "normalized_latency_reduction": 0.09146940654403779,
+      "hypothetical_score": 2.3666633958757792,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 4269.9559421907925
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 8645.322111857575
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 11253.04180621466
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 6139.15652276931
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 15433.790253905885
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 20432.206232880846
+        }
+      }
+    },
+    "25pct_lower_dense_and20pct_lower_MoE_rows_all_cases": {
+      "normalized_latency_reduction": 0.17843473668885335,
+      "hypothetical_score": 2.617182341546002,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 3626.6463385165757
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 7882.723800582302
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 10352.802828529495
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 5469.687075352827
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 14268.033035290799
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 19037.94629658859
+        }
+      }
+    },
+    "remove_all_boundary_and_route_rows_impossible_ideal": {
+      "normalized_latency_reduction": 0.04981163095523422,
+      "hypothetical_score": 2.2629050929418644,
+      "loads": {
+        "decode 1": {
+          "incumbent_weighted_us": 4540.415046803321,
+          "scenario_weighted_us": 4309.592839856292
+        },
+        "decode 16": {
+          "incumbent_weighted_us": 9505.5747024689,
+          "scenario_weighted_us": 9083.276706489907
+        },
+        "decode 32": {
+          "incumbent_weighted_us": 12232.878483958548,
+          "scenario_weighted_us": 11482.787633681131
+        },
+        "verify 1": {
+          "incumbent_weighted_us": 6811.159707128308,
+          "scenario_weighted_us": 6595.676151072248
+        },
+        "verify 16": {
+          "incumbent_weighted_us": 17352.016489699163,
+          "scenario_weighted_us": 16452.103674763748
+        },
+        "verify 32": {
+          "incumbent_weighted_us": 22917.124368655415,
+          "scenario_weighted_us": 21576.704459796238
+        }
+      }
+    }
+  },
+  "strategic_decision": "Prioritize a broad MoE plus dense portfolio. A full-Q8-only win is secondary. Do not replace measured critical-path evidence with megakernel headline gains or fused-launch counts."
+}

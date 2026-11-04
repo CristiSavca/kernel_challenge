@@ -579,3 +579,18 @@ experiments/iterations/20261104-attention-v11-official-rejection.json.
 Attentionagent saves precise officialcoverage/flags checklist. Decoderagent now
 looks for one distinctdense/routingmechanism in already-preserved licensed source,
 no variants/GPU. Activepublicentriesunchanged; #1goal remainsunachieved.
+
+07:16 UTC research reset: latest primary papers through Nov3 reviewed; see
+ tools/RESEARCH_RESET_20261104.md and tools/ATTENTION_ARXIV_RESET_20261104.md.
+KPERM standalonebcb761dfca264db0 DONE/PASS5tests+6benchmarks/no flags,
+2.38983596x versus scored2.35610395x. Aggregate intervals overlap. Critic rejects
+immediate score but permits one isolated decoder check based on changed-size
+signal; root+critic actualdecoder packing proof passed50,331,648codes/3,145,728
+scale bytes. Candidate97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2
+was submitted as private jobb2a773e2d7194de8. Local submission session85639
+terminalexit0, received status atsubmission. Rootalonepolls samejob; no duplicate.
+Currentoverall/decoder398,2.1502x; leader2.5401x. Allpublicsources unchanged.
+No Modalallocation; conservativebudget remains exhausted, no budgetreset.
+Previousgoalturnwasprogress: latestresearch, completedKPERMresult and exact
+newdecoderintegration/test. BroadcompactWGS twoCTA architectureplan is in
+independentreview, and smalltoken dense research continues. No#1claim.

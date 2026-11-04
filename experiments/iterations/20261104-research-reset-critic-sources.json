@@ -1,0 +1,42 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "purpose": "Primary-source findings that change experiment selection, not a claim that paper headline gains transfer to this challenge.",
+  "sources": [
+    {
+      "title": "Understanding GPU Megakernels: Why Residency Can Mislead",
+      "date": "2026-10-31",
+      "url": "https://arxiv.org/html/2611.00495v1",
+      "finding": "Controlled H100 reconstructions retain operator code and required memory ordering. Separate kernels with PDL reduce TK decode latency 5.7% and match VDCores; runtime and completion-signal costs can outweigh persistent prefetch benefits.",
+      "transfer": "Check ready work, bottleneck bandwidth, and whole-CTA admission rather than treating idle SMs or more fusion as evidence of a gain. Preserve release/acquire ordering. Our decoder already uses PDL and only 7–10 kernels per layer, so a blind megakernel rewrite has no demonstrated ROI."
+    },
+    {
+      "title": "One Megakernel is Not Enough: Predicting Where to Cut for Streaming Inference",
+      "date": "2026-10-26",
+      "url": "https://arxiv.org/html/2610.35336v1",
+      "finding": "Across NH-TTS, Qwen3-TTS and Llama-1B, the best tested composition ranges from zero to four megakernels. NH-TTS on H100 NVL with three specialized megakernels publishes first audio 21.4% sooner than one monolith.",
+      "transfer": "Use resource lifetimes, tile dependencies and measured service times to choose boundaries. This is streaming first-publication behavior on different models and hardware; 21.4% is not a Muse decoder prediction."
+    },
+    {
+      "title": "ForgeMegakernel",
+      "date": "2026-09-11",
+      "url": "https://arxiv.org/html/2609.12379v1",
+      "finding": "Generates decode megakernels guided by structural milestones, precision contracts, byte accounting and an independent intermediate-state oracle. Conventional baselines issue 280–448 launches per decoded token on H100.",
+      "transfer": "Adopt its intermediate validation and evidence ledger. The baseline launch counts span a whole model, whereas our 7–10 counts are per layer and already fuse substantial work. Those counts alone neither prove nor quantify remaining fusion headroom."
+    },
+    {
+      "title": "GC-MoE: Overlapping Expert-Parallel Token Dispatch with FP8/FP4 Grouped GEMM via CUDA Green Contexts",
+      "date": "2026-11-03",
+      "url": "https://arxiv.org/html/2611.04222v1",
+      "finding": "Separates communication and compute resource budgets using green contexts. Reported mean speedup on eight H20 GPUs is 1.188x versus its DeepGEMM baseline; Hopper uses register-A WGMMA with in-register FP4 decoding.",
+      "transfer": "Our one-GPU challenge omits communication, and this operator uses FP8 activations rather than required BF16 activations. Do not port its precision or claim the headline speedup. Resource isolation and exact scale-layout scheduling remain design references for a compact MoE implementation."
+    },
+    {
+      "title": "ZipServ: Fast and Memory-Efficient LLM Inference with Hardware-Aware Lossless Compression",
+      "date": "2026-03-18",
+      "url": "https://arxiv.org/html/2603.17435v1",
+      "finding": "Uses tensor-core-aligned bitmap encoding and fused reconstruction directly into registers, avoiding full decompression to global memory. Main reported gains concern inference GPUs such as RTX4090, L40S and RTX5090.",
+      "transfer": "Our small-token dense kernels already use lossless 12-bit weights and direct reconstruction. This is not a novel blanket replacement or an H200 gain forecast. A different tile/resource pipeline must be distinguished from the incumbent before spending a GPU check."
+    }
+  ],
+  "next_direction": "The highest-priority concrete design review is the author's compact two-consumer-warpgroup MoE CTA with enough actual shared-memory and register headroom for two resident CTAs. It must preserve total job weight reads, stage ownership, grid synchronization and BF16/FP32 precision. No performance claim or implementation approval follows merely from a 2-CTA target. Dense remains a necessary parallel portfolio target; no newly discovered dense mechanism yet supports a credible broad 25% gain."
+}
