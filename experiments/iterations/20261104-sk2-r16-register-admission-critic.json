@@ -1,0 +1,134 @@
+{
+  "primary_url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/linux-x86_64/cuda_cudart-linux-x86_64-13.0.96-archive.tar.xz",
+  "header_sha256": "163b8f296ef2a33c799e2dc8c525b37166da9217bcc6a3c1d26b1c10aca5e22b",
+  "header_path": "experiments/source_audits/20261104-cuda-occupancy/cuda_occupancy.h",
+  "method": "Unmodified NVIDIA CUDA13.0.96 cudaOccMaxBlocksPerSMRegsLimit compiled under native clang for SM90 properties. All1..192 reportedregister counts checked. No CUDA runtime/GPU.",
+  "thresholds": [
+    {
+      "threads": 224,
+      "maximum_reported_registers_for_at_least_two_blocks": 128,
+      "boundary_rows": [
+        {
+          "threads": 224,
+          "reported_registers": 128,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 28672
+        },
+        {
+          "threads": 224,
+          "reported_registers": 129,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 30464
+        }
+      ]
+    },
+    {
+      "threads": 256,
+      "maximum_reported_registers_for_at_least_two_blocks": 128,
+      "boundary_rows": [
+        {
+          "threads": 256,
+          "reported_registers": 128,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 32768
+        },
+        {
+          "threads": 256,
+          "reported_registers": 129,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 34816
+        }
+      ]
+    },
+    {
+      "threads": 288,
+      "maximum_reported_registers_for_at_least_two_blocks": 96,
+      "boundary_rows": [
+        {
+          "threads": 288,
+          "reported_registers": 96,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 27648
+        },
+        {
+          "threads": 288,
+          "reported_registers": 97,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 29952
+        }
+      ]
+    },
+    {
+      "threads": 352,
+      "maximum_reported_registers_for_at_least_two_blocks": 80,
+      "boundary_rows": [
+        {
+          "threads": 352,
+          "reported_registers": 80,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 28160
+        },
+        {
+          "threads": 352,
+          "reported_registers": 81,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 30976
+        }
+      ]
+    },
+    {
+      "threads": 384,
+      "maximum_reported_registers_for_at_least_two_blocks": 80,
+      "boundary_rows": [
+        {
+          "threads": 384,
+          "reported_registers": 80,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 30720
+        },
+        {
+          "threads": 384,
+          "reported_registers": 81,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 33792
+        }
+      ]
+    },
+    {
+      "threads": 416,
+      "maximum_reported_registers_for_at_least_two_blocks": 72,
+      "boundary_rows": [
+        {
+          "threads": 416,
+          "reported_registers": 72,
+          "error": 0,
+          "register_limited_blocks_per_SM": 2,
+          "allocated_registers_per_block": 29952
+        },
+        {
+          "threads": 416,
+          "reported_registers": 73,
+          "error": 0,
+          "register_limited_blocks_per_SM": 1,
+          "allocated_registers_per_block": 33280
+        }
+      ]
+    }
+  ],
+  "raw_probe_cpp": "\n#include <cstdio>\n#include <initializer_list>\n#include \"cuda_occupancy.h\"\nint main(){cudaOccDeviceProp p{};p.computeMajor=9;p.computeMinor=0;p.regsPerBlock=65536;p.regsPerMultiprocessor=65536;p.warpSize=32;\nfor(int th:{224,256,288,352,384,416})for(int reg=1;reg<=192;++reg){cudaOccFuncAttributes a{};a.numRegs=reg;cudaOccResult r{};cudaOccPartitionedGCConfig gc=PARTITIONED_GC_OFF;int limit=-1;auto e=cudaOccMaxBlocksPerSMRegsLimit(&limit,&gc,&r,&p,&a,th);printf(\"%d %d %d %d %d\\n\",th,reg,int(e),limit,r.allocatedRegistersPerBlock);}}\n",
+  "limits": [
+    "Register limit only; shared memory, thread/barrier limits, actual compiler allocation and actual runtime occupancy remain separate.",
+    "Per-warp256-register allocation and per-SM-partition warp availability both matter; raw65536/(2*threads) arithmetic is insufficient."
+  ],
+  "gpu_used": false
+}

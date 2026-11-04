@@ -1018,3 +1018,27 @@ The5% decoder target is a prioritization heuristic, not a user-imposed minimum;
 any smaller gain still needs evidence strong enough to distinguish it from noise.
 Authorattention_paper_reset owns the study; result_and_strategy_critic reviews
 independently. Existing incumbent and closed failed hypotheses remain preserved.
+
+R16 study checkpoint11:26UTC: critic found shared fused_cnt mixes old4-way and
+new8-way schemas, which can incorrectly finalize afterfour arrivals when prior
+counter is4mod8. Proposed resolution is uniform eight-way FUSE forTOKR8/16/32,
+including autotuner-onlybuilds, with matchingpartbuffer andcounterlogic. It is
+not yet an implemented or GPU-tested fix.
+
+PinnedNVIDIA CUDA13.0.96 occupancy calculator CPU check (root independently
+reproduced1152 rows) gives two-block register-only ceilings:416threads72regs,
+384/352threads80,288threads96,256/224threads128. Compiler/runtime admission
+remainsunknown. SourceheaderSHA163b8f296ef2a33c799e2dc8c525b37166da9217bcc6a3c1d26b1c10aca5e22b
+is retained locally and excluded fromGit due its redistributionnotice; sourceURL,
+probe andresults are versioned in20261104-sk2-r16-register-admission-critic.json.
+Temporary native probe directories were automatically removed.
+
+Tradeoff corrections: fusedR16 doubles mainTMArequests andactivationrequests,
+unchanged48MiB mainweights/8MiB routerweights andtotalMMAwork. Aggregate twoCTA
+weight-ring bytes actually fall33%/40% forTOK8/16; counting resident stages alone
+misleads. SeparateT32pooler changesUPS4to8, so producer/TMAeventtotal staysfixed
+whileactivationrequestsdouble; emptyarrivals fall. QKVgrid96to144 means only1.09
+CTAs/SM onaverage, nottwoeverywhere. These costs must be explicit in the final
+plan. Critic accepts a plausible independent-pipeline hypothesis as sufficient
+for a bounded experiment after concrete geometry/lifetime/admission gates; no
+priorproof of a speedup is demanded. Author's fixed feasibility plan is pending.
