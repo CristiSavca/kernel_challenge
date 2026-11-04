@@ -1,0 +1,15 @@
+# V31 independent diagnostic result — 2026-11-04
+
+**Useful diagnostic evidence; no scoring or promotion.** Job `5f48e0da4dcd4595` passes the complete 1 setup / 13 numerical test / 12 benchmark / 12 profile contract with clean checks and flags. Frozen source `0d552bf3…` and external profiles match the receipt; the full evaluator inventory and image equal both retained 97af anchors. The 1.9115472025 score is descriptive only. Independent execution of the source-identity proof restores exact V29 and confirms unchanged device source.
+
+All 20 retained selftests pass: 16 compressed paths and four ordinary routers, no exception, and `disabled=[]`. All 19 resource records have successful API queries and positive block capacity. Fifteen COMP specializations report **exactly `32 * NT` local bytes per thread** (32/64/96/128 B), equal to the source size of `b[NT][8]`. Four ordinary router records have zero local bytes. This supports a compiler-storage hypothesis; it does not identify exclusive allocation ownership, critical-path cost, or the sole bottleneck.
+
+The inner log contains 18 choices and its explicit STOP. Of 15 retained compressed choices, 14 lose to Torch. The exception is unpooler M1: 8.83 versus 10.05 µs; its outer Triton option wins at 8.16 µs. QKV M1 is 26.69 versus 17.50 µs; pooler M1 is 39.74 versus 24.90 µs. All 24 outer rows survive without recorded exceptions; fused pooler costs 39.87–41.31 µs. Unpooler/router M8 inner choices remain unknown. Outer `bfp` may dispatch Torch internally, and outer records precede existing `PIN_PICK` overrides.
+
+All 12 official timed profiles have **zero COMP=true instances**. Two show only the renamed COMP=false router. Selftests and resource rows establish preparation-time execution; the official score describes the selected fallback mixture. The 9,687-byte saved log is an exact prefix of the 11,643-byte receipt tail. There is no resource, selftest, or outer STOP. Packing shows O/pooler/QKV/unpooler raw-unit counts 22/176/95/77, without benchmark-generation identity.
+
+V32 has a falsifiable target: explicit value-return uint4 decode and static scalar repairs, preserving bytes, arithmetic, geometry, MMA order and selection. Require zero local bytes for **every captured COMP specialization**, successful resource queries and capacity at least one, with matching resource coverage for every active signature. Retained local allocation falsifies this compiler prediction; zero local with failed selection/timing falsifies its sufficiency.
+
+Keep the original V29 screen against both 97af parents: whole score gain at least 2.5%; affected four-weighted-load geometric-mean gain at least 4%; every case at most 3% normalized latency regression; control two-load latency GM within ±3%; complete expected compressed activation; full clean numerical coverage with unchanged tolerances. Do not force tuner choices or weaken a failed gate. This diagnostic has zero direct speed benefit; a rewrite speed forecast is unsupported.
+
+The adjacent JSON pins the evidence and preserves all parsed rows. No candidate, frozen source critic, provider state, or official artifact was modified.

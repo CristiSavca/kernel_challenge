@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:29 UTC with V31 diagnostic accepted.
+Updated November 4, 2026 at 22:41 UTC after V31 resolved the selection failure.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -40,24 +40,36 @@ raw receipt/profile/log evidence, root results and independent critic retained.
 Plan timing exception remains explicit: plan/commit followed upload by27seconds,
 while source/gates/review were fixed beforehand and terminal result arrived later.
 
-**V31 diagnostic accepted as `5f48e0da4dcd4595`; inspect it, never duplicate.**
-Source0d552bf386fdbcae6837d97371ae74aa778709b234d993b4e341e655fe9216f7,
-package `muse_decode_layer/candidates/decoder_exact_patch_v31_diagnostic/`.
-Root/author/critic CPU reports exactly31b7e2e0; source and root plan committed
-5c83fc3 before upload. V31 changes observation only: V31P selftest/inner choice/
-outer choice JSON; V31R first compiled-pointer resource attributes. Three Python
-budgets plus host total13312B preserve later-stage evidence when earlier caps
-are exhausted. STOP/missing/truncated records mean incomplete coverage. Preserve
-both saved log and receipt log_tail; saved log may be a prefix before profiler.
-No changed numerical thresholds, math, geometry, timing order or selection.
-Explicitly distinguish launch/resource rejection, numerical disable, or tuner
-loss. No score/promotion is authorized for this diagnostic.
+**V31 diagnostic resolved: honest tuner loss; no promotion.**
+Official `5f48e0da4dcd4595` passes full correctness, score1.9115472025.
+All16 compressed SK2 plus4 router selftests pass, disabled=[] and no exceptions.
+Fifteen compressed compiled pointers report localSizeBytes=NT*32 (32/64/96/128B),
+exactly the eight-word array size; four router observations report0. Inner timings
+reject14/15 retained compressed choices; unpoolerM1 wins internally but loses
+at outer selection. All24 outer rows retained, no exceptions; all12 timed profiles
+have zero COMP. Inner logging stops after18rows, so unpooler/routerM8 inner results
+are unknown. This is prepare-time execution/resource evidence, not timed COMP
+performance, nor proof that array storage alone explains the slowdown. Raw logs,
+receipt, profile, root and independent critic are preserved in V31 records.
 
-Root owns all GPU calls and result files. `moe_research_reset` now audits actual
-unique-expert versus per-job weight traffic using retained routing evidence;
-this read-only audit must check prior failures and stop if benefit is negligible.
-`result_and_strategy_critic` is available for V31 terminal review. No Modal
-allocation; serving work stays backlog.
+**V32 is the next concrete candidate, not yet uploaded.** Author
+`attention_paper_reset` owns `muse_decode_layer/candidates/decoder_scalar_patch_v32/`.
+It replaces address-taken COMP weight arrays with value-return decode and scalar
+repair positions; exact packing, MMA association/order, geometry and routing stay.
+V31 observations remain with V32 labels. Source critic `result_and_strategy_critic`
+reviews it; root owns analyzer, independent CPU proof and official GPU call.
+Fixed gates stay whole>=1.025/affectedGM>=1.04 against both97af parents, allcase
+latency<=1.03, controlsGM[.97,1.03], clean full coverage/exact COMP activation.
+New compiler gate requires all observed COMP local_bytes=0, successfulAPI/capacity,
+no resourceSTOP and matching captured resource signatures for active templates.
+Do not claim removal until actual compiled attributes return. No gate relaxation.
+
+The unique-expert traffic audit is closed read-only, no new implementation:
+retained job duplicates offer at most a conditional+1.465% decoder scenario,
+FT128+1.093%; no actual decoder routing census exists. Evidence in
+`experiments/iterations/20261104-moe-unique-expert-traffic-audit.json`.
+Root owns all GPU calls. No job is currently in flight; no Modal allocation.
+Serving work remains backlog under the current public #1 priority.
 
 
 **V28 closed; no score or retry.** Exact decoder source

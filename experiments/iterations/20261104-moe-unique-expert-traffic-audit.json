@@ -1,0 +1,843 @@
+{
+  "schema": 1,
+  "date": "2026-11-04",
+  "decision": "NO_GO_FOR_IMPLEMENTATION_ON_RETAINED_EVIDENCE",
+  "scope": "Read-only standalone-route census and conditional whole-decoder accounting; no candidate, remote calls, GPU, new route draws or timing.",
+  "new_finding": "The nominal denominator is per FT64 job, not per unique expert. Complete reuse is larger than FT128 only, but retained current replay counts remain small. Current full-geometry FT128 shared budgets differ materially from the older compact-layout audit.",
+  "source": {
+    "path": "muse_moe_w4a16/submission.py",
+    "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "bytes": 204388
+  },
+  "native_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+  "evidence": [
+    {
+      "path": "experiments/iterations/20261104-moe-wgs-diagnostic.json",
+      "sha256": "614d1cd44f041c3a5d1efa0e797ed7172bbb5e0efbde7bbf924f9d0e8e797dac",
+      "bytes": 20684
+    },
+    {
+      "path": "experiments/modal/20261104T150731Z-ef5e7aac/result.json",
+      "sha256": "c0c5e9e47631be102ea2bc4bd63694ad0aaa5b557515b6b30c25828af78e7c45",
+      "bytes": 608899
+    },
+    {
+      "path": "experiments/iterations/20261104-current-kperm-ncu-result-critic.json",
+      "sha256": "6a4143aafbebe77f86d77bdb2105950b7587dc4e20920ee908409bc3ff5203ed",
+      "bytes": 11678
+    },
+    {
+      "path": "experiments/iterations/20261104-decoder-v28-hypothesis.json",
+      "sha256": "aca63be09e96bb405c1adf947f066d06aa842fccc678149d2041b4ec7d3c120f",
+      "bytes": 12885
+    },
+    {
+      "path": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.7a8c4941741645ee.json",
+      "sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+      "bytes": 59034
+    }
+  ],
+  "weight_request_formula": {
+    "bytes_per_full_expert_pass": 28311552,
+    "formula": "(32 phase-A units + 16 phase-B units) * 16 K256 stages * 36864 bytes; W13=18MiB, W2=9MiB",
+    "J64": "sum(ceil(count_e/64))",
+    "J128": "sum(ceil(count_e/128))",
+    "U": "count(count_e>0)",
+    "all_reuse_saved_requests": "27MiB*(J64-U)",
+    "FT128_saved_requests": "27MiB*(J64-J128)",
+    "warning": "Logical requests, not directly removable DRAM bytes. Cache hits and transactions are not attributed by these counters."
+  },
+  "recorded_routes": {
+    "legacy": [
+      {
+        "M": 32,
+        "input_seed": 7301,
+        "routes": 60,
+        "unique_experts": 16,
+        "jobs64": 16,
+        "jobs128": 16,
+        "max_count": 32,
+        "unique_weight_bytes": 452984832,
+        "job_weight_bytes": 452984832,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7301
+        },
+        "local_counts_sha256": "0c615a4f24b9a8f3b72d862ce21188b7baba4c63406f9cfe929c9ae25a6e9e34"
+      },
+      {
+        "M": 32,
+        "input_seed": 7302,
+        "routes": 39,
+        "unique_experts": 16,
+        "jobs64": 16,
+        "jobs128": 16,
+        "max_count": 8,
+        "unique_weight_bytes": 452984832,
+        "job_weight_bytes": 452984832,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7302
+        },
+        "local_counts_sha256": "90683a4c050310de5915ae171699b62da5639f3258525dfb65f5c142d00c74ad"
+      },
+      {
+        "M": 32,
+        "input_seed": 7303,
+        "routes": 73,
+        "unique_experts": 18,
+        "jobs64": 18,
+        "jobs128": 18,
+        "max_count": 32,
+        "unique_weight_bytes": 509607936,
+        "job_weight_bytes": 509607936,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7303
+        },
+        "local_counts_sha256": "a117d3f34a13d8e915dba97e329b3e18ba7d209902262e9af376a99328a7d434"
+      },
+      {
+        "M": 128,
+        "input_seed": 7301,
+        "routes": 241,
+        "unique_experts": 25,
+        "jobs64": 26,
+        "jobs128": 25,
+        "max_count": 128,
+        "unique_weight_bytes": 707788800,
+        "job_weight_bytes": 736100352,
+        "all_reuse_removable_requests_bytes": 28311552,
+        "all_reuse_fraction": 0.038461538461538464,
+        "ft128_fraction": 0.038461538461538464,
+        "histogram_source_row": {
+          "M": 128,
+          "input_seed": 7301
+        },
+        "local_counts_sha256": "e502cd60b5fdc8e9000270993555cf78dc27ed92dca19c32b108d805a00036ef"
+      },
+      {
+        "M": 128,
+        "input_seed": 7302,
+        "routes": 159,
+        "unique_experts": 26,
+        "jobs64": 26,
+        "jobs128": 26,
+        "max_count": 26,
+        "unique_weight_bytes": 736100352,
+        "job_weight_bytes": 736100352,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 128,
+          "input_seed": 7302
+        },
+        "local_counts_sha256": "90bcd29d66fcfd2fc9ba7bbdc83430c1f81bcffcb3d8f15b37843121d4d47cc6"
+      },
+      {
+        "M": 128,
+        "input_seed": 7303,
+        "routes": 281,
+        "unique_experts": 23,
+        "jobs64": 24,
+        "jobs128": 23,
+        "max_count": 128,
+        "unique_weight_bytes": 651165696,
+        "job_weight_bytes": 679477248,
+        "all_reuse_removable_requests_bytes": 28311552,
+        "all_reuse_fraction": 0.041666666666666664,
+        "ft128_fraction": 0.041666666666666664,
+        "histogram_source_row": {
+          "M": 128,
+          "input_seed": 7303
+        },
+        "local_counts_sha256": "2a4e41724ecdce8e1cd9ea77bca77dce22802ac8037ecca94b9f0a4bf5a6e81c"
+      },
+      {
+        "M": 256,
+        "input_seed": 7301,
+        "routes": 484,
+        "unique_experts": 26,
+        "jobs64": 29,
+        "jobs128": 27,
+        "max_count": 256,
+        "unique_weight_bytes": 736100352,
+        "job_weight_bytes": 821035008,
+        "all_reuse_removable_requests_bytes": 84934656,
+        "all_reuse_fraction": 0.10344827586206896,
+        "ft128_fraction": 0.06896551724137931,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 7301
+        },
+        "local_counts_sha256": "e6458da8e598e940e71b7ac0491a8a381c07f9324f91a8c415e97af33e4063dd"
+      },
+      {
+        "M": 256,
+        "input_seed": 7302,
+        "routes": 351,
+        "unique_experts": 27,
+        "jobs64": 27,
+        "jobs128": 27,
+        "max_count": 50,
+        "unique_weight_bytes": 764411904,
+        "job_weight_bytes": 764411904,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 7302
+        },
+        "local_counts_sha256": "39a8910390e2b4e4109352742de35fbaaa607af3c695b2755bd22f041141a2df"
+      },
+      {
+        "M": 256,
+        "input_seed": 7303,
+        "routes": 570,
+        "unique_experts": 23,
+        "jobs64": 26,
+        "jobs128": 24,
+        "max_count": 256,
+        "unique_weight_bytes": 651165696,
+        "job_weight_bytes": 736100352,
+        "all_reuse_removable_requests_bytes": 84934656,
+        "all_reuse_fraction": 0.11538461538461539,
+        "ft128_fraction": 0.07692307692307693,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 7303
+        },
+        "local_counts_sha256": "31dc6254f990a6cdf9d6aadfb3ebea2b1188997b3f137ee12e53333b48b05dc8"
+      }
+    ],
+    "current": [
+      {
+        "M": 32,
+        "input_seed": 7302,
+        "routes": 39,
+        "unique_experts": 16,
+        "jobs64": 16,
+        "jobs128": 16,
+        "max_count": 8,
+        "unique_weight_bytes": 452984832,
+        "job_weight_bytes": 452984832,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7302
+        },
+        "local_counts_sha256": "90683a4c050310de5915ae171699b62da5639f3258525dfb65f5c142d00c74ad"
+      },
+      {
+        "M": 32,
+        "input_seed": 7303,
+        "routes": 73,
+        "unique_experts": 18,
+        "jobs64": 18,
+        "jobs128": 18,
+        "max_count": 32,
+        "unique_weight_bytes": 509607936,
+        "job_weight_bytes": 509607936,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7303
+        },
+        "local_counts_sha256": "a117d3f34a13d8e915dba97e329b3e18ba7d209902262e9af376a99328a7d434"
+      },
+      {
+        "M": 32,
+        "input_seed": 7304,
+        "routes": 51,
+        "unique_experts": 17,
+        "jobs64": 17,
+        "jobs128": 17,
+        "max_count": 14,
+        "unique_weight_bytes": 481296384,
+        "job_weight_bytes": 481296384,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7304
+        },
+        "local_counts_sha256": "a240c8bb2b8fc938d2a4d3190fc1883ee8c8d84801a0c9d1615d4b40aa4741a5"
+      },
+      {
+        "M": 32,
+        "input_seed": 7305,
+        "routes": 57,
+        "unique_experts": 22,
+        "jobs64": 22,
+        "jobs128": 22,
+        "max_count": 15,
+        "unique_weight_bytes": 622854144,
+        "job_weight_bytes": 622854144,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7305
+        },
+        "local_counts_sha256": "fa338b4d44e57424b517345321876482f6cc869ada2b244de9484414c17e1c7c"
+      },
+      {
+        "M": 32,
+        "input_seed": 7306,
+        "routes": 46,
+        "unique_experts": 18,
+        "jobs64": 18,
+        "jobs128": 18,
+        "max_count": 8,
+        "unique_weight_bytes": 509607936,
+        "job_weight_bytes": 509607936,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7306
+        },
+        "local_counts_sha256": "6595f7a6f4f5c4d564f1e5c3792623db656483a6aad4182d2dc17e29a680e9f5"
+      },
+      {
+        "M": 32,
+        "input_seed": 7307,
+        "routes": 44,
+        "unique_experts": 14,
+        "jobs64": 14,
+        "jobs128": 14,
+        "max_count": 8,
+        "unique_weight_bytes": 396361728,
+        "job_weight_bytes": 396361728,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 32,
+          "input_seed": 7307
+        },
+        "local_counts_sha256": "ae09fdb427c0bfe55136d7b1e2adc0da4f9170ee13b3c17818d052167b427cf5"
+      },
+      {
+        "M": 256,
+        "input_seed": 9302,
+        "routes": 354,
+        "unique_experts": 26,
+        "jobs64": 27,
+        "jobs128": 26,
+        "max_count": 73,
+        "unique_weight_bytes": 736100352,
+        "job_weight_bytes": 764411904,
+        "all_reuse_removable_requests_bytes": 28311552,
+        "all_reuse_fraction": 0.037037037037037035,
+        "ft128_fraction": 0.037037037037037035,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9302
+        },
+        "local_counts_sha256": "17d35a73b121c2a9222e0d6f6df1a7df9b7eb9a688ed1337aeccb76429220d8c"
+      },
+      {
+        "M": 256,
+        "input_seed": 9303,
+        "routes": 372,
+        "unique_experts": 30,
+        "jobs64": 30,
+        "jobs128": 30,
+        "max_count": 52,
+        "unique_weight_bytes": 849346560,
+        "job_weight_bytes": 849346560,
+        "all_reuse_removable_requests_bytes": 0,
+        "all_reuse_fraction": 0.0,
+        "ft128_fraction": 0.0,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9303
+        },
+        "local_counts_sha256": "a651f5bfe4e9fa4b9b818d35b8abb7c01dc1eae7272064ef9cfbad311986f9e4"
+      },
+      {
+        "M": 256,
+        "input_seed": 9304,
+        "routes": 441,
+        "unique_experts": 25,
+        "jobs64": 28,
+        "jobs128": 26,
+        "max_count": 256,
+        "unique_weight_bytes": 707788800,
+        "job_weight_bytes": 792723456,
+        "all_reuse_removable_requests_bytes": 84934656,
+        "all_reuse_fraction": 0.10714285714285714,
+        "ft128_fraction": 0.07142857142857142,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9304
+        },
+        "local_counts_sha256": "82feb1a6248a5d05959aff10bdb5cfe1b60220ab3b091ef9ececb28db52ff517"
+      },
+      {
+        "M": 256,
+        "input_seed": 9305,
+        "routes": 382,
+        "unique_experts": 26,
+        "jobs64": 29,
+        "jobs128": 27,
+        "max_count": 157,
+        "unique_weight_bytes": 736100352,
+        "job_weight_bytes": 821035008,
+        "all_reuse_removable_requests_bytes": 84934656,
+        "all_reuse_fraction": 0.10344827586206896,
+        "ft128_fraction": 0.06896551724137931,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9305
+        },
+        "local_counts_sha256": "2770782c015a88fd96227cdb1f335b69c21df62265bd46f95fe7e4c0c7f553fb"
+      },
+      {
+        "M": 256,
+        "input_seed": 9306,
+        "routes": 392,
+        "unique_experts": 27,
+        "jobs64": 29,
+        "jobs128": 28,
+        "max_count": 174,
+        "unique_weight_bytes": 764411904,
+        "job_weight_bytes": 821035008,
+        "all_reuse_removable_requests_bytes": 56623104,
+        "all_reuse_fraction": 0.06896551724137931,
+        "ft128_fraction": 0.034482758620689655,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9306
+        },
+        "local_counts_sha256": "3fe49661c38c6afd902df63bcd48438f90291eff782e4615ef6c5977f5e085ae"
+      },
+      {
+        "M": 256,
+        "input_seed": 9307,
+        "routes": 314,
+        "unique_experts": 22,
+        "jobs64": 23,
+        "jobs128": 22,
+        "max_count": 118,
+        "unique_weight_bytes": 622854144,
+        "job_weight_bytes": 651165696,
+        "all_reuse_removable_requests_bytes": 28311552,
+        "all_reuse_fraction": 0.043478260869565216,
+        "ft128_fraction": 0.043478260869565216,
+        "histogram_source_row": {
+          "M": 256,
+          "input_seed": 9307
+        },
+        "local_counts_sha256": "be29c2824b35e8bff9baced258bb9c62bf2ae0a69cdd73b6666ca8275703d2c5"
+      }
+    ],
+    "summary": [
+      {
+        "dataset": "legacy_diagnostic",
+        "M": 32,
+        "record_count": 3,
+        "min_all_reuse_fraction": 0.0,
+        "max_all_reuse_fraction": 0.0,
+        "mean_all_reuse_fraction": 0.0,
+        "mean_ft128_fraction": 0.0
+      },
+      {
+        "dataset": "legacy_diagnostic",
+        "M": 128,
+        "record_count": 3,
+        "min_all_reuse_fraction": 0.0,
+        "max_all_reuse_fraction": 0.041666666666666664,
+        "mean_all_reuse_fraction": 0.026709401709401708,
+        "mean_ft128_fraction": 0.026709401709401708
+      },
+      {
+        "dataset": "legacy_diagnostic",
+        "M": 256,
+        "record_count": 3,
+        "min_all_reuse_fraction": 0.0,
+        "max_all_reuse_fraction": 0.11538461538461539,
+        "mean_all_reuse_fraction": 0.07294429708222812,
+        "mean_ft128_fraction": 0.04862953138815208
+      },
+      {
+        "dataset": "current_kperm_replays",
+        "M": 32,
+        "record_count": 6,
+        "min_all_reuse_fraction": 0.0,
+        "max_all_reuse_fraction": 0.0,
+        "mean_all_reuse_fraction": 0.0,
+        "mean_ft128_fraction": 0.0
+      },
+      {
+        "dataset": "current_kperm_replays",
+        "M": 256,
+        "record_count": 6,
+        "min_all_reuse_fraction": 0.0,
+        "max_all_reuse_fraction": 0.10714285714285714,
+        "mean_all_reuse_fraction": 0.06001199135881794,
+        "mean_ft128_fraction": 0.04256535753287377
+      }
+    ],
+    "distinct_histograms": 19,
+    "independence_warning": "Same histogram can occur in multiple retained artifacts; replays are not independent decoder samples. Only the two hardware_routing records have the cited hardware counters.",
+    "histogram_reproduction": "Original exact32-element local_counts remain in the two pinned source artifacts. Select legacy.rows by M/input_seed or current.child.cases by case.bs then routing_replays.input_seed. Current actual_topk_ids were independently counted and equal saved local_counts for all12 replays. SHA uses JSON compact separators."
+  },
+  "profiled_routes": [
+    {
+      "M": 32,
+      "input_seed": 7302,
+      "routes": 39,
+      "unique_experts": 16,
+      "jobs64": 16,
+      "jobs128": 16,
+      "max_count": 8,
+      "unique_weight_bytes": 452984832,
+      "job_weight_bytes": 452984832,
+      "all_reuse_removable_requests_bytes": 0,
+      "all_reuse_fraction": 0.0,
+      "ft128_fraction": 0.0,
+      "measured_dram_read_bytes": 456950272.0,
+      "read_over_job_nominal": 1.0087540237991899,
+      "read_over_unique_nominal": 1.0087540237991899,
+      "removable_request_bytes_over_measured_reads": 0.0,
+      "dram_throughput_percent": 77.3
+    },
+    {
+      "M": 256,
+      "input_seed": 9302,
+      "routes": 354,
+      "unique_experts": 26,
+      "jobs64": 27,
+      "jobs128": 26,
+      "max_count": 73,
+      "unique_weight_bytes": 736100352,
+      "job_weight_bytes": 764411904,
+      "all_reuse_removable_requests_bytes": 28311552,
+      "all_reuse_fraction": 0.037037037037037035,
+      "ft128_fraction": 0.037037037037037035,
+      "measured_dram_read_bytes": 770291712.0,
+      "read_over_job_nominal": 1.007691936728395,
+      "read_over_unique_nominal": 1.0464493189102564,
+      "removable_request_bytes_over_measured_reads": 0.036754325093919744,
+      "dram_throughput_percent": 76.99
+    }
+  ],
+  "not_observed": {
+    "decoder_histograms": "No exact97af decoder histogram located in retained iteration/counter artifacts or independent critic prior audits. Decoder learned routing differs from standalone busiest-rank generation.",
+    "M384": "No retained actual M384 histogram in this bounded audit.",
+    "small_loads": "This FT64-axis cannot save duplicate FT64 passes for M<=64 (each expert chosen at most once per token). Existing M1/M8/M16 skinny job decomposition is a different axis."
+  },
+  "valid_domain_bound_not_observed": {
+    "formula": "J64 <= ceil(M/64)*U; all-reuse fraction <= 1 - 1/ceil(M/64)",
+    "M128_max": 0.5,
+    "M256_max": 0.75,
+    "M384_max": 0.8333333333333334,
+    "warning": "Algebraic bounds only, not generated or observed routes. Thus the evidence cannot disprove reuse on arbitrary valid hot routing."
+  },
+  "current_geometry_resources": {
+    "method": "Native clang++ compiles the actual extracted Smem struct with WGS=1, WS=0, NW16, RED_W4, EMAX3072; remaining slot budgets are source formulas, not CUDA compilation/admission. Temporary native binaries removed on exit.",
+    "smem_snippet_sha256": "7dd92050be4d805881b5c100a155e75e36328a84bf542c8295f4dd5a5528d967",
+    "rows": [
+      {
+        "FT": 64,
+        "K": 256,
+        "joined_slots": 3,
+        "JMAX": 88,
+        "native_metadata_bytes": 22240,
+        "rounded_metadata_bytes": 22272,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 32768,
+        "dynamic_smem_bytes": 231168,
+        "shared_only_fits_actual_optin232448": true,
+        "NTT": 8,
+        "accumulator_source_words": 32,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 20971520
+      },
+      {
+        "FT": 64,
+        "K": 256,
+        "joined_slots": 2,
+        "JMAX": 88,
+        "native_metadata_bytes": 22240,
+        "rounded_metadata_bytes": 22272,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 32768,
+        "dynamic_smem_bytes": 161536,
+        "shared_only_fits_actual_optin232448": true,
+        "NTT": 8,
+        "accumulator_source_words": 32,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 20971520
+      },
+      {
+        "FT": 64,
+        "K": 128,
+        "joined_slots": 3,
+        "JMAX": 88,
+        "native_metadata_bytes": 22240,
+        "rounded_metadata_bytes": 22272,
+        "weight_slot_bytes": 18432,
+        "x_slot_bytes": 16384,
+        "dynamic_smem_bytes": 126720,
+        "shared_only_fits_actual_optin232448": true,
+        "NTT": 8,
+        "accumulator_source_words": 32,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 32,
+        "fixup_payload_bytes": 20971520
+      },
+      {
+        "FT": 128,
+        "K": 256,
+        "joined_slots": 3,
+        "JMAX": 64,
+        "native_metadata_bytes": 21472,
+        "rounded_metadata_bytes": 21504,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 65536,
+        "dynamic_smem_bytes": 328704,
+        "shared_only_fits_actual_optin232448": false,
+        "NTT": 16,
+        "accumulator_source_words": 64,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 41943040
+      },
+      {
+        "FT": 128,
+        "K": 256,
+        "joined_slots": 2,
+        "JMAX": 64,
+        "native_metadata_bytes": 21472,
+        "rounded_metadata_bytes": 21504,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 65536,
+        "dynamic_smem_bytes": 226304,
+        "shared_only_fits_actual_optin232448": true,
+        "NTT": 16,
+        "accumulator_source_words": 64,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 41943040
+      },
+      {
+        "FT": 128,
+        "K": 128,
+        "joined_slots": 3,
+        "JMAX": 64,
+        "native_metadata_bytes": 21472,
+        "rounded_metadata_bytes": 21504,
+        "weight_slot_bytes": 18432,
+        "x_slot_bytes": 32768,
+        "dynamic_smem_bytes": 175104,
+        "shared_only_fits_actual_optin232448": true,
+        "NTT": 16,
+        "accumulator_source_words": 64,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 32,
+        "fixup_payload_bytes": 41943040
+      },
+      {
+        "FT": 256,
+        "K": 256,
+        "joined_slots": 3,
+        "JMAX": 52,
+        "native_metadata_bytes": 21088,
+        "rounded_metadata_bytes": 21120,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 131072,
+        "dynamic_smem_bytes": 524928,
+        "shared_only_fits_actual_optin232448": false,
+        "NTT": 32,
+        "accumulator_source_words": 128,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 83886080
+      },
+      {
+        "FT": 256,
+        "K": 256,
+        "joined_slots": 2,
+        "JMAX": 52,
+        "native_metadata_bytes": 21088,
+        "rounded_metadata_bytes": 21120,
+        "weight_slot_bytes": 36864,
+        "x_slot_bytes": 131072,
+        "dynamic_smem_bytes": 356992,
+        "shared_only_fits_actual_optin232448": false,
+        "NTT": 32,
+        "accumulator_source_words": 128,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 16,
+        "fixup_payload_bytes": 83886080
+      },
+      {
+        "FT": 256,
+        "K": 128,
+        "joined_slots": 3,
+        "JMAX": 52,
+        "native_metadata_bytes": 21088,
+        "rounded_metadata_bytes": 21120,
+        "weight_slot_bytes": 18432,
+        "x_slot_bytes": 65536,
+        "dynamic_smem_bytes": 273024,
+        "shared_only_fits_actual_optin232448": false,
+        "NTT": 32,
+        "accumulator_source_words": 128,
+        "register_A_source_words": 16,
+        "full_K_stage_count": 32,
+        "fixup_payload_bytes": 83886080
+      }
+    ],
+    "measured_parent_per_thread_registers": 96,
+    "unchanged576_thread_register_admission_cap": 96,
+    "limitations": [
+      "FT128 needs NTT9..16 wrappers, dispatch/cost/readiness/scratch review. No actual compiler resource count exists.",
+      "FT128/K256 two-slot shared-only fit removes one lookahead slot and leaves 64 accumulator plus16 A source words before phase/decoder/address state; source liveness is not a compiler-independent register count.",
+      "FT128/K128 three slots doubles stage events: ratio2*J128/J64, near2 on these routes, preserving padded activation rows and tensor arithmetic.",
+      "FT256 K256 two/three slots and K128 three slots exceed shared limit;128 accumulator source words alone exceed the unchanged96-register allocation budget if kept in registers. Spill, role, geometry or schedule redesign would be required.",
+      "Two-token-job sequential stage reuse requires simultaneously live accumulators, or explicit partial storage; completing an entire output unit first needs retaining576KiB of packed weights, exceeding shared capacity."
+    ],
+    "naive_global_partial_alternative": {
+      "scope": "Illustrative FT128 K256 stage-outer/job-inner loop; ordinary output partials spilled after each of15 intermediate stages, no overlap claim.",
+      "partial_state_bytes_per_output_unit": 131072,
+      "both_phases_write_plus_read_bytes": 188743680,
+      "saved_weight_bytes_for_two_full_FT64_jobs_merged": 28311552,
+      "warning": "180MiB added partial traffic vs27MiB logical weight requests saved per full128-token expert; not a proposed algorithm or measured device traffic."
+    }
+  },
+  "decoder_score_scenarios": {
+    "parent_source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "parent_public_job": "7a8c4941741645ee",
+    "formula": "For each12case: assumed latency=parent median_ns*(1-profile_MoE_share*f_M); combine46/16 into6load latencies; GM of parent/assumed. Unaffected4loads unchanged.",
+    "assumptions": "Transfer standalone fractions into unobserved decoder routes, reduce entire MoE time proportionally to eliminated requests, zero new overhead; optimistic accounting scenario, NOT a strict physical ceiling or forecast. Profiler shares are not exposed critical-path fractions.",
+    "scenarios": [
+      {
+        "label": "maximum_observed_legacy_all_reuse",
+        "M128_assumed_MoE_time_reduction": 0.041666666666666664,
+        "M256_assumed_MoE_time_reduction": 0.11538461538461539,
+        "load_speed_ratios": {
+          "decode 1": 1.0,
+          "decode 16": 1.0,
+          "decode 32": 1.0,
+          "verify 1": 1.0,
+          "verify 16": 1.0226895999638335,
+          "verify 32": 1.0670020542483727
+        },
+        "whole_score_ratio": 1.0146544922902303,
+        "whole_score_gain_percent": 1.4654492290230303,
+        "whole_latency_reduction_percent": 1.4442839805649421
+      },
+      {
+        "label": "same_legacy_routes_FT128_only",
+        "M128_assumed_MoE_time_reduction": 0.041666666666666664,
+        "M256_assumed_MoE_time_reduction": 0.07692307692307693,
+        "load_speed_ratios": {
+          "decode 1": 1.0,
+          "decode 16": 1.0,
+          "decode 32": 1.0,
+          "verify 1": 1.0,
+          "verify 16": 1.0226895999638335,
+          "verify 32": 1.04369221347965
+        },
+        "whole_score_ratio": 1.0109260330041718,
+        "whole_score_gain_percent": 1.0926033004171831,
+        "whole_latency_reduction_percent": 1.0807945039957967
+      },
+      {
+        "label": "current_NCU_M256_only_M128_unobserved",
+        "M128_assumed_MoE_time_reduction": 0,
+        "M256_assumed_MoE_time_reduction": 0.037037037037037035,
+        "load_speed_ratios": {
+          "decode 1": 1.0,
+          "decode 16": 1.0,
+          "decode 32": 1.0,
+          "verify 1": 1.0,
+          "verify 16": 1.0,
+          "verify 32": 1.02057095219078
+        },
+        "whole_score_ratio": 1.0033994697588169,
+        "whole_score_gain_percent": 0.33994697588168865,
+        "whole_latency_reduction_percent": 0.33879525166921054
+      },
+      {
+        "label": "current_six_M256_replays_mean_only_M128_unobserved",
+        "M128_assumed_MoE_time_reduction": 0,
+        "M256_assumed_MoE_time_reduction": 0.06001199135881794,
+        "load_speed_ratios": {
+          "decode 1": 1.0,
+          "decode 16": 1.0,
+          "decode 32": 1.0,
+          "verify 1": 1.0,
+          "verify 16": 1.0,
+          "verify 32": 1.0337624333517552
+        },
+        "whole_score_ratio": 1.005549507568662,
+        "whole_score_gain_percent": 0.5549507568662015,
+        "whole_latency_reduction_percent": 0.5518880499559176
+      }
+    ],
+    "limitation": "Wider token MMA may alter issue/decode cost as well as requests; no evidence quantifies that critical-path effect. These traffic scenarios do not prove all reuse algorithms bounded by their values."
+  },
+  "prior_work": [
+    {
+      "path": "tools/FT128_REUSE_REASSESSMENT.md",
+      "sha256": "389e9583afcb57c6943e0c5376d839379651014b8769aecadd90aac62f4c510a",
+      "bytes": 7929,
+      "relevance": "Analysis only, not an FT128 GPU rejection; uses compact 128-row geometry. Current 256-row geometry is recomputed here."
+    },
+    {
+      "path": "experiments/iterations/20261104-compact-wgs-official-critic.json",
+      "sha256": "ee205f5b64c389b9a93e40f6718fb9c89866b74c61c9cee7b0c57589fb28a23d",
+      "bytes": 28664,
+      "relevance": "Compact R128/K128 increased stage and activation traffic; fixed attempt rejected. It did not reuse weights across FT64 jobs."
+    },
+    {
+      "path": "experiments/iterations/20261104-wgs-shared-a-performance-analysis.json",
+      "sha256": "e2d405a92ba2537ff05ecab6971a6e4fa16b4327e446113b244d1ba9aca01c92",
+      "bytes": 12654,
+      "relevance": "SS-A fixed attempt rejected; stages decoded A in shared, not cross-job reuse."
+    },
+    {
+      "path": "experiments/iterations/20261104-small-nw4-official-analysis.json",
+      "sha256": "267381023017f14789c2088c055aed85e043890ea6c74e03004f870c52429e04",
+      "bytes": 20383,
+      "relevance": "Two-CTA skinny experiment rejected; not FT128."
+    },
+    {
+      "path": "experiments/iterations/20261104-moe-arch-v30-root-result.json",
+      "sha256": "dde770a903857452a1df06ad5445963b2d8351139d158baa9d800d831284b8d2",
+      "bytes": 21984,
+      "relevance": "Whole-K sparse/dense decomposition rejected; it still processes each FT64 job separately. No rescue proposed."
+    }
+  ],
+  "precision_constraints": [
+    "Preserve exact NVFP4 code/scalepair BF16 operands, activation BF16 boundary, FP32 accumulators/norm and routing order.",
+    "Wider-token WGMMA can keep each output K operand sequence, but re-partitioned Stream-K partial reductions can change FP32 association; numerical validation remains required.",
+    "No compression, changed stored precision, cached runtime outputs or seed-based dispatch is permitted."
+  ],
+  "conclusion": "The current data does not justify another wider-tile/cross-job rewrite to close the whole-decoder gap. The issue is small measured opportunity plus resource/schedule cost, not a claim that FT128 was tried and disproved. Actual decoder J/U substantially above the standalone range could change prioritization; that evidence is absent. No diagnostic run or implementation is requested by this audit."
+}
