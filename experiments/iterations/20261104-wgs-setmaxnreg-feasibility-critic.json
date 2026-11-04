@@ -1,0 +1,65 @@
+{
+  "decision": "Conditional feasibility only; no source implementation or GPU experiment approved while WAIT2 result and exact plan remain unresolved",
+  "mechanism": "Replace64 producer threads with one full128-thread producer warpgroup, retaining512 compute threads, one CTA per SM, original tiles, work ranges, packing, shared-memory rings and mathematical operations; redistribute the CTA register allocation with setmaxnreg",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "independent_cpu_evidence": "experiments/iterations/20261104-wgs-setmaxnreg-budget-critic.json",
+  "primary_contract": [
+    "PTX adjustments use a CTA-local register pool. inc blocks until its requested registers are available; the extra register contents must be initialized.",
+    "All warps in a warpgroup must execute the same instruction. Successive setmaxnreg instructions require explicit warpgroup synchronization. Quotas are multiples of8 in24..256, with direction consistent with currently owned quota.",
+    "An appropriate launch/compiler register specification is required or the hint may have no effect. Arithmetic feasibility alone does not establish honored dynamic quotas."
+  ],
+  "primary_spec": "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg",
+  "budget": {
+    "threads": 640,
+    "assumed_initial_reported_registers": 96,
+    "native_header_allocated_registers": 61440,
+    "producer_threads": 128,
+    "consumer_threads": 512,
+    "conditionally_balanced_producer_quota": 32,
+    "conditionally_balanced_consumer_quota": 112,
+    "required_registers": 61440,
+    "consumer_increment_total": 8192,
+    "producer_decrement_total": 8192,
+    "rejected_sm_only_example": "Producer24/consumer120 needs64512, below65536 SM registers but3072 above the assumed CTA allocation.",
+    "initial_allocation_gate": "Actual initial allocation must be established before requesting112/32. Exact reported96 is the conservative proposed condition; a launch-bound cap alone is not a lower-bound guarantee. Do not treat allocation rounding as proof padding registers are owned and available.",
+    "limitation": "Native CUDA occupancy-header register-only calculation, not actual CUDA compilation, device occupancy or dynamic quota measurement."
+  },
+  "synchronization_requirements": [
+    "Keep the existing PDL wait before input-dependent work; execute the producer decrease uniformly across warps16..19 before splitting their roles.",
+    "Warps16/17 keep weight/X producer work; warps18/19 perform no tensor or routing work. If barrier2 expands with NTL to640, both idle warps must arrive exactly once before returning. Author selected this widened-join design.",
+    "Range barrier7 remains544 participants:512 compute plus32 X producer. Compute barrier1 remains512, and per-compute-warpgroup barriers3..6 remain128. Ring credit arrival counts remain16 compute warps.",
+    "No consumer-dependent barrier may precede producer decrease if consumer increment can block waiting for those released registers. With exactly8192 returned/requested, availability follows once the producer warpgroup decreases; it must remain schedulable independently of consumer progress.",
+    "Do not add a640-thread barrier after any producer or idle thread has returned. Preserve producer joins, final wait0, grid-barrier admission, scratch lifetime and final PDL trigger semantics.",
+    "Newly acquired registers cannot carry meaningful pre-increment values. Preserve source operation order and require compiler evidence that register accesses obey each region's quota."
+  ],
+  "compiler_cautions": [
+    {
+      "finding": "NVIDIA CUTLASS contributors state that the program must still be compilable within the registers threads initially receive. Dynamic increment does not guarantee relief from compile-time instruction register requirements.",
+      "source": "https://github.com/NVIDIA/cutlass/issues/2904",
+      "interpretation": "Relevant limitation, not a proof this particular kernel fails. Both exact specializations still need compilation."
+    },
+    {
+      "finding": "A published SM100 CuTe DSL report shows C7508 dropping setmaxnreg despite correct outputs, while explicit minimum-block launch metadata restores emitted USETMAXREG in that reproducer.",
+      "source": "https://github.com/NVIDIA/cutlass/issues/3406",
+      "interpretation": "Diagnostic caution, not an observed defect in our SM90 NVCC path. Preserve __launch_bounds__(640,1); inspect actual binary/complete diagnostics when available. Empty truncated logs cannot prove hints survived."
+    },
+    {
+      "finding": "The author of an earlier apparent launch_bounds/setmaxnreg hang later identified their own code bug.",
+      "source": "https://github.com/NVIDIA/cutlass/issues/2007",
+      "interpretation": "Do not cite that initial report as an established hardware or compiler failure."
+    }
+  ],
+  "pinned_forge_example": {
+    "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/kernels/gemm/gemm_fp16/h100/kernel.py",
+    "relevant_structure": "Full producer warpgroup decreases before warp0-only work; two consumer warpgroups increase separately. Source ledger uses initial168 and producer40/consumer232:128*40+256*232=384*168=64512.",
+    "limits": "Different384-thread dense shared/shared GEMM, accumulator and instruction footprint. The source's claimed hardware results were not independently reproduced and cannot establish our640-thread resource fit or speed."
+  },
+  "go_no_go_conditions": [
+    "Wait for exact WAIT2 compiler/resource/per-case results. Additional register capacity is a mechanism hypothesis only if there is evidence it addresses a real limiting resource; a legal quota does not imply useful overlap.",
+    "Require one chosen quota/role layout, exact source and fallback conformance, barrier-participant proof, initial-pool and actual occupancy checks for both specializations, and no automatic tuning sweep.",
+    "If actual allocation cannot support the chosen quotas, or setmaxnreg emission cannot be established sufficiently to interpret the experiment, stop or explicitly report the mechanism unresolved; do not claim dynamic headroom from65536 arithmetic.",
+    "Even an admitted kernel may spill at producer32, serialize WGMMA, increase instruction cost or regress. Only official numerical/performance evidence can decide whether the architecture is useful."
+  ],
+  "gpu_used": false,
+  "source_candidate_created": false
+}

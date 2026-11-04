@@ -5,9 +5,25 @@ Final independent source review and the root's CPU rerun passed. Root submitted
 one official private check, `a0dd88ebc8964b3f`. At 09:32 UTC it returned an
 infrastructure error with no measurements; the service refunded it and explicitly
 permitted resubmission. Root submitted one recovery, `f685c2533ebc4214`, from
-the exact same immutable source. That receipt is received; resume it without
-another upload. GPU correctness and speed remain pending. The failed NW4
-candidate is not included. No active submission was changed.
+the exact same immutable source. It is terminal PASS, but rejected for performance.
+All five tests and six timed cases passed without flags; speedup is2.331989071
+versus the scored parent's2.373691044. No active submission was changed.
+
+The affected M32/M128/M256 cases lose geometric-mean SGLang-relative speedup:
+4.54% against the public parent and5.41% against its private check. Equivalently,
+inverse-speedup latency ratios rise4.76%/5.72%; these are not direct cross-run
+median_ns changes. All three raw medians are slower against both parents.
+Unchanged controls improve approximately1.11%/0.66%. The prespecified gain
+gate fails. Do not score, integrate or repeat this measured source.
+
+The retained compiler output explicitly reports **C7511** for both BIG variants:
+WGMMA is serialized due to insufficient register resources. Both use96 registers,
+zero stack/spill/local bytes, and admit one CTA at576threads/231168dynamic bytes.
+This is positive serialization evidence despite zero spills. Parent diagnostics
+are incomplete, so it does not establish that serialization was newly introduced.
+See `tools/analyze_wgs_wait2_result.py` and
+`experiments/iterations/20261104-wgs-wait2-official-analysis.json`.
+A separate register-redistribution design is under review; it has no measured gain.
 
 | Artifact | SHA-256 |
 | --- | --- |

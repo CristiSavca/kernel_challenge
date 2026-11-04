@@ -1,0 +1,621 @@
+{
+  "candidate": {
+    "job": "f685c2533ebc4214",
+    "receipt": "experiments/runs/f685c2533ebc4214.json",
+    "receipt_sha256": "c9d354d22946f46aa24e65a3b478e93cc46b008ed28750ff713945da53c57b27",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6.f685c2533ebc4214.json",
+    "profile_sha256": "b716715c27b734ac3c6b92057f0bc07b347b96612b168aab202fae4decaa5ede",
+    "source_sha256": "97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+    "node": "n-5imphluruu3bb3ci5c2w24thxw",
+    "speedup": 2.3319890709660114,
+    "speedup_ci": [
+      2.297009234901521,
+      2.3669689070305013
+    ]
+  },
+  "passed": true,
+  "record_counts": {
+    "setup": 1,
+    "test": 5,
+    "benchmark": 6,
+    "profile": 6
+  },
+  "resources": {
+    "line": "OKC_WGS_WAIT2 resources threads=576 dynamic=231168 occupancy=1/1 regs=96/96 local=0/0 static=0/0",
+    "threads": 576,
+    "dynamic_smem_bytes": 231168,
+    "occupancy": [
+      1,
+      1
+    ],
+    "registers": [
+      96,
+      96
+    ],
+    "local_bytes": [
+      0,
+      0
+    ],
+    "static_smem_bytes": [
+      0,
+      0
+    ]
+  },
+  "build_diagnostics": {
+    "log": "experiments/candidates/muse_moe_w4a16/profiles/97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6.f685c2533ebc4214.log",
+    "log_sha256": "fbfb1c15654e7ce897d9fbefcb2e3d80dbdf30fb8b79b3cd35199320f2739d05",
+    "saved_bytes": 5334,
+    "tail_characters": 6312,
+    "positive_serialization_evidence": [
+      "ptxas info    : (C7511) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the wgmma pipeline in the function '_ZN3okc9moe_fusedILb1EEEvNS_6ParamsE'",
+      "ptxas info    : (C7511) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the wgmma pipeline in the function '_ZN3okc9moe_fusedILb0EEEvNS_6ParamsE'"
+    ],
+    "retained_ptxas_lines": [
+      "[2/3] ccache /usr/local/cuda/bin/nvcc -MD -MF cuda.cuda.o.d -DTORCH_EXTENSION_NAME=okc_moe_wgs_wait2_v12_4aaab50d332b17d8_sm90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options '-fPIC' -O3 --use_fast_math -Xptxas -v,-O3 -gencode=arch=compute_90a,code=sm_90a -lineinfo -DOKC_NS=3 -DOKC_FNST=4 -DOKC_NSF=3 -DOKC_NW=16 -DOKC_FAST1=0 -DOKC_EPI4=0 -DOKC_WGS=1 -DOKC_PRMTSC=1 -DOKC_MULDEC=1 -DOKC_DQ7=1 -std=c++20 -c /tmp/muse_moe_w4a16-wyzsuqzn/sandbox/cache/torch_extensions/okc_moe_wgs_wait2_v12_4aaab50d332b17d8_sm90a/cuda.cu -o cuda.cuda.o ",
+      "ptxas info    : (C7511) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the wgmma pipeline in the function '_ZN3okc9moe_fusedILb1EEEvNS_6ParamsE'",
+      "ptxas info    : (C7511) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the wgmma pipeline in the function '_ZN3okc9moe_fusedILb0EEEvNS_6ParamsE'",
+      "ptxas info    : 28 bytes gmem",
+      "ptxas info    : Compiling entry function '_ZN3okc9moe_fusedILb1EEEvNS_6ParamsE' for 'sm_90a'",
+      "ptxas info    : Function properties for _ZN3okc9moe_fusedILb1EEEvNS_6ParamsE",
+      "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+      "ptxas info    : Used 96 registers, used 16 barriers",
+      "ptxas info    : Compile time = 1688.096 ms",
+      "ptxas info    : Function properties for _ZN3okc10wgs_rangesERKNS_6ParamsERNS_4SmemE",
+      "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+      "ptxas info    : Compiling entry function '_ZN3okc9moe_fusedILb0EEEvNS_6ParamsE' for 'sm_90a'",
+      "ptxas info    : Function properties for _ZN3okc9moe_fusedILb0EEEvNS_6ParamsE",
+      "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+      "ptxas info    : Used 96 registers, used 16 barriers",
+      "ptxas info    : Compile time = 1657.664 ms",
+      "ptxas info    : Function properties for _ZN3okc10wgs_rangesERKNS_6ParamsERNS_4SmemE",
+      "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads"
+    ],
+    "visibility": "The retained log includes all three build steps and resource output; both C7511 messages are positive evidence regardless of any omitted output."
+  },
+  "comparisons": [
+    {
+      "parent": {
+        "job": "d24dd50196cb4158",
+        "receipt": "experiments/runs/d24dd50196cb4158.json",
+        "receipt_sha256": "dc6ecf5b212644f29ae8b9da1dc8307245ea7f304311d6959d0a910545c226f1",
+        "profile": "experiments/candidates/muse_moe_w4a16/profiles/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.d24dd50196cb4158.json",
+        "profile_sha256": "563d259d696c429ea45d51195184f53e0dd9f61b81fe0123877394d2cd71a682",
+        "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+        "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+        "node": "n-ylawlh2urn5puf2qv62d6ccela",
+        "speedup": 2.3736910443777597,
+        "speedup_ci": [
+          2.338085678712093,
+          2.4092964100434258
+        ]
+      },
+      "cases": [
+        {
+          "tokens": 1,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 1,
+            "load": "decode 1",
+            "seed": 5763460668656748241,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 1,
+            "load": "decode 1",
+            "seed": 704708252230781298,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.0075608802983425,
+          "baseline_relative_latency_ratio": 0.9924958576239049,
+          "candidate_normalized_us": 25.107218004307533,
+          "parent_normalized_us": 25.307495448517646,
+          "candidate_raw_us": 27.31199935078621,
+          "parent_raw_us": 27.759999968111515,
+          "baseline_time_ratio": 0.9995872853449128,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.9,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 29.2,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 16,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 16,
+            "load": "decode 16",
+            "seed": 5763481007299955537,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 16,
+            "load": "decode 16",
+            "seed": 704970363913724355,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.0205444627769615,
+          "baseline_relative_latency_ratio": 0.9798691154317188,
+          "candidate_normalized_us": 91.26772394296638,
+          "parent_normalized_us": 96.00919847890215,
+          "candidate_raw_us": 95.85599973797798,
+          "parent_raw_us": 99.5040014386177,
+          "baseline_time_ratio": 0.9701442338435791,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.0,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 106.7,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 32,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 32,
+            "load": "decode 32",
+            "seed": 5763501345943162834,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 32,
+            "load": "decode 32",
+            "seed": 705232475596667413,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9681992195177018,
+          "baseline_relative_latency_ratio": 1.0328452862192343,
+          "candidate_normalized_us": 126.63074755680775,
+          "parent_normalized_us": 122.80424830162107,
+          "candidate_raw_us": 131.95200264453888,
+          "parent_raw_us": 126.73600018024445,
+          "baseline_time_ratio": 0.998367667625925,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 122.1,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 125.8,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 8,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 8,
+            "load": "verify 1",
+            "seed": 5763521684586370132,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 8,
+            "load": "verify 1",
+            "seed": 705494587279610472,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.0052142167108682,
+          "baseline_relative_latency_ratio": 0.9948128303159803,
+          "candidate_normalized_us": 63.565936790695936,
+          "parent_normalized_us": 64.14883517571859,
+          "candidate_raw_us": 68.38400289416313,
+          "parent_raw_us": 67.98399984836578,
+          "baseline_time_ratio": 0.9960801811213279,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 54.7,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 75.4,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 128,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 128,
+            "load": "verify 16",
+            "seed": 5763542023229577431,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 128,
+            "load": "verify 16",
+            "seed": 705756698962553532,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9534013452374077,
+          "baseline_relative_latency_ratio": 1.048876220906725,
+          "candidate_normalized_us": 175.48550014155742,
+          "parent_normalized_us": 177.44800004178146,
+          "candidate_raw_us": 182.09600448608398,
+          "parent_raw_us": 180.4959997534752,
+          "baseline_time_ratio": 0.9428571292165941,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 178.5,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 168.0,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 256,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 256,
+            "load": "verify 32",
+            "seed": 5763562361872784731,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 256,
+            "load": "verify 32",
+            "seed": 706018810645496593,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9423485752200462,
+          "baseline_relative_latency_ratio": 1.0611784495630947,
+          "candidate_normalized_us": 215.8719757438061,
+          "parent_normalized_us": 207.2986759931876,
+          "candidate_raw_us": 219.03999894857407,
+          "parent_raw_us": 210.49600094556808,
+          "baseline_time_ratio": 0.9813215052989397,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 235.4,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 217.6,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        }
+      ],
+      "overall_speedup_ratio": 0.9824315917142957,
+      "affected_relative_latency_reduction": -0.047569015008628535,
+      "worst_affected_relative_latency_ratio": 1.0611784495630947,
+      "controls_speedup_ratio_geomean": 1.011084105779544,
+      "meets_prespecified_target": false
+    },
+    {
+      "parent": {
+        "job": "bcb761dfca264db0",
+        "receipt": "experiments/runs/bcb761dfca264db0.json",
+        "receipt_sha256": "9c8f1bc53cbb66947ac22ad61199e90b8e4d1ec9fd14dc88155408e92dfe95e2",
+        "profile": "experiments/candidates/muse_moe_w4a16/profiles/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.bcb761dfca264db0.json",
+        "profile_sha256": "df99864c5d69498f6369a3f2a2a4156ea050ff4e5bc12d1837bf7f107c6c824f",
+        "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+        "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+        "node": "n-jm6ivorpl4s77pryw35ktai2hy",
+        "speedup": 2.389835960693193,
+        "speedup_ci": [
+          2.353988421282795,
+          2.425683500103591
+        ]
+      },
+      "cases": [
+        {
+          "tokens": 1,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 1,
+            "load": "decode 1",
+            "seed": 5763460668656748241,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 1,
+            "load": "decode 1",
+            "seed": 995979934208802874,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.006914333347135,
+          "baseline_relative_latency_ratio": 0.993133146367923,
+          "candidate_normalized_us": 25.107218004307533,
+          "parent_normalized_us": 25.056399740859575,
+          "candidate_raw_us": 27.31199935078621,
+          "parent_raw_us": 27.168000116944313,
+          "baseline_time_ratio": 1.008956511728338,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.9,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 22.8,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 16,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 16,
+            "load": "decode 16",
+            "seed": 5763481007299955537,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 16,
+            "load": "decode 16",
+            "seed": 996181499104444643,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.002926163120321,
+          "baseline_relative_latency_ratio": 0.9970823743283184,
+          "candidate_normalized_us": 91.26772394296638,
+          "parent_normalized_us": 93.74696620458687,
+          "candidate_raw_us": 95.85599973797798,
+          "parent_raw_us": 97.50399738550186,
+          "baseline_time_ratio": 0.9764026708990748,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 78.0,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 83.6,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 32,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 32,
+            "load": "decode 32",
+            "seed": 5763501345943162834,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 32,
+            "load": "decode 32",
+            "seed": 996383064000086413,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9669140034074964,
+          "baseline_relative_latency_ratio": 1.0342181377825799,
+          "candidate_normalized_us": 126.63074755680775,
+          "parent_normalized_us": 122.90815693291184,
+          "candidate_raw_us": 131.95200264453888,
+          "parent_raw_us": 127.85599380731583,
+          "baseline_time_ratio": 0.9961994885455018,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 122.1,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 112.2,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 8,
+          "changed_path": false,
+          "candidate_case": {
+            "bs": 8,
+            "load": "verify 1",
+            "seed": 5763521684586370132,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 8,
+            "load": "verify 1",
+            "seed": 996584628895728184,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 1.010061337270053,
+          "baseline_relative_latency_ratio": 0.990038884868867,
+          "candidate_normalized_us": 63.565936790695936,
+          "parent_normalized_us": 68.10373922478672,
+          "candidate_raw_us": 68.38400289416313,
+          "parent_raw_us": 72.52800092101097,
+          "baseline_time_ratio": 0.9427602045126189,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 54.7,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<false>(okc::Params)",
+              "duration_us": 67.9,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 128,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 128,
+            "load": "verify 16",
+            "seed": 5763542023229577431,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 128,
+            "load": "verify 16",
+            "seed": 996786193791369956,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9416977663664604,
+          "baseline_relative_latency_ratio": 1.061911831710612,
+          "candidate_normalized_us": 175.48550014155742,
+          "parent_normalized_us": 176.00632002833623,
+          "candidate_raw_us": 182.09600448608398,
+          "parent_raw_us": 178.51199954748154,
+          "baseline_time_ratio": 0.9389111907254274,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 178.5,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 163.1,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        },
+        {
+          "tokens": 256,
+          "changed_path": true,
+          "candidate_case": {
+            "bs": 256,
+            "load": "verify 32",
+            "seed": 5763562361872784731,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "parent_case": {
+            "bs": 256,
+            "load": "verify 32",
+            "seed": 996987758687011729,
+            "sharding": "ep8",
+            "weight": 60
+          },
+          "speedup_ratio": 0.9294839430558796,
+          "baseline_relative_latency_ratio": 1.0758658150804452,
+          "candidate_normalized_us": 215.8719757438061,
+          "parent_normalized_us": 205.42348472923587,
+          "candidate_raw_us": 219.03999894857407,
+          "parent_raw_us": 208.20800215005875,
+          "baseline_time_ratio": 0.9767604491477097,
+          "candidate_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 235.4,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ],
+          "parent_profile_kernels": [
+            {
+              "name": "void okc::moe_fused<true>(okc::Params)",
+              "duration_us": 200.8,
+              "share_percent": 100.0,
+              "calls": 1
+            }
+          ]
+        }
+      ],
+      "overall_speedup_ratio": 0.9757946190957798,
+      "affected_relative_latency_reduction": -0.05718965807603227,
+      "worst_affected_relative_latency_ratio": 1.0758658150804452,
+      "controls_speedup_ratio_geomean": 1.0066297092645287,
+      "meets_prespecified_target": false
+    }
+  ],
+  "decision": "Reject this exact source: no scoring, integration or identical measurement retry.",
+  "interpretation": "Both WGS specializations explicitly serialize WGMMA due to insufficient registers despite zero stack/spill/local bytes. This justifies investigating redistribution, but does not prove it will compile effectively or improve timing.",
+  "limitations": "Separate runs have fresh routes, different nodes and reference-baseline variation. Cross-job speedup ratios are not paired latency samples. Single profile captures and aggregate confidence intervals do not establish precise causal effects. No public incumbent changed."
+}

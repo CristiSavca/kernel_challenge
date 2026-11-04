@@ -815,3 +815,31 @@ zero. Only f685 is pending. Do not resubmit either handle while recovery runs.
 The ordinary no-repeat rule still applies to measured outcomes; this recovery
 addresses the service's explicitly refunded infrastructure failure. Main work
 through the completed CPU filter and public-code audits is committed as3037716.
+
+09:50 UTC: recovery f685c2533ebc4214 is terminal PASS, score2.331989071,
+5tests/6benchmarks/6profiles, noflags. Reject scoring/integration/retry. Changed
+M32/M128/M256 SGLang-relative speedups regress geometrically4.54% versuspublic
+247888 and5.41% versusprivate; inverse-ratio latency rises4.76/5.72%. Allthree
+raw medians worsen versusboth. Unchangedcontrols improve1.11/0.66%.
+Actual WGS builds report C7511 insufficient-register WGMMA serialization for
+BOTH specializations,96registers, zero stack/spill/local, oneCTAcapacity. This
+is positive compiler-pressure evidence, not proof WAIT2 newly introduced it:
+parent successful-build diagnostics were not fully visible. Root analyzer and
+independentcritic agree the target failed. No official job is pending now.
+
+Full128-thread producer-warpgroup redistribution is conditionally feasible:
+640initialthreads at96registers give61440 CTA registers, exactly balancing
+128producers at32 and512consumers at112. Hardware SM headroom is not a free
+CTA pool. This remains a compiler/source feasibility question; the author is
+preparing an exact plan against rejectedWAIT2 to test whether it can restore
+intended overlap. No source or GPU run approved yet. Need actual initial96,
+preserved donation/consumer roles/barriers, retaineddiagnostics, no hiddenfallback.
+
+Latest public snapshot09:35UTC: overall/decoder386 atunchanged2.1812,
+leader2.5401; MoE289 atunchanged2.3737. Normal CLI access to leaderjob returned
+no suchjob and publicpage exposes no profile; no private endpoint pursued.
+Known donor source pins remainunchanged. Broader bounded public search inspected
+191repositoryrecords and7relevant pinnedrepos; no compatible newMusekernel found.
+Only8MIT source/licensefiles362773B retained, withscope/caveats documented.
+No framework execution, Modalallocation, creditjournalchange or unrelatedcleanup.
+Owned publicinspectionbrowser tabwasclosed. Disk34GiBfree. Goalactive/unachieved.

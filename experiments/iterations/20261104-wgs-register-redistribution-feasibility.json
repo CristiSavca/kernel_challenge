@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-04",
+  "verdict": "CONDITIONALLY_FEASIBLE_NOT_IMPLEMENTATION_GO",
+  "selected": {
+    "threads": 640,
+    "consumer_threads": 512,
+    "producer_threads": 128,
+    "required_actual_initial_registers": 96,
+    "consumer_quota": 112,
+    "producer_quota": 32,
+    "initial_cta_register_pool": 61440,
+    "consumer_registers": 57344,
+    "producer_registers": 4096,
+    "returned_and_acquired": 8192,
+    "dynamic_shared_bytes": 231168,
+    "cta_per_sm": 1,
+    "barrier2_participants": 640,
+    "barrier7_participants": 544,
+    "compute_barrier_participants": 512
+  },
+  "reason": "A balanced CTA-local arena exists, but initial allocation, retained redistribution, producer32 fit, compiler WGMMA behavior and benefit are unmeasured. Wait for separate WAIT2 result before considering implementation.",
+  "no_automatic_variants": true,
+  "source_unchanged": true,
+  "gpu_used": false,
+  "submission_made": false,
+  "files": {
+    "tools/WGS_REGISTER_REDISTRIBUTION_FEASIBILITY.md": "6b50180bc44c6f16801345fb7954527642721a0e0bc54e32622191f393c66ca9",
+    "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "experiments/source_audits/20261104-kernel-workflows/OpenBMB--ForgeKernel/kernels/gemm/gemm_fp16/h100/kernel.py": "a230918b779f3cc9a97e614dd67e221e51bbded3762ff6712aa0f89b0ffce810",
+    "experiments/iterations/20261104-wgs-setmaxnreg-budget-critic.json": "9912ac60df55ce2c3e23d78f5bd2127b942afc1241ffd4e6376b0a2f6f86e5e2",
+    "experiments/iterations/20261104-wgs-setmaxnreg-feasibility-critic.json": "81a467ec33e2a4cf53a16ec98993716b94c19ffefb98bc5badd3b1a5f9eade96"
+  },
+  "primary_sources": [
+    "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg",
+    "https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#launch-bounds",
+    "https://github.com/NVIDIA/cutlass/issues/2904",
+    "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/kernels/gemm/gemm_fp16/h100/kernel.py"
+  ]
+}
