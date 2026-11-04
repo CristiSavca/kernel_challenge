@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "reviewed_at": "2026-11-04T19:12:57.447442+00:00",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_FOR_ONE_FIXED_COVERAGE_ONLY_RUN_SUBJECT_TO_EXISTING_FRESH_GUARD",
+  "pins": {
+    "tools/serving_finalizer_coverage_worker.py": "c18de827dd7d633332b36a0b2e6ce8f5c542b044625283af4d4916a26f4ab133",
+    "tools/test_serving_finalizer_coverage_worker.py": "2e9fcea6dda07272fb175a29953c170716c88003c523935af6c9e87ac76ac667",
+    "tools/SERVING_FINALIZER_COVERAGE_PLAN_20261104.md": "a8b52386e928f22e7557d20a2ef5d66e501ba42bec57f7b40264b4719aad79d4",
+    "tools/modal_h200.py": "b289c8eda145a6fbc6e996141010c8df5f41ee45aff5286ffa08a54e771a5cdf",
+    "tools/test_modal_finalizer_coverage_runner.py": "4d00a1f01dc1b20a6aacbe99382b293cb03aae4f1cb6f238075b4a0503995970",
+    "experiments/iterations/20261104-finalizer-coverage-root-plan.json": "79c9ae7bd2542aca3e7aeae0917cdd3d24a9bcff95aa2da8e5641fbb52cda49f"
+  },
+  "candidate_sha256": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+  "original_sha256": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+  "reference_worker_sha256": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+  "original_manifest_sha256": "a57d656ba2635c8e3c6d95c93351de0aa4508e2c3b292510108c73abc535ccb2",
+  "subset_manifest_sha256": "460bf53d42a5b4a9fa57c6d1800e9dbff4352c5630119df7c4275a1dadd35261",
+  "historical_failure_checkpoint_sha256": "e5ba29486796ba4d01c92388b3437c680c73358bb0e3bbdeee98d42e9052be95",
+  "stage_result_sha256": "3ce10b107e0108b284be0ec7d185b6d7b3b8edfdba8d02046156e2cbcf6900cc",
+  "independent_checks": {
+    "frozen_worker_cpu_tests": 11,
+    "frozen_transport_cpu_tests": 7,
+    "actual_no_provider_dry_run": "PASS final c18de827/b289c8ed pins,15cases,300seconds/floor4.18466342",
+    "full_source_and_test_review": "PASS; no blocking defect",
+    "last_worker_delta": "Removing only two-line missing-metric guard reconstructs prior0619144e exactly"
+  },
+  "root_reported_regressions_not_redundantly_run": {
+    "stage_runner_tests": 6,
+    "validation_runner_tests": 13
+  },
+  "falsifiable_prediction": "All exact original indices75..89 preserve values/classifications and unchanged stream/graph checks preserve outputs and allocation ownership. Any additional failure is retained, not hidden by completion.",
+  "coverage": {
+    "remaining_indices": [
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89
+    ],
+    "numerical_cases": 15,
+    "streams": 2,
+    "stream_calls": 8,
+    "graphs": 2,
+    "fresh_graph_replays": 8,
+    "new_activation_profile_campaign": false,
+    "actual_execution_overlap_measured": false
+  },
+  "completion_contract": {
+    "status": "coverage_complete",
+    "generic_validation_status": "failed_at_finite_cancellation",
+    "historical_failure_rerun": false,
+    "new_numerical_failures_may_be_retained_while_completing_fixed_cases": true,
+    "remaining_numerics_passed_and_failure_names_recomputed": true,
+    "all_three_comparisons_required": true,
+    "input_byte_mutation_and_output_storage_alias_abort": true,
+    "stream_graph_comparisons_and_record_identities_recomputed": true,
+    "graph_allocation_ranges_independently_checked_by_reader": true
+  },
+  "resource_scope": {
+    "gpu": "H200",
+    "cpu": [
+      4,
+      4
+    ],
+    "memory_mib": [
+      32768,
+      32768
+    ],
+    "block_network": true,
+    "sandbox_seconds": 300,
+    "worker_seconds": 240,
+    "result_cap_bytes": 1048576,
+    "result_read_timeout_seconds": 10,
+    "saved_observation_floor_usd": "4.18466342",
+    "existing_guard_and_finally_termination_unchanged": true,
+    "live_app_recovery": true
+  },
+  "direct_speed_gain_upper_bound_percent": 0,
+  "payoff_limit": "May resolve remaining component correctness/ownership risks supporting prior measured stock component gains; cannot bound full-serving or leaderboard gain.",
+  "budget_priority": "One final fixed unchanged-helper coverage round is warranted; no further generic edge-case sweeps or automatic retry. At last saved estimate4.24533658, a1.14 reservation leaves~3.10533658 before new observed spend and preserves separate5headroom; actual fresh guard remains mandatory.",
+  "kill_and_pivot": [
+    "Runtime/CUDA error, input mutation or aliasing aborts with partial checkpoint",
+    "Missing/corrupt provenance, cases, metrics or graph/stream records cannot become complete",
+    "New numerical failure retains exact evidence and leads to contract/implementation/domain decision, not unchanged retry",
+    "All remaining checks passing still does not waive known cancellation failure, authorize promotion or establish full serving correctness"
+  ],
+  "reviewer_provider_gpu_official_calls": false
+}

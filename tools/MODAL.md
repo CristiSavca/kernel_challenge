@@ -1,5 +1,18 @@
 # Modal H200 experiments
 
+`serving-finalizer-coverage --timeout 300` completes the 15 unexecuted cases
+from the pinned generic finalizer suite, followed by its existing two-stream
+and two-graph checks. It uploads the unchanged candidate, original and reference
+worker plus a coverage driver. Its terminal `coverage_complete` status describes
+coverage only: `generic_validation_status` remains
+`failed_at_finite_cancellation`, with the exact prior failure carried as
+historical evidence. New numerical failures are recorded separately. Runtime
+or ownership failures stop the run. The worker budget is 240 seconds, and the
+ordinary credit guard, capped checkpoint retrieval and guaranteed termination
+apply. See `SERVING_FINALIZER_COVERAGE_PLAN_20261104.md`; there is no automatic
+retry or promotion. Add `--dry-run` to inspect the fixed package without
+allocating resources.
+
 The fixed `attention-v11-screen --timeout 600` mode tests the reviewed
 compile-time-role revision after V10 failed its register/spill gate. It changes
 only the pinned candidate in the existing eight-case attention protocol; the

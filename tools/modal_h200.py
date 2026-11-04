@@ -695,12 +695,14 @@ def finalizer_observed_floor(root: Path) -> dict:
     return {"path": relative, "sha256": expected, "usd": str(amount)}
 
 
-def run_finalizer_validation_worker(payload: dict, *, stages=False) -> None:
+def run_finalizer_validation_worker(payload: dict, *, stages=False, coverage=False) -> None:
     """Import exactly the reviewed validation helper, never an ambient module."""
     import importlib.util
-    module_name = "finalizer_stages" if stages else "finalizer_validation"
-    expected = ({"candidate.py", "baseline.py", "validation_reference.py", "finalizer_stages.py"}
-                if stages else {"candidate.py", "baseline.py", "finalizer_validation.py"})
+    if stages and coverage:
+        raise ValueError("Ambiguous finalizer worker mode")
+    module_name = "finalizer_coverage" if coverage else "finalizer_stages" if stages else "finalizer_validation"
+    expected = ({"candidate.py", "baseline.py", "validation_reference.py", module_name + ".py"}
+                if stages or coverage else {"candidate.py", "baseline.py", "finalizer_validation.py"})
     if set(payload.get("files", {})) != expected or set(payload.get("file_sha256", {})) != expected:
         raise ValueError("Unexpected finalizer validation file set")
     folder = Path("/tmp/okc-input")
@@ -798,7 +800,29 @@ def retrieve_finalizer_stage_result(sandbox, destination: Path, payload: dict, *
 
 def is_finalizer_payload(payload) -> bool:
     return bool(payload and (payload.get("serving_finalizer_validation") is True
-                             or payload.get("serving_finalizer_stages") is True))
+                             or payload.get("serving_finalizer_stages") is True
+                             or payload.get("serving_finalizer_coverage") is True))
+
+
+def retrieve_finalizer_coverage_result(sandbox, destination: Path, payload: dict, *, recovery=False) -> dict:
+    """Coverage completion retains the known generic failure and never means PASS."""
+    import serving_finalizer_coverage_worker as coverage
+    if sha(Path(coverage.__file__).read_text()) != payload["file_sha256"]["finalizer_coverage.py"]:
+        raise ValueError("Local coverage worker changed after upload")
+    process = sandbox.exec("python3", "-c", FINALIZER_READ_RESULT, timeout=10, text=False)
+    content = process.stdout.read()
+    process.stderr.read()
+    process.wait()
+    if process.returncode != 0:
+        raise RuntimeError(f"Coverage result read exited {process.returncode}")
+    if type(content) is not bytes or len(content) > 1024 * 1024:
+        raise ValueError("Coverage result exceeds local byte/type bound")
+    result = json.loads(content)
+    coverage.validate_result(result, payload)
+    local = ("result.json" if not recovery and result["status"] == "coverage_complete"
+             else "result-checkpoint.json")
+    save(destination / local, result)
+    return result
 
 
 @contextmanager
@@ -812,7 +836,8 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
             manifest["validation_recovery_inside_app_context"] = True
             try:
                 if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
-                    retrieve = (retrieve_finalizer_stage_result if payload.get("serving_finalizer_stages") is True
+                    retrieve = (retrieve_finalizer_coverage_result if payload.get("serving_finalizer_coverage") is True
+                                else retrieve_finalizer_stage_result if payload.get("serving_finalizer_stages") is True
                                 else retrieve_finalizer_validation_result)
                     retrieve(sandbox, destination, payload, recovery=True)
                 manifest["validation_checkpoint_recovered"] = True
@@ -824,7 +849,7 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -841,7 +866,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.mode == "worker":
         payload = json.loads(Path(args.payload).read_text())
-        if payload.get("serving_finalizer_stages") is True:
+        if payload.get("serving_finalizer_coverage") is True:
+            run_finalizer_validation_worker(payload, coverage=True)
+        elif payload.get("serving_finalizer_stages") is True:
             run_finalizer_validation_worker(payload, stages=True)
         elif payload.get("serving_finalizer_validation") is True:
             run_finalizer_validation_worker(payload)
@@ -864,8 +891,11 @@ def main() -> None:
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
     compile_mode = args.mode == "compile-sass"
-    if args.mode in ("serving-finalizer-validation", "serving-finalizer-stages"):
-        if args.mode == "serving-finalizer-stages":
+    if args.mode in ("serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage"):
+        if args.mode == "serving-finalizer-coverage":
+            from serving_finalizer_coverage_worker import build_payload
+            fixed_timeout = 300
+        elif args.mode == "serving-finalizer-stages":
             from serving_finalizer_stage_worker import build_payload
             fixed_timeout = 300
         else:
@@ -1051,6 +1081,9 @@ def main() -> None:
                     elif payload.get("serving_finalizer_stages") is True:
                         result = retrieve_finalizer_stage_result(sandbox, destination, payload)
                         manifest["validation_result_retrieved"] = True
+                    elif payload.get("serving_finalizer_coverage") is True:
+                        result = retrieve_finalizer_coverage_result(sandbox, destination, payload)
+                        manifest["validation_result_retrieved"] = True
                     else:
                         result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
                         save(destination / "result.json", result)
@@ -1061,6 +1094,8 @@ def main() -> None:
                         raise RuntimeError("Finalizer validation incomplete or failed; no automatic retry")
                     if payload.get("serving_finalizer_stages") is True and result["status"] != "diagnostic_complete":
                         raise RuntimeError("Finalizer stage diagnostic incomplete or failed; no automatic retry")
+                    if payload.get("serving_finalizer_coverage") is True and result["status"] != "coverage_complete":
+                        raise RuntimeError("Finalizer coverage incomplete or failed; no automatic retry")
                     if compile_mode and result["status"] != "compile_complete":
                         raise RuntimeError("CPU compile diagnostic did not complete; no retry")
                 else:

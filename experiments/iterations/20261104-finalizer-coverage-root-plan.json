@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "at": "2026-11-04T19:11:32.154565+00:00",
+  "previous_goal_turn": "progress: officialV23 rejected under fixed gates and stage diagnostic localized retained mismatch",
+  "hypothesis": "Unchanged finalizer91e6173b preserves remaining15 numerical/classification cases and existing two-stream/two-graph scratch/output ownership checks. Even all remaining checks passing cannot waive historical generic failure.",
+  "files_sha256": {
+    "tools/serving_finalizer_coverage_worker.py": "c18de827dd7d633332b36a0b2e6ce8f5c542b044625283af4d4916a26f4ab133",
+    "tools/test_serving_finalizer_coverage_worker.py": "2e9fcea6dda07272fb175a29953c170716c88003c523935af6c9e87ac76ac667",
+    "tools/modal_h200.py": "b289c8eda145a6fbc6e996141010c8df5f41ee45aff5286ffa08a54e771a5cdf",
+    "tools/test_modal_finalizer_coverage_runner.py": "4d00a1f01dc1b20a6aacbe99382b293cb03aae4f1cb6f238075b4a0503995970",
+    "tools/SERVING_FINALIZER_COVERAGE_PLAN_20261104.md": "a8b52386e928f22e7557d20a2ef5d66e501ba42bec57f7b40264b4719aad79d4",
+    "experiments/iterations/20261104-coverage-resource-preflight.json": "ce4c39760beda3ba6dcea82f1e96861877db3e465ca6d37b30fc643bfe5b7f14",
+    "experiments/leaderboards/20261104T190700Z-coverage-preflight.json": "3677f32059f7dc93bf797b14c718318531797df6847d9cac8751a8615d75411f"
+  },
+  "sources": {
+    "candidate.py": "91e6173baa984fb873994cc3cd2883da16e013091f10218262785e70e613ed98",
+    "baseline.py": "9b816e971817f96a22d2d09424dc8dfa6f6020e18de73fb895674c76494fe591",
+    "validation_reference.py": "c94c31345575540c74a3867512aefff1480c0dbc9471409d5c1ceb39d48f5ede",
+    "finalizer_coverage.py": "c18de827dd7d633332b36a0b2e6ce8f5c542b044625283af4d4916a26f4ab133"
+  },
+  "remaining_case_manifest_sha256": "460bf53d42a5b4a9fa57c6d1800e9dbff4352c5630119df7c4275a1dadd35261",
+  "remaining_indices": [
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89
+  ],
+  "historical_failure": {
+    "historical_not_rerun": true,
+    "checkpoint_sha256": "e5ba29486796ba4d01c92388b3437c680c73358bb0e3bbdeee98d42e9052be95",
+    "stage_result_sha256": "3ce10b107e0108b284be0ec7d185b6d7b3b8edfdba8d02046156e2cbcf6900cc",
+    "original_case_index": 74,
+    "name": "finite_cancellation",
+    "seed": 20268578,
+    "shape": [
+      3,
+      3,
+      511
+    ],
+    "pass": false,
+    "comparisons": {
+      "candidate_vs_fp32_oracle": {
+        "pass": true,
+        "equal_values": true,
+        "max_abs": 0.0,
+        "whole_rel_l2": 0.0,
+        "worst_row_rel_l2": 0.0
+      },
+      "candidate_vs_original": {
+        "pass": false,
+        "equal_values": false,
+        "max_abs": 2.384185791015625e-07,
+        "whole_rel_l2": 1.0,
+        "worst_row_rel_l2": 1.0
+      },
+      "original_vs_fp32_oracle": {
+        "pass": false,
+        "equal_values": false,
+        "max_abs": 2.384185791015625e-07,
+        "whole_rel_l2": 1582823.078587789,
+        "worst_row_rel_l2": 1582823.078587789
+      }
+    }
+  },
+  "numerical_policy": {
+    "whole_relative_l2": 0.015,
+    "worst_row_relative_l2": 0.075,
+    "row_norm_floor": 0.1,
+    "exceptional_masks_exact": true,
+    "diagnostic_metric_accumulation": "float64",
+    "nonfinite_cases_are_not_official_evaluator_acceptance": true
+  },
+  "fixed_protocol": {
+    "gpu": "oneH200",
+    "outer_timeout_seconds": 300,
+    "worker_budget_seconds": 240,
+    "network": false,
+    "cpu_cores": 4,
+    "memory_mib": 32768,
+    "allocation_retries": 0,
+    "required_coverage": [
+      "15exactcase records with all three comparisons",
+      "input byte immutability and output/input nonaliasing",
+      "2streams8calls",
+      "2graphs8freshreplays and scratch/output range isolation"
+    ],
+    "coverage_completion_is_generic_pass": false,
+    "generic_validation_status": "failed_at_finite_cancellation",
+    "reader_bytes_cap": 1048576,
+    "reader_timeout_seconds": 10,
+    "cleanup": "existing mandatoryguard,live-appcheckpointrecovery,finallytermination"
+  },
+  "root_cpu_verification": {
+    "new_worker_tests": 11,
+    "new_transport_tests": 7,
+    "existing_stage_lifecycle_tests": 6,
+    "existing_validation_lifecycle_tests": 13,
+    "all_passed": true,
+    "actual_dry_run_passed": true,
+    "test_command_correction": "Initial existing-suite command used nonexistent test_modal_finalizer_validation; corrected to test_modal_finalizer_validation_runner and13passed.",
+    "final_worker_change": "Final reader rejects missing finite metric keys even when pass=false;18worker/transporttests rerun after this change."
+  },
+  "financial": {
+    "existing_full_reservations_usd": "29.82",
+    "provider_highwater_usd": "4.18466342",
+    "working_before_usd": "4.24533658",
+    "full_proposed_reservation_usd": "1.14",
+    "estimated_working_after_usd": "3.10533658",
+    "headroom_usd": "5",
+    "fresh_guard_required": true
+  },
+  "decision_rules": {
+    "runtime_or_ownership_failure": "abort,preservepartial,noautomaticretry",
+    "numerical_failure": "recordunmodifiedcomparison,completefixedindependentcasesifexecutionhealthy,pivotafterrun",
+    "coverage_complete": "combineevidencewithhistoricalfailure; no genericPASS orpromotion",
+    "direct_speed_gain_estimate_percent": 0,
+    "full_serving_speedup_upper_bound": "Not established by correctness coverage or component profiles",
+    "kill": "Last diagnostic round of unchanged helper. Do not extend random edge sweeps. New failures require implementation/domain-contract decision; completed coverage moves to actual nextoptimization andlaterofficialservingvalidation."
+  },
+  "next_distinct_hypothesis": "Optional dual global/local router IDs to removeMarlin maplaunch, tools/SERVING_NEXT_OP_SCOUT_20261104.md; unimplemented andunmeasured."
+}
