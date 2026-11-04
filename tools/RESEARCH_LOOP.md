@@ -20,15 +20,15 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-At November 4, 10:48 UTC, the official decoder leader was 2.5510×. Our exact
+At November 4, 11:12 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
-overall/decoder rank was 390. Passing that observed leader needs approximately
+overall/decoder rank was 391. Passing that observed leader needs approximately
 14.50% less normalized latency. This remains an unachieved goal, not a forecast.
 Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank292.
 Both active submission.py files equal their scored snapshots. The preceding
 80a4/ef7 files remain frozen; private experiments never replace these incumbents
 without a useful verified result. See the dated live snapshot in
-`experiments/leaderboards/20261104T104834Z-selected-diagnostic-refresh.json`.
+`experiments/leaderboards/20261104T111211Z-selected-diagnostic-result.json`.
 
 The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
@@ -948,3 +948,52 @@ Small-WGMMA and narrower dense-codec feasibility are closed without implementati
 Current turn is progress: terminal failure audited, broader limits established,
 new information-gathering source independently verified and submitted. Goal stays
 active and unachieved; no blocked or completion claim.
+
+## Selected decoder resource diagnostic completed — November4 11:04 UTC
+
+Private check c0b4201c5ad345d1 of exacte444 passed all13 correctness tests,
+12 timed cases and12 profiles, noflags/checkrejections. This was diagnostic-only;
+its score is not a comparison or promotion signal. Public97af/247888 are unchanged.
+No official job remains pending after this receipt.
+
+The retained output has19 SK2 and3 small-MoE records, allg1 and successful APIs.
+All observed local allocations are zero. SK2 regs71–116; QKV/pooler capacity1,
+output projections and observedT16 BND unpooler capacity2, T32 unpooler capacity1.
+CL3 router is block-only; cluster capacity is unmeasured. Small-MoE effective
+builds report144/144/148 regs,214784 dynamic shared bytes and capacity1. Fused
+pooler has384 static shared bytes; other retained records have0. These are
+compiled resources/admission, not achieved occupancy, stalls or spill traffic.
+Unexpected local allocation is not supported; close that hypothesis negatively.
+
+No STOP, missing schema, malformed or conflicting records were retained. Saved
+log3455 bytes is a prefix of5411-character receipt tail plus24 USDT lines. Thirty
+SK2 profile rows each have one compatible record; none establishes exact benchmark
+invocation identity. Twelve MoE profile names remain unmapped to flag builds.
+Parsercc967 source review and14 fixtures cover conflict quarantine, strict
+provenance, official pass eligibility and partial evidence. Root reproduced the
+saved analysis exactly and separately audited the raw result. See candidate note
+and20261104-decoder-selected-resource-{analysis,root-result}.json.
+
+Independent profile coverage audit (root rerun) finds30 SK2 rows/12 prefixes.
+Shared-memory floors already exclude two QKV/pooler CTAs; lower registers alone
+cannot change that. Under profile-share scenarios,20% less all-SK2 time models
+4.738% less decoder time;5% needs21.089% less SK2 time, or31.0% less QKV+pooler.
+These are scenarios, not causal or critical-path evidence. No automatic variant
+or repeated diagnostic is approved by this result.
+
+At11:08 a fresh read-only Modal preflight verified the profile, returned zero
+application records and provider_spend3.79USD. That is below the older3.90423640
+snapshot; preserve the historical high-water figure for conservative proposals,
+not a claim that credits increased. The unchanged guard still cannot fit its
+minimum0.63 reservation. Grant,21.14 reservation journal and allocation lock are
+unchanged. A separate read-only accounting review is checking whether exact
+attributed provider charges could remove double counting while retaining every
+original reservation. No accounting change or new allocation has occurred.
+
+Current turn remains progress: valid compiled-resource evidence and independent
+coverage audit obtained, incorrect local-memory hypothesis eliminated. Goal is
+active and unachieved; no completion or blocked declaration.
+
+The11:12 UTC final board refresh ranks our unchanged decoder2.1812 at391
+(overall also391); leader remainsLeshengJin2.5510. MoE remainsrank292 at2.3737.
+One additional entrant moved ahead; no public source replacement occurred.

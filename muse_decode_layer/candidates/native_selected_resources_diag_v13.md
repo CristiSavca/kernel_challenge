@@ -8,9 +8,9 @@ Created November 4, 2026. Independent final source review approved this exact
 hash for one diagnostic-only private check. Root independently reproduced the
 combined CPU report (SHA `c255633e96db54e98df4717c2f51783e0a54cabf1b5853d7ab2fc681f86d1c77`).
 Root submitted the exact source as private check `c0b4201c5ad345d1` at10:49 UTC.
-The service received it; compilation, correctness and diagnostic coverage are
-pending. Resume that receipt without another upload. The author made no GPU
-allocation or official submission.
+The check finished successfully, confirmed at11:04 UTC:13 correctness tests,
+12 timed cases and12 profiles, with no flags or rejected checks. The author
+made no GPU allocation or official submission. Do not upload this source again.
 
 This is an unscored resource diagnostic, not a performance candidate. It adds
 host-only queries on first actual post-prepare SK2 and small-MoE dispatches.
@@ -46,3 +46,27 @@ There is no speed threshold. Errors, missing signatures or log truncation remain
 unknowns and do not authorize a retry. Attributes do not establish achieved
 occupancy, SASS serialization, spill traffic, stalls or optimization payoff.
 Never publish or promote this diagnostic source based on its score.
+
+The retained log contains19 SK2 and3 small-MoE resource records, all at arming
+epoch1. Every query succeeded; local-memory allocation is zero in every record.
+SK2 registers range from71 to116. QKV and pooler report one block/SM capacity;
+the observed output projections and T16 boundary-unpooler report two. The
+cluster router's value is block-only capacity. The three small-MoE builds report
+144/144/148 registers,214784 dynamic shared bytes and one block/SM capacity.
+Pooler fusion uses384 static shared bytes; other retained records report zero.
+
+No STOP, malformed record, missing schema or conflicting resource identity was
+retained. The saved3455-byte log is an exact prefix of the5411-character receipt
+tail; its suffix is24 profiler USDT lines. Thirty SK2 profile rows each have one
+compatible retained record, but truncated names and runtime fields still prevent
+claiming an exact benchmark invocation identity. MoE profile names do not identify
+their compiled flag builds. The unexpected-local-allocation hypothesis is closed
+negatively; no bottleneck or automatic optimization follows from these facts.
+
+Offline parser: `tools/analyze_decoder_selected_resources.py` (SHA
+`cc967b3a9d3052ea4c8aa9d65e03e78aa624f8b38d0ac189e5d0ec97f7c839f7`).
+All14 parser fixtures pass, including conflicting identities and failed-run
+eligibility. Root reproduced the saved analysis exactly and separately audited
+raw resource lines, official correctness and source/profile/log provenance.
+Evidence: `experiments/iterations/20261104-decoder-selected-resource-analysis.json`
+and `20261104-decoder-selected-resource-root-result.json`.
