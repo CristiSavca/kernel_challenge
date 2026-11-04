@@ -1,0 +1,98 @@
+{
+  "mode": "benchmark",
+  "gpu": "H200:1",
+  "timeout_seconds": 900,
+  "official": false,
+  "status": "passed_subset",
+  "worker_sha256": "3f0934100558146733b397ec2a082898c4e7e99c9da49420c3345b062cb44142",
+  "problem": "muse_moe_w4a16",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "source_sha256": "2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488",
+  "file_sha256": {
+    "candidate.py": "2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488",
+    "baseline.py": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+    "reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf"
+  },
+  "cases": [
+    {
+      "bs": 32,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    },
+    {
+      "bs": 128,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    },
+    {
+      "bs": 256,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    },
+    {
+      "bs": 16,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    },
+    {
+      "bs": 32,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    }
+  ],
+  "repeats": 6,
+  "seed": 7202,
+  "weight_seed": 7311,
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "experiments/candidates/muse_moe_w4a16/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.py",
+    "sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a"
+  },
+  "profile": true,
+  "resources": true,
+  "modal_client": "1.6.3",
+  "credit_guard": {
+    "run_id": "20261104T052256Z-4c806134",
+    "checked_at": "2026-11-04T05:22:56.653948+00:00",
+    "cycle": "2026-11",
+    "workspace": "cristisavca44",
+    "environment": "main",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "grant_usd": "30.00",
+    "headroom_usd": "5.00",
+    "provider_observed_usd": "2.60254785",
+    "prior_reservations_usd": "12.10",
+    "reservation_usd": "2.42",
+    "working_budget_remaining_usd": "7.87745215",
+    "estimate_is_provider_cap": false,
+    "billing_summary": {
+      "metered_cost": "2.60000000",
+      "billed_cost": "0E-8",
+      "adjustments": {
+        "plan_cost": "0E-8",
+        "credits": "-2.60000000",
+        "reservation_adjustment": "-0E-8",
+        "network_egress_allowance": "0E-8",
+        "free_storage": "-0E-8"
+      },
+      "metered_cost_breakdown": {
+        "network_egress": "0E-8",
+        "llm_tokens": "0E-8",
+        "ephemeral_apps": "2.60254785",
+        "volumes": "0E-8"
+      }
+    }
+  },
+  "credit_guard_sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+  "sandbox_id": "sb-eoBGNWklvCQepCwpqWyEM8",
+  "dashboard": "https://modal.com/id/sb-eoBGNWklvCQepCwpqWyEM8",
+  "exit_code": 0,
+  "sandbox_terminated": true
+}

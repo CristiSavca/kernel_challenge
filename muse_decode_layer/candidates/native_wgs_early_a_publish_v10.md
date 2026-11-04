@@ -1,8 +1,9 @@
 # Whole phase-A publication experiment
 
-Status: CPU/static checks passed; GPU untested. Root owns the decision to run
-one bounded screen after the Dense V9 result. This candidate has no GS4,
-attention V5, or dense-policy changes. It is not promoted.
+Status: **rejected for promotion and decoder integration**. The standalone
+screen compiled and passed 80/80 checks, but failed the 3% continuation bar.
+The decoder counterpart remains GPU-untested. No repeat or official upload is
+planned. This candidate has no GS4, attention V5, or dense-policy changes.
 
 | Artifact | SHA-256 |
 | --- | --- |
@@ -17,6 +18,48 @@ provenance remain. The only changed top-level AST nodes are the native CUDA
 string and its extension builder (`MOE_CUDA_SRC`/`_ma_ext` in the decoder,
 `CUDA_SRC`/`_ext` in standalone). Extension names are isolated with prefixes
 `dl_okc_moe_earlya1_v10_` and `okc_moe_earlya1_v8_`.
+
+## Completed screen and independent decision
+
+Result: `experiments/modal/20261104T052256Z-4c806134/result.json`, SHA-256
+`8b9568e6ec37bf39daea37430a323e5eebf4c235ca2d2b0151acf9fb89e633a0`.
+The run finished in 415.62 seconds, passed all 80 eager/graph checks, and
+terminated successfully. Preparation including weight cloning took
+208.97/199.14 seconds for baseline/candidate. The 128 MiB read-sweep selfcheck
+passed; actual DRAM traffic was not measured.
+
+Six fresh pairs per case gave these median speedups (baseline time divided
+by candidate time):
+
+| Case | Paired ratio | Candidate faster pairs | Separate profile, baseline → candidate |
+| --- | ---: | ---: | ---: |
+| M32 | 1.001020× | 3/6 | 116.631 → 113.839 µs |
+| M128 | 0.986994× | 2/6 | 187.094 → 188.736 µs |
+| M256 | 0.993350× | 2/6 | 225.393 → 227.494 µs |
+| M16, unchanged path | 1.002000× | 4/6 | 106.672 → 107.049 µs |
+| M32 after transitions | 0.998470× | 2/6 | Baseline unavailable; candidate 109.109 µs |
+
+Both target sizes lost four of six pairs and failed the 3% bar. Every first
+pair improved, including the unchanged M16 path by 7.06%; isolated early-pair
+gains are not convincing evidence. No samples were discarded after the fact
+and no particular cause is asserted. Separate single profiles use another
+fresh input, do not enter timing medians, and do not measure dependency waits.
+The return-M32 baseline profiler captured no CUDA events, so no paired profile
+comparison is available there; its eager/graph correctness checks still passed.
+
+Actual routing was recorded for every replay, including seed 7302's 16 jobs
+and 39 local routes. Define/resource tuples match across implementations:
+main REG=96, STACK=0, LOCAL=0; other variants retain 144/148/149 registers and
+zero stack/local bytes. Static resource equality does not prove the absence
+of outlining or WGMMA serialization and does not explain the timings.
+
+Independent critic `leaderboard_critic` rejects immediate whole-A kind-1
+publication under these tested routes. This does not reject all readiness
+scheduling or establish anything about advancing split-A records. Preserve
+the incumbents; do not run a second confirmation, CI sweep, or official check.
+The next separate proposal is a minimal hardware-counter diagnostic of the
+exact incumbent before considering a shared-memory dequantization rewrite.
+Decision: `experiments/iterations/20261104-moe-early-a.json`.
 
 ## Hypothesis and exact change
 
@@ -65,7 +108,7 @@ These checks do not establish CUDA compilation, absence of C7510/C7512,
 register allocation, runtime correctness, or performance. Execution timing can
 perturb unrelated split FP32 atomic accumulation order despite unchanged math.
 
-## One bounded screening run
+## Historical bounded screening plan
 
 The standalone cases are M32 → M128 → M256 → M16 → M32, with the original
 `normal` distribution, `busiest` rank, and EP8. M16 is an unchanged-path control;
@@ -73,8 +116,8 @@ the last M32 revisits shared scratch after the transition. Six fresh timed
 inputs cover more than a single routing. Actual route histograms and extension
 resource records should accompany the result.
 
-Root may run the following **without `--dry-run` only after deciding the next
-allocation is warranted and the existing allocation has ended**:
+The following command documents the completed screen. Do not rerun the
+rejected variant:
 
 ```sh
 .venv-modal/bin/python tools/modal_h200.py benchmark \
@@ -97,4 +140,5 @@ Public-source context and independent design critique:
 `tools/MOE_WGS_EARLY_PUBLICATION_PROPOSAL.md`. The independent critic verified
 both final source hashes, reversed the insertion and extension rename to prove
 complete AST equality to the frozen parents, and returned a bounded-screen GO.
-That review is static; CUDA remains untested until root's run.
+That review was static. The completed standalone run above supplies local
+CUDA evidence; it does not validate the unrun decoder counterpart.

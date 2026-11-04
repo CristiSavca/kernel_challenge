@@ -319,14 +319,40 @@ in `experiments/leaderboards/20261104T052250Z-overall.json` and
 The previous goal turn made progress: completed dense evidence changed the
 next action and verified the user's public leaderboard identity.
 
-Early-A screen started 05:22 UTC:
+Early-A screen completed:
 `experiments/modal/20261104T052256Z-4c806134`, sandbox
-`sb-eoBGNWklvCQepCwpqWyEM8`, app `ap-8V65gdkp3rQmiGPkRp7EFQ`,
-local session `34776`. Resume this session; do not start a duplicate. Exact
-standalone candidate `2931be20...` versus frozen `ef7b210b...`, five cases
-M32 → M128 → M256 → M16 → M32, six fresh paired replays, seed 7202,
-weight seed 7311, profiles and compiler resources enabled. Timeout 900 seconds.
-Require at least 3% complete-MoE improvement at M128 or M256, without more
-than 1% systematic loss elsewhere, and a second paired confirmation before
-whole-decoder integration. The independent critic owns terminal result audit;
-root owns polling and billing. No official attempt has been made.
+`sb-eoBGNWklvCQepCwpqWyEM8`, app `ap-8V65gdkp3rQmiGPkRp7EFQ`.
+Local session `34776` is terminal; do not resume or duplicate it. The exact
+standalone candidate `2931be20...` versus frozen `ef7b210b...` passed 80/80
+checks with the read-sweep selfcheck, exited zero, and terminated its sandbox.
+Paired ratios M32/M128/M256/M16/M32-return were 1.001020, 0.986994,
+0.993350, 1.002000 and 0.998470. There is no 3% gain and no basis for a
+second confirmation, decoder integration, or official submission. Independent
+critic confirmed rejection in `experiments/iterations/20261104-moe-early-a.json`.
+Preparation took 208.97/199.14 seconds; all main/other compiler resource tuples
+match. The final M32 incumbent profile was unavailable, so its candidate
+profile has no paired profile counterpart. Total worker elapsed was
+415.62 seconds. Fresh billing is $3.18 metered, all credited, $0 billed;
+the app is stopped with zero tasks. Conservative reservations remain consumed.
+
+Next actionable work (no GPU currently allocated):
+- `/root/decoder_research` is implementing a bounded hardware-profile mode
+  in `tools/modal_h200.py`, preserving the credit/overlap guard and upload
+  whitelist. Exact standalone incumbent, M32/M256, fixed questions about DRAM
+  traffic and issue stalls. NCU exists in the image; uid 0 and
+  `RmProfilingAdminOnly: 0` were observed read-only, but counters have not yet
+  been successfully collected. Require independent review and focused tests
+  before root allocates. Profiler durations are never A/B speedup evidence.
+- `/root/attention_research_v2` is preparing an isolated structural q8-full
+  prototype: one QK/softmax warpgroup and one PV warpgroup, with consumed K
+  slot bytes reused for P and explicit per-head ownership. No extra large P
+  buffer is planned. Exact layout/barrier/lifetime proof and critic review are
+  required; GPU correctness and performance are unproven. Parent runtime
+  outside q8-full must remain intact. Root authorized implementation, not
+  allocation or promotion.
+- `tools/NEXT_DECODER_STRUCTURE_PIVOT.md` records why already-fused small-token
+  dense paths and an unmeasured shared-memory dequant rewrite are not the
+  immediate next experiment. Fresh rules have no schedule change.
+
+All four active scored sources are unchanged. Current overall/decoder standing
+remains the last verified #395 at 2.1502×; no new public score was claimed.

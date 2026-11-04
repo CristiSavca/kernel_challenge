@@ -1,0 +1,439 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T05:31:53.264121+00:00",
+  "experiment": "moe_early_whole_a_publication",
+  "decision": "reject_for_promotion_and_decoder_integration",
+  "critic": "leaderboard_critic",
+  "hypothesis": "Publishing complete whole phase-A units immediately shortens phase-B readiness waits enough for at least 3% complete-MoE improvement at M128 or M256 without more than 1% systematic loss elsewhere.",
+  "run": "experiments/modal/20261104T052256Z-4c806134",
+  "result_sha256": "8b9568e6ec37bf39daea37430a323e5eebf4c235ca2d2b0151acf9fb89e633a0",
+  "candidate_sha256": "2931be209c1ef902158883b1e1aceeb5a34f5ac72f15bb525c13d58643e7a488",
+  "incumbent": {
+    "path": "experiments/candidates/muse_moe_w4a16/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.py",
+    "sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a"
+  },
+  "decoder_candidate_sha256": "102c0d1509d39bb44d3884ea41ea9eef9624bf6465527eeee7d5bcec9ef3eb3a",
+  "official": false,
+  "checks_passed": 80,
+  "elapsed_seconds": 415.624705403,
+  "prepare_wall_seconds_including_weight_clone": {
+    "baseline": 208.97244454399998,
+    "candidate": 199.138478433
+  },
+  "sandbox_terminated": true,
+  "exit_code": 0,
+  "cache_preconditioning": {
+    "method": "128 MiB Triton read sweep, .ca loads, observable block sums",
+    "outside_timing": true,
+    "dram_traffic_measured": false,
+    "sum_check_passed": true
+  },
+  "rows": [
+    {
+      "case_index": 0,
+      "M": 32,
+      "unchanged_path_control": false,
+      "paired_speedup": 1.0010203014525842,
+      "paired_ratios": [
+        1.05290429,
+        1.04987689,
+        0.99607669,
+        1.00391323,
+        0.99812737,
+        0.98989126
+      ],
+      "candidate_faster_pairs": 3,
+      "median_us": {
+        "baseline": 154.76799756288528,
+        "candidate": 150.9919986128807
+      },
+      "routing": [
+        {
+          "seed": 7302,
+          "U": 16,
+          "J": 16,
+          "local_routes": 39,
+          "NTT1_jobs": 16
+        },
+        {
+          "seed": 7303,
+          "U": 18,
+          "J": 18,
+          "local_routes": 73,
+          "NTT1_jobs": 16
+        },
+        {
+          "seed": 7304,
+          "U": 17,
+          "J": 17,
+          "local_routes": 51,
+          "NTT1_jobs": 16
+        },
+        {
+          "seed": 7305,
+          "U": 22,
+          "J": 22,
+          "local_routes": 57,
+          "NTT1_jobs": 21
+        },
+        {
+          "seed": 7306,
+          "U": 18,
+          "J": 18,
+          "local_routes": 46,
+          "NTT1_jobs": 18
+        },
+        {
+          "seed": 7307,
+          "U": 14,
+          "J": 14,
+          "local_routes": 44,
+          "NTT1_jobs": 14
+        }
+      ],
+      "single_profiles": {
+        "baseline": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 116.63100000000009
+        },
+        "candidate": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 113.83899999999994
+        }
+      }
+    },
+    {
+      "case_index": 1,
+      "M": 128,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9869942985380368,
+      "paired_ratios": [
+        1.01437338,
+        1.03138795,
+        0.97751232,
+        0.98687446,
+        0.98711413,
+        0.97718982
+      ],
+      "candidate_faster_pairs": 2,
+      "median_us": {
+        "baseline": 203.75999808311462,
+        "candidate": 204.28799837827682
+      },
+      "routing": [
+        {
+          "seed": 8302,
+          "U": 21,
+          "J": 22,
+          "local_routes": 272,
+          "NTT1_jobs": 12
+        },
+        {
+          "seed": 8303,
+          "U": 22,
+          "J": 22,
+          "local_routes": 234,
+          "NTT1_jobs": 14
+        },
+        {
+          "seed": 8304,
+          "U": 27,
+          "J": 27,
+          "local_routes": 167,
+          "NTT1_jobs": 21
+        },
+        {
+          "seed": 8305,
+          "U": 19,
+          "J": 20,
+          "local_routes": 181,
+          "NTT1_jobs": 17
+        },
+        {
+          "seed": 8306,
+          "U": 24,
+          "J": 25,
+          "local_routes": 200,
+          "NTT1_jobs": 20
+        },
+        {
+          "seed": 8307,
+          "U": 21,
+          "J": 22,
+          "local_routes": 169,
+          "NTT1_jobs": 19
+        }
+      ],
+      "single_profiles": {
+        "baseline": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 187.09400000000005
+        },
+        "candidate": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 188.73599999999988
+        }
+      }
+    },
+    {
+      "case_index": 2,
+      "M": 256,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9933503640983828,
+      "paired_ratios": [
+        1.02850998,
+        0.99122036,
+        0.98718772,
+        0.98589383,
+        0.99548037,
+        1.00546108
+      ],
+      "candidate_faster_pairs": 2,
+      "median_us": {
+        "baseline": 246.288001537323,
+        "candidate": 248.6719936132431
+      },
+      "routing": [
+        {
+          "seed": 9302,
+          "U": 26,
+          "J": 27,
+          "local_routes": 354,
+          "NTT1_jobs": 16
+        },
+        {
+          "seed": 9303,
+          "U": 30,
+          "J": 30,
+          "local_routes": 372,
+          "NTT1_jobs": 15
+        },
+        {
+          "seed": 9304,
+          "U": 25,
+          "J": 28,
+          "local_routes": 441,
+          "NTT1_jobs": 14
+        },
+        {
+          "seed": 9305,
+          "U": 26,
+          "J": 29,
+          "local_routes": 382,
+          "NTT1_jobs": 18
+        },
+        {
+          "seed": 9306,
+          "U": 27,
+          "J": 29,
+          "local_routes": 392,
+          "NTT1_jobs": 17
+        },
+        {
+          "seed": 9307,
+          "U": 22,
+          "J": 23,
+          "local_routes": 314,
+          "NTT1_jobs": 13
+        }
+      ],
+      "single_profiles": {
+        "baseline": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 225.39299999999992
+        },
+        "candidate": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 227.49399999999991
+        }
+      }
+    },
+    {
+      "case_index": 3,
+      "M": 16,
+      "unchanged_path_control": true,
+      "paired_speedup": 1.002000260477776,
+      "paired_ratios": [
+        1.07056032,
+        0.99331851,
+        1.00367763,
+        0.99464008,
+        1.0003229,
+        1.01538969
+      ],
+      "candidate_faster_pairs": 4,
+      "median_us": {
+        "baseline": 99.56800192594528,
+        "candidate": 99.84000027179718
+      },
+      "routing": [
+        {
+          "seed": 10302,
+          "U": 10,
+          "J": 10,
+          "local_routes": 23,
+          "NTT1_jobs": 9
+        },
+        {
+          "seed": 10303,
+          "U": 10,
+          "J": 10,
+          "local_routes": 24,
+          "NTT1_jobs": 10
+        },
+        {
+          "seed": 10304,
+          "U": 11,
+          "J": 11,
+          "local_routes": 25,
+          "NTT1_jobs": 11
+        },
+        {
+          "seed": 10305,
+          "U": 8,
+          "J": 8,
+          "local_routes": 21,
+          "NTT1_jobs": 8
+        },
+        {
+          "seed": 10306,
+          "U": 9,
+          "J": 9,
+          "local_routes": 26,
+          "NTT1_jobs": 8
+        },
+        {
+          "seed": 10307,
+          "U": 9,
+          "J": 9,
+          "local_routes": 30,
+          "NTT1_jobs": 8
+        }
+      ],
+      "single_profiles": {
+        "baseline": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<false>(okc::Params)",
+          "us": 106.67200000000003
+        },
+        "candidate": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<false>(okc::Params)",
+          "us": 107.04899999999998
+        }
+      }
+    },
+    {
+      "case_index": 4,
+      "M": 32,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9984704361090084,
+      "paired_ratios": [
+        1.03375622,
+        0.99978171,
+        1.00070083,
+        0.98946658,
+        0.98995784,
+        0.99715916
+      ],
+      "candidate_faster_pairs": 2,
+      "median_us": {
+        "baseline": 146.27200365066528,
+        "candidate": 144.6719989180565
+      },
+      "routing": [
+        {
+          "seed": 11302,
+          "U": 15,
+          "J": 15,
+          "local_routes": 49,
+          "NTT1_jobs": 15
+        },
+        {
+          "seed": 11303,
+          "U": 16,
+          "J": 16,
+          "local_routes": 55,
+          "NTT1_jobs": 15
+        },
+        {
+          "seed": 11304,
+          "U": 14,
+          "J": 14,
+          "local_routes": 63,
+          "NTT1_jobs": 12
+        },
+        {
+          "seed": 11305,
+          "U": 15,
+          "J": 15,
+          "local_routes": 57,
+          "NTT1_jobs": 13
+        },
+        {
+          "seed": 11306,
+          "U": 18,
+          "J": 18,
+          "local_routes": 58,
+          "NTT1_jobs": 17
+        },
+        {
+          "seed": 11307,
+          "U": 18,
+          "J": 18,
+          "local_routes": 63,
+          "NTT1_jobs": 16
+        }
+      ],
+      "single_profiles": {
+        "baseline": {
+          "status": "unavailable",
+          "error": "RuntimeError: Profiler returned no CUDA events; kernel execution is unverified"
+        },
+        "candidate": {
+          "status": "captured",
+          "kernel": "void okc::moe_fused<true>(okc::Params)",
+          "us": 109.10900000000004
+        }
+      }
+    }
+  ],
+  "compiler_resources": {
+    "all_define_and_resource_tuples_identical": true,
+    "main": {
+      "registers": 96,
+      "stack_bytes": 0,
+      "local_bytes": 0
+    },
+    "other_variant_registers": [
+      144,
+      148,
+      149
+    ],
+    "all_variants_stack_and_local_zero": true,
+    "limitation": "Static resource fields do not measure dynamic stalls or prove absence of outlining/WGMMA serialization."
+  },
+  "conclusions": [
+    "The continuation bar failed: M128 paired median 0.9869943 and M2560.9933504; both lose four of six pairs.",
+    "M32 is approximately flat on first and return groups. The unchanged M16 control has paired median 1.0020003.",
+    "Every first pair improves, including unchanged M16 by 7.06%; isolated early-pair gains do not establish a causal improvement. No samples were discarded post hoc and no cause is asserted.",
+    "M128/M256 separate single profiles also increase in duration, but do not measure readiness waits or establish the cause.",
+    "The return-M32 baseline profile is unavailable; its candidate-only 109.109 us profile cannot support a paired profile comparison.",
+    "This rejects only immediate whole-A kind1 publication under the tested routes. It does not rule out split-A dependency changes, readiness scheduling generally, or other architectures."
+  ],
+  "limitations": [
+    "One prepared weight seed; six fresh pairs per case, no official confidence interval.",
+    "Standalone routes differ from actual decoder routes; decoder counterpart remains GPU-untested.",
+    "Single profiles use a different fresh input and do not enter timing medians.",
+    "Read-sweep selfcheck verifies observable loads, not measured DRAM traffic.",
+    "Paired medians, not ratios of separate latency medians, determine the verdict.",
+    "No direct stall or hardware-bandwidth measurement was taken; resource equality does not establish cause."
+  ],
+  "next_action": "Keep frozen expert/decoder incumbents. No second early-A run, CI sweep, broader early-split variant, or official upload is justified by this result. Review a minimal exact-incumbent hardware-counter diagnostic before considering an SS dequant rewrite."
+}
