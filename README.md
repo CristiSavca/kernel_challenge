@@ -10,13 +10,13 @@ earn serving-queue priority for the overall top 50.
 
 - All five official problems are initialized; the first Git commit preserves
   their original starters, references and SGLang baselines.
-- Four kernel boards have passing scored entries: projections **1.1303×**,
+- Four kernel boards have passing scored entries: projections **1.4868×**,
   attention **2.6120×**, experts **2.3561×**, and the whole decoder **1.0813×**.
 - Native CUDA attention, experts, projections and whole decoder passed all
   official private correctness tests at **2.6425×**, **2.3605×**, **1.4774×**
   and **2.1541×** respectively. Their exact sources are active and submitted
-  for scoring. Attention and experts have passed scoring at **2.6120×** and
-  **2.3561×**; projections and the whole decoder remain pending.
+  for scoring. Attention, experts and projections have passed scoring at
+  **2.6120×**, **2.3561×** and **1.4868×**; the whole decoder remains pending.
 - The direct packed-GEMV expert experiment passed correctness but regressed
   to **0.7385×**. It was rejected as an optimization and was not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
@@ -34,7 +34,7 @@ earn serving-queue priority for the overall top 50.
 
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
-| Dense projections | `8c992affff0e45b8` passed | 1.4774× | `3caa02bd72da4c49` queued; hybrid V3 `b5538a0dd25d46be` passed 1.1303× |
+| Dense projections | `8c992affff0e45b8` passed | 1.4774× | `3caa02bd72da4c49` passed 1.4868× |
 | Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` passed 2.6120× |
 | Routed experts | `143f8587286e4384` passed | 2.3605× | `3c15b408fdb04c44` passed 2.3561× |
 | Whole decoder layer | `f8e991f1a2c2469e` passed | 2.1541× | `4b216098993e4112` queued; V2 `846bf3fd98c54703` passed 1.0813× |

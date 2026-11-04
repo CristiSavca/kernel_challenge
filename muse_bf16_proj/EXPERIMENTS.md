@@ -118,3 +118,16 @@ both runs. Even assuming those separate-run ratios transfer perfectly would
 improve the overall result by only about 0.134%, inside measurement uncertainty.
 For QKV/M256, raw corrected elapsed times were effectively equal in one V3 run.
 All substantial repeatable V3 wins are surpassed by native V4; retain V4.
+
+## Native V4 scored confirmation
+
+Scored run `3caa02bd72da4c49` passed at **1.4868267835×**, CI
+[1.4645243818, 1.5091291853], score 3249.0671 µs. All nine numerical tests
+and 30 timed shapes passed, return code was zero, and there were no flags or
+rejections. Preparation took 73.86 seconds, within the 300-second limit.
+The active source and frozen private/scored sources have the same raw SHA-256;
+the private and scored server content identifiers also match.
+
+At 2026-11-04 02:12 UTC, the official projection leaderboard confirmed this
+job as CristiSavca's entry at rank 339. The rank is a live snapshot, not a
+final placement. Native V4 supersedes the 1.1303× scored hybrid.

@@ -101,10 +101,12 @@ Dense projection adaptation `public_compressed_v4.py` is now in private check
 `8c992affff0e45b8`. It retains all 14 upstream native source strings and embeds
 Apache-2.0/CUTLASS notices. CPU codec review covered 495,616 decode cases and
 7,403,520 finite escape/base cases. Current compressed SK2 routes must retain
-CL=1; a dormant CL>1 compressed branch drops peer escape corrections. Actual
+CL=1; a dormant CL>1 compressed branch drops peer escape corrections.
 The private GPU check passed all nine numerical tests and 30 timed shapes
 at 1.4774×, CI 1.4553–1.4996. Exact-source scored submission
-`3caa02bd72da4c49` is pending.
+`3caa02bd72da4c49` passed at 1.4868×, CI 1.4645–1.5091, with nine numerical
+tests, 30 timed shapes and no flags or rejections. The leaderboard confirms
+this exact job as our current projection entry.
 
 Native decoder adaptation `public_cuda_v4.py` is in private check
 `f8e991f1a2c2469e`. It embeds the original licenses and retains native source
