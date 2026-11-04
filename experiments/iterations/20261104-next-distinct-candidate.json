@@ -1,0 +1,147 @@
+{
+  "decision": "NO_IMPLEMENTATION_GO_ON_PRESENT_EVIDENCE",
+  "candidate_considered": "CL2 paired-row-unit X TMA multicast with original RS-WGMMA, packing, GS2/wait1/rings3",
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "route_source_sha256": "6337501753ec31196380807668a96229b53784b5c0a9f4b6195bbdc0a0444df4",
+  "route_source_version": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+  "route_rows": [
+    {
+      "M": 32,
+      "seed": 7301,
+      "J": 16,
+      "padded_job_rows": 152,
+      "weight_request_bytes": 452984832,
+      "X_source_request_bytes": 59768832,
+      "CL2_eliminated_X_source_bytes": 29884416,
+      "eliminated_W_plus_X_payload_fraction": 0.05828220858895705,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 32,
+      "seed": 7302,
+      "J": 16,
+      "padded_job_rows": 128,
+      "weight_request_bytes": 452984832,
+      "X_source_request_bytes": 50331648,
+      "CL2_eliminated_X_source_bytes": 25165824,
+      "eliminated_W_plus_X_payload_fraction": 0.05,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 32,
+      "seed": 7303,
+      "J": 18,
+      "padded_job_rows": 176,
+      "weight_request_bytes": 509607936,
+      "X_source_request_bytes": 69206016,
+      "CL2_eliminated_X_source_bytes": 34603008,
+      "eliminated_W_plus_X_payload_fraction": 0.059782608695652176,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 128,
+      "seed": 7301,
+      "J": 26,
+      "padded_job_rows": 344,
+      "weight_request_bytes": 736100352,
+      "X_source_request_bytes": 135266304,
+      "CL2_eliminated_X_source_bytes": 67633152,
+      "eliminated_W_plus_X_payload_fraction": 0.0776173285198556,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 128,
+      "seed": 7302,
+      "J": 26,
+      "padded_job_rows": 288,
+      "weight_request_bytes": 736100352,
+      "X_source_request_bytes": 113246208,
+      "CL2_eliminated_X_source_bytes": 56623104,
+      "eliminated_W_plus_X_payload_fraction": 0.06666666666666667,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 128,
+      "seed": 7303,
+      "J": 24,
+      "padded_job_rows": 384,
+      "weight_request_bytes": 679477248,
+      "X_source_request_bytes": 150994944,
+      "CL2_eliminated_X_source_bytes": 75497472,
+      "eliminated_W_plus_X_payload_fraction": 0.09090909090909091,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 256,
+      "seed": 7301,
+      "J": 29,
+      "padded_job_rows": 584,
+      "weight_request_bytes": 821035008,
+      "X_source_request_bytes": 229638144,
+      "CL2_eliminated_X_source_bytes": 114819072,
+      "eliminated_W_plus_X_payload_fraction": 0.1092814371257485,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 256,
+      "seed": 7302,
+      "J": 27,
+      "padded_job_rows": 456,
+      "weight_request_bytes": 764411904,
+      "X_source_request_bytes": 179306496,
+      "CL2_eliminated_X_source_bytes": 89653248,
+      "eliminated_W_plus_X_payload_fraction": 0.095,
+      "bulk_copy_issue_fraction_removed": 0.25
+    },
+    {
+      "M": 256,
+      "seed": 7303,
+      "J": 26,
+      "padded_job_rows": 648,
+      "weight_request_bytes": 736100352,
+      "X_source_request_bytes": 254803968,
+      "CL2_eliminated_X_source_bytes": 127401984,
+      "eliminated_W_plus_X_payload_fraction": 0.12857142857142856,
+      "bulk_copy_issue_fraction_removed": 0.25
+    }
+  ],
+  "counterfactual_whole_decoder_fraction_reduction_not_bounds": {
+    "all_MoE_time_proportional_to_W_plus_X_payload_mean_per_M": 0.021011827449940124,
+    "all_MoE_time_proportional_to_bulk_copy_instruction_count": 0.06350268271417858
+  },
+  "cost_tables": {
+    "A": [
+      112,
+      135,
+      140,
+      158,
+      173,
+      185,
+      200,
+      207
+    ],
+    "B": [
+      100,
+      104,
+      115,
+      123,
+      132,
+      144,
+      156,
+      174
+    ]
+  },
+  "cost_table_decision": "No replacement values supported: old ef7 phase windows include waits/fixups, no isolated post-KPERM per-NTT service samples. Uniform NTT workloads do not change relative assignment when per-phase costs are rescaled.",
+  "evidence_missing": [
+    "L2/TMA service contribution on exact247888",
+    "correct producer-only DSM readiness and retirement proof",
+    "actual CL2 all-grid residency required by inherited global barriers"
+  ],
+  "hardware_evidence": "Saved ef7 NCU DRAM/nominal job weight bytes:1.0087851065 atM32,1.0069062661 atM256; no L2 service attribution.",
+  "primary_support": "https://nvidia.github.io/cccl/unstable/libcudacxx/ptx/instructions/cp_async_bulk.html",
+  "limits": [
+    "Old standalone routes, not current decoder routing",
+    "Request counts are not measured service or speed bounds",
+    "No candidate/GPU/official calls"
+  ]
+}

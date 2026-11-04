@@ -1275,3 +1275,37 @@ independent selection critique are running. A useful predictor must outperform
 simple baselines on held-out design families; case rows/seeds are not independent
 training designs. Do not claim that a dashboard or constraint checker establishes
 kernel gains. The #1 goal remains active and unachieved.
+
+
+## Selection correction and SC6 implementation — November 4, 13:17 UTC
+
+Independent selection critique8494b20c identifies the repeated mistake: resource
+admission/abstract overlap stories were treated as stronger performance evidence
+than concrete added traffic and synchronization. Small measured improvements
+remain eligible; no universal5%decoder or3%kernel hurdle follows from the#1goal.
+The SS-A fixed rejection stays closed. Current sparse related measurements do
+not validate a learned predictor; 320CPU schedules have zero performance labels.
+Rohan main remains018b7a at13:08UTC; no new released GPU predictor was established.
+
+Root accepts fixedSC6plan660633ee367a4bbd5d08c72673261667180cfce83cf31d8341c74062ec2cb76c
+on validated247888. Its formerly deferred KPERM prerequisite is now satisfied.
+Actual qualifying W13/W2 scale bytes0x40..0x7e pack reversibly from8to6bits;
+otherwise each prepared state retains original encoding and dispatch. Compressed
+pieces8960/globalstages35840 live in unchanged36864sharedslots, same rings3/3,
+231168dynamic bytes, all math/lifetimes/jobs/NTT1duals/FCI3/GS2wait1 unchanged.
+Only WGS MAIN receives its state-ownedSC6 flag. Extra unpack work is the explicit
+cost;2.7778%requested weight bytes removed is not a latency prediction.
+
+Writer owns isolatedv16/builder/focusedCPU tests; independent source/format review
+and root final reproduction precede one check. Root independently executed the
+actual pinned donor scale expression in nativeCPU with byte-permutation emulation:
+2097152 comparisons match original scale pairs; this is donor arithmetic evidence,
+not candidate/CUDA proof. Sourcehashes and limits saved in root-plan/report.
+
+Predeclared modest screen: MAIN M32/128/256 GM>=1.01 versus BOTH247888 parents;
+at least2/3affected cases positive againstboth; everyaffected normalizedlatency
+<=1.02; unchangedcontrol normalizedlatencyGM[.98,1.02]; clean5tests/6bench/6profile.
+This consistency screen is not significance. A useful result permits a separate
+decoder integration decision. Cluster activationmulticast and updatedcosttables
+remain unsupported now: no measured L2/TMA bottleneck or postKPERM perNTTfit.
+No live GPUjob, Modalallocation, publicchange or#1claim at this checkpoint.

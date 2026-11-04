@@ -1,0 +1,51 @@
+{
+  "status": "APPROVED_BOUNDED_IMPLEMENTATION",
+  "plan": "tools/SC6_KPERM_PLAN.md",
+  "plan_sha256": "660633ee367a4bbd5d08c72673261667180cfce83cf31d8341c74062ec2cb76c",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "mechanism": "Exact qualified six-bit scale packing on validated KPERM, preserving computation and scheduling",
+  "changed_payload": {
+    "piece_before": 9216,
+    "piece_after": 8960,
+    "stage_before": 36864,
+    "stage_after": 35840,
+    "shared_slot_bytes": 36864,
+    "dynamic_shared_bytes": 231168
+  },
+  "source_review": "Root read complete preliminary diff; final frozen source and author suite await review. No GPU claim.",
+  "predeclared_gates": {
+    "clean_tests": 5,
+    "benchmarks": 6,
+    "profiles": 6,
+    "parents": [
+      "d24dd50196cb4158",
+      "bcb761dfca264db0"
+    ],
+    "affected": [
+      32,
+      128,
+      256
+    ],
+    "controls": [
+      1,
+      8,
+      16
+    ],
+    "affected_speedup_GM_minimum_against_each_parent": 1.01,
+    "affected_cases_positive_against_both_minimum": 2,
+    "every_affected_normalized_latency_maximum": 1.02,
+    "control_normalized_latency_GM_range": [
+      0.98,
+      1.02
+    ]
+  },
+  "gate_interpretation": "Pragmatic consistency screen, not statistical significance. Useful standalone evidence permits isolated decoder review, not automatic promotion.",
+  "independent_reviews": [
+    "tools/EXPERIMENT_SELECTION_CRITIQUE_20261104.md",
+    "tools/SEARCH_SELECTION_DESIGN_20261104.md"
+  ],
+  "root_donor_native_arithmetic": "experiments/iterations/20261104-sc6-root-donor-arithmetic.json",
+  "official_submission_authorized_now": false,
+  "next_gate": "Frozen candidate source, targeted exact packing/fallback checks, independent source review and root reproduction before one private official check",
+  "public_source_changed": false
+}
