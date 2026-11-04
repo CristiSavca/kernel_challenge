@@ -82,3 +82,29 @@ uses complete fallback attention for full batches above the native 64-segment
 bound. Full original licenses are embedded. Routing, weight packing and serial
 stream ordering were reviewed; numerical UV reassociation, synchronization,
 compilation and timing still require the official GPU check.
+
+## Own window attention integrated in V5
+
+`candidates/window_attention_v5.py`, SHA-256
+`d360fe102cc3b662cbeaf5474f236bee790f2b64e6c175724c56ae2e9c5abf63`,
+is in private check `8e13cd6e80194b4f`. It changes only attention inside passing
+decoder V2. Both grouped window kernels are copied verbatim from passing
+standalone attention V3; the QKV producer was already identical.
+
+The custom path handles sliding decode and verify with batch <= 2. Larger
+verify batches and full attention retain V2's complete FA3 path. Profiles
+suggest useful headroom in the selected regimes, but the old norm is absent
+from the truncated reports and cross-run component times are not integrated
+measurements. No end-to-end gain is claimed yet.
+
+The custom combine includes BF16 attention rounding, norm and sigmoid gate;
+its output feeds O projection directly. All code after that point is byte-
+identical to V2. Scratch/output belongs to each call and all attention work
+uses the current stream. Syntax, copied-function AST checks, 56 dispatch/page
+branches and independent CPU window/page/row coverage checks passed.
+Whole-layer numerical accuracy and routing still require the official check.
+
+`candidates/public_alignment_v6_licensed.py` embeds the complete upstream MIT
+notice in the compact alignment integration. Its executable AST is identical
+to queued V3, including docstrings. It is not uploaded yet; wait for V3's
+result before choosing the next decoder candidate.

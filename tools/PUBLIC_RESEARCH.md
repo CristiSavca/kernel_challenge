@@ -16,8 +16,16 @@ result and does not establish our correctness or performance.
 `muse_moe_w4a16/candidates/public_local_align_v4.py` preserves its kernel behavior
 and adds provenance comments. Our private check `7d7d9292e9054337` passed all
 five numerical tests and six timed shapes at 1.3348× (CI 1.3148–1.3548).
-The exact snapshot was submitted for scoring as `d674d6a1ada44d16`, pending.
+The exact snapshot passed scoring as `d674d6a1ada44d16` at 1.3383×
+(CI 1.3182–1.3583).
 The raw original, evaluation and license are retained.
+
+The original compact adaptation points to the retained license. The separate
+`public_local_align_v7_licensed.py` now embeds the complete upstream MIT notice
+inside the uploaded file; its AST including docstrings is identical to V4.
+Its exact source is in private check `cac648f3b3904842`. The analogous
+`public_alignment_v6_licensed.py` is prepared for decoder attribution, with
+AST equality against V3, but awaits that decoder's first result before upload.
 
 The larger Gemini cohort reports approximately 2.65× attention, 2.38× MoE and
 2.17× decoder speedups in that repository's local protocol. These are research
@@ -54,9 +62,10 @@ we did not import or submit it. The current challenge forbids encoded or
 compressed source. The readable upstream projection was instead retained from
 [vjeux/okc-2026](https://github.com/vjeux/okc-2026) at commit
 `f35a41ee1c13e316dabbf772830d47b23b453393`, with its Apache-2.0 license. Its
-lossless weight compression, split-K kernels and preparation-time tuning are
-potential ideas; that entire implementation has not been approved or submitted
-here. No public candidate's reported score is treated as one of ours.
+lossless weight compression, split-K kernels and preparation-time tuning were
+subsequently audited and adapted for private check `8c992affff0e45b8`, detailed
+below. GPU correctness and speed remain unverified. No public candidate's
+reported score is treated as one of ours.
 
 ## Our research loop
 

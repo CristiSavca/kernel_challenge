@@ -10,27 +10,20 @@ earn serving-queue priority for the overall top 50.
 
 - All five official problems are initialized; the first Git commit preserves
   their original starters, references and SGLang baselines.
-- All three private H200 checks passed correctness. Attention measured
-  **1.1359×**, routed experts **1.0526×**, and dense projections **0.9505×**
-  relative to SGLang. Attention and experts have gains outside their intervals.
-- Both November 3 scored submissions passed: attention `8727d7d1d2da427c`
-  measured **1.1345×**, and experts `8f1f69d433364789` measured **1.0458×**.
-  The observed overall rank was 1,771 of 1,940; ranks change as entries arrive.
-- The second pass passed projections at **1.1320×**, experts at **1.2058×**,
-  and the best whole decoder at **1.0812×**. All three were promoted to scored
-  runs; projections passed at **1.1303×**, experts at **1.2100×**, and the
-  whole decoder at **1.0813×**.
-- Experimental attention and packed-GEMV experts failed Triton compilation on
-  integer-zero FP8 masked loads. Corrected attention passed at **1.2050×** and
-  was submitted for scoring. Corrected packed-GEMV experts passed correctness
-  but regressed to **0.7385×** and were not scored.
+- Four kernel boards have passing scored entries: projections **1.1303×**,
+  attention **1.1345×**, experts **1.3383×**, and the whole decoder **1.0813×**.
+- New attention and expert candidates passed private H200 checks at **1.2050×**
+  and **1.3348×** respectively. The expert scored run passed at **1.3383×**
+  (CI 1.3182–1.3583); the attention scored run is still pending.
+- The direct packed-GEMV expert experiment passed correctness but regressed
+  to **0.7385×**. It was rejected as an optimization and was not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
   payment verification, which Modal says unlocks the $30 free monthly allowance.
   No GPU started, no usage was charged, and the failed app is stopped.
 - Selected public sources are pinned with licenses/hashes under `third_party/`.
-  The compact public MoE adaptation passed our private check at **1.3348×**
-  (CI 1.3148–1.3548) and is now submitted for scoring. Reviewed native CUDA
-  attention and MoE adaptations and a decoder integration are in private checks.
+  Reviewed native CUDA attention, experts, projections and decoder candidates
+  are in private checks, together with a compact expert integration into our
+  decoder. Published third-party timing reports are not our performance evidence.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
 - `serving/patch.diff` is an unvalidated draft of the expert routing changes.
@@ -40,7 +33,7 @@ earn serving-queue priority for the overall top 50.
 | --- | --- | --- | --- |
 | Dense projections | `ce713efc5e9b44d8` passed | 1.1320× | `b5538a0dd25d46be`, passed 1.1303× |
 | Attention decode | `05f77382a0c84254` passed | 1.2050× | `52117bcc7137435e` queued; `8727d7d1d2da427c` passed 1.1345× |
-| Routed experts | `7d7d9292e9054337` passed | 1.3348× | `d674d6a1ada44d16` queued; `777df2bfda8b4a57` passed 1.2100× |
+| Routed experts | `7d7d9292e9054337` passed | 1.3348× | `d674d6a1ada44d16`, passed 1.3383× |
 | Whole decoder layer | `a28df47ba0584bed` passed | 1.0812× | `846bf3fd98c54703` passed 1.0813× |
 | Prefill layer | Official starter | — | — |
 
@@ -66,9 +59,11 @@ for serving priority, so it is lower priority during this pass.
 | Experts | `7d7d9292e9054337` passed 1.3348× | Public local alignment and fused finalizer, original source/license preserved |
 | Attention | `c21d391dbf604bb5` pending | Reviewed public CUDA attention with fresh output and full-batch traversal guard |
 | Experts | `143f8587286e4384` pending | Reviewed public CUDA packed-weight experts; diagnostics removed |
+| Experts | `cac648f3b3904842` pending | Compact V4 with the full upstream MIT notice embedded; identical executable AST |
 | Whole decoder | `41920b5cf4bf423f` pending | Passing V2 decoder with the public V4 expert alignment/finalization |
 | Projections | `8c992affff0e45b8` pending | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` pending | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
+| Whole decoder | `8e13cd6e80194b4f` pending | Passing decoder V2 with our validated grouped window attention for decode and small verify batches |
 
 **Active submission.py files hold passing candidates:** attention V3, the public
 compact MoE V4, projection hybrid V3 and decoder V2. Pending alternatives are

@@ -150,3 +150,21 @@ Check `8af27f0313b44d84` passed correctness but measured 0.7384545250× overall
 bs1 took 170.05 us against 80.78 us stock; bs8 took 716.53 us against 142.83 us.
 Larger batches retaining Marlin behaved like V2. Do not promote this candidate
 or restrict it to bs1: both custom-path shapes lose. V4 remains the incumbent.
+
+## Compact V4 scored; full license embedded in V7
+
+Scored run `d674d6a1ada44d16` passed at **1.3382713210×**, CI
+[1.3181972512, 1.3583453908], with no correctness failures or flags.
+This is about 25.3% less execution time than the paired baseline.
+
+The independent profile comparison confirms that V4's two Marlin GEMMs account
+for 88.0–97.1% of profiled GPU time. At 32 tokens, collection/alignment costs
+2.8 us while Marlin costs 145.5 us. No new alignment or guessed tile adjustment
+is justified by this evidence; the pending native V6 targets the GEMM cost.
+
+`candidates/public_local_align_v7_licensed.py` embeds the complete upstream MIT
+notice in the submission file, rather than only pointing to the retained copy.
+Its executable AST, including docstrings, exactly matches passing V4. Raw hash
+`e16fff24f5d346e2de624b80ef711ea065de1348123d977a23c35fb686f57045`
+is frozen for private check `cac648f3b3904842`. The original tested snapshots
+remain unchanged. Promote this exact attributed version after its check.
