@@ -1,0 +1,65 @@
+{
+  "date_utc": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "GO_FOR_MANUAL_ACTIVATION_REVIEW_OF_FIXED_CERTIFICATE",
+  "scope": "Independent read-only review of inactive overlap accounting implementation; this record does not activate the pin, grant an allocation, change any provider setting, or claim a provider-enforced cap.",
+  "hashes": {
+    "guard": "232c2c8c8ac595d5f1aa6c477588020b3daa5c79cab0bd909e0ff12090bd6244",
+    "certificate": "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce",
+    "overlap_tests": "f573396a26888089553a9fd50dab1e76eb8d0060de0bce793b16cd8ab07f6520",
+    "lifecycle_tests": "51243797ebdceec9ffb8d7729cc5332ec6d293f7d784aaf75b8925043a3babba",
+    "grant": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "journal_prefix_nine_records": "bbdc16eeb961b2e016113ed1caa47f464c50f30f5cfe102acac32dcecd859ed5"
+  },
+  "blocking_findings": [],
+  "independent_checks": [
+    "Read full guard and complete diff, certificate/review note, provider/sandbox evidence, overlap tests and mocked lifecycle tests.",
+    "Ran23 overlap tests and18 lifecycle tests, all PASS. Modal interfaces were mocked; writes were confined to temporary fixtures. No provider CLI/API call, allocation, real journal write or lock acquisition was made by this review.",
+    "Independently summed provider resource rows and per-App downward cent floors using Decimal.",
+    "Inspected runner creation of fresh ephemeral Apps and sandbox use, plus certificate binding of unique provider App IDs to the exact recorded sandboxes and reservations."
+  ],
+  "arithmetic": {
+    "grant_usd": "30.00",
+    "safety_headroom_usd": "5.00",
+    "original_reservations_usd": "21.14",
+    "preserved_provider_highwater_usd": "3.90423640",
+    "provider_report_rows": 33,
+    "provider_report_sum_usd": "3.78514562",
+    "provider_summary_ephemeral_component_usd": "3.78514560",
+    "report_display_discrepancy_usd": "0.00000002",
+    "allowed_display_tolerance_usd": "0.00000034",
+    "per_app_offset_floors_usd": [
+      "0.83",
+      "0.22",
+      "0.20",
+      "0.53",
+      "0.73",
+      "0.58",
+      "0.31",
+      "0.17",
+      "0.17"
+    ],
+    "fixed_offset_usd": "3.74",
+    "working_allowance_before_new_reservation_usd": "3.69576360",
+    "reservation_900_seconds_usd": "2.42",
+    "working_allowance_after_900_seconds_reservation_usd": "1.27576360",
+    "formula": "30 - 5 - max(all observed provider spend, certified highwater) - sum(all original and future reservations) + fixed3.74",
+    "bound": "Each offset is no greater than posted attributed cost or its original reservation, and totalA<=Pmax. Accounted debitPmax+sumR-A remains at least sumR; unused reservation portions are never refunded."
+  },
+  "findings": {
+    "provider_inclusion": "Saved hourly report starts at the exact billing cycle and reconciles the compute component within display rounding. Fresh exact-interval report must retain every saved row at equal/higher cost and fit within the current compute summary. Full current provider spend, other categories and historic highwater remain debited.",
+    "attribution": "Frozen certificate binds grant, nine-record journal prefix, run manifests and their exact credit receipts, original guard, worker/source hashes, terminated sandbox mappings and unique App IDs. Offset rows exclude unselected Apps, including unrelated/smoke usage.",
+    "duplicate_credit": "A is recomputed from fixed certified entries once per available-budget equation, never accumulated from prior receipts. Existing/new reservations are always charged in full. Duplicate object/environment/hour/resource identities and duplicate Apps are rejected; conflicting later certificate pins fail.",
+    "revisions": "Downward or missing billing rows fail closed; larger fresh costs cannot enlargeA. A certified App exceeding its original reservation also blocks. Declining aggregate totals cannot reducePmax.",
+    "lock_and_crash": "Original inode-based flock is retained from preflight through caller termination; no unlink/reset added. Reservation append+flush+fsync precedes yield/allocation. Missing manifests or unresolved termination block subsequent calls, and same-lock second process cannot reach provider calls.",
+    "default_behavior": "REVIEWED_OVERLAP_SHA256 remainsNone at review; old conservative budget behavior is retained without querying the report.",
+    "future_reservations": "Tests explicitly exercise repeated fixed offset with two full new debits, exhaustion on the next request, and future provider increases without additional offset."
+  },
+  "limitations": [
+    "Reservation rates,20% margin and build allowance are conservative estimates, not a contractual/provider spend cap; this change does not fix cost overruns.",
+    "The project lock and main-environment app check cannot prevent unrelated clients/hosts/environments from spending. Existing fresh workspace billing, termination checks and retained$5 headroom remain necessary; provider enforcement is a separate question.",
+    "Provider billing can be delayed or revised. Certificate proves observed overlap and guarded inclusion, not final settlement.",
+    "Manual pin activation changes the guard hash and must be recorded separately by root; future allocation must rerun all live preflight checks under the unchanged lock.",
+    "This review made no live provider query and does not replace root's fresh account evidence or execution-plan review."
+  ]
+}

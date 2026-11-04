@@ -1,13 +1,14 @@
 """Fail-closed, local free-credit guard; reservations are estimates, not provider caps.
 
-The reviewed grant must be renewed manually. Reservations are never refunded:
-this deliberately double-counts usage that later appears in provider billing.
+The reviewed grant must be renewed manually. Reservations are never refunded.
+An optional, separately reviewed certificate can remove proved double counting
+of posted provider charges; it never releases an unused reservation.
 """
 from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_CEILING
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 import fcntl
 import hashlib
 import json
@@ -19,6 +20,12 @@ import sys
 
 class CreditGuardError(RuntimeError):
     pass
+
+
+# Independently reviewed fixed overlap; activation does not settle charges or
+# create a new grant. Every reservation and provider high-water remains counted.
+REVIEWED_OVERLAP_SHA256: str | None = "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce"
+OVERLAP_CERTIFICATE = "tools/modal_credit_overlap_20261104.json"
 
 
 def money(value, label: str) -> Decimal:
@@ -78,6 +85,163 @@ def read_json(path: Path):
         return json.loads(path.read_text(), parse_float=Decimal)
     except (OSError, ValueError) as exc:
         raise CreditGuardError(f"Cannot read valid credit evidence: {path}") from exc
+
+
+def _pinned_json(root: Path, reference):
+    if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
+        raise CreditGuardError("Invalid overlap evidence reference")
+    relative, expected = reference["path"], reference["sha256"]
+    if not isinstance(relative, str) or not isinstance(expected, str) or len(expected) != 64:
+        raise CreditGuardError("Invalid overlap evidence identity")
+    path = (root / relative).resolve()
+    if Path(relative).is_absolute() or not path.is_relative_to(root.resolve()):
+        raise CreditGuardError("Overlap evidence escapes project")
+    try:
+        contents = path.read_bytes()
+        if hashlib.sha256(contents).hexdigest() != expected:
+            raise CreditGuardError("Overlap evidence hash changed")
+    except OSError as exc:
+        raise CreditGuardError("Missing overlap evidence") from exc
+    # Parse exactly the bytes whose hash was checked, not a second file read.
+    try:
+        return json.loads(contents, parse_float=Decimal)
+    except ValueError as exc:
+        raise CreditGuardError("Invalid overlap evidence JSON") from exc
+
+
+def _cost_rows(rows, start: datetime, end: datetime):
+    if not isinstance(rows, list) or not rows or len(rows) > 512:
+        raise CreditGuardError("Invalid overlap billing report")
+    result = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise CreditGuardError("Invalid overlap billing row")
+        fields = tuple(row.get(k) for k in ("object_id", "environment", "interval_start", "resource"))
+        if any(not isinstance(v, str) or not v for v in fields):
+            raise CreditGuardError("Missing overlap billing identity")
+        try:
+            moment = datetime.fromisoformat(fields[2])
+            if moment.tzinfo is None:
+                moment = moment.replace(tzinfo=timezone.utc)
+            moment = moment.astimezone(timezone.utc)
+        except ValueError as exc:
+            raise CreditGuardError("Invalid overlap billing interval") from exc
+        if not start <= moment < end or any((moment.minute, moment.second, moment.microsecond)):
+            raise CreditGuardError("Overlap billing interval is outside certificate")
+        key = (fields[0], fields[1], moment.isoformat(), fields[3])
+        if key in result:
+            raise CreditGuardError("Duplicate or overlapping billing row")
+        result[key] = money(row.get("cost"), "overlap row cost")
+    return result
+
+
+def verified_overlap(root: Path, grant, records, journal: Path, billing, observed: Decimal):
+    """Validate one immutable certificate; return Pmax and its fixed offset A.
+
+    Called under the original allocation lock. The offset is subtracted once
+    from the total debit, never accumulated from earlier reservation receipts.
+    """
+    pin = REVIEWED_OVERLAP_SHA256
+    if pin is None:
+        return observed, Decimal(0), None
+    try:
+        cert = _pinned_json(root, {"path": OVERLAP_CERTIFICATE, "sha256": pin})
+        if cert.get("schema") != 1 or cert.get("policy") != "posted-overlap-only-v1":
+            raise CreditGuardError("Unsupported overlap certificate")
+        for name in ("cycle", "workspace", "profile", "environment"):
+            if cert[name] != grant[name]:
+                raise CreditGuardError("Overlap certificate does not match credit grant")
+        if _pinned_json(root, cert["grant"]) != grant:
+            raise CreditGuardError("Overlap grant binding changed")
+        prefix = cert["journal_prefix"]
+        count = prefix["records"]
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1 or count > len(records):
+            raise CreditGuardError("Missing overlap journal prefix")
+        lines = journal.read_bytes().splitlines(keepends=True)
+        if hashlib.sha256(b"".join(lines[:count])).hexdigest() != prefix["sha256"]:
+            raise CreditGuardError("Overlap journal prefix changed")
+        for record in records[count:]:
+            if record.get("overlap_certificate_sha256", pin) != pin:
+                raise CreditGuardError("Conflicting overlap certificate in journal")
+        provider = _pinned_json(root, cert["provider_evidence"])
+        metadata = _pinned_json(root, cert["sandbox_evidence"])
+        history = _pinned_json(root, cert["highwater_evidence"])
+        start = datetime.fromisoformat(cert["report_start"])
+        end = datetime.fromisoformat(cert["report_end"])
+        if start.tzinfo is not None or end.tzinfo is not None:
+            raise CreditGuardError("Certificate report range must use explicit UTC-naive CLI dates")
+        start, end = start.replace(tzinfo=timezone.utc), end.replace(tzinfo=timezone.utc)
+        if start.strftime("%Y-%m") != grant["cycle"] or any((start.day - 1, start.hour, start.minute, start.second, start.microsecond)):
+            raise CreditGuardError("Overlap report must start at the billing cycle")
+        if not start < end <= datetime.now(timezone.utc) or any((end.minute, end.second, end.microsecond)):
+            raise CreditGuardError("Invalid overlap report range")
+        active = [p for p in provider["profile"] if p.get("active") is True]
+        if len(active) != 1 or active[0].get("name") != grant["profile"] or active[0].get("workspace") != grant["workspace"]:
+            raise CreditGuardError("Overlap provider profile mismatch")
+        saved = _cost_rows(provider["report"], start, end)
+        tolerance = Decimal("0.00000001") * (len(saved) + 1)
+        component = money(provider["summary"]["metered_cost_breakdown"]["ephemeral_apps"], "saved compute cost")
+        if abs(sum(saved.values(), Decimal(0)) - component) > tolerance:
+            raise CreditGuardError("Overlap report does not reconcile to provider summary")
+        highwater = money(cert["provider_highwater_usd"], "overlap high-water")
+        if highwater != provider_spend(history["billing"]) or highwater < provider_spend(provider["summary"]):
+            raise CreditGuardError("Overlap provider high-water is not proved")
+        sandboxes = {s["sandbox_id"]: s for s in metadata["sandboxes"]}
+        if len(sandboxes) != len(metadata["sandboxes"]):
+            raise CreditGuardError("Duplicate provider sandbox identity")
+        if len(cert["runs"]) != count:
+            raise CreditGuardError("Incomplete overlap run coverage")
+        apps, used_rows, offset = set(), set(), Decimal(0)
+        reservations = {}
+        for entry, record in zip(cert["runs"], records[:count]):
+            manifest = _pinned_json(root, entry["manifest"])
+            if entry["run_id"] != record["run_id"] or manifest["credit_guard"] != record:
+                raise CreditGuardError("Overlap manifest does not bind reservation")
+            if manifest.get("sandbox_terminated") is not True:
+                raise CreditGuardError("Overlap sandbox is not terminated")
+            sb = sandboxes[manifest["sandbox_id"]]
+            app = entry["app_id"]
+            if app in apps or sb["app_id"] != app or not 0 < sb["created_at"] < sb["finished_at"]:
+                raise CreditGuardError("Missing or duplicate sandbox/app attribution")
+            apps.add(app)
+            # Bind the original guard and every frozen uploaded source; a later
+            # candidate edit cannot silently re-label an old reservation.
+            folder = root / "experiments" / "modal" / record["run_id"]
+            original_guard = folder / "credit_guard.py"
+            if hashlib.sha256(original_guard.read_bytes()).hexdigest() != cert["original_guard_sha256"] or manifest["credit_guard_sha256"] != cert["original_guard_sha256"]:
+                raise CreditGuardError("Original overlap guard changed")
+            if hashlib.sha256((folder / "worker.py").read_bytes()).hexdigest() != manifest["worker_sha256"]:
+                raise CreditGuardError("Frozen overlap worker changed")
+            for filename, expected in manifest["file_sha256"].items():
+                if Path(filename).name != filename or hashlib.sha256((folder / filename).read_bytes()).hexdigest() != expected:
+                    raise CreditGuardError("Frozen overlap source changed")
+            selected = {k: v for k, v in saved.items() if k[0] == app}
+            if not selected or any(k[1] != grant["environment"] for k in selected) or used_rows.intersection(selected):
+                raise CreditGuardError("Missing or reused overlap billing attribution")
+            used_rows.update(selected)
+            cost = sum(selected.values(), Decimal(0))
+            reservation = money(record["reservation_usd"], "original reservation")
+            amount = money(entry["offset_usd"], "overlap offset")
+            if cost > reservation or amount != cost.quantize(Decimal("0.01"), rounding=ROUND_FLOOR):
+                raise CreditGuardError("Overlap offset exceeds proved conservative cost")
+            reservations[app] = reservation
+            offset += amount
+        if offset != money(cert["total_offset_usd"], "total overlap offset") or offset > highwater:
+            raise CreditGuardError("Invalid total overlap offset")
+        fresh = _cost_rows(modal_json("billing", "report", "--start", cert["report_start"],
+            "--end", cert["report_end"], "--resolution", "h", "--show-resources", "--json",
+            "--profile", grant["profile"]), start, end)
+        if any(k not in fresh or fresh[k] < value for k, value in saved.items()):
+            raise CreditGuardError("Provider billing attribution missing or revised downward")
+        for app, reservation in reservations.items():
+            if sum((v for k, v in fresh.items() if k[0] == app), Decimal(0)) > reservation:
+                raise CreditGuardError("Provider cost exceeds its original reservation")
+        fresh_component = money(billing["metered_cost_breakdown"]["ephemeral_apps"], "fresh compute cost")
+        if sum(fresh.values(), Decimal(0)) > fresh_component + Decimal("0.00000001") * (len(fresh) + 1):
+            raise CreditGuardError("Fresh report is not included in current provider summary")
+        return max(observed, highwater), offset, pin
+    except (OSError, KeyError, TypeError, ValueError, InvalidOperation) as exc:
+        raise CreditGuardError("Invalid or missing overlap certificate evidence") from exc
 
 
 @contextmanager
@@ -154,8 +318,9 @@ def allocation_guard(root: Path, run_id: str, timeout: int):
             observed = max(observed, provider_spend(billing))
             apps = modal_json("app", "list", "--json", "--limit", "0", "--profile", grant["profile"], "--env", grant["environment"])
             require_stopped_apps(apps)
+            observed, overlap, overlap_pin = verified_overlap(root, grant, records, journal, billing, observed)
             reservation = reservation_usd(timeout)
-            available = ceiling - headroom - observed - reserved
+            available = ceiling - headroom - observed - reserved + overlap
             if available < reservation:
                 raise CreditGuardError(f"Free-credit working budget exhausted: ${available:.2f} available, ${reservation:.2f} required; no allocation")
             receipt = {
@@ -167,6 +332,8 @@ def allocation_guard(root: Path, run_id: str, timeout: int):
                 "estimate_is_provider_cap": False,
                 "billing_summary": json.loads(json.dumps(billing, default=str)),
             }
+            if overlap_pin is not None:
+                receipt.update(overlap_certificate_sha256=overlap_pin, proved_overlap_usd=str(overlap))
             # A reservation survives exceptions and process death, before any allocation.
             with journal.open("a") as handle:
                 handle.write(json.dumps(receipt, default=str) + "\n")

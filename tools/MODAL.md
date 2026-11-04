@@ -56,9 +56,16 @@ reviewed monthly grant, active profile, fresh billing and running apps, holds
 an exclusive local lock, and reserves conservative compute/build costs before
 allocation. At least $5 is kept outside the working budget. Reservations never
 refund automatically and are additional to observed provider usage, so the
-budget intentionally errs on the conservative side. At current settings a
-900-second benchmark reserves $2.42. This is an estimate and local guard, not
-a provider-enforced spending cap; unrelated clients/hosts are outside its lock.
+budget intentionally errs on the conservative side. A separately reviewed,
+immutable certificate now removes $3.74 of proved posted-cost double counting
+from nine completed November 4 sandboxes. All original reservations and the
+$3.90423640 provider high-water remain counted; future reservations retain their
+full charge. Every allocation rechecks the certificate and fresh exact-interval
+billing attribution. Missing or downward-revised evidence fails closed. See
+`MODAL_OVERLAP_REVIEW_20261104.md` and `modal_credit_overlap_20261104.json`.
+At current settings a 900-second benchmark reserves $2.42. This is an estimate
+and local guard, not a provider-enforced spending cap; unrelated clients/hosts
+are outside its lock.
 
 Preserve `experiments/modal/.allocation.lock` (never unlink its inode), the
 monthly credit reservation journal and referenced manifests. Unconfirmed
