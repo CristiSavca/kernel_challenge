@@ -24,6 +24,14 @@ Sources: [GPU access](https://modal.com/docs/guide/gpu),
 [Starter pricing](https://modal.com/pricing),
 [workspace billing](https://modal.com/settings/cristisavca44/usage).
 
+Public pricing rechecked November 3 evening: Starter includes $30 per month
+for GPU/CPU/memory compute, including Sandboxes. The supplied `pip install`
+and `modal setup` instructions install and authenticate the client; they do
+not establish that a separate promotional grant was redeemed. A search of
+the official Modal and challenge sites did not identify a challenge-specific
+H200 credit offer. The observed account dialog remains the evidence for the
+payment-verification requirement; an undisclosed private promo is unverified.
+
 ## Run one experiment
 
 From the project root, no activation or global Python changes are needed:

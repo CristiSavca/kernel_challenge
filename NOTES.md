@@ -117,5 +117,27 @@ and applicable local evaluator hashes match those reported by the checks.
 Private speedups: attention 2.6425×, experts 2.3605×, projections 1.4774×,
 whole decoder 2.1541×. The new scored jobs are respectively
 `8f9e5971f95841a0`, `3c15b408fdb04c44`, `3caa02bd72da4c49` and
-`4b216098993e4112`. Their outcomes and leaderboard placements are still pending;
-do not present these private measurements as completed scored results.
+`4b216098993e4112`. Their outcomes were pending at this initial review;
+completed scored results are recorded below.
+
+## Completed scored submissions (November 3, 9:20 pm Eastern)
+
+Fresh official status responses confirm all four native entries passed:
+attention **2.611970×**, experts **2.356104×**, projections **1.486827×** and
+whole decoder **2.150186×**. All 43 numerical tests and 60 timed cases passed
+with no flags or rejections. Independent review matched the required case
+parameters and weights, source hashes and evaluator snapshots. Preparation
+times were within 300 seconds: experts 137.81 s, projections 73.86 s and
+decoder 114.46 s. All 18 official evaluator files remain unchanged.
+
+Every native job is confirmed as our current entry on its official board.
+At 2026-11-04 02:20 UTC the live ranks were attention 272, experts 335,
+projections 341, decoder 386, and overall **386 of 1,946** with four problems
+solved. These are provisional positions, below the top-50 priority cutoff.
+The kernel results do not establish full 8×H200 serving throughput or prize
+placement. The separate serving patch remains an unvalidated draft.
+
+All 32 experiment source snapshots match their recorded hashes, all recorded
+jobs are terminal, and the owned result watcher exited successfully. Exact
+results and profiles remain under `experiments/`; the compact final audit is
+`experiments/native-scored-audit.json`. No paid Modal GPU was used.

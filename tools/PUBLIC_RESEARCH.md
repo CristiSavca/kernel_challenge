@@ -116,8 +116,11 @@ from modifying checkpoint bias on failure. It also applies the full-attention
 prepared state assumes serial calls; serving requires a separate concurrency
 review. Our private check passed all 13 numerical tests and 12 timed shapes
 at 2.1541×, CI 2.1218–2.1864. Exact-source scored submission
-`4b216098993e4112` is pending. This covers the official kernel cases, including
-UV reassociation and routing; it does not validate concurrent serving use.
+`4b216098993e4112` passed at 2.1502×, CI 2.1179–2.1824, with all 13 numerical
+tests and 12 timed shapes passing and no flags or rejections. This covers the
+official kernel cases, including UV reassociation and routing; it does not
+validate concurrent serving use. All four native scored jobs are complete
+and confirmed as our current leaderboard entries.
 
 ## Upstream freshness and attention comparison
 

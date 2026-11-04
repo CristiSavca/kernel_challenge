@@ -11,12 +11,16 @@ earn serving-queue priority for the overall top 50.
 - All five official problems are initialized; the first Git commit preserves
   their original starters, references and SGLang baselines.
 - Four kernel boards have passing scored entries: projections **1.4868×**,
-  attention **2.6120×**, experts **2.3561×**, and the whole decoder **1.0813×**.
+  attention **2.6120×**, experts **2.3561×**, and the whole decoder **2.1502×**.
 - Native CUDA attention, experts, projections and whole decoder passed all
   official private correctness tests at **2.6425×**, **2.3605×**, **1.4774×**
   and **2.1541×** respectively. Their exact sources are active and submitted
-  for scoring. Attention, experts and projections have passed scoring at
-  **2.6120×**, **2.3561×** and **1.4868×**; the whole decoder remains pending.
+  for scoring. All four scored reruns passed, with 43 numerical tests and
+  60 timed cases in total, no flags or rejections, and exact source matches.
+  All 32 recorded experiments are resolved; the result watcher has exited.
+- At November 3, 9:20 pm Eastern (November 4, 02:20 UTC), the official overall
+  board placed CristiSavca **386th of 1,946** with four problems solved.
+  This is a live snapshot; top-50 serving-queue priority has not been earned.
 - The direct packed-GEMV expert experiment passed correctness but regressed
   to **0.7385×**. It was rejected as an optimization and was not scored.
 - Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
@@ -37,12 +41,15 @@ earn serving-queue priority for the overall top 50.
 | Dense projections | `8c992affff0e45b8` passed | 1.4774× | `3caa02bd72da4c49` passed 1.4868× |
 | Attention decode | `c21d391dbf604bb5` passed | 2.6425× | `8f9e5971f95841a0` passed 2.6120× |
 | Routed experts | `143f8587286e4384` passed | 2.3605× | `3c15b408fdb04c44` passed 2.3561× |
-| Whole decoder layer | `f8e991f1a2c2469e` passed | 2.1541× | `4b216098993e4112` queued; V2 `846bf3fd98c54703` passed 1.0813× |
+| Whole decoder layer | `f8e991f1a2c2469e` passed | 2.1541× | `4b216098993e4112` passed 2.1502× |
 | Prefill layer | Official starter | — | — |
 
 The official remote checks provide compilation, numerical tests, paired SGLang
 timing and profiles. A queued job should not be submitted again. Scored results
 may differ from the earlier private measurements; retain both results.
+The completed scored audit is saved in
+[experiments/native-scored-audit.json](experiments/native-scored-audit.json),
+with current leaderboard snapshots under `experiments/leaderboards/`.
 
 ## November 3 kernel focus
 
@@ -71,7 +78,7 @@ for serving priority, so it is lower priority during this pass.
 | Whole decoder | `b255f6b17f1b4758` passed 1.1750×; not scored | Compact expert integration plus grouped window attention; slower than native V4 |
 
 **Active submission.py files hold passing candidates:** native attention V4,
-native experts V6, native projections V4 and native decoder V4. Pending alternatives are
+native experts V6, native projections V4 and native decoder V4. Earlier alternatives are
 preserved separately under `candidates/` and immutable `experiments/` snapshots.
 Score the exact source associated with a passing check; do not substitute an
 unvalidated active candidate. The kernel phase has both November 3 and November
@@ -118,11 +125,11 @@ Gains inside the reported confidence interval may be noise.
 
 ## Route to the serving entry
 
-1. Resolve the new private checks and inspect per-shape timings. Publish
-   candidates that pass and establish useful gains.
-2. Improve the largest measured costs, especially the expert path at larger
-   speculative batches, and combine passing kernels in the whole decoder.
-3. Transfer measured improvements into the pinned serving source. Export a
+1. Use the completed native kernel checks, scored results and profiles as the
+   starting evidence. All four tested sources are active and published.
+2. Adapt useful improvements to serving's BF16 boundaries and concurrent
+   execution. Kernel success does not establish full-service correctness.
+3. Transfer validated improvements into the pinned serving source. Export a
    legal patch with `okc serve diff serving`.
 4. From November 5, validate the full 8×H200 service on the hidden conversation
    workload, including output agreement and time to first token. Optimize the

@@ -185,3 +185,20 @@ but the small difference from V6 lies within the reported uncertainty, and it
 remains substantially slower than native V4 at 2.1541×. Do not score or promote
 this control. All private experiments in this batch are now resolved; the
 four native scored reruns remain outstanding.
+
+## Native V4 scored confirmation
+
+Scored run `4b216098993e4112` passed at **2.1501860996×**, CI
+[2.1179333081, 2.1824388911], score 10520.1592 µs. All 13 numerical tests,
+12 timed shapes and six loads passed, with return code zero and no flags or
+rejections. Preparation took 114.46 seconds, within the 300-second limit.
+Independent review matched every case and weight to TASK. The active, frozen
+private and scored sources share the recorded SHA-256; check/scored server
+content hashes and evaluator snapshots match.
+
+At 2026-11-04 02:20 UTC, the official decoder leaderboard confirmed this job
+as CristiSavca's current entry, rank 386. The overall board also showed rank
+386 of 1,946 with four problems solved. Ranks are live snapshots. Native V4
+supersedes the 1.0813× scored V2. All four native scored runs and all private
+controls are now resolved; no duplicate or further speculative run is needed
+to establish this batch's result. Serving concurrency remains unvalidated.
