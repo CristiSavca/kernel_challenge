@@ -1,0 +1,63 @@
+{
+  "kind": "independent_attention_new_kv_packing_plan_critic",
+  "recorded_at_utc": "2026-11-04T14:12:42.307850+00:00",
+  "verdict": "GO_CPU_IMPLEMENTATION_ONLY; final frozen-source review and root CPU pass remain required before one private check",
+  "plan": {
+    "path": "tools/ATTENTION_NEW_KV_PACKING_FEASIBILITY_20261104.md",
+    "sha256": "bf93d2c5a7adb7b2416ba6c6ca8b8a2fdb84692fac1ff551975b3c151d4eb3f8"
+  },
+  "parent": {
+    "path": "muse_attention_decode/submission.py",
+    "sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+    "public_job": "8f9e5971f95841a0",
+    "private_job": "c21d391dbf604bb5"
+  },
+  "scope": "Replace only the eight scalar cache-write FP8 conversions and packing loop with two existing e4m3x4f calls; allow unique extension namespace. Preserve all input FP32 products, norms, RoPE, reciprocals, predicates, memory operations, barriers, dispatch and compiler flags.",
+  "primary_header": {
+    "package_metadata_url": "https://pypi.org/pypi/nvidia-cuda-runtime-cu12/12.8.90/json",
+    "package_author": "Nvidia CUDA Installer Team",
+    "wheel_url": "https://files.pythonhosted.org/packages/0d/9b/a997b638fcd068ad6e4d53b8551a7d30fe8b404d6f1804abf1df69838932/nvidia_cuda_runtime_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "wheel_sha256": "adade8dcbd0edf427b7204d480d6066d33902cab2a4707dcfc48a2d0fd44ab90",
+    "wheel_bytes": 954765,
+    "header_member": "nvidia/cuda_runtime/include/cuda_fp8.hpp",
+    "local_path": "/tmp/okc-cuda-fp8-12.8.90.hpp",
+    "header_sha256": "e0bebde335eedb623df836803fbef39be81940ba4e760b2a916686336ff6d17d",
+    "header_bytes": 97282,
+    "inspection": "Lines244\u2013260: sm>=890, SATFINITE and E4M3 select cvt.rn.satfinite.e4m3x2.f32 with scalar x in low byte and 0.0f in high byte, then truncate to low byte. Lines290\u2013303: native float2 overload uses same packed instruction with both real inputs.",
+    "retention": "Header retained locally only; no package installation or full source redistribution.",
+    "limitation": "This is a pinned primary CUDA12.8.90 header, not a claim that the official evaluator exposes this exact header version or generated SASS."
+  },
+  "semantics": {
+    "ptx_url": "https://docs.nvidia.com/cuda/archive/13.2.2/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt",
+    "math_api_url": "https://docs.nvidia.com/cuda/archive/12.8.2/cuda-math-api/cuda_math_api/group__CUDA__MATH__FP8__MISC.html",
+    "rounding_saturation": "Same RN ties-to-even and satfinite operation on each unchanged FP32 input.",
+    "byte_order": "PTX a maps to upper8 and b to lower8; e4m3x4f passes x1,x0 then x3,x2, producing x0,x1,x2,x3 in ascending bytes. uint2 stores remain unchanged.",
+    "nan_signed_zero": "Both scalar and paired forms apply the same per-lane hardware conversion. Equivalence does not depend on inventing a particular NaN sign/payload canonicalization. Signed-zero inputs and overflow inputs see the same conversion semantics; no FP16 intermediate or new arithmetic is introduced.",
+    "cpu_limit": "A host FP8 oracle or PTX shim can check packing/order/boundaries but does not execute the actual GPU instruction or establish generated SASS."
+  },
+  "performance_critique": [
+    "has_new=end>seq limits this to the new-token cache-write prologue, once per qualifying segment; it does not reduce the long cached-K/V attention tile loop.",
+    "All12 scored cases can execute changed work. No wholly unchanged control cases exist.",
+    "The source changes eight scalar call sites to four packed conversion instructions per live eight-value chunk. Actual ptxas scalar-combining, instruction savings and exposed latency are unknown.",
+    "The existing OKC_PACK4 comment compares two already-packed helper formulations; it does not prove this scalar loop is already combined.",
+    "No new memory traffic, synchronization, decode work or geometry is introduced. This supports one cheap fixed experiment despite likely modest scope; no gain forecast follows."
+  ],
+  "root_predeclared_screen": {
+    "aggregate": "For each of six loads and each run, sum46*baseline_ns_sliding+16*baseline_ns_full divided by sum46*median_ns_sliding+16*median_ns_full. Official problem score is geometric mean of these six load speedups. Candidate score / each exact parent score >=1.005.",
+    "breadth": "At least3 of6 weighted-load speedup ratios are >1 against BOTH exact parents jointly.",
+    "individual_regression": "For every case and each parent, parent paired speedup / candidate paired speedup <=1.02.",
+    "validity": "Complete clean official correctness, benchmark/profile and provenance records; no candidate promotion from diagnostic or incomplete evidence.",
+    "uncertainty": "Operational screen, not statistical significance; intervals may overlap and cross-run seed/node drift remains.",
+    "failure_policy": "Close this fixed attempt if it fails; no conversion-policy sweep or measurement-seeking repeat.",
+    "descriptive_only": "Decode/verify/sliding/full subgroups may be reported descriptively; they do not replace or add performance gates."
+  },
+  "actions_performed": "Read-only source/header/doc review and this distinct critic artifact. No candidate edits, package installation, GPU, official API call or submission.",
+  "pre_result_gate_history": [
+    {
+      "previous_artifact_sha256": "6e7b2e0019d46c0f8fff40daacced29d9cfe8ab5d49739d6cdeed61953048012",
+      "previous_breadth": "8/12 per-case joint positives plus sliding/full subgroup GM>=1",
+      "status": "Superseded by root before candidate freeze, GPU call or result; scorer-aligned load breadth accepted instead."
+    }
+  ],
+  "last_updated_at_utc": "2026-11-04T14:12:52.537376+00:00"
+}

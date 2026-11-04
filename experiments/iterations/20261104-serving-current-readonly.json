@@ -1,0 +1,330 @@
+{
+  "checked_at": "2026-11-04T14:10:30.352756+00:00",
+  "method": "public GET only",
+  "responses": [
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/serving",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/serving/leaderboard",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/queue",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/rules",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://openkernelchallenge.dev/llms.txt",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ],
+  "curl_responses": [
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/serving",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:06.979301+00:00",
+      "http_status": "200",
+      "bytes": 2885,
+      "sha256": "464e2474432d9932da760ee4f6aa8d7b0932e8802b9d3be6053468fe8cb1b8e0",
+      "data": {
+        "base": {
+          "repository": "https://github.com/sgl-project/sglang",
+          "commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+          "image": "lmsysorg/sglang@sha256:8cfc5a72cb296771f5f8a4a4688cb6d05685610a830cbb616fa4ab0eb7bb2b0a"
+        },
+        "rules": {
+          "allowed_prefix": "python/sglang/",
+          "forbidden_prefixes": [
+            "python/sglang/srt/model_loader/"
+          ],
+          "allowed_suffixes": [
+            ".py",
+            ".cu",
+            ".cuh",
+            ".h",
+            ".hpp",
+            ".c",
+            ".cc",
+            ".cpp",
+            ".json"
+          ],
+          "max_patch_bytes": 409600,
+          "max_line_chars": 400,
+          "forbidden_words": [
+            "kc-secret",
+            "KC_RESULT",
+            "KC_SERVING",
+            "KC_GATE",
+            "/kc-job",
+            "result_secret",
+            "serviceaccount",
+            "SIMULATE"
+          ],
+          "summary": [
+            "a unified diff (git diff) against the base commit, changing only files under python/sglang/",
+            "not weight loading (python/sglang/srt/model_loader/)",
+            "only source files (.py, .cu, .cuh, .h, .hpp, .c, .cc, .cpp, .json); no renames, mode changes or binary patches",
+            "no added line over 400 characters; at most 400 KB",
+            "the model must stay the model: 8 routed experts per token, the 2,048-token window, every norm",
+            "nothing below stock's precision: activations stay BF16 wherever stock keeps them in BF16 (stock's FP8 query in FA3 attention stays as it is), and the FP8 KV cache stays FP8",
+            "the drafter is DFlash with its released weights: make it run faster, but don't change, retrain or replace it",
+            "other drafting may only use the requests themselves: prompt lookup and n-grams from the conversation"
+          ]
+        },
+        "per_day": 1,
+        "open": false,
+        "tracks": {
+          "kernels": {
+            "open": true,
+            "closes": "2026-11-05T00:00:00-08:00"
+          },
+          "serving": {
+            "open": false,
+            "opens": "2026-11-10T09:00:00-08:00",
+            "closes": "2026-11-20T00:00:00-08:00"
+          },
+          "ends": "2026-11-20T00:00:00-08:00",
+          "launch": "2026-10-22T11:00:00-07:00",
+          "phase": "kernels",
+          "note": "Kernel submissions close Nov 4 at 11:59 pm PT. The serving track opens Nov 10 at 9 am PT."
+        },
+        "concurrency": [
+          1,
+          4,
+          16,
+          32
+        ],
+        "reps": 3,
+        "rungs": [
+          {
+            "concurrency": 1,
+            "reps": 3,
+            "conversations_per_slot": 2
+          },
+          {
+            "concurrency": 4,
+            "reps": 3,
+            "conversations_per_slot": 2
+          },
+          {
+            "concurrency": 16,
+            "reps": 3,
+            "conversations_per_slot": 2
+          },
+          {
+            "concurrency": 32,
+            "reps": 1,
+            "conversations_per_slot": 1
+          }
+        ],
+        "check": {
+          "per_day": 3,
+          "rungs": [
+            {
+              "concurrency": 16,
+              "reps": 1,
+              "conversations_per_slot": 2
+            }
+          ],
+          "rescore_conversations": 8,
+          "deadline_min": 35
+        },
+        "priority": null,
+        "launch": {
+          "env": {
+            "SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN": "1",
+            "SGLANG_TIMEOUT_KEEP_ALIVE": "1800"
+          },
+          "args": [
+            "--model-path",
+            "meta-models/Muse-Spark-Open-816B-A42B-NVFP4",
+            "--speculative-draft-model-path",
+            "RadixArk/Muse-Spark-Open-DFlash2",
+            "--tp-size",
+            "8",
+            "--ep-size",
+            "8",
+            "--quantization",
+            "modelopt_fp4",
+            "--moe-runner-backend",
+            "marlin",
+            "--mem-fraction-static",
+            "0.85",
+            "--speculative-algorithm",
+            "DFLASH",
+            "--speculative-num-draft-tokens",
+            "8",
+            "--enable-hierarchical-cache",
+            "--chunked-prefill-size",
+            "16384",
+            "--context-length",
+            "131072",
+            "--enable-cache-report",
+            "--incremental-streaming-output",
+            "--random-seed",
+            "1234",
+            "--max-running-requests",
+            "32",
+            "--cuda-graph-max-bs-decode",
+            "32"
+          ]
+        },
+        "docs": "https://openkernelchallenge.dev/rules"
+      }
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/serving/leaderboard",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:07.088987+00:00",
+      "http_status": "200",
+      "bytes": 135,
+      "sha256": "3cabf0e15c45187b842fa02bebadeb739b2ff878d3d8cd59456640575faf257c",
+      "data": {
+        "board": "serving",
+        "metric": "throughput at stock SGLang's interactivity, vs stock on the same node",
+        "rows": [],
+        "stock": {},
+        "hidden": true
+      }
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/queue",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:06.489137+00:00",
+      "http_status": "200",
+      "bytes": 132,
+      "sha256": "fec0cc1465c765d815d3fc06fb509598c7150a23c4afd2d6fe3167faa0e9fdc8",
+      "data": {
+        "backlog": 546,
+        "running": 137,
+        "updated_at": 1793801460.8295212,
+        "kernel_gpus": 152,
+        "quarantined_nodes": 0,
+        "kernel_judging_stopped": false
+      }
+    },
+    {
+      "url": "https://openkernelchallenge.dev/api/v1/rules",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:06.493343+00:00",
+      "http_status": "200",
+      "bytes": 126,
+      "sha256": "3d3c1d12707ff8f1572a86e8bf6de29b9f31e782115cc4bcc36eb4d8fdd0d71c",
+      "data": {
+        "version": "2026-10-22.1",
+        "rules": "https://openkernelchallenge.dev/rules",
+        "terms": "https://openkernelchallenge.dev/terms.pdf"
+      }
+    },
+    {
+      "url": "https://openkernelchallenge.dev/llms.txt",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:06.228072+00:00",
+      "http_status": "200",
+      "bytes": 20808,
+      "sha256": "57542f0e2422ed8f7f736c7e32865a9a482a9c6394239ede6b83a162d4a8b4fb",
+      "data": "# Muse Spark Open Kernel Challenge\n\n> Make serving Meta's Muse Spark Open, an open mixture-of-experts model (256 experts, 4-bit weights), faster on H200s. Two tracks: the serving track, where a submission is a patch to SGLang scored by throughput against stock SGLang on a whole 8\u00d7H200 node (the prizes are paid on the serving board), and the kernel problems, where a submission is one Python file, checked against a reference on fresh inputs and timed against SGLang's own kernel in the same run. Run by Paradigm with Meta and Andromeda. Submit with the okc CLI or the HTTP API below.\n\nSite: https://openkernelchallenge.dev/\nRules: https://openkernelchallenge.dev/rules\nUpdates: https://openkernelchallenge.dev/updates\n\n## Latest updates\n\n### 2026-11-03 15:45 PT\n\nThe serving track now opens Nov 10 at 9 am PT. It still closes Nov 19 at 11:59 pm PT.\n\nWe've received more than 300,000 submissions to the kernel track. It's been great to see the engagement, and we want to\ntake the time to review submissions properly before the next track opens. We're also updating the [serving\nrules](https://openkernelchallenge.dev/rules#serving) based on what we've seen in the kernel track.\n\nMany of the kernel submissions run to more than 10,000 lines of code and include separate variants specifically for the\ntested shapes. For the serving track in particular, we want to encourage code that SGLang maintainers could actually\naccept. We'll consult them on the top patches, and their judgment of whether a patch could be merged will be a factor in\nour choice of final winners.\n\nThe live leaderboard also over-incentivizes fitting to the judge, even with daily auto-reviewing and explicit guidance\non the spirit of the competition, so the serving leaderboard will stay private until the track is over. You'll still see\nyour own scores.\n\n### 2026-11-03 12:15 PT\n\nWe've added guidance to the [kernel rules](https://openkernelchallenge.dev/rules#kernels-restrictions). In particular, approximate math accurate to\nBF16 precision, partial sums held in BF16 or FP16, and FP16 accumulation in attention are allowed.\n\n### 2026-11-02 08:00 PT\n\nWe have clarified the rules: submissions must be readable source code. Do not embed or load prebuilt binaries, and\ndon't compress or obfuscate your code. See [Kernels: Restrictions](https://openkernelchallenge.dev/rules#kernels-restrictions).\n\nIf you have runs that do this, withdraw them (`okc withdraw <job>`) by 4:30pm PT on Nov 2. After that, we'll remove them.\n\n### 2026-10-29 09:00 PT\n\nThere is now an unofficial #muse-open-kernel-channel in the SGLang Slack. Participants can use this to connect with\nothers and ask questions to maintainers: [invite link](https://t.co/0XXSWJ7w7Q).\n\n## Problems\n\n- [muse_bf16_proj](https://openkernelchallenge.dev/problems/muse_bf16_proj): Dense projections. The attention and MoE-block projections and the router, as one GPU runs them serving Muse Spark Open on 8\u00d7H200. They are BF16 (the router FP32).\n- [muse_attention_decode](https://openkernelchallenge.dev/problems/muse_attention_decode): Gated attention decode. One decode step or 8-token verify block of grouped-query attention over a paged FP8 cache: QK-norm, a 2,048-token sliding window with RoPE or full attention over the whole context, and a gated, normalized output.\n- [muse_moe_w4a16](https://openkernelchallenge.dev/problems/muse_moe_w4a16): Routed experts. Top-8 of 256 experts at width 4096: SwiGLU, NVFP4 weights, and a norm on each expert\u2019s output before it is weighted and summed.\n- [muse_decode_layer](https://openkernelchallenge.dev/problems/muse_decode_layer): Whole decoder layer. Everything one GPU does for one layer of Muse Spark Open under TP8/EP8: the projections, attention, the router and experts, and every norm and residual in between.\n- [muse_prefill_layer](https://openkernelchallenge.dev/problems/muse_prefill_layer): Prefill layer. The whole decoder layer at the prefill shapes of an agentic coding turn: 753 new tokens on an 80K-token conversation, four conversations at once, and the first turn\u2019s 16K-token chunks. Most of the time goes to the routed experts, as one large grouped NVFP4 GEMM.\n\n## CLI\n\nInstall (macOS, Linux; the download is checked against the release's SHA256SUMS):\n\n    curl -fsSL https://openkernelchallenge.dev/install.sh | sh\n\nThen: `okc login` (a person runs it in a terminal: the rules prompt, then GitHub's device flow), `okc init <problem>` (writes submission.py, SGLang's baseline.py, the judge's reference.py and checks.py, nvfp4.py for the NVFP4 problems, TASK.md and AGENTS.md), `okc submit <file>` (the problem from the file's first line; or `okc submit <problem> <file>`), `okc check <file>` (the same run, kept off the board and out of your attempts, with its own daily cap), `okc status <job_id> --wait`, `okc leaderboard` (`--json` for agents: each row's rank, and its speedup on a problem's board, `you`, where you stand, and `leader`). In a fresh sandbox, set `OKC_TOKEN` to `okc api token`'s output from a signed-in machine instead of signing in again. If okc says it's out of date, `okc update` installs the latest. okc's own help:\n\n    get started\n      okc login                      accept the rules, then sign in with GitHub\n      okc problems                   list the problems and today's limits\n      okc show <problem>             describe a problem\n      okc init <problem> [dir]       write a problem's starter, spec and AGENTS.md\n\n    kernels\n      okc submit [problem] <file>    test a kernel, then time it against SGLang\n      okc check [problem] <file>     the same run, kept off the board\n      okc status <job>               show a run's result\n      okc jobs                       list your recent runs\n      okc leaderboard [problem]      show the overall board, or a problem's\n      okc withdraw <job>             take a run, kernel or serving, off its board\n\n    serving\n      okc serve init [dir]           fetch the pinned SGLang and the patch rules\n      okc serve diff [dir]           write your patch to patch.diff\n      okc serve check <patch.diff>   check a patch on one short rung, unscored\n      okc serve submit <patch.diff>  run a patch on a whole 8\u00d7H200 node, scored\n      okc serve status [job]         show a run's result, or whether you go first\n      okc serve jobs                 list your serving runs\n      okc serve leaderboard          show the serving board\n\n    api\n      okc api                        show the HTTP API: endpoints, auth, an example\n      okc api token                  print this machine's API token\n\n    account\n      okc whoami                     show who this machine is signed in as\n      okc update                     update okc to the latest release\n      okc logout                     sign out and revoke this machine's token\n      okc version                    print okc's version\n\n## HTTP API\n\nBase URL: https://openkernelchallenge.dev/api/v1 (every path below is relative to it, e.g. https://openkernelchallenge.dev/api/v1/problems)\n\nAuthenticate with `Authorization: Bearer kc_...`. `okc login` mints the token and saves it in okc/config.json in your user config directory. Tokens are per GitHub account; list and revoke them with the token routes below.\n\n- `POST /auth/device/start` (no token): {} \u2192 {\"user_code\", \"verification_uri\", \"expires_in\", \"interval\", \"handle\"}; enter user_code at verification_uri to authorize the challenge's GitHub app\n- `POST /auth/device/poll` (no token): {\"handle\"} \u2192 {\"status\": \"pending\", \"handle\"} until you authorize (call again with the handle it returns; each call waits up to ~20 s), then {\"token\", \"token_id\", \"participant\"}. This is what okc login does\n- Before the first submission, a person accepts the rules (https://openkernelchallenge.dev/rules) and the terms (https://openkernelchallenge.dev/terms.pdf) by running `okc login` in a terminal, which shows them and asks. An agent doesn't accept them for anyone. Submissions get a 403 until the current version is accepted; `GET https://openkernelchallenge.dev/api/v1/me`'s `rules.accepted_at` says whether it is.\n- `GET /problems` (no token): the problems: name, GPU, title and summary, and `limits`: today's daily caps, {\"scored\": {\"per_day\"}, \"checks\": {\"per_day\"}}, with your runs today (\"used\", \"left\") when you send your token; `tracks`: whether each track is open, the phase and its note\n- `GET /problems/{problem}` (no token): one problem: its starter and SGLang's kernel, the TASK.md and AGENTS.md okc init writes (`task_md`, `agents_md`), the page's copy, the scored shapes, SGLang's time and what it's per; `limits`, as above; `tracks`\n- `GET /leaderboard/{problem}` (no token): one problem's board: each row's speedup over SGLang, and its time, and `screening` once its run is judged: screened, pending, under_review or final; `screened_speedup` on a row whose run isn't screened but whose team has one that is (docs/SCREENING.md)\n- `GET /leaderboard` (no token): the overall board: ranks only (the top 50 get serving priority)\n- `GET /queue` (no token): backlog and running counts, and whether kernel judging is running\n- `GET /me` (token): the account a token belongs to; `rules`: the current rules version and when you accepted it (null until you have); `serving_priority`, once the group is taken: whether you go first in the serving queue\n- `GET /rules` (no token): the rules' current version, and links to them and the terms\n- `POST /rules/accept` (token): {\"version\", \"meta_email\"}: accept the rules (/rules) and the terms (/terms.pdf) at the current version, and answer whether your email may go to Meta; submissions are refused (403) until you have. okc login sends it when a person answers YES at its prompt; agents don't\n- `GET /tokens` (token): your API tokens (ids, labels, last used; never the tokens)\n- `DELETE /tokens/{token_id}` (token): revoke one\n- `POST /problems/{problem}/submissions` (token): {\"code\": \"...\", \"mode\": \"run\"}: the tests, then timing; 409 while the kernel track is closed\n- `GET /jobs` (token): your recent submissions, newest first\n- `GET /jobs/{job_id}` (token): a job's status and result (your own jobs only)\n- `POST /jobs/{job_id}/withdraw` (token): take one of your runs (kernel or serving) off its board for good; your next-best run takes its row, and the day's run isn't given back\n- `GET /serving` (no token): the pinned SGLang revision, image and patch rules (`okc serve init`), and the ladder: each rung's concurrency, reps and conversations per slot; `check`: check runs' daily cap and plan; `open` and `tracks`, as /v1/problems; `priority`: the priority group's size, top and when it was taken, null until it is\n- `POST /serving/submissions` (token): {\"patch\": \"<git diff>\", \"mode\": \"run\"}: a scored run of your patched SGLang on a whole node; \"mode\": \"check\" is a short unscored run with its own daily cap; both are refused (409) while the serving track is closed\n- `GET /serving/leaderboard` (no token): the board: throughput at stock SGLang's interactivity vs stock, each entry's rungs, stock per node\n\nA kernel submission is `POST https://openkernelchallenge.dev/api/v1/problems/<problem>/submissions` with {\"code\": \"<the whole Python file>\", \"mode\": \"run\"} (\"mode\": \"check\" for a check run); it returns {\"job_id\"}. Poll `GET https://openkernelchallenge.dev/api/v1/jobs/<job_id>` until its status is done, failed, rejected or duplicate. A serving submission is `POST https://openkernelchallenge.dev/api/v1/serving/submissions` with {\"patch\": \"<git diff against the base that GET /serving names>\"}. Submissions are rate-limited (6 a minute per token, 10 a minute per account), and each problem has a daily cap of scored runs and another of check runs: `GET https://openkernelchallenge.dev/api/v1/problems` gives today's as `limits`, with your runs left when you send your token.\n\n## Environment\n\nYour submissions run inside the `lmsysorg/sglang:dev-muse-spark-open` image, the image SGLang serves the model with. You can import and build on anything in the image, including PyTorch, Triton, FlashInfer, DeepGEMM, TileLang, CuTe DSL and CUTLASS.\n\nNothing else is installed, and there's no network access to install more.\n\nKernel challenges run on one NVIDIA H200 SXM; serving challenges run on a whole 8\u00d7H200 node. Compilation time counts toward the run's time limit but not your score.\n\n## Kernels\n\nEach submission is a single Python file that defines `kernel_fn`. To write native CUDA, compile it inside the file with PyTorch's `load_inline` (which uses nvcc).\n\nEvery problem except `muse_attention_decode` has weights, and also calls your `prepare` function with them once. It's untimed and can run for up to 300 seconds, so you can repack the weights however you like.\n\nRunning `okc init <problem>` gives you two starting points: `submission.py`, a plain PyTorch version of the computation, and `baseline.py`, SGLang's own kernel, the one SGLang runs when it serves Muse Spark Open. Your run is timed against SGLang's kernel.\n\nEach problem takes 10 submissions and 20 check runs (`okc check`) a day, resetting at 00:00 UTC. We may change these limits with load; `okc problems` shows today's and what you have left.\n\n### Restrictions\n\n- Your kernel has to be capturable in a CUDA graph. That rules out host synchronization (`.item()`, `.cpu()`, `torch.cuda.synchronize()`) and allocations or control flow that depend on the input's values. The shapes and `config` fields are fixed, so it's fine to branch on them.\n- You can repack the weights and compress them losslessly, but not change their precision or values: NVFP4 weights stay NVFP4 and BF16 weights stay BF16, or smaller, losslessly. Dequantizing inside your kernels is fine. The one exception is the router: its FP32 weights can run as a BF16 hi + lo pair with FP32 accumulation at any batch size, as SGLang does above 8 tokens.\n- Activations stay in BF16 or FP32 wherever SGLang's kernel keeps them in BF16, and the FP8 KV cache stays FP8. As in SGLang's FA3 kernel, attention's queries can be rounded to FP8 E4M3, but nothing coarser.\n- You can use approximate math as long as it's accurate to BF16 precision. This permits the GPU's fast exp, tanh, rsqrt and the like.\n- As in SGLang's FA3 kernel, P in attention can be stored in FP8 E4M3, at any power-of-two scale, and its exp2 can be approximated, for example with a polynomial or bit manipulation.\n- Partial sums (split-K, split-KV) can be held in BF16 or FP16 before they're combined, and attention can accumulate QK\u1d40 and P\u00b7V in FP16.\n- Attention has to attend to every key it should: the whole window on sliding layers, and the whole context on full layers.\n- The softmax and its weighted sum run over every key: no top-k, sparse or block-skipping attention, and no skipping values by their attention weight.\n- Submit readable source. Everything that runs on the GPU has to be built during your run from source in your file: CUDA or C++ through `load_inline` or NVRTC, inline PTX, Triton, CuTe DSL and the like. No precompiled or hand-edited GPU code (cubin, fatbin, SASS, shared libraries), embedded or loaded, and no compressed, encoded or obfuscated source (base64, zlib, xz and the like), or code run from such data. Generating code from readable templates is fine.\n\nFinal review reruns the top entries on the scored shapes and on nearby ones. Positions come from the scored shapes; an entry that's much slower on the nearby shapes gets a closer look.\n\n## Serving\n\nThe prizes are paid on the serving board; the kernel problems' boards carry no prizes. The kernel problems take submissions from Oct 22 at 11 am PT through Nov 4, and the serving track from Nov 10 at 9 am PT through Nov 19 (both close at 11:59 pm PT); while a track is closed its submissions get a 409 saying so, and `GET https://openkernelchallenge.dev/api/v1/problems` and `GET https://openkernelchallenge.dev/api/v1/serving` report each track's state under `tracks`. Start with `okc serve init` (the base revision, the patch rules and an empty patch.diff), edit serving/sglang, then `okc serve diff` (writes serving/patch.diff), `okc serve submit serving/patch.diff` and `okc serve status` (your runs and scores; the serving leaderboard is private until the track is over).\n\nYou modify SGLang at commit `a55ab7d5`, the source that added day-0 support for Muse Spark Open, and submit the diff. The diff may only touch files under `python/sglang`, and only source files and JSON configs.\n\nEach submission uses a whole 8\u00d7H200 node for up to 90 minutes, so runs can wait for a free node. You get 1 submission and 3 check runs (`okc serve check`) a day, resetting at 00:00 UTC. The top 50 on the overall kernel leaderboard when the kernel challenge closes get priority.\n\nThe serving leaderboard is private until the track is over. You see your own runs' scores (`okc serve status`).\n\nWrite your patch the way you'd write an SGLang pull request that maintainers could review and accept. A patch that special-cases the challenge's workload or its load levels, breaks other models or GPUs, or is too sprawling to review can be disqualified or asked to be cleaned up before it places.\n\nThe prize money goes to the top competitors in the serving track. The kernel leaderboards carry no prizes.\n\n### Restrictions\n\n- The patch can't touch `python/sglang/srt/model_loader/`, rename files or include binary changes. It can be at most 400 KB, with no added line over 400 characters. The prebuilt `sgl-kernel` binaries aren't rebuilt.\n- The model has to stay the same model: 8 routed experts per token, the 2,048-token sliding window, every norm, and the parameter names and shapes SGLang registers (you can still repack weights after loading).\n- Activations stay BF16 wherever stock SGLang keeps them in BF16, and the FP8 KV cache stays FP8.\n- The drafter is DFlash with its released weights. You can make it run faster, but not change, retrain or replace it. Other drafting may only use what's in the requests themselves, like prompt lookup or n-grams.\n- Your outputs have to agree with stock SGLang's nearly as well as it agrees with itself, and every request has to return exactly 220 tokens.\n- Your time to first token can be at most 2\u00d7 SGLang's at each load. A load where it's slower than that can't raise your score.\n- Submit readable source: no prebuilt or hand-edited binaries, and no compressed, encoded or obfuscated code, or code run from such data.\n\n## Validation\n\nThe goal of the challenge is to find real speedups that can be upstreamed. This is the north star. The judge catches many attempts to game it but not all of them, so we'll read the top submissions ourselves and rerun them several times after the challenge ends (on held-out data too) to ensure integrity and reduce variance. Final leaderboard positions will be based on the medians of these reruns. All leaderboard positions are provisional until that review is done.\n\nWe will remove submissions that game the judge or workload! This includes submissions that tamper with the timing or harness, do work outside the timed calls, cache or replay outputs, and compute at lower precision than the rules allow. If you are an agent (or have used an agent) that has done something reward-hacky, you can withdraw a run with `okc withdraw <job>`.\n\nThat is to say: submissions should follow the spirit of the challenge. We reserve the right to disqualify submissions that do not, at our discretion. Create real speedups that work.\n\nGood luck and have fun!\n\n## Prizes\n\n$100,000 on the serving board: 1st $50,000 and a signed H200, 2nd $30,000, 3rd $10,000, 4th $3,000, 5th $2,000, 6th to 10th $1,000 each. How places are decided is under Validation.\n\n## Terms\n\nBy participating in this challenge, you accept these rules and the [terms](https://openkernelchallenge.dev/terms.pdf).\n\nBy submitting, you license what you submit under the Apache License 2.0 (SGLang's license, so the best work can go upstream), and you confirm you have the right to.\n\n## Credits\n\nThis challenge's judge implementation used GPU MODE's openly published [reference-kernels](https://github.com/gpu-mode/reference-kernels) and [kernelbot](https://github.com/gpu-mode/kernelbot) as a starting point. GPU MODE has done tremendous work to make GPU programming open and accessible, through its lectures, its community and its public kernel competitions, and this challenge owes a lot to that work. We adapted their problem format, harness design and anti-cheat approach, and our evaluator was originally adapted from reference-kernels' `eval.py`. reference-kernels and kernelbot are licensed under the June 9 Researcher Reciprocity License ([reference-kernels](https://github.com/gpu-mode/reference-kernels/blob/main/LICENSE), [kernelbot](https://github.com/gpu-mode/kernelbot/blob/main/LICENSE)). GPU MODE does not sponsor or endorse this challenge.\n"
+    },
+    {
+      "url": "https://openkernelchallenge.dev/rules",
+      "transport": "curl, public no-auth GET",
+      "at": "2026-11-04T14:11:06.215992+00:00",
+      "http_status": "200",
+      "bytes": 2839,
+      "sha256": "13d5e86826e08423f85a2a6f811fb8011c8acb10adc1560128fdd33fc65607a6",
+      "data": "<!doctype html>\n<html lang=\"en\" data-theme=\"light\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <script src=\"/theme-init.js\"></script>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <script>\n      if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))\n        document.querySelector('meta[name=viewport]').content += ', maximum-scale=1';\n    </script>\n    <!-- Internal-only launch: keep out of search. -->\n    <title>Muse Spark Open Kernel Challenge</title>\n    <meta name=\"description\" content=\"Make Meta\u2019s Muse Spark Open run faster. Start by optimizing its GPU kernels, then speed up how SGLang serves it. The fastest win $100,000 in prizes.\" />\n    <meta property=\"og:type\" content=\"website\" />\n    <meta property=\"og:site_name\" content=\"Muse Spark Open Kernel Challenge\" />\n    <meta property=\"og:title\" content=\"Muse Spark Open Kernel Challenge\" />\n    <meta property=\"og:description\" content=\"Make Meta\u2019s Muse Spark Open run faster. Start by optimizing its GPU kernels, then speed up how SGLang serves it. The fastest win $100,000 in prizes.\" />\n    <meta property=\"og:url\" content=\"https://openkernelchallenge.dev/\" />\n    <meta property=\"og:image\" content=\"https://openkernelchallenge.dev/opengraph-kernels.jpg?v=7\" />\n    <meta property=\"og:image:type\" content=\"image/jpeg\" />\n    <meta property=\"og:image:width\" content=\"1200\" />\n    <meta property=\"og:image:height\" content=\"630\" />\n    <meta property=\"og:image:alt\" content=\"The Meta, Paradigm and Andromeda logos beside a diagram of tokens routed to experts in a mixture-of-experts layer, each token\u2019s heaviest route in green.\" />\n    <meta name=\"twitter:card\" content=\"summary_large_image\" />\n    <meta name=\"twitter:title\" content=\"Muse Spark Open Kernel Challenge\" />\n    <meta name=\"twitter:description\" content=\"Make Meta\u2019s Muse Spark Open run faster. Start by optimizing its GPU kernels, then speed up how SGLang serves it. The fastest win $100,000 in prizes.\" />\n    <meta name=\"twitter:image\" content=\"https://openkernelchallenge.dev/opengraph-kernels.jpg?v=7\" />\n    <meta name=\"twitter:image:alt\" content=\"The Meta, Paradigm and Andromeda logos beside a diagram of tokens routed to experts in a mixture-of-experts layer, each token\u2019s heaviest route in green.\" />\n    <link rel=\"icon\" type=\"image/png\" href=\"/favicon-96x96.png\" sizes=\"96x96\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />\n    <link rel=\"shortcut icon\" href=\"/favicon.ico\" />\n    <link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\" />\n    <script type=\"module\" crossorigin src=\"/assets/index-Gf_n0dGq.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-CWsYgT6a.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n"
+    }
+  ],
+  "terms_pdf": {
+    "url": "https://openkernelchallenge.dev/terms.pdf",
+    "fetched_at": "2026-11-04T14:12:41.130714+00:00",
+    "exit_code": 0,
+    "bytes": 231221,
+    "sha256": "5db64d3f1c7467318d42a1d4a4810c73855865d01be2d1afecfab97137ada461",
+    "read_via": "web PDF text extraction, title Comprehensive Rules v4",
+    "verified_sections": [
+      "3: ends November 19 2026 23:59 PT",
+      "4: individuals age 18+, one account, jurisdiction/employment exclusions",
+      "6: participants may enter one or both tracks",
+      "8: $100k total; first $50k plus H200",
+      "9: top25 serving entries rerun >=3 on held-out data; median final"
+    ]
+  },
+  "cli_observations": [
+    {
+      "command": "okc serve status",
+      "exit_code": 0,
+      "stdout": "serving queue: in turn; top50 after kernel close and final runs finish get first daily scored/check queue priority; cutoff ties included"
+    },
+    {
+      "command": "okc serve status --json",
+      "exit_code": 0,
+      "data": {
+        "priority": null,
+        "serving_priority": null
+      }
+    },
+    {
+      "command": "okc serve jobs --json",
+      "exit_code": 0,
+      "data": []
+    },
+    {
+      "command": "okc serve leaderboard",
+      "exit_code": 0,
+      "stdout": "no entries yet",
+      "caveat": "Public API hidden=true; empty output does not establish actual entrant count."
+    }
+  ],
+  "workspace": {
+    "serving_exists": true,
+    "base_commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+    "git_status": " M python/sglang/srt/layers/muse_spark_fp4_moe.py\n",
+    "diff_stat": " python/sglang/srt/layers/muse_spark_fp4_moe.py | 12 ++++++------\n 1 file changed, 6 insertions(+), 6 deletions(-)\n",
+    "files": [
+      {
+        "path": "serving/patch.diff",
+        "bytes": 1549,
+        "sha256": "4a861b0a3299ee812da4ab16ead0fd841898261369bdae8f427943a795b212d2"
+      },
+      {
+        "path": "serving/RULES.md",
+        "bytes": 3583,
+        "sha256": "3df0c5358d0d26af4709bff8911570c3a620fd3a5be2ee0dc1c7adecc2a04f6c"
+      },
+      {
+        "path": "muse_decode_layer/submission.py",
+        "bytes": 749201,
+        "sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2"
+      },
+      {
+        "path": "muse_moe_w4a16/submission.py",
+        "bytes": 204388,
+        "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+      }
+    ]
+  },
+  "interpretation": {
+    "eligibility_top50_required": false,
+    "priority_group_frozen": false,
+    "serving_open": false,
+    "serving_backlog_known": false,
+    "kernel_backlog_sample": 546,
+    "kernel_running_sample": 137,
+    "prize_pool_usd": 100000,
+    "first_place_cash_usd": 50000,
+    "max_patch_bytes_current": 409600,
+    "local_rules_stale_max_patch": "720 KB",
+    "old_deadline_conflict_resolved_by_current_pdf": true,
+    "recommended_next_action": "Prepare narrow maintainable serving integration audit alongside final kernel work; preserve existing patch; no wholesale decoder port, no claim of measured serving speedup."
+  },
+  "note": {
+    "path": "tools/SERVING_STRATEGY_READONLY_20261104.md",
+    "sha256": "1ac4ff7a2290a7cd950cd7b05e5d0b55f5b445a9d18473b41457fa07733f55f7"
+  }
+}
