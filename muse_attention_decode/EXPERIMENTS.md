@@ -63,3 +63,21 @@ Check `05f77382a0c84254` passed all 16 numerical tests and 12 timed shapes at
 1.2050178708×, CI [1.1869426027, 1.2230931388]. The exact immutable source
 `103624d509012ab92fd2f3a2237827bc739a542a0eae5a333802d3cf3712aa60` is now active
 and was submitted for scoring as `52117bcc7137435e` (pending).
+
+## Native CUDA V4 passed and submitted
+
+Private check `c21d391dbf604bb5` passed all 16 numerical tests and 12 timed
+shapes at **2.6425388868×**, CI [2.5934854227, 2.6821769701], with no flags,
+rejections or runtime errors. This establishes our own result independently
+of the imported published timing report.
+
+All timed shapes improved: paired ratios range from 2.023× (full verify,
+batch 16) to 4.093× (sliding decode, batch 1). The latter takes 4.98 us against
+20.37 us baseline; full decode at batch 32 takes 145.99 us against 383.66 us.
+
+The exact frozen source
+`87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c`
+is now active and was submitted for scoring as `8f9e5971f95841a0` (pending).
+The earlier own-window V3 scored job is also still queued; no duplicate retry
+was made. Passing kernel-entry checks do not establish concurrent serving
+safety for the global native scratch allocation.
