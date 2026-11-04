@@ -1,23 +1,46 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 after V28 private job `2976c25cc3dc41b1` completed.
+Updated November 4, 2026 at 22:10 UTC after V29 official check was accepted.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
 
 ## Resume here
 
-**Latest user steering (21:50 UTC): prioritize #1 on the public leaderboard now.**
-The existing goal remains active. Root has redirected the three agents to a
-fresh public-source/attention scan, a new MoE algorithm hypothesis, and an
-independent supervisor/bottleneck reset. All are read-only until a concrete
-candidate is selected; root alone owns official checks. Current decoder entry
-is2.1811831350 at#409; leader2.5761628684 at21:51UTC. New snapshot:
-`experiments/leaderboards/20261104T2151-number-one-reset.json`. Official GPUs
-remain available; Modal allocations are blocked by current conservative ledger.
-Serving validation and stock-only probe below are a preserved backlog, not the
-current priority. Do not end this loop at a research-only plan if a viable new
-candidate can be implemented and checked.
+**Latest user steering: public #1 and a 100% score-gain stretch target.**
+The existing goal remains active. Public decoder is 2.1811831350 at #409,
+leader 2.5761628684 in the 21:51 UTC snapshot. Doubling means 4.3623662701;
+that is an objective, not a forecast. Official GPUs remain available. Modal
+is blocked by the current conservative free-credit ledger; no paid allocation.
+
+**V29 is running: inspect existing job `185fee4d182f41dd`; never duplicate.**
+Frozen decoder source `bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c`
+in `muse_decode_layer/candidates/decoder_exact_patch_v29/`, committed `9fb56e8`.
+The architecture restores exceptional BF16 operands exactly in registers before
+MMA, with raw sidecars for units with multiple exceptions, and removes separate
+correction warps. Author, root and critic CPU reports match: 36,241,408 BF16 bit
+comparisons, stage mappings and negative lifetime controls. CUDA numerics,
+compiler resource use and speed remain unverified. Root plan and source critic
+are saved under `experiments/iterations/20261104-decoder-exact-patch-v29-*`.
+Run `tools/analyze_decoder_v29.py JOB SHA` only after the receipt/profile exists.
+Fixed gate against both 97af parent receipts: whole score >=1.025, affected four
+load GM speed >=1.04, each affected/control latency <=1.03, control GM latency
+in [.97,1.03], clean full coverage and exact compressed-template activation.
+No retry, shape rescue, or gate changes after measurement. Score only after a
+useful clean check and independent result review. Root owns official polling.
+
+**V30 implementation is in progress**, isolated in
+`muse_moe_w4a16/candidates/moe_arch_v30/`; do not upload until author freeze,
+independent source review and root CPU proof. It replaces MAIN Stream-K with
+complete-K tiles, distinct 128-row cold / 256-row hot geometry, six ordered
+launches and no cross-CTA reductions/polling. Author is `moe_research_reset`;
+source critic is `attention_paper_reset`; `result_and_strategy_critic` owns
+standalone result analyzer while awaiting V29 results. Root alone owns official
+calls. Fixed V30 gate against exact 247888 public/private: affected three-load
+speed GM >=1.04, whole >=1.02, all individual latency <=1.03, control GM [.97,1.03],
+clean5tests/6benchmarks/6profiles, six-kernel activation and observed cold>=2 /
+hot>=1 occupancy. Component success still requires a separate decoder port/check.
+Serving V27 and its stock-only diagnostic remain preserved backlog.
 
 
 **V28 closed; no score or retry.** Exact decoder source
