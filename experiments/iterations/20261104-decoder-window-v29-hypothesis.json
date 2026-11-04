@@ -1,0 +1,156 @@
+{
+  "date": "2026-11-04",
+  "status": "ISOLATED_IMPLEMENTATION_CPU_PASS_AWAITING_INDEPENDENT_SOURCE_GO",
+  "design": "exact single BF16 register repair plus >=2 escape raw sidecar; local windows rejected before implementation",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parents": {
+    "public": "7a8c4941741645ee",
+    "private": "b2a773e2d7194de8"
+  },
+  "candidate_sha256": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/submission.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/build.py": "cfff8e733fbceb538926623dc68e91abbf7645ebdc65c1fd1c98ad298712fa31",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/test_cpu.py": "d2232fe8d6ea951b53fec51500784239b6f8799ef32ed6f93c455468d35ab33d",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/cpu_result.json": "777680babf7932ce49df971e2e25e9e141548411ff427c04882d47ca16738bf1",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/edits.json": "fcb38b8d6976921df460949fb20188a92bf63cff8b7d9a549d42fe7351cddb94",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/manifest.json": "4957ccdc4d153b98bd9c3518a0355afddf22c6ab5195e3a6e2019b6a785831f4",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/README.md": "eb9ae7bcc69e0695614ffdc2d4d9ba0480018d8021a8130fa9769eef8682a485",
+    "tools/DECODER_WINDOW_V29_HYPOTHESIS_20261104.md": "61ba0511f2ab653af95495985a50a78d56992c08a59500c5d48ee7d2b1bd2aac"
+  },
+  "descriptor": "bits31:30 mode00none,01single,10raw; single bits24:16 fragmentposition and15:0 exactBF16; raw low30 index",
+  "affected_loads": [
+    "decode 1",
+    "decode 16",
+    "decode 32",
+    "verify 1"
+  ],
+  "control_loads": [
+    "verify 16",
+    "verify 32"
+  ],
+  "fixed_gate": {
+    "whole_score_ratio_min": 1.025,
+    "affected_four_official_weighted_load_speed_GM_min": 1.04,
+    "each_case_normalized_latency_max": 1.03,
+    "control_two_official_weighted_load_latency_GM_interval": [
+      0.97,
+      1.03
+    ],
+    "both_exact_parents_required": true,
+    "test_bench_profile_counts": [
+      13,
+      12,
+      12
+    ],
+    "expected_compressed_activation_all8cases": true
+  },
+  "codec_proxy": {
+    "average_requested_bytes": 773.9166666666666,
+    "byte_ratio_to_primary": 1.0077039930555556,
+    "descriptor_bytes": 4,
+    "descriptor_encoding_cases": 65536,
+    "fixed_primary_bytes": 768,
+    "generator_script": "tools/audit_dense_unit_dictionary_feasibility.py",
+    "generator_sha256": "beb6d9845e912c194b14dda7ffd53366ce2daa1d99ad6241c77561a3081a0f55",
+    "limits": "CPU distribution proxy only, not actual Torch CUDA weights/judged seed or latency. Descriptor field checks are not an extracted candidate/GPU proof. Original packed metadata padding and table subtraction omitted from ratios; header bulk alignment must be counted separately.",
+    "local_window_average_byte_ratios": [
+      1.0833333333333333,
+      1.0852864583333333,
+      1.0999348958333333
+    ],
+    "local_window_span_over8_fraction": [
+      0.05859375,
+      0.06005859375,
+      0.071044921875
+    ],
+    "patch_mapping_cases": 2560,
+    "prior_proxy_sha256": "e4d44d3394ae1e2e9572bb7cb99ab73174103e4d96470a2f7aac43a72db09403",
+    "procedure": "Same Python Random.gauss/FP32scale/BF16RNE samples; collect128-bin e71 histogram per seed, choose first max contiguous8-bin window, count escapes in each sequential512-weight unit. Reproduced every prior sample bit hash.",
+    "raw_fraction": 0.0018717447916666667,
+    "raw_sidecar_bytes": 1024,
+    "raw_units": 23,
+    "samples": [
+      {
+        "base": 54,
+        "counts": {
+          "0": 3842,
+          "1": 246,
+          "2": 8
+        },
+        "seed": 230401,
+        "sha256": "d9f9b5723b7deec7e31389e94c393d99a4a65c4f341b00b429f41a9ddf1f222f"
+      },
+      {
+        "base": 54,
+        "counts": {
+          "0": 3832,
+          "1": 259,
+          "2": 5
+        },
+        "seed": 230402,
+        "sha256": "20a6fcd844fbb21e9561fc3aaccea2c134ff48c3aefcdc34d72ad55a7deeaf67"
+      },
+      {
+        "base": 54,
+        "counts": {
+          "0": 3787,
+          "1": 299,
+          "2": 10
+        },
+        "seed": 230403,
+        "sha256": "7ef35480bd5abfb243631b9469d21e0cee3098a2946327f4ae1880337903a9ff"
+      }
+    ],
+    "single_escape_units": 804,
+    "units": 12288
+  },
+  "profile_conditional_scope": {
+    "cut20_score_ratio": 1.0497397189379465,
+    "cut50_score_ratio": 1.1376164842375107,
+    "cut_fraction_to_double": null,
+    "cut_fraction_to_saved_leader": 0.6276414829153856,
+    "delete_all_score_ratio": 1.3369581854632053
+  },
+  "objective": {
+    "latest_saved_leader_score": 2.5761628683765747,
+    "leader_ratio": 1.1810850849710741,
+    "leader_required_latency_reduction": 0.1533209480632033,
+    "leaderboard_snapshot": "experiments/leaderboards/20261104T2151-number-one-reset.json",
+    "observed_at": "2026-11-04T21:51:24.139Z",
+    "public_decoder_score": 2.181183135031857,
+    "snapshot_sha256": "be1ed867d619d41cd71bd24f920ed4b3b11f47671e8ad75276551efe4f07ad70",
+    "stretch_latency_reduction": 0.5,
+    "stretch_score_twice_incumbent": 4.362366270063714
+  },
+  "actual_prepare_stats": "per-matrix printed units,single_units,raw_units,requested_bytes; not yet device observed",
+  "proof": {
+    "native_codec": {
+      "units": 70784,
+      "bf16_bit_comparisons": 36241408,
+      "modes": [
+        5126,
+        65536,
+        122
+      ],
+      "source_mutants_rejected": [
+        "wrong_owner",
+        "wrong_half",
+        "wrong_raw_index"
+      ],
+      "native_translation_sha256": "f3421c93977d2efaa85eef5f44eca129ead4d8fe64da6d5d4abe542509fffe67"
+    },
+    "stage_unit_mappings": 2808,
+    "ring_interleavings": 1120,
+    "geometries": 17,
+    "full_parent_restoration": true,
+    "limits": [
+      "NumPy adapter executes actual packing expressions, not Torch/CUDA kernels.",
+      "Exact BF16 operand bits are proven on CPU; tensor MMA and FP32 correction grouping differ and require official numerical tests.",
+      "Ring model checks regular-warp ownership and inherited handback order, not CUDA memory ordering or compiler allocation.",
+      "Actual numRegs/local/occupancy and selection remain unknown; all eight affected profiles must show compressed V29 activation."
+    ]
+  },
+  "gpu_tested": false,
+  "automatic_promotion": false
+}

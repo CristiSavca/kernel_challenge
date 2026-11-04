@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "reviewed_at_utc": "2026-11-04T22:08:35.334074+00:00",
+  "verdict": "GO_FOR_ONE_OFFICIAL_PRIVATE_CHECK",
+  "candidate_sha256": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "pins": {
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/submission.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/build.py": "cfff8e733fbceb538926623dc68e91abbf7645ebdc65c1fd1c98ad298712fa31",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/edits.json": "fcb38b8d6976921df460949fb20188a92bf63cff8b7d9a549d42fe7351cddb94",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/manifest.json": "4957ccdc4d153b98bd9c3518a0355afddf22c6ab5195e3a6e2019b6a785831f4",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/test_cpu.py": "d2232fe8d6ea951b53fec51500784239b6f8799ef32ed6f93c455468d35ab33d",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/cpu_result.json": "777680babf7932ce49df971e2e25e9e141548411ff427c04882d47ca16738bf1",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/test_analyze_decoder_v29.py": "90885b8bc2b2d6c7b2935154a43ee53b1fba79d1eba9cfb1ac4d951886c49adf",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434"
+  },
+  "scope": "Exact V29 source and CPU evidence review; no GPU execution, official call, public promotion or performance claim.",
+  "source_findings": {
+    "parent_restoration": "Complete byte restoration and reproduction passed; only SK2 codec, its CUDA literal, preparation, and extension namespace changed.",
+    "encoding": "Each 512-BF16 unit keeps the 768-byte primary plus one 32-bit descriptor. Mode 0 decodes primary, mode 1 repairs one original 16-bit value at its lane/word/half, mode 2 reads an immutable 1024-byte original-unit sidecar.",
+    "fallback": "Weight-only whole-matrix requested-byte threshold chooses the existing other backends when 772*units+1024*raw_units >= 1024*units. No input-dependent output shortcut. Official activation must reject fallback that prevents the intended experiment.",
+    "generated_dispatches": {
+      "entries": 24,
+      "compressed_entries": 21,
+      "noncompressed_router_entries": 3,
+      "unique_geometry_rows": 17,
+      "compressed_cluster_size": 1,
+      "ordinary_FUSE_UV_BND_included": true,
+      "limit": "Dispatch entries are not distinct compiled pointers; PK variants and shared runtime templates remain separate concepts."
+    },
+    "footprint": {
+      "max_compressed_dynamic_bytes": 211184,
+      "max_all_dynamic_bytes": 215392,
+      "conservative_static_and_driver_reserve_bytes": 2048,
+      "checked_limit_bytes": 232448,
+      "descriptor_alignment_bytes": 16,
+      "host_device_formulas_identical": true,
+      "actual_registers_local_occupancy": "UNKNOWN"
+    },
+    "lifetime": "COMP uses only producer plus regular consumers; empty-barrier count becomes NW, with unchanged per-consumer arrival locations after operand loads. Header and raw operands are read before inherited handback. Removed correction warps, cbar wait and zero-trip correction sums add no new synchronization protocol.",
+    "state": "Raw tensor is retained through the existing untyped ptab ABI with pmax=0; packed stream and its descriptor tail use the same original unit permutation. Other codecs and routing state are unchanged.",
+    "numerics": "Original BF16 operand bits are restored, but removing separate FP32 correction changes accumulation association. CPU bit equality does not establish GPU numerical acceptance.",
+    "control_scope": "Original dense geometry/ring depth, router, UV/BND, PDL and MMA expressions remain. COMP0 generated symbols are renamed but their behavior is intended unchanged."
+  },
+  "independent_validation": {
+    "command": ".venv-modal/bin/python muse_decode_layer/candidates/decoder_exact_patch_v29/test_cpu.py --expected-sha bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c --output /tmp/v29-critic-cpu.json",
+    "exit_code": 0,
+    "report_exactly_matches_author": true,
+    "report_sha256": "777680babf7932ce49df971e2e25e9e141548411ff427c04882d47ca16738bf1",
+    "bf16_bit_comparisons": 36241408,
+    "units": 70784,
+    "mode_unit_counts": [
+      5126,
+      65536,
+      122
+    ],
+    "source_mutants_rejected": [
+      "wrong_owner",
+      "wrong_half",
+      "wrong_raw_index"
+    ],
+    "stage_unit_mappings": 2808,
+    "modeled_ring_interleavings": 1120,
+    "ring_negative_controls": 2,
+    "analyzer_fixture_command": "PYTHONPATH=tools python3 -m unittest discover -s tools -p test_analyze_decoder_v29.py -v",
+    "analyzer_fixtures_passed": 4,
+    "limits": [
+      "NumPy adapter executes actual packing expressions, not Torch/CUDA kernels.",
+      "Exact BF16 operand bits are proven on CPU; tensor MMA and FP32 correction grouping differ and require official numerical tests.",
+      "Ring model checks regular-warp ownership and inherited handback order, not CUDA memory ordering or compiler allocation.",
+      "Actual numRegs/local/occupancy and selection remain unknown; all eight affected profiles must show compressed V29 activation."
+    ]
+  },
+  "fixed_gate": {
+    "both_parent_jobs": [
+      "7a8c4941741645ee",
+      "b2a773e2d7194de8"
+    ],
+    "official_score_formula": "Geometric mean of six load scores; each load is sum(weight*baseline_ns)/sum(weight*median_ns), weights sliding=46/full=16.",
+    "whole_score_ratio_min": 1.025,
+    "affected_four_weighted_load_speed_GM_min": 1.04,
+    "each_affected_normalized_latency_max": 1.03,
+    "control_two_weighted_load_latency_GM_range": [
+      0.97,
+      1.03
+    ],
+    "each_control_normalized_latency_max": 1.03,
+    "affected_loads": [
+      "decode 1",
+      "decode 16",
+      "decode 32",
+      "verify 1"
+    ],
+    "control_loads": [
+      "verify 16",
+      "verify 32"
+    ],
+    "required_records": {
+      "tests": 13,
+      "benchmarks": 12,
+      "profiles": 12
+    },
+    "activation": "All eight affected profiles must match the exact multiset of parent compressed first-seven template integers with COMP argument 8=true and the new sk2_exact_patch_v29 symbol; no residual parent COMP.",
+    "expected_parent_compressed_instance_counts": [
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      3,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "required_identity": "Exact candidate, evaluator/image and clean checks/flags; seed may differ between parent runs.",
+    "interpretation": "Prespecified operational screen, not a statistical significance or causal attribution claim. Root gate supersedes the earlier supervisor-note proposal.",
+    "failure_action": "Close this fixed attempt on correctness, activation or fixed performance-gate failure; no automatic retry, shape rescue or public promotion."
+  },
+  "hypothesis_and_risk": {
+    "falsifiable_prediction": "Eliminating correction-warps/table scan/FP32 correction work is worth the uniform header, rare exact repairs and occasional global raw loads across all four affected weighted loads.",
+    "strongest_failure_case": "Correction work is not on the exposed critical path, while every consumer gains descriptor/branch/register work and raw-load stalls; compiler resource changes or FP32 association can negate the gain.",
+    "cpu_distribution_proxy": "Three fixed Gaussian proxy draws contained 23 raw units / 12288 units; requested payload 773.9166667 bytes/unit, +0.7704% over the 768-byte primary. This is not actual Torch CUDA/judged-weight evidence.",
+    "conditional_profile_scenarios": {
+      "SK2_latency_reduction_20pct_whole_score_ratio": 1.04973972,
+      "SK2_latency_reduction_50pct_whole_score_ratio": 1.13761648,
+      "delete_all_SK2_whole_score_ratio": 1.336958
+    },
+    "scenario_limit": "Rescales separately profiled shares onto benchmark load times. Conditional sensitivity only: overlap, changed resource pressure and critical path are unknown. V29 alone does not establish the 100% whole-score stretch target.",
+    "actual_device_unknowns": [
+      "CUDA compile/admission",
+      "registers and local allocation",
+      "MMA numerical agreement",
+      "actual raw fallback frequency",
+      "measured latency and selected activation"
+    ]
+  }
+}

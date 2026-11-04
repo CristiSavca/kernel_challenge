@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "iteration": "decoder-exact-patch-v29",
+  "created_at": "2026-11-04T22:09:33.670884+00:00",
+  "source_review_status": "GO_FOR_OFFICIAL_CHECK",
+  "candidate_sha256": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+  "candidate_path": "muse_decode_layer/candidates/decoder_exact_patch_v29/submission.py",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parents": [
+    {
+      "job": "7a8c4941741645ee",
+      "mode": "run"
+    },
+    {
+      "job": "b2a773e2d7194de8",
+      "mode": "check"
+    }
+  ],
+  "hypothesis": "Eliminate separate correction warps and correction-table scanning by exact per-unit register repair before MMA; retain raw sidecar fallback for multiple exceptions.",
+  "fixed_gate": {
+    "affected_load_GM_min": 1.04,
+    "each_affected_latency_max": 1.03,
+    "control_load_GM_latency_min": 0.97,
+    "control_load_GM_latency_max": 1.03,
+    "each_control_latency_max": 1.03,
+    "whole_score_ratio_min": 1.025
+  },
+  "aggregation": "Geometric mean of six load scores; each load is sum(weight*baseline_ns)/sum(weight*median_ns), weights sliding=46/full=16.",
+  "affected_loads": [
+    "decode 1",
+    "decode 16",
+    "decode 32",
+    "verify 1"
+  ],
+  "control_loads": [
+    "verify 16",
+    "verify 32"
+  ],
+  "activation": "All eight affected profiles must match the exact multiset of parent compressed first-seven template integers with COMP argument 8=true and the new sk2_exact_patch_v29 symbol; no residual parent COMP.",
+  "required_records": {
+    "setup": 1,
+    "tests": 13,
+    "benchmarks": 12,
+    "profiles": 12
+  },
+  "falsifiable_prediction": "Eliminating correction-warps/table scan/FP32 correction work is worth the uniform header, rare exact repairs and occasional global raw loads across all four affected weighted loads.",
+  "strongest_failure_reason": "Correction work is not on the exposed critical path, while every consumer gains descriptor/branch/register work and raw-load stalls; compiler resource changes or FP32 association can negate the gain.",
+  "upper_bound_estimate": {
+    "type": "Conditional profile scenario, not forecast or physical bound",
+    "cut20_score_ratio": 1.0497397189379465,
+    "cut50_score_ratio": 1.1376164842375107,
+    "cut_fraction_to_double": null,
+    "cut_fraction_to_saved_leader": 0.6276414829153856,
+    "delete_all_score_ratio": 1.3369581854632053,
+    "limits": "Rescales separately profiled shares onto benchmark load times. Conditional sensitivity only: overlap, changed resource pressure and critical path are unknown. V29 alone does not establish the 100% whole-score stretch target."
+  },
+  "objective": {
+    "latest_saved_leader_score": 2.5761628683765747,
+    "leader_ratio": 1.1810850849710741,
+    "leader_required_latency_reduction": 0.1533209480632033,
+    "leaderboard_snapshot": "experiments/leaderboards/20261104T2151-number-one-reset.json",
+    "observed_at": "2026-11-04T21:51:24.139Z",
+    "public_decoder_score": 2.181183135031857,
+    "snapshot_sha256": "be1ed867d619d41cd71bd24f920ed4b3b11f47671e8ad75276551efe4f07ad70",
+    "stretch_latency_reduction": 0.5,
+    "stretch_score_twice_incumbent": 4.362366270063714
+  },
+  "kill_criteria": [
+    "Any numerical/compilation/check/flag failure",
+    "Any fixed performance or activation gate failure against either parent; no identical retry or retrospective shape rescue"
+  ],
+  "resources": {
+    "official_private_checks_planned": 1,
+    "Modal_allocations_planned": 0,
+    "out_of_pocket_authorized_usd": 0,
+    "automatic_scored_submission": false
+  },
+  "evidence_sha256": {
+    "experiments/iterations/20261104-decoder-exact-patch-v29-root-cpu.json": "777680babf7932ce49df971e2e25e9e141548411ff427c04882d47ca16738bf1",
+    "experiments/iterations/20261104-decoder-exact-patch-v29-source-critic.json": "36ae008d67aa8a3d7581574258fe8ffee534389d057dcb9291be3dc170fe9f86",
+    "experiments/iterations/20261104-decoder-window-v29-hypothesis.json": "ff100a29d6aafd8dd5188f0102ca489037a4a1fa1a4767b9e2c2dc4db21c8515",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/README.md": "eb9ae7bcc69e0695614ffdc2d4d9ba0480018d8021a8130fa9769eef8682a485",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/build.py": "cfff8e733fbceb538926623dc68e91abbf7645ebdc65c1fd1c98ad298712fa31",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/cpu_result.json": "777680babf7932ce49df971e2e25e9e141548411ff427c04882d47ca16738bf1",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/edits.json": "fcb38b8d6976921df460949fb20188a92bf63cff8b7d9a549d42fe7351cddb94",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/manifest.json": "4957ccdc4d153b98bd9c3518a0355afddf22c6ab5195e3a6e2019b6a785831f4",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/submission.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/test_cpu.py": "d2232fe8d6ea951b53fec51500784239b6f8799ef32ed6f93c455468d35ab33d",
+    "tools/DECODER_EXACT_PATCH_V29_CRITIC_20261104.md": "7cbd75f7ce64de2b0a5c4c8b0b6a834e9fb7d21b5ac43116b32580b92541c727",
+    "tools/DECODER_WINDOW_V29_HYPOTHESIS_20261104.md": "61ba0511f2ab653af95495985a50a78d56992c08a59500c5d48ee7d2b1bd2aac",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/test_analyze_decoder_v29.py": "90885b8bc2b2d6c7b2935154a43ee53b1fba79d1eba9cfb1ac4d951886c49adf"
+  }
+}

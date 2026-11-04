@@ -1,0 +1,240 @@
+{
+  "candidate": {
+    "compile_risks": [
+      "Do not dynamically index a local register array for patching; static unrolled pair selection must avoid accidental local memory.",
+      "Stage header rounding can add1KiB per ring slot; recompute exact shared size and compiler admission.",
+      "Rare raw branch adds independent global weight loads; hardware cost not inferred from byte counts.",
+      "Original exact bits in MMA change FP32 association relative to old approximate MMA+FP32 correction; numerical gate required."
+    ],
+    "descriptor": "bits31:30 type00none,01single,10raw; single bits24:9 originalBF16, bits8:0 position=lane*16+v; raw low30bits sidecarunitindex. Reserve11invalid.",
+    "distinct_from_closed": [
+      "Global-escapeV10 retained separate FP32 correction and read activations globally; new design repairs operand bits inside existing consumers.",
+      "Dictionary required15vs12 source decode operations; new keeps original decode8.",
+      "Earlier mixed raw tiles paid1024extra bytes for every escaped unit; new pays it only for>=2escapes.",
+      "R16 changed geometry/fusion andfailedresources; proposed first codec keeps row/K geometry."
+    ],
+    "fallback": "Immutable actual-weight qualification, complete rawunit representation and existing wholematrix fallback; arbitrary weights and nonfinite bit patterns cannot be presumed eligible.",
+    "mechanism": "Retain parent matrix-wide base and768-byte low/code payload. Add4-byte descriptor per512-weight8x64unit. Decode with unchanged decode8. Repair one exceptional BF16 weight directly in its owner register before MMA; use raw1024-byte sidecar only for units with>=2 escapes. Remove correction warps, correction planes and their ring handbacks.",
+    "name": "V29 exact sparse register repair for SK2",
+    "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "source_hooks": {
+      "compress": "bfp_sk2_compress around12254",
+      "decoder": "decode8 around9360, consumer b[NT][8] around10525; static8-word masked16bit replacement",
+      "lifetimes": "NESC/corr and empty-barrier arrivals around10308/10354/10430; preserve producer, consumer, FUSE router, UV/BND, PDL and COMP0 semantics",
+      "stream": "bfp_sk2_stream around12291; append unit descriptor stage tail with16B bulk alignment"
+    }
+  },
+  "date": "2026-11-04",
+  "new_cpu_evidence": {
+    "average_requested_bytes": 773.9166666666666,
+    "byte_ratio_to_primary": 1.0077039930555556,
+    "descriptor_bytes": 4,
+    "descriptor_encoding_cases": 65536,
+    "fixed_primary_bytes": 768,
+    "generator_script": "tools/audit_dense_unit_dictionary_feasibility.py",
+    "generator_sha256": "beb6d9845e912c194b14dda7ffd53366ce2daa1d99ad6241c77561a3081a0f55",
+    "limits": "CPU distribution proxy only, not actual Torch CUDA weights/judged seed or latency. Descriptor field checks are not an extracted candidate/GPU proof. Original packed metadata padding and table subtraction omitted from ratios; header bulk alignment must be counted separately.",
+    "local_window_average_byte_ratios": [
+      1.0833333333333333,
+      1.0852864583333333,
+      1.0999348958333333
+    ],
+    "local_window_span_over8_fraction": [
+      0.05859375,
+      0.06005859375,
+      0.071044921875
+    ],
+    "patch_mapping_cases": 2560,
+    "prior_proxy_sha256": "e4d44d3394ae1e2e9572bb7cb99ab73174103e4d96470a2f7aac43a72db09403",
+    "procedure": "Same Python Random.gauss/FP32scale/BF16RNE samples; collect128-bin e71 histogram per seed, choose first max contiguous8-bin window, count escapes in each sequential512-weight unit. Reproduced every prior sample bit hash.",
+    "raw_fraction": 0.0018717447916666667,
+    "raw_sidecar_bytes": 1024,
+    "raw_units": 23,
+    "samples": [
+      {
+        "base": 54,
+        "counts": {
+          "0": 3842,
+          "1": 246,
+          "2": 8
+        },
+        "seed": 230401,
+        "sha256": "d9f9b5723b7deec7e31389e94c393d99a4a65c4f341b00b429f41a9ddf1f222f"
+      },
+      {
+        "base": 54,
+        "counts": {
+          "0": 3832,
+          "1": 259,
+          "2": 5
+        },
+        "seed": 230402,
+        "sha256": "20a6fcd844fbb21e9561fc3aaccea2c134ff48c3aefcdc34d72ad55a7deeaf67"
+      },
+      {
+        "base": 54,
+        "counts": {
+          "0": 3787,
+          "1": 299,
+          "2": 10
+        },
+        "seed": 230403,
+        "sha256": "7ef35480bd5abfb243631b9469d21e0cee3098a2946327f4ae1880337903a9ff"
+      }
+    ],
+    "single_escape_units": 804,
+    "units": 12288
+  },
+  "objective": {
+    "latest_saved_leader_score": 2.5761628683765747,
+    "leader_ratio": 1.1810850849710741,
+    "leader_required_latency_reduction": 0.1533209480632033,
+    "leaderboard_snapshot": "experiments/leaderboards/20261104T2151-number-one-reset.json",
+    "observed_at": "2026-11-04T21:51:24.139Z",
+    "public_decoder_score": 2.181183135031857,
+    "snapshot_sha256": "be1ed867d619d41cd71bd24f920ed4b3b11f47671e8ad75276551efe4f07ad70",
+    "stretch_latency_reduction": 0.5,
+    "stretch_score_twice_incumbent": 4.362366270063714
+  },
+  "recommended_execution": {
+    "first": "Author one isolated fixed codec candidate; reviewer checks lossless packing/patch mapping, complete fallback and changed ring participation. Root owns one official private decoder check after frozen source/CPU gate.",
+    "kill": "Any precision/lifetime/fallback/admission defect, preparation failure, or failed fixed speed screen closes this candidate. Do not convert the result into a global verdict on all codecs.",
+    "minimum_evidence": [
+      "Actual prepare-time zero/single/raw counts and bytes by matrix; no input-derived state in prepare.",
+      "Correct wholedecoder13tests12bench12profiles, clean flags and visible intended affected path.",
+      "Actualresource/admission and no silent unintended backend fallback; compiler local allocation reported.",
+      "Score using exactsix weighted loads against both97afparents; no post-result shape rescue or repeated noise checks."
+    ],
+    "parallel_role": "MoE author works on exact expert-weight reuse or whole-job scheduling with explicit route-derived request accounting; no further serving or parameter-sweep work for current goal.",
+    "stretch_plan": "Useful isolated dense+MoE gains may compound. Model requires about62.06%cuts to both broad families for2x if other time fixed; no present source/evidence establishes this. Search must remove work/bytes across both, not promise2x from V29.",
+    "suggested_prefixed_screen": "Root to freeze before run: >=1% whole score gain against both97af parents, >=2% affected four-load speedGM, affected per-case latency<=1.03, two large-load control GM in[.97,1.03]. Operational screen, not statistical significance."
+  },
+  "scope": "Read-only source/profile/board evidence plus bounded local CPU distribution and descriptor checks; no candidate edits or GPU/provider/official calls.",
+  "scorer": {
+    "both_dense_and_moe_cut20_score_ratio": 1.191479383874944,
+    "both_dense_and_moe_cut_fraction_to_double": 0.6206373428421434,
+    "conditional_scenarios": {
+      "attention": {
+        "cut20_score_ratio": 1.0304734657901016,
+        "cut50_score_ratio": 1.0801786258339767,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": null,
+        "delete_all_score_ratio": 1.1759262284696275
+      },
+      "dense": {
+        "cut20_score_ratio": 1.0751674680456693,
+        "cut50_score_ratio": 1.2131969903128095,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": 0.43679267792779186,
+        "delete_all_score_ratio": 1.5538286802721486
+      },
+      "main_moe": {
+        "cut20_score_ratio": 1.0531279062963168,
+        "cut50_score_ratio": 1.1519046873083714,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": 0.5743063184529785,
+        "delete_all_score_ratio": 1.407767219380368
+      },
+      "moe": {
+        "cut20_score_ratio": 1.100117713572832,
+        "cut50_score_ratio": 1.295421214986155,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": 0.3366167203622069,
+        "delete_all_score_ratio": 1.8486679447192436
+      },
+      "sk2": {
+        "cut20_score_ratio": 1.0497397189379465,
+        "cut50_score_ratio": 1.1376164842375107,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": 0.6276414829153856,
+        "delete_all_score_ratio": 1.3369581854632053
+      },
+      "small_moe": {
+        "cut20_score_ratio": 1.0446192784329218,
+        "cut50_score_ratio": 1.1245906273835342,
+        "cut_fraction_to_double": null,
+        "cut_fraction_to_saved_leader": 0.6756773934237046,
+        "delete_all_score_ratio": 1.313191498757116
+      }
+    },
+    "formula": "geomean over six loads of sum(weight*baseline_ns)/sum(weight*normalized_candidate_ns); each load uses46 sliding and16 full",
+    "limits": "Profile shares rescaled onto normalized benchmark case times; rounded separate traces with PDL waits/overlap. Scenarios are not forecasts, exclusive wall-time fractions or physical upper bounds.",
+    "profile_shares": [
+      {
+        "load": "decode 1",
+        "shares": {
+          "attention": 0.08099475876197079,
+          "dense": 0.5277952220239314,
+          "main_moe": 0.0,
+          "moe": 0.3435098493456788,
+          "sk2": 0.43741595279955836,
+          "small_moe": 0.3435098493456788
+        }
+      },
+      {
+        "load": "decode 16",
+        "shares": {
+          "attention": 0.1793824208036837,
+          "dense": 0.3349943334552953,
+          "main_moe": 0.0,
+          "moe": 0.43992705963571177,
+          "sk2": 0.3349943334552953,
+          "small_moe": 0.43992705963571177
+        }
+      },
+      {
+        "load": "decode 32",
+        "shares": {
+          "attention": 0.2522257812587431,
+          "dense": 0.2910344345885907,
+          "main_moe": 0.3970816628628291,
+          "moe": 0.3970816628628291,
+          "sk2": 0.2910344345885907,
+          "small_moe": 0.0
+        }
+      },
+      {
+        "load": "verify 1",
+        "shares": {
+          "attention": 0.08230926231308751,
+          "dense": 0.4137650314721521,
+          "main_moe": 0.0,
+          "moe": 0.46965458398567206,
+          "sk2": 0.33983096220730297,
+          "small_moe": 0.46965458398567206
+        }
+      },
+      {
+        "load": "verify 16",
+        "shares": {
+          "attention": 0.13239040084886508,
+          "dense": 0.28285335690526686,
+          "main_moe": 0.5326309890522201,
+          "moe": 0.5326309890522201,
+          "sk2": 0.0,
+          "small_moe": 0.0
+        }
+      },
+      {
+        "load": "verify 32",
+        "shares": {
+          "attention": 0.15769467188272088,
+          "dense": 0.24086215097080746,
+          "main_moe": 0.5440717473284664,
+          "moe": 0.5440717473284664,
+          "sk2": 0.0,
+          "small_moe": 0.0
+        }
+      }
+    ],
+    "public_profile_sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+    "reproduced": true
+  },
+  "selection_failures": [
+    "Prior after-V28 recommendation chose serving integration although its direct public-score effect is zero; wrong objective for #1 now.",
+    "Largest recent effort targeted MAIN-only work (half the equally weighted loads), despite near-nominal77% standalone HBM and expensive new synchronization/traffic in failed designs.",
+    "Unobservable stall attribution became an admission requirement even for a structural work-removal prototype; negative fixed designs were overgeneralized into absence of candidates.",
+    "Repeated reviewers and broad CPU suites did not catch real CUDA first-run/harness issues (V24 launch-count assumption, V27 uncheckpointed cold stock path). Review volume is not device evidence."
+  ],
+  "status": "SUPERVISOR_RESET_CONCRETE_V29_CODEC_PROPOSAL"
+}
