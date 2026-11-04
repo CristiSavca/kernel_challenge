@@ -1,0 +1,114 @@
+{
+  "mode": "hardware-profile",
+  "gpu": "H200:1",
+  "timeout_seconds": 900,
+  "official": false,
+  "status": "hardware_unavailable",
+  "worker_sha256": "105c5ace7164f84f8fa77058e294abb08ebc21d35510c8a9d31cb6eae8a0a456",
+  "problem": "muse_moe_w4a16",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "hardware_profile": true,
+  "hardware_issue": true,
+  "hardware_budget_seconds": 860,
+  "hardware_policy": {
+    "replay_mode": "kernel",
+    "cache_control": "all",
+    "clock_control": "none",
+    "graph_profiling": "node",
+    "profile_from_start": "off",
+    "launch_count": 2,
+    "requested_pass_count": null,
+    "pass_count_policy": "NCU chooses passes for the fixed metric list; actual counts required; no collection retry",
+    "scope": "standalone MoE only; not decoder routing, decoder PDL, or benchmark speedup",
+    "ordinary_timing_limitation": "Collected with profiling disabled inside an NCU-injected process; not independent benchmark evidence",
+    "cache_limitation": "NCU cache-control all flushes caches on replay; distinct from the ordinary read sweep and official benchmark conditions",
+    "interpretation_limit": "Low bandwidth and aggregate stall percentages do not establish a removable critical path or justify a shared-dequant rewrite; no source-PC attribution is collected"
+  },
+  "hardware_required_metrics": [
+    "dram__bytes_read.sum",
+    "dram__bytes_write.sum",
+    "gpu__time_duration.sum",
+    "dram__throughput.avg.pct_of_peak_sustained_elapsed"
+  ],
+  "hardware_optional_metrics": [
+    "smsp__issue_active.avg.pct_of_peak_sustained_active",
+    "smsp__warps_eligible.avg.per_cycle_active",
+    "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active",
+    "smsp__warp_issue_stalled_barrier_per_warp_active.pct",
+    "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct",
+    "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct",
+    "smsp__warp_issue_stalled_wait_per_warp_active.pct"
+  ],
+  "source_sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+  "file_sha256": {
+    "baseline.py": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+    "hardware_metrics.py": "6e9ac592b9d6de266a90a555d85039da760590ff770944fda63f88908561514a",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+    "reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44"
+  },
+  "cases": [
+    {
+      "bs": 32,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    },
+    {
+      "bs": 256,
+      "sharding": "ep8",
+      "dist": "normal",
+      "rank": "busiest"
+    }
+  ],
+  "repeats": 6,
+  "seed": 7202,
+  "weight_seed": 7311,
+  "hardware_input_seeds": [
+    7302,
+    9302
+  ],
+  "comparison_baseline": "single_frozen_incumbent",
+  "incumbent": {
+    "path": "experiments/candidates/muse_moe_w4a16/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.py",
+    "sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a"
+  },
+  "modal_client": "1.6.3",
+  "credit_guard": {
+    "run_id": "20261104T054636Z-ea14816c",
+    "checked_at": "2026-11-04T05:46:36.036173+00:00",
+    "cycle": "2026-11",
+    "workspace": "cristisavca44",
+    "environment": "main",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "grant_usd": "30.00",
+    "headroom_usd": "5.00",
+    "provider_observed_usd": "3.12322333",
+    "prior_reservations_usd": "14.52",
+    "reservation_usd": "2.42",
+    "working_budget_remaining_usd": "4.93677667",
+    "estimate_is_provider_cap": false,
+    "billing_summary": {
+      "metered_cost": "3.12000000",
+      "billed_cost": "0E-8",
+      "adjustments": {
+        "credits": "-3.12000000",
+        "reservation_adjustment": "-0E-8",
+        "network_egress_allowance": "0E-8",
+        "plan_cost": "0E-8",
+        "free_storage": "-0E-8"
+      },
+      "metered_cost_breakdown": {
+        "volumes": "0E-8",
+        "ephemeral_apps": "3.12322333",
+        "llm_tokens": "0E-8",
+        "network_egress": "0E-8"
+      }
+    }
+  },
+  "credit_guard_sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+  "sandbox_id": "sb-RanXWKIxQCFs7pCilXezr6",
+  "dashboard": "https://modal.com/id/sb-RanXWKIxQCFs7pCilXezr6",
+  "exit_code": 0,
+  "sandbox_terminated": true
+}

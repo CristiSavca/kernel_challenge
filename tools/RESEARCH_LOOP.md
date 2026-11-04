@@ -395,3 +395,56 @@ schedule checks passed; actual compiler resources and two-CTA occupancy still
 need a reviewed GPU verification path. Source runtime outside the q8-full path
 must remain intact. Root has requested explicit resource verification rather
 than assuming it from the CPU budgets.
+
+Hardware run is now terminal; local session `83063` exited zero and sandbox
+termination is confirmed. Do not resume or allocate a repeat. NCU 2025.3.1
+accepted all 11 requested metrics and captured exactly two kernels, four replay
+passes each. The child completed all 20 oracle checks, profiled seeds 7302/9302,
+and one 203.35-second prepare. Total diagnostic elapsed was 223.45 seconds.
+The original report correctly remains `hardware_unavailable` because our parser
+expected long CSV, while NCU emitted wide CSV (280 columns, units row, two data
+rows). Raw capture is intact. Author is adding strict wide-format parsing and
+saving an offline recovery separately; never rewrite the original result,
+manifest, or frozen helper, and no GPU retry is justified.
+
+Independent raw audit: M32 U=J=16, read 456,964,352 B/write 3,375,872 B;
+M256 U26/J27, read 769,691,136 B/write 4,264,192 B. These reads are 1.0088×
+and 1.0069× the respective nominal repeated-job packed bytes. NCU DRAM
+throughput is 74.43/75.06%, issue 59.38/59.48%, eligible warps 1.40/1.39,
+tensor activity 11.22/23.71%. Its 128.576/214.304 us durations are controlled
+replay diagnostics, never benchmark speedup. NCU-injected ordinary medians
+479.632/483.344 us differ conspicuously from normal runs and are unusable as
+independent performance evidence. At nominal 4.8 TB/s the same observed traffic
+has only about 25.4/24.8% conditional headroom; this neither localizes stalls
+nor establishes removable wall time. Prioritize the concrete attention test.
+
+Final attention core source `6eb318df58c3ef5576c4ea456b4b494e1ef4548090fa7707c84e247f960c2222`
+has exact-byte critic static GO. Root independently reran layout/schedule/
+rescale proofs. The final guard encodes NP128, SETMAXNREG, MERGE3, !QDIRECT.
+Author is preparing an isolated attention wrapper with exact decoder native
+source/flags and a host-only resource export, avoiding cold whole-decoder
+compilation for the first screen. It is not the active standalone87a9 source;
+parent/wrapper equivalence and actual occupancy require review before allocation.
+
+Continuation at 05:57–06:00 UTC: user asked why their name was not visible.
+Fresh authenticated CLI identifies CristiSavca, overall/decoder rank396,
+decoder2.1502x; all four official scored entries remain public. The user's
+Chrome homepage showed top-ten attention rows only. Root opened the full
+leaderboard, selected decoder, expanded410 rows, and left CristiSavca396
+visible. Proof: experiments/leaderboards/20261104-public-entry-verification.json
+and cristisavca-visible-20261104-rank396.jpg. No new score was submitted.
+
+NCU recovery is complete and independently approved. Final recovered report
+SHA0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7;
+working helper ba26f5f43d15ba38e57f01766e85f532aa8fd659fab6e0acfe0d2cc28d1e2ec9.
+Root reran53 parser/lifecycle test executions and independently matched each
+recovered launch to raw fixture and all original artifact hashes. Original
+failed-parser status remains unchanged; no rerun. Billing after NCU: aggregate
+$3.47/resource$3.47495600, credits cover all, $0 billed, app stopped0tasks.
+
+Exact decoder-attention wrappers dc6d0c48/d8be9200 and host resource hook
+have independent static GO. Agent attention_research_v2 now owns a narrow
+runner integration and tests; root alone owns allocation. Require actual
+complete ptxas output, post-warmup exact-specialization resource attributes,
+localBytes0 and2CTA occupancy, actual flat/cooperative plan, correctness and
+paired graph timings. No GPU currently running.

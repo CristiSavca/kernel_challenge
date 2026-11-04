@@ -168,50 +168,94 @@ def collection_command(metrics: list[str]) -> list[str]:
 
 
 def parse_counters(output: str, metrics: list[str]) -> dict:
-    """Require two complete launches; preserve units instead of guessing conversions."""
+    """Accept NCU long or raw-wide CSV; require two complete, unambiguous launches."""
     if metrics not in (list(REQUIRED), list(REQUIRED + ISSUE)):
         raise ValueError("Unexpected requested metric set")
-    header = None
+    header, layout, units = None, None, None
     launches = {}
+
+    def number(text):
+        value = float(text.replace(",", ""))
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Non-finite/negative hardware metric")
+        return value
+
+    def identity(entry):
+        if not re.search(r"\bokc::moe_fused\s*<", entry.get("Kernel Name", "")) or not entry.get("ID", "").isdigit():
+            raise ValueError("Unexpected profiled kernel identity")
+        # Canonicalize IDs so 0 and 00 cannot be accepted as different launches.
+        return str(int(entry["ID"])), entry["Kernel Name"]
+
     for row in csv.reader(io.StringIO(output)):
-        if "Metric Name" in row and "Metric Value" in row and "ID" in row:
+        if "ID" in row and "Kernel Name" in row:
+            if header is not None or len(row) != len(set(row)):
+                raise ValueError("Duplicate/ambiguous hardware CSV header")
             header = row
+            layout = "long" if "Metric Name" in row and "Metric Value" in row else "wide"
+            if layout == "long" and "Metric Unit" not in row:
+                raise ValueError("Missing metric-unit column")
+            if layout == "wide" and not set(metrics + ["profiler__replayer_passes"]) <= set(row):
+                raise ValueError("Missing required wide metric/pass columns")
             continue
-        if header is None or len(row) != len(header):
+        if header is None:
             continue
+        if len(row) != len(header):
+            if row and row[0].isdigit():
+                raise ValueError("Partial hardware CSV data row")
+            continue  # NCU warnings/progress are not CSV data.
         entry = dict(zip(header, row))
+        if layout == "wide" and units is None:
+            if entry["ID"] or entry["Kernel Name"]:
+                raise ValueError("Missing wide CSV units row")
+            units = entry
+            continue
+        if layout == "wide":
+            ident, kernel = identity(entry)
+            if ident in launches:
+                raise ValueError("Duplicate hardware launch row")
+            if units["profiler__replayer_passes"] != "pass":
+                raise ValueError("Unexpected replay pass unit")
+            passes = number(entry["profiler__replayer_passes"])
+            if passes <= 0 or not passes.is_integer():
+                raise ValueError("Invalid replay pass count")
+            launches[ident] = {"id": ident, "kernel": kernel,
+                               "metrics": {name: {"value": number(entry[name]), "unit": units[name]} for name in metrics},
+                               "actual_pass_count": int(passes),
+                               "actual_pass_count_source": "wide profiler__replayer_passes column"}
+            continue
         name = entry.get("Metric Name")
         if name not in metrics:
             continue
-        kernel = entry.get("Kernel Name", "")
-        if "okc::moe_fused" not in kernel or not entry["ID"].isdigit():
-            raise ValueError("Unexpected profiled kernel identity")
-        value = float(entry["Metric Value"].replace(",", ""))
-        if not math.isfinite(value) or value < 0:
-            raise ValueError("Non-finite/negative hardware metric")
-        launch = launches.setdefault(entry["ID"], {"id": entry["ID"], "kernel": kernel, "metrics": {}})
+        ident, kernel = identity(entry)
+        launch = launches.setdefault(ident, {"id": ident, "kernel": kernel, "metrics": {}})
         if launch["kernel"] != kernel or name in launch["metrics"]:
             raise ValueError("Duplicate or inconsistent hardware metric")
-        launch["metrics"][name] = {"value": value, "unit": entry.get("Metric Unit", "")}
+        launch["metrics"][name] = {"value": number(entry["Metric Value"]), "unit": entry["Metric Unit"]}
     if len(launches) != 2 or any(set(x["metrics"]) != set(metrics) for x in launches.values()):
         raise ValueError("Missing/partial hardware launches or metrics")
     ordered = sorted(launches.values(), key=lambda x: int(x["id"]))
     for size, launch in zip((32, 256), ordered):
         launch["M"] = size  # exact two launch windows, independently checked in the child report
         values = launch["metrics"]
-        if any(values[name]["unit"] != "byte" for name in REQUIRED[:2]) or values[REQUIRED[2]]["unit"] != "nsecond":
-            raise ValueError("Unexpected byte/duration units")
+        for name, metric in values.items():
+            allowed = ({"byte"} if name in REQUIRED[:2] else {"ns", "nsecond"} if name == REQUIRED[2]
+                       else {"warp"} if name == ISSUE[1] else {"%"})
+            if metric["unit"] not in allowed:
+                raise ValueError(f"Unexpected unit for {name}: {metric['unit']}")
         ns = values[REQUIRED[2]]["value"]
         if ns <= 0:
             raise ValueError("Non-positive profiler duration")
         launch["read_plus_write_bytes_per_second"] = sum(values[name]["value"] for name in REQUIRED[:2]) * 1e9 / ns
         launch["duration_is_benchmark_evidence"] = False
-    passes = [int(value) for value in re.findall(r"\b(\d+)\s+passes?\b", output)]
-    if len(passes) != 2 or any(value <= 0 for value in passes):
-        raise ValueError("Missing/ambiguous actual replay pass counts")
-    for launch, count in zip(ordered, passes):
-        launch["actual_pass_count"] = count
-    return {"launches": ordered, "actual_pass_counts": passes}
+    if layout == "long":
+        passes = [int(value) for value in re.findall(r"\b(\d+)\s+passes?\b", output)]
+        if len(passes) != 2 or any(value <= 0 for value in passes):
+            raise ValueError("Missing/ambiguous actual replay pass counts")
+        for launch, count in zip(ordered, passes):
+            launch["actual_pass_count"] = count
+            launch["actual_pass_count_source"] = "long-output progress text"
+    return {"csv_layout": layout, "launches": ordered,
+            "actual_pass_counts": [launch["actual_pass_count"] for launch in ordered]}
 
 
 def route_summary(ids: list[list[int]], lo: int, count: int) -> dict:

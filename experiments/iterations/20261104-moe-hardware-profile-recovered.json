@@ -1,0 +1,515 @@
+{
+  "status": "offline_recovered_complete",
+  "official": false,
+  "diagnostic_only": true,
+  "original_result_status": "hardware_unavailable",
+  "original_parser_error": "ValueError: Missing/partial hardware launches or metrics",
+  "provenance": {
+    "run": "experiments/modal/20261104T054636Z-ea14816c",
+    "unchanged_original_files_sha256": {
+      "experiments/modal/20261104T054636Z-ea14816c/result.json": "398a89f345b90b47937ef06fb44e541dbb0bcf61d334843ff25fbdb34d3a6f43",
+      "experiments/modal/20261104T054636Z-ea14816c/manifest.json": "86727fde4ad98b7c3a9e890ac836e38004254c55cb154b3a80290cf213f58441",
+      "experiments/modal/20261104T054636Z-ea14816c/hardware_metrics.py": "6e9ac592b9d6de266a90a555d85039da760590ff770944fda63f88908561514a"
+    },
+    "collection_stdout_sha256": "b471c2c36016f86bfbfc050f82924a925857f26ff4f5b8c7ae89095cced3a598",
+    "working_recovery_helper_sha256": "ba26f5f43d15ba38e57f01766e85f532aa8fd659fab6e0acfe0d2cc28d1e2ec9",
+    "frozen_executed_helper_sha256": "6e9ac592b9d6de266a90a555d85039da760590ff770944fda63f88908561514a",
+    "source_sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+    "native_source_sha256": "af4f0dba97e347f8afa8f27508e40d5c03f60b402825cadba9a9537700b20d6e",
+    "ncu_version": "NVIDIA (R) Nsight Compute Command Line Profiler\nCopyright (c) 2018-2025 NVIDIA Corporation\nVersion 2025.3.1.0 (build 36398880) (public-release)"
+  },
+  "validation": {
+    "sandbox_terminated": true,
+    "collection_returncode": 0,
+    "profiled_sizes": [
+      32,
+      256
+    ],
+    "checks_passed": 20,
+    "checks_total": 20,
+    "prepare_calls": 1,
+    "PDL": false,
+    "csv_layout": "wide",
+    "actual_pass_counts": [
+      4,
+      4
+    ],
+    "actual_main_defines": [
+      "-DOKC_NW=16",
+      "-DOKC_FAST1=0",
+      "-DOKC_EPI4=0",
+      "-DOKC_WGS=1",
+      "-DOKC_PRMTSC=1"
+    ],
+    "use_mul": true,
+    "main_owned_extension": {
+      "defines": [
+        "-DOKC_NW=16",
+        "-DOKC_FAST1=0",
+        "-DOKC_EPI4=0",
+        "-DOKC_WGS=1",
+        "-DOKC_PRMTSC=1",
+        "-DOKC_MULDEC=1",
+        "-DOKC_DQ7=1"
+      ],
+      "file": "okc_moe_selmul_4aaab50d332b17d8_sm90a.so"
+    },
+    "main_defines_scope": "actual_main_defines is the pre-builder selection; main_owned_extension.defines adds builder MULDEC and DQ7. Defaults below are derived from the frozen _ext builder and H200 capability, not a fresh binary dump.",
+    "compile_default_defines_from_frozen_builder": [
+      "-DOKC_NS=3",
+      "-DOKC_FNST=4",
+      "-DOKC_NSF=3"
+    ]
+  },
+  "policy": {
+    "replay_mode": "kernel",
+    "cache_control": "all",
+    "clock_control": "none",
+    "graph_profiling": "node",
+    "profile_from_start": "off",
+    "launch_count": 2,
+    "requested_pass_count": null,
+    "pass_count_policy": "NCU chooses passes for the fixed metric list; actual counts required; no collection retry",
+    "scope": "standalone MoE only; not decoder routing, decoder PDL, or benchmark speedup",
+    "ordinary_timing_limitation": "Collected with profiling disabled inside an NCU-injected process; not independent benchmark evidence",
+    "cache_limitation": "NCU cache-control all flushes caches on replay; distinct from the ordinary read sweep and official benchmark conditions",
+    "interpretation_limit": "Low bandwidth and aggregate stall percentages do not establish a removable critical path or justify a shared-dequant rewrite; no source-PC attribution is collected"
+  },
+  "selected_metrics": [
+    "dram__bytes_read.sum",
+    "dram__bytes_write.sum",
+    "gpu__time_duration.sum",
+    "dram__throughput.avg.pct_of_peak_sustained_elapsed",
+    "smsp__issue_active.avg.pct_of_peak_sustained_active",
+    "smsp__warps_eligible.avg.per_cycle_active",
+    "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active",
+    "smsp__warp_issue_stalled_barrier_per_warp_active.pct",
+    "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct",
+    "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct",
+    "smsp__warp_issue_stalled_wait_per_warp_active.pct"
+  ],
+  "cases": [
+    {
+      "M": 32,
+      "input_seed": 7302,
+      "weight_seed": 7311,
+      "routing": {
+        "local_start": 0,
+        "local_count": 32,
+        "local_counts": [
+          1,
+          0,
+          1,
+          1,
+          0,
+          3,
+          4,
+          3,
+          0,
+          1,
+          0,
+          4,
+          8,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          2,
+          2,
+          2,
+          0,
+          0,
+          0,
+          1
+        ],
+        "U": 16,
+        "J": 16,
+        "job_rows": [
+          1,
+          1,
+          1,
+          3,
+          4,
+          3,
+          1,
+          4,
+          8,
+          4,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1
+        ],
+        "padded_job_rows": 128,
+        "unique_weight_bytes": 452984832,
+        "nominal_request_bytes": 452984832
+      },
+      "counter_launch": {
+        "id": "0",
+        "kernel": "void okc::moe_fused<(bool)1>(okc::Params)",
+        "metrics": {
+          "dram__bytes_read.sum": {
+            "value": 456964352.0,
+            "unit": "byte"
+          },
+          "dram__bytes_write.sum": {
+            "value": 3375872.0,
+            "unit": "byte"
+          },
+          "gpu__time_duration.sum": {
+            "value": 128576.0,
+            "unit": "ns"
+          },
+          "dram__throughput.avg.pct_of_peak_sustained_elapsed": {
+            "value": 74.43,
+            "unit": "%"
+          },
+          "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+            "value": 59.38,
+            "unit": "%"
+          },
+          "smsp__warps_eligible.avg.per_cycle_active": {
+            "value": 1.4,
+            "unit": "warp"
+          },
+          "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": {
+            "value": 11.22,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_barrier_per_warp_active.pct": {
+            "value": 7.49,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": {
+            "value": 1.89,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": {
+            "value": 17.97,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_wait_per_warp_active.pct": {
+            "value": 8.11,
+            "unit": "%"
+          }
+        },
+        "actual_pass_count": 4,
+        "actual_pass_count_source": "wide profiler__replayer_passes column",
+        "M": 32,
+        "read_plus_write_bytes_per_second": 3580296665007.4663,
+        "duration_is_benchmark_evidence": false
+      },
+      "numerical_checks": [
+        {
+          "phase": "eager",
+          "seed": 7202,
+          "passed": true,
+          "detail": "relative L2 error 2.566e-03 (worst row 2.658e-03)"
+        },
+        {
+          "phase": "eager",
+          "seed": 7203,
+          "passed": true,
+          "detail": "relative L2 error 2.546e-03 (worst row 2.694e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.573e-03 (worst row 2.671e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7303,
+          "passed": true,
+          "detail": "relative L2 error 2.527e-03 (worst row 2.851e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7304,
+          "passed": true,
+          "detail": "relative L2 error 2.544e-03 (worst row 2.686e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7305,
+          "passed": true,
+          "detail": "relative L2 error 2.554e-03 (worst row 2.739e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7306,
+          "passed": true,
+          "detail": "relative L2 error 2.550e-03 (worst row 2.731e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 7307,
+          "passed": true,
+          "detail": "relative L2 error 2.544e-03 (worst row 2.665e-03)"
+        },
+        {
+          "phase": "before_ncu",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.573e-03 (worst row 2.671e-03)"
+        },
+        {
+          "phase": "after_ncu",
+          "seed": 7302,
+          "passed": true,
+          "detail": "relative L2 error 2.573e-03 (worst row 2.671e-03)"
+        }
+      ],
+      "hardware_output_sha256": "6d471cf4519f6469d9e25628968b0d325bf0c17e5d585747e892881fb313b154",
+      "logical_comparisons": {
+        "read_over_unique_weight_bytes": 1.0087851065176505,
+        "read_over_nominal_job_weight_bytes": 1.0087851065176505,
+        "read_excess_over_nominal_bytes": 3979520.0,
+        "logical_duplicate_job_bytes_over_measured_reads": 0.0
+      },
+      "conditional_same_traffic_4_8TB_s_calculation": {
+        "assumed_bytes_per_second": 4800000000000.0,
+        "read_plus_write_bytes": 460340224.0,
+        "ideal_duration_us": 95.90421333333333,
+        "profile_duration_us": 128.576,
+        "ideal_latency_reduction_fraction": 0.2541048614567778,
+        "limitation": "Conditional arithmetic for these cold standalone counter samples only; not a measured attainable bandwidth, decoder bound, or benchmark forecast. Cache-all replay, pass aggregation and uncontrolled frequencies affect interpretation."
+      },
+      "contextual_injected_median_us": 479.6320050954819,
+      "contextual_timings_are_independent_benchmark_evidence": false
+    },
+    {
+      "M": 256,
+      "input_seed": 9302,
+      "weight_seed": 7311,
+      "routing": {
+        "local_start": 0,
+        "local_count": 32,
+        "local_counts": [
+          5,
+          7,
+          0,
+          0,
+          3,
+          12,
+          0,
+          8,
+          17,
+          1,
+          73,
+          2,
+          22,
+          10,
+          5,
+          0,
+          16,
+          0,
+          5,
+          4,
+          2,
+          2,
+          2,
+          0,
+          36,
+          1,
+          16,
+          61,
+          2,
+          32,
+          3,
+          7
+        ],
+        "U": 26,
+        "J": 27,
+        "job_rows": [
+          5,
+          7,
+          3,
+          12,
+          8,
+          17,
+          1,
+          64,
+          9,
+          2,
+          22,
+          10,
+          5,
+          16,
+          5,
+          4,
+          2,
+          2,
+          2,
+          36,
+          1,
+          16,
+          61,
+          2,
+          32,
+          3,
+          7
+        ],
+        "padded_job_rows": 456,
+        "unique_weight_bytes": 736100352,
+        "nominal_request_bytes": 764411904
+      },
+      "counter_launch": {
+        "id": "1",
+        "kernel": "void okc::moe_fused<(bool)1>(okc::Params)",
+        "metrics": {
+          "dram__bytes_read.sum": {
+            "value": 769691136.0,
+            "unit": "byte"
+          },
+          "dram__bytes_write.sum": {
+            "value": 4264192.0,
+            "unit": "byte"
+          },
+          "gpu__time_duration.sum": {
+            "value": 214304.0,
+            "unit": "ns"
+          },
+          "dram__throughput.avg.pct_of_peak_sustained_elapsed": {
+            "value": 75.06,
+            "unit": "%"
+          },
+          "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+            "value": 59.48,
+            "unit": "%"
+          },
+          "smsp__warps_eligible.avg.per_cycle_active": {
+            "value": 1.39,
+            "unit": "warp"
+          },
+          "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": {
+            "value": 23.71,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_barrier_per_warp_active.pct": {
+            "value": 4.89,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": {
+            "value": 2.35,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": {
+            "value": 12.81,
+            "unit": "%"
+          },
+          "smsp__warp_issue_stalled_wait_per_warp_active.pct": {
+            "value": 9.58,
+            "unit": "%"
+          }
+        },
+        "actual_pass_count": 4,
+        "actual_pass_count_source": "wide profiler__replayer_passes column",
+        "M": 256,
+        "read_plus_write_bytes_per_second": 3611483350754.069,
+        "duration_is_benchmark_evidence": false
+      },
+      "numerical_checks": [
+        {
+          "phase": "eager",
+          "seed": 9202,
+          "passed": true,
+          "detail": "relative L2 error 2.550e-03 (worst row 2.801e-03)"
+        },
+        {
+          "phase": "eager",
+          "seed": 9203,
+          "passed": true,
+          "detail": "relative L2 error 2.558e-03 (worst row 2.808e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.551e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9303,
+          "passed": true,
+          "detail": "relative L2 error 2.556e-03 (worst row 2.749e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9304,
+          "passed": true,
+          "detail": "relative L2 error 2.546e-03 (worst row 2.755e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9305,
+          "passed": true,
+          "detail": "relative L2 error 2.539e-03 (worst row 2.714e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9306,
+          "passed": true,
+          "detail": "relative L2 error 2.549e-03 (worst row 2.815e-03)"
+        },
+        {
+          "phase": "unprofiled_graph_in_ncu_process",
+          "seed": 9307,
+          "passed": true,
+          "detail": "relative L2 error 2.552e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "before_ncu",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.551e-03 (worst row 2.754e-03)"
+        },
+        {
+          "phase": "after_ncu",
+          "seed": 9302,
+          "passed": true,
+          "detail": "relative L2 error 2.551e-03 (worst row 2.754e-03)"
+        }
+      ],
+      "hardware_output_sha256": "a2862e70cc5eddf3217cb835fe772a2cc075e56934de3df9bb2cedd8707b31a6",
+      "logical_comparisons": {
+        "read_over_unique_weight_bytes": 1.0456334301549146,
+        "read_over_nominal_job_weight_bytes": 1.006906266075103,
+        "read_excess_over_nominal_bytes": 5279232.0,
+        "logical_duplicate_job_bytes_over_measured_reads": 0.03678300382557608
+      },
+      "conditional_same_traffic_4_8TB_s_calculation": {
+        "assumed_bytes_per_second": 4800000000000.0,
+        "read_plus_write_bytes": 773955328.0,
+        "ideal_duration_us": 161.24069333333333,
+        "profile_duration_us": 214.304,
+        "ideal_latency_reduction_fraction": 0.24760763525956897,
+        "limitation": "Conditional arithmetic for these cold standalone counter samples only; not a measured attainable bandwidth, decoder bound, or benchmark forecast. Cache-all replay, pass aggregation and uncontrolled frequencies affect interpretation."
+      },
+      "contextual_injected_median_us": 483.3440035581589,
+      "contextual_timings_are_independent_benchmark_evidence": false
+    }
+  ],
+  "decision": {
+    "supported": "These two controlled-cold standalone kernels transfer close to nominal packed-weight request bytes and reach about75% reported sustained DRAM throughput. The data weakens an unqualified40% expert latency forecast from a same-traffic dequant/scheduling rewrite.",
+    "not_established": [
+      "Decoder traffic, routing or PDL concurrency",
+      "Independent benchmark latency/speedup",
+      "Source-PC attribution or exposed consumer dequant cycles",
+      "A sum of stall percentages as recoverable critical-path time",
+      "Attainability of the conditional4.8TB/s arithmetic"
+    ],
+    "next_gate": "Any substantive same-traffic expert rewrite must explain the measured memory demand and identify a causal exposed bottleneck. Low tensor activity or59% issue-active alone does not justify SS-WGMMA staging."
+  }
+}

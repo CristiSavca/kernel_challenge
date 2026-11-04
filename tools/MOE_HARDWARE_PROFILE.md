@@ -76,11 +76,13 @@ metrics, CSV/raw/base units, and the fixed uploaded helper child path. There are
 no sections/full sets/source instrumentation. The complete actual argv is saved.
 
 Requested pass count is null: NCU chooses passes for the fixed metric list.
-Actual positive pass counts must be present for both launches. This is bounded
+Actual positive pass counts must be present for both launches: either the
+`profiler__replayer_passes` column in raw-wide CSV or progress text accompanying
+long CSV. This is bounded
 by metrics, two matching launches, subprocess runtime/output, and sandbox lifetime;
 it does not claim a user-enforced maximum pass count. Missing/ambiguous progress,
 missing or duplicated metrics, wrong kernel identities, nonfinite values, wrong
-byte/duration units, nonpositive duration, or an incomplete child make the
+metric units, nonpositive duration, or an incomplete child make the
 diagnostic unavailable. IDs sorted by launch order map to M32/M256 only after the
 child confirms both completed checked windows in that order.
 
@@ -130,3 +132,22 @@ defines metric suffix queries, profile start/stop, graph-node/kernel replay,
 matching-launch counts, cache/clock controls, and CSV output.
 [Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/) explains
 replay perturbations, memory restoration, caching, and stall interpretation.
+
+## First capture and offline recovery
+
+The terminal run `experiments/modal/20261104T054636Z-ea14816c` completed one prepare,
+20/20 numerical checks, two profile windows and four replay passes per launch.
+Its original parser rejected NCU 2025.3.1's actual output: a 280-column wide header,
+one units row, and two data rows. Duration units are `ns`; replay counts appear
+in `profiler__replayer_passes` with unit `pass`. All 11 requested metrics are
+present for IDs 0/1. The captured output is preserved byte-for-byte as the CPU
+regression fixture `tools/fixtures/ncu_2025_3_1_raw_wide.csv`, SHA256
+`b471c2c36016f86bfbfc050f82924a925857f26ff4f5b8c7ae89095cced3a598`.
+
+The working parser now accepts both layouts and checks unique columns/IDs,
+complete rows, explicit units, finite values, and positive integer pass counts.
+Recovery required no GPU rerun. The separate interpretation artifact is
+`experiments/iterations/20261104-moe-hardware-profile-recovered.json`.
+Original result SHA256 `398a89f345b90b47937ef06fb44e541dbb0bcf61d334843ff25fbdb34d3a6f43`,
+manifest and frozen executed helper remain unchanged; the original result still
+correctly records the then-current parser failure.

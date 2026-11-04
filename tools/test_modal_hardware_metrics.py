@@ -1,6 +1,8 @@
 """CPU-only validation of the fixed NCU diagnostic. Never allocates a GPU."""
 import contextlib
 import csv
+import copy
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -15,6 +17,7 @@ from test_modal_h200 import LifecycleTests, Sandbox
 
 ROOT = Path(__file__).resolve().parents[1]
 FROZEN = ROOT / "experiments/candidates/muse_moe_w4a16" / f"{hw.SOURCE_SHA}.py"
+WIDE_FIXTURE = ROOT / "tools/fixtures/ncu_2025_3_1_raw_wide.csv"
 
 
 def payload():
@@ -94,6 +97,55 @@ class HardwareUnitTests(unittest.TestCase):
             with self.subTest(text=text[:70]), self.assertRaises(ValueError):
                 hw.parse_counters(text, list(hw.REQUIRED))
         self.assertEqual(hw.parse_counters("noise\n" + counters() + "more noise\n", list(hw.REQUIRED)), result)
+
+    def test_real_wide_output_fixture_recovers_exact_values(self):
+        # Byte-for-byte collection stdout from terminal Modal run ea14816c;
+        # contains NCU warnings, a 280-column header, units and two rows.
+        self.assertEqual(hashlib.sha256(WIDE_FIXTURE.read_bytes()).hexdigest(),
+                         "b471c2c36016f86bfbfc050f82924a925857f26ff4f5b8c7ae89095cced3a598")
+        parsed = hw.parse_counters(WIDE_FIXTURE.read_text(), list(hw.REQUIRED + hw.ISSUE))
+        self.assertEqual(parsed["csv_layout"], "wide")
+        self.assertEqual(parsed["actual_pass_counts"], [4, 4])
+        self.assertEqual([x["id"] for x in parsed["launches"]], ["0", "1"])
+        self.assertEqual([x["M"] for x in parsed["launches"]], [32, 256])
+        expected = [(456964352, 3375872, 128576, 74.43, 59.38, 1.40, 11.22, 7.49, 1.89, 17.97, 8.11),
+                    (769691136, 4264192, 214304, 75.06, 59.48, 1.39, 23.71, 4.89, 2.35, 12.81, 9.58)]
+        for launch, values in zip(parsed["launches"], expected):
+            self.assertEqual([launch["metrics"][m]["value"] for m in hw.REQUIRED + hw.ISSUE], list(values))
+            self.assertEqual(launch["metrics"][hw.REQUIRED[2]]["unit"], "ns")
+            self.assertFalse(launch["duration_is_benchmark_evidence"])
+
+    def test_wide_output_rejects_partial_duplicate_and_invalid_data(self):
+        original = list(csv.reader(io.StringIO(WIDE_FIXTURE.read_text())))
+        header = original[3]
+        tests = []
+        # Partial/missing launches, duplicate launch IDs, extra launches, repeated
+        # header, and missing units must not silently select a convenient pair.
+        tests += [original[:-1], original + [original[-1]], original[:4] + original[5:],
+                  original + [header], original[:6] + [original[-1][:-1]]]
+        more = copy.deepcopy(original)
+        more.append(list(more[-1])); more[-1][0] = "2"; tests.append(more)
+        for col in (hw.REQUIRED[0], "profiler__replayer_passes"):
+            i = header.index(col)
+            tests.append([row[:i] + row[i+1:] if n >= 3 else row for n, row in enumerate(original)])
+        duplicate_column = copy.deepcopy(original)
+        duplicate_column[3][-1] = hw.REQUIRED[0]
+        tests.append(duplicate_column)
+        for rownum, col, value in ((4, hw.REQUIRED[0], "Kbyte"), (4, hw.REQUIRED[2], "us"),
+                                   (4, hw.ISSUE[1], "%"), (4, "profiler__replayer_passes", "cycle"),
+                                   (5, hw.REQUIRED[0], "nan"), (5, hw.REQUIRED[0], "-1"),
+                                   (5, hw.REQUIRED[2], "0"), (5, hw.ISSUE[-1], ""),
+                                   (5, "profiler__replayer_passes", "0"),
+                                   (5, "profiler__replayer_passes", "4.5"),
+                                   (5, "profiler__replayer_passes", "nan"),
+                                   (6, "ID", "00"), (5, "Kernel Name", "other_kernel")):
+            broken = copy.deepcopy(original)
+            broken[rownum][header.index(col)] = value
+            tests.append(broken)
+        for n, rows in enumerate(tests):
+            stream = io.StringIO(); csv.writer(stream).writerows(rows)
+            with self.subTest(corruption=n), self.assertRaises(ValueError):
+                hw.parse_counters(stream.getvalue(), list(hw.REQUIRED + hw.ISSUE))
 
     def test_route_histogram_counts_partial_jobs_and_nonlocal_ids(self):
         ids = [[32, 33, 34, 35, 36, 37, 38, 39] for _ in range(65)]
