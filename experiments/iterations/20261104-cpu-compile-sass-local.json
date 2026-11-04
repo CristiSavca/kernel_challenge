@@ -1,9 +1,9 @@
 {
   "status": "LOCAL_CPU_TEST_AND_DRY_RUN_PASS",
   "files_sha256": {
-    "tools/modal_compile_sass.py": "fe037ede216bd2e904390eae1d7260352c43022eb28639b1b81913a16a42f3d1",
-    "tools/modal_h200.py": "6af544c107669134676c7b8c1a1c88bc34a87bbce3599d4f2416267bfdbdf2f9",
-    "tools/test_modal_compile_sass.py": "7c5484ed320fba168b46a379dc5b121dfa9bcb7e768f5b7843fcd8b1c6e66303",
+    "tools/modal_compile_sass.py": "b473e2cc3f323ab255ab6502d79f05bee8eba6fa9ae27edcbb30f09334a2e8e3",
+    "tools/modal_h200.py": "354769cf5c53b07debca9407bb17539da142b53ef600bacc3801161cbb12ca8e",
+    "tools/test_modal_compile_sass.py": "204365c795a4e80841bf07eb687dd51538b72a0addd1ad0c3fd91604d45b185c",
     "tools/test_modal_h200.py": "a038ee265f155cb8d00897aa33e9f7ac134c75b58058e1e1cae55c5a499427f2"
   },
   "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
@@ -22,7 +22,7 @@
       "timeout_seconds": 600,
       "official": false,
       "status": "prepared",
-      "worker_sha256": "6af544c107669134676c7b8c1a1c88bc34a87bbce3599d4f2416267bfdbdf2f9",
+      "worker_sha256": "354769cf5c53b07debca9407bb17539da142b53ef600bacc3801161cbb12ca8e",
       "compile_sass": true,
       "resource_kind": "cpu_4cpu_32gib",
       "compile_budget_seconds": 560,
@@ -30,19 +30,36 @@
       "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
       "file_sha256": {
         "baseline.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
-        "compile_sass.py": "fe037ede216bd2e904390eae1d7260352c43022eb28639b1b81913a16a42f3d1",
+        "compile_sass.py": "b473e2cc3f323ab255ab6502d79f05bee8eba6fa9ae27edcbb30f09334a2e8e3",
         "hardware_metrics.py": "6050ddfeee3f9fa52551d741a5a0b885e7f1b7172a0998a38404b67d7d0bb8ff"
       }
     }
   },
   "tests": {
-    "compile_suite": 45,
+    "compile_suite": 46,
     "existing_hardware_suite": 64,
     "scope": "CPU mocks, actual _ext AST execution with guarded fake Torch, artifact extraction/hash checks, synthetic allocation lifecycle; inherited tests included. No compiler/GPU/provider invocation.",
     "narrow_cubin_cases": [
       "sm_90 filename accepted with exact pinned build",
       "multiple cubins rejected before disassembly"
-    ]
+    ],
+    "isolated_payload_import": {
+      "result": "PASS",
+      "python_flags": [
+        "-I",
+        "-S"
+      ],
+      "staged_files": [
+        "baseline.py",
+        "compile_sass.py",
+        "hardware_metrics.py"
+      ],
+      "repository_pythonpath": false,
+      "torch_imported": false,
+      "bounded_subprocess_helper_exercised": true,
+      "old_import_negative": "ModuleNotFoundError for modal_hardware_metrics"
+    },
+    "remote_failure_observability": "Worker exit1 and original stderr retained; missing result recorded separately; original RuntimeError preserved; terminated=true."
   },
   "bounds": {
     "sandbox_seconds": 600,
@@ -62,5 +79,11 @@
     "artifact hashes and complete bounded outputs"
   ],
   "production_guard_sha256_observed": "8b05fb3a1540dd56de4815adf65d27488c00eccf57f1b059bb94f094aad6c8a2",
-  "cubin_filename_policy": "Exactly one regular bounded .cubin extracted from the pinned owned.so; actual filename recorded, no architecture substring assumption. Exact gencode90a flags unchanged; full nvdisasm header retained."
+  "cubin_filename_policy": "Exactly one regular bounded .cubin extracted from the pinned owned.so; actual filename recorded, no architecture substring assumption. Exact gencode90a flags unchanged; full nvdisasm header retained.",
+  "prior_remote_attempt": {
+    "run": "experiments/modal/20261104T153757Z-d116f3fe",
+    "status": "FAILED_BEFORE_COMPILER",
+    "reason": "Packaged helper imported local module basename modal_hardware_metrics; uploaded basename is hardware_metrics.py.",
+    "retry_performed": false
+  }
 }

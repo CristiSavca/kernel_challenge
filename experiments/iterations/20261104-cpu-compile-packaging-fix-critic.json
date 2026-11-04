@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "PACKAGING_AND_FAILURE_OBSERVABILITY_FIX_PASS_NO_RETRY_AUTHORIZATION",
+  "blocking_findings": [],
+  "reviewed_sha256": {
+    "tools/modal_compile_sass.py": "b473e2cc3f323ab255ab6502d79f05bee8eba6fa9ae27edcbb30f09334a2e8e3",
+    "tools/modal_h200.py": "354769cf5c53b07debca9407bb17539da142b53ef600bacc3801161cbb12ca8e",
+    "tools/test_modal_compile_sass.py": "204365c795a4e80841bf07eb687dd51538b72a0addd1ad0c3fd91604d45b185c",
+    "tools/modal_credit_budget.py": "8b05fb3a1540dd56de4815adf65d27488c00eccf57f1b059bb94f094aad6c8a2",
+    "experiments/iterations/20261104-cpu-compile-sass-local.json": "463c1780b49ef6794b388e5eb3b1173abe058f5a39ce417ac9559900012d2b61",
+    "experiments/modal/20261104T153757Z-d116f3fe/manifest.json": "9cfdf8af2df85b4f60f48411d7a2c2ea51bba314e9b9eab4070a56bc59f781c1",
+    "experiments/modal/20261104T153757Z-d116f3fe/stderr.log": "c675dc33cfa012a4d70f68cb26dc3ab68ae599f407a205f9b8228f950b61682c"
+  },
+  "original_run": {
+    "path": "experiments/modal/20261104T153757Z-d116f3fe",
+    "status": "FAILED_BEFORE_COMPILER",
+    "worker_exit_code": 1,
+    "sandbox_terminated": true,
+    "root_cause": "Uploaded compile_sass.py imported modal_hardware_metrics, while payload named its dependency hardware_metrics.py.",
+    "observability_defect": "Result retrieval failed after import failure and obscured manifest.error; original traceback remained in stderr.log.",
+    "reviewer_accountability": "My earlier source GO missed the local-versus-packaged import boundary; mocked compile and lifecycle tests did not establish that uploaded modules import.",
+    "sass_available": false
+  },
+  "fix_review": {
+    "packaging": "Explicit file-based sibling import selects hardware_metrics.py only for uploaded compile_sass.py and modal_hardware_metrics.py only for local modal_compile_sass.py. Unknown basename rejects. No repository PYTHONPATH dependency; worker stages exactly the existing three allowlisted files.",
+    "scope": "All named helper functions AST-identical to the failed frozen helper. Runner main adds only compile-mode worker-exit handling before result retrieval; source/build/resource/credit/command contracts unchanged.",
+    "failure_observability": "Worker exit recorded and stderr saved before retrieval. On nonzero compile-worker exit, remote_failure preserves code/log path and primary RuntimeError. Recovery records its own error type/checkpoint status without replacing primary error; finally still terminates sandbox.",
+    "credit": "Guard unchanged; failed-run reservation remains charged. No provider call, release or new allocation authorized by this review."
+  },
+  "independent_validation": {
+    "targeted_tests_passed": 2,
+    "isolated_import": {
+      "files": [
+        "baseline.py",
+        "compile_sass.py",
+        "hardware_metrics.py"
+      ],
+      "flags": [
+        "-I",
+        "-S"
+      ],
+      "PYTHONPATH_removed": true,
+      "repository_not_on_sys_path": true,
+      "torch_not_imported": true,
+      "bounded_subprocess_exercised": true,
+      "original_module_name_negative_reproduces_ModuleNotFoundError": true
+    },
+    "failure_fixture": {
+      "worker_exit1_plus_retrieval_error_preserves_primary": true,
+      "stderr_saved": true,
+      "secondary_error_separate": true,
+      "sandbox_termination_preserved": true
+    },
+    "actual_diff_and_function_AST_review": true
+  },
+  "limitations": [
+    "Only packaging and failure observability are approved; actual compiler/import/toolchain success remains untested.",
+    "No SASS, compiled-kernel or performance evidence resulted from the failed run.",
+    "No GPU/provider calls or retry performed by this reviewer; a future allocation requires separate root authorization and fresh existing budget guard."
+  ]
+}

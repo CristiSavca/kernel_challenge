@@ -17,7 +17,17 @@ import tarfile
 import time
 from unittest.mock import patch
 
-from modal_hardware_metrics import run_bounded, command_ok, write_json
+# Local tools keep their modal_ prefix; the fixed upload manifest stages this
+# helper as compile_sass.py and its stdlib-only dependency as hardware_metrics.py.
+# Resolve that sibling explicitly, without relying on repository PYTHONPATH.
+_helper_name = Path(__file__).name
+if _helper_name not in ("modal_compile_sass.py", "compile_sass.py"):
+    raise ImportError("Unexpected compile helper filename")
+_bounded_path = Path(__file__).with_name("hardware_metrics.py" if _helper_name == "compile_sass.py" else "modal_hardware_metrics.py")
+_bounded_spec = importlib.util.spec_from_file_location("_okc_compile_bounded", _bounded_path)
+_bounded = importlib.util.module_from_spec(_bounded_spec)
+_bounded_spec.loader.exec_module(_bounded)
+run_bounded, command_ok, write_json = _bounded.run_bounded, _bounded.command_ok, _bounded.write_json
 
 SOURCE_SHA = "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
 NATIVE_SHA = "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c"

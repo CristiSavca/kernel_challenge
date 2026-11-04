@@ -866,6 +866,12 @@ def main() -> None:
                 (destination / "stderr.log").write_text(stderr)
                 command.wait()
                 manifest["exit_code"] = command.returncode
+                if compile_mode and command.returncode:
+                    # The worker may fail before creating any result checkpoint.
+                    # Preserve its actual exit/logs; recovery failures are separate.
+                    manifest["remote_failure"] = {"exit_code": command.returncode, "stderr_log": "stderr.log"}
+                    print(stderr[-6000:], file=sys.stderr)
+                    raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
                 if payload:
                     if compile_mode:
                         from modal_compile_sass import retrieve

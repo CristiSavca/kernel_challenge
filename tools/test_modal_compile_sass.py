@@ -4,6 +4,7 @@ import contextlib
 import copy
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -33,6 +34,34 @@ def symbols():
 
 
 class CompileUnitTests(unittest.TestCase):
+    def test_real_isolated_uploaded_payload_import_without_repository_path(self):
+        with tempfile.TemporaryDirectory() as name:
+            folder = Path(name)
+            p = payload()
+            for basename, source in p["files"].items(): (folder / basename).write_text(source)
+            code = """import importlib.util, pathlib, sys
+assert not any('open-kernel-challenge' in p for p in sys.path)
+path = pathlib.Path(sys.argv[1]) / 'compile_sass.py'
+spec = importlib.util.spec_from_file_location('isolated_compile_sass', path)
+helper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helper)
+assert 'torch' not in sys.modules
+assert helper._bounded_path == path.with_name('hardware_metrics.py')
+r = helper.run_bounded([sys.executable, '-I', '-c', 'print(123)'], 3, 1024)
+assert helper.command_ok(r) and r['stdout'].strip() == '123'
+print('isolated-payload-import-ok')
+"""
+            env = dict(os.environ); env.pop("PYTHONPATH", None)
+            result = subprocess.run([sys.executable, "-I", "-S", "-c", code, str(folder)], cwd=folder,
+                                    env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "isolated-payload-import-ok")
+            old_import = subprocess.run([sys.executable, "-I", "-S", "-c",
+                "import sys; sys.path.insert(0, sys.argv[1]); from modal_hardware_metrics import run_bounded", str(folder)],
+                cwd=folder, env=env, capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(old_import.returncode, 0)
+            self.assertIn("No module named 'modal_hardware_metrics'", old_import.stderr)
+
     def test_fixed_source_and_cpu_contract(self):
         p = payload(); cs.validate_payload(p)
         for key, value in (("gpu", "H200"), ("resource_kind", "h200_4cpu_32gib"), ("image", "other"),
@@ -193,9 +222,22 @@ class CompileLifecycleTests(LifecycleTests):
     def test_compile_failure_and_retrieval_failure_terminate_once(self):
         for fail in (False, True):
             sandbox = Sandbox(fail=fail)
-            with patch.object(cs, "retrieve", side_effect=ValueError("retrieval failure")), self.assertRaises(ValueError):
+            error = RuntimeError if fail else ValueError
+            with patch.object(cs, "retrieve", side_effect=ValueError("retrieval failure")), self.assertRaises(error) as caught:
                 self.invoke("compile-sass", sandbox, extra_args=("--timeout", "600"))
             self.assertTrue(sandbox.terminated)
+            if fail:
+                self.assertIn("Remote process exited 1", str(caught.exception))
+                manifests = list((self.root / "experiments/modal").glob("*/manifest.json"))
+                manifest_path = next(p for p in manifests if json.loads(p.read_text()).get("exit_code") == 1)
+                manifest = json.loads(manifest_path.read_text())
+                self.assertEqual(manifest["status"], "failed")
+                self.assertEqual(manifest["remote_failure"], {"exit_code": 1, "stderr_log": "stderr.log"})
+                self.assertEqual(manifest["compile_retrieval_error_type"], "ValueError")
+                self.assertFalse(manifest["compile_checkpoint_recovered"])
+                self.assertTrue(manifest["sandbox_terminated"])
+                self.assertIn("synthetic worker failure", (manifest_path.parent / "stderr.log").read_text())
+                self.assertNotIn("retrieval failure", manifest["error"])
         self.assertEqual(len(self.created), 2)  # One allocation per independently requested fixture invocation.
 
     def test_cpu_dry_run_and_argument_rejection(self):
