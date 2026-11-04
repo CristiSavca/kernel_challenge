@@ -1334,5 +1334,13 @@ wrongglobalencodings. No decoder candidate before useful standalone result.
 Parallelprefix feasibility is source-local and coversnj<=88, but savedaftergather
 jointready gaps are0–64ns, giving no measured exposedprefixstall. Potential small
 contention gain is uncertain; no newdiagnostic campaign or automaticcandidate.
-#1goal remainsactive andunachieved; currentturn has implemented/measurednextstep
-in progress, not a leaderboardgain claim.
+#1goal remainsactive andunachieved. The next experiment is implemented and its
+official check is pending; no leaderboard gain is claimed.
+
+
+At13:31UTC theexistingSC6job724a1bce7a3f41e5 isconfirmedqueued/modecheck with
+serverboardidentity. NoGPUmetricsyet. Conditionalintegrationmap independentcritic
+68a4a4d496b14cc8462042af7c40ba602701c609658638dcbee2b5d050620d10 confirms
+six-node scope, state-owned selector forfourprepareclosures/soleagentcall,
+threeformatstates, PDL/chunking preservation and noautomaticport. Finalsource804,
+fullCPU3caa7461 and sourcecritic240d3a37 are complete. Rootalonepollsthehandle.

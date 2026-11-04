@@ -1,0 +1,102 @@
+{
+  "decision": "FEASIBLE_CONDITIONAL_INTEGRATION_MAP",
+  "authorization_scope": "Read-only feasibility review. No decoder implementation or GPU check is approved by this record; a useful standalone SC6 terminal result and root selection remain prerequisites.",
+  "pins": {
+    "integration_map": {
+      "path": "tools/SC6_DECODER_INTEGRATION_MAP.md",
+      "sha256": "d4516e6f635583c59f5dbd781955411862abdf630def38dc75ec665d6994aa74"
+    },
+    "decoder_parent": {
+      "path": "muse_decode_layer/candidates/native_wgs_kperm3_v12.py",
+      "sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2"
+    },
+    "standalone_parent": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+    },
+    "standalone_candidate": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_sc6_v16.py",
+      "sha256": "8044835232a26e8188471ac5296cd598339e00518641d03f055c129502aa8cc5"
+    },
+    "prefix_feasibility": {
+      "path": "tools/WGS_PARALLEL_PREFIX_FEASIBILITY_20261104.md",
+      "sha256": "d57ae907b430a89a9b549df2a092a94d4139790ddbc43ad6b03a503b311d4eee"
+    },
+    "prefix_evidence": {
+      "path": "experiments/iterations/20261104-wgs-parallel-prefix-feasibility.json",
+      "sha256": "ab125a8b28611f8ca7f51ac73a11c52c4d672ad9b8d0b90860469af1f270a998"
+    }
+  },
+  "minimal_existing_AST_scope": [
+    "MOE_CUDA_SRC",
+    "_ma_ext",
+    "_wgs_copy",
+    "_ma_prepare",
+    "prepare",
+    "_after_attention"
+  ],
+  "new_helpers": [
+    "Exact SC6 scale qualification",
+    "Exact SC6 scale packing",
+    "State-owned MoE selector and module-reference cache"
+  ],
+  "independent_source_inventory": {
+    "sole_timed_legacy_selector_call": {
+      "function": "_after_attention",
+      "call": "_moe(T)",
+      "line": 15028
+    },
+    "prepare_legacy_build_references": [
+      "_moe",
+      "_moe_tiny",
+      "_moe_tiny2",
+      "_moe_mid"
+    ],
+    "legacy_aliases_to_bypass": [
+      "_MA_SFX",
+      "_MOE",
+      "_MOE_TINY",
+      "_MOE_TINY2",
+      "_MOE_MID",
+      "_moe_tiny2_ok"
+    ],
+    "full_extension_cache_key": "_MA_EXTS uses the complete immutable defines tuple after DQ7 insertion; SC6 must be present in that tuple for eligible WGS only.",
+    "thresholds": [
+      4,
+      8,
+      16
+    ],
+    "chunk_max_M": 384,
+    "decoder_MULDEC": true,
+    "state_weight_banks": "One ma_w list, entries 0..11 shared unchanged across all token sizes, only WGS entries 12/13 optionally compact."
+  },
+  "findings": [
+    "The map covers all active build and timed aliases. Keeping legacy wrappers as dead compatibility code is safe only if no new build closure or timed path still calls them.",
+    "ma_sfx and ma_sc6 must be computed once from the same actual W13/W2 tensors before either build threads or packing; ma_sc6 must imply PRMT. Eligible, PRMT-only and non-PRMT states must coexist without updating ambient encoding globals.",
+    "The new selector must reproduce the TINY2 guard directly from state-owned ma_sfx, rather than call the old global _moe_tiny2_ok(). It must use current decoder tuples, including MULDEC1 and the tiny FINPF difference from standalone.",
+    "Preserve _moe_build initial PDL=0 behavior for state-loaded module refs and the existing _after_attention setter immediately before launches. Module refs may be shared across states with identical complete keys; this is not a claim of concurrent runtime safety beyond the existing contract.",
+    "Keep selector choice based on original T for every chunk, including T385 -> 384+1. Dense UV physical 2T does not change the T-row MoE input or selector.",
+    "Compact WGS entries can remain in the one ma_w list because all non-WGS natural-fat aliases remain dormant under WGMIN9 and unchanged define tuples. This needs an explicit source/preprocessor proof in the eventual port.",
+    "No routing, Marlin packing/fallback, scratch, guards, PDL device instructions, dense/attention kernels, UV/SK2B/UB2 fusion, autotuner policy or chunk launch arguments need changes.",
+    "The unchanged tuner catches agent launch failures. A clean official decoder PASS alone could therefore describe Marlin fallback; activation evidence and successful SC6 resource markers remain necessary before attributing performance to this mechanism."
+  ],
+  "future_source_proof_requirements": [
+    "Restore all six scoped edits and three helpers to exact decoder parent AST; normalize only the known BIGM comment when comparing embedded standalone CUDA.",
+    "Exercise actual decoder _POS_PACK packing and reconstruct full W13/W2 scale bytes without copying standalone dual-layout APIs.",
+    "Execute actual threaded build closures with captured state/representative M values to catch late-bound lambda variables; retain joins and error propagation.",
+    "Alternate eligible, PRMT-only and non-PRMT prepared states across threshold boundaries and T385. Poison legacy global aliases to expose accidental dependence.",
+    "Verify all non-WGS compile tuples and generated source remain identical, and SC6 does not enter generic ma_sfx.",
+    "Exercise agent and Marlin branches, exact PDL setters, resource failure/fallback behavior, and unchanged per-chunk launch arguments.",
+    "Retain bounded weight-only eligibility logging if needed for activation evidence, but do not add runtime phase detection or new tuning."
+  ],
+  "prefix_sanity_review": {
+    "decision": "Feasible low-priority small experiment, with low confidence in speed benefit; no implementation approved here.",
+    "source_contract": "Full x-producer warp for WGSPR1 or compute warp0 for WGSPR0 executes the same chunked integer scan. Only lane0 retains the existing binary searches/debug block. Preserve both internal publication sync and caller join/sync.",
+    "arithmetic": "Parent A/B cost coefficients and uint32 prefixes are exact for nj up to 88, with zero-padded final chunks; grid132 products remain below 2^32. No global-zero-job support follows from a valid zero-length prefix.",
+    "measurement_limit": "Saved ef7 after-gather to after-join gaps are 0..64ns (median32ns per input). This supplies no positive exposed-prefix-stall evidence, but is not a causal upper bound on issue/shared contention or compiler effects.",
+    "selection": "Allow a cheap fixed source-local test if root selects it after SC6. Do not require a large whole-decoder gain, but do not justify it using donor latency claims or combine it silently with SC6. No preliminary GPU campaign or expanded scheduler rewrite is warranted."
+  },
+  "candidate_edits": false,
+  "official_calls": 0,
+  "gpu_allocations": 0
+}
