@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:43 UTC with V32 official check accepted.
+Updated November 4, 2026 at 22:56 UTC with V32 closed; no official job in flight.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -52,26 +52,25 @@ are unknown. This is prepare-time execution/resource evidence, not timed COMP
 performance, nor proof that array storage alone explains the slowdown. Raw logs,
 receipt, profile, root and independent critic are preserved in V31 records.
 
-**V32 accepted as official check `6a938fff9d5d417c`; inspect it, never duplicate.**
-Exact source ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35
-in `muse_decode_layer/candidates/decoder_scalar_patch_v32/`. Source, critic, root
-proof and fixed plan were committed c77f86b before upload. Root/author/critic
-CPU reports match8a13b2b4; all5 analyzer fixtures pass.
-It replaces address-taken COMP weight arrays with value-return decode and scalar
-repair positions; exact packing, MMA association/order, geometry and routing stay.
-V31 observations remain with V32 labels. Source critic `result_and_strategy_critic` completed its review and is available
-for terminal result review. Root alone owns official polling/results.
-Fixed gates stay whole>=1.025/affectedGM>=1.04 against both97af parents, allcase
-latency<=1.03, controlsGM[.97,1.03], clean full coverage/exact COMP activation.
-New compiler gate requires all observed COMP local_bytes=0, successfulAPI/capacity,
-no resourceSTOP and matching captured resource signatures for active templates.
-Do not claim removal until actual compiled attributes return. No gate relaxation.
+**V32 closed; compiler fix succeeded, speed premise failed.**
+Official `6a938fff9d5d417c`, exact ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35,
+passed13tests/12benchmarks/12profiles with clean flags. Score1.90808038695,
+CI[1.87945918115,1.93670159275]. Whole ratios.874791/.876612 against both97af;
+affected four-load GM.823866/.825885; controls pass. All19 observed pointers,
+including15COMP, have local_bytes0. Still zero timed COMP activation; all20
+prepare selftests pass with no disabled keys. Removing array local allocation
+was real but insufficient. No forced selection, identical retry, or gate changes.
+Raw receipt/profiles/log, root result and compact closeout are retained underV32.
+Independent critic reproduces root result. Proposed next distinct feasibility:
+fixed12bit primary + missing-high-nibble sidecar for whole-unit raw fallbacks,
+removing all per-word repair without duplicating full16bit raw payload. NoGPU
+allocation until exact mapping and source review. Public source unchanged.
 
 The unique-expert traffic audit is closed read-only, no new implementation:
 retained job duplicates offer at most a conditional+1.465% decoder scenario,
 FT128+1.093%; no actual decoder routing census exists. Evidence in
 `experiments/iterations/20261104-moe-unique-expert-traffic-audit.json`.
-Root owns all GPU calls. V32 is the only job in flight; no Modal allocation.
+Root owns all GPU calls. No job in flight; no Modal allocation.
 Serving work remains backlog under the current public #1 priority.
 
 

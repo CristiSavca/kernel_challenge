@@ -1,0 +1,2019 @@
+{
+  "schema": 1,
+  "verdict": "CLOSE_FIXED_V32_NO_RETRY_NO_PORT_NO_PROMOTION",
+  "candidate": {
+    "job": "6a938fff9d5d417c",
+    "mode": "check",
+    "source_sha256": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+    "source": "experiments/candidates/muse_decode_layer/ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35.py",
+    "receipt": "experiments/runs/6a938fff9d5d417c.json",
+    "receipt_sha256": "656837b6d6571b22f61ad5d776f7c39065ffe6079863c625293264f3546cb1f3",
+    "profile": "experiments/candidates/muse_decode_layer/profiles/ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35.6a938fff9d5d417c.json",
+    "profile_sha256": "f0cca6b5cedf925e751ca92abc434a9129893eed95b472c9560636254df74584",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+  },
+  "evidence_sha256": {
+    "experiments/runs/6a938fff9d5d417c.json": "656837b6d6571b22f61ad5d776f7c39065ffe6079863c625293264f3546cb1f3",
+    "experiments/candidates/muse_decode_layer/profiles/ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35.6a938fff9d5d417c.json": "f0cca6b5cedf925e751ca92abc434a9129893eed95b472c9560636254df74584",
+    "experiments/candidates/muse_decode_layer/profiles/ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35.6a938fff9d5d417c.log": "fc2eb7b329c957a1a374b0441e7734e7f773a7792d765e88d5db017548ea9902",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-root-plan.json": "ba8be359732d013d90f02baa52f036cb0433baab812aa50e3b80856e340dc877",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-root-result.json": "2e3f5818668f3d917c0b4159c45527e979204c99508ef12db0e807ef9cf3e980",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-source-critic.json": "f14a855ba0566020f3a99fde07b0a8ffea712090844f31d1c2b447f9cf41adf4",
+    "experiments/runs/5f48e0da4dcd4595.json": "2c43bdf60b81c10b6000e245590b9488797266fb3788f6bdf85df08e524caa96",
+    "experiments/iterations/20261104-dense-unit-dictionary-feasibility.json": "e4d44d3394ae1e2e9572bb7cb99ab73174103e4d96470a2f7aac43a72db09403",
+    "tools/NUMBER_ONE_SUPERVISOR_RESET_20261104.md": "6cd579dbbabe4b2eb6b007c0aeb30a09406b008b05562905ff661b3808cd3a61",
+    "tools/analyze_decoder_v32.py": "3e47ec4801d5b1d73a35c40b003d76bb8a977d9ea668aea25211197ea121584e",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434"
+  },
+  "strict_analyzer_equals_saved_root": true,
+  "independent_six_weighted_load_recomputation": true,
+  "official": {
+    "score": 1.9080803869495198,
+    "CI": [
+      1.879459181145277,
+      1.9367015927537623
+    ],
+    "counts": {
+      "setup": 1,
+      "test": 13,
+      "benchmark": 12,
+      "profile": 12
+    },
+    "checks": {
+      "flagged": [],
+      "ok": true,
+      "rejected": []
+    },
+    "flags": [],
+    "evaluator": {
+      "code_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+      "files": {
+        "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+        "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+        "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+        "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+        "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+        "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+        "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+        "problems/muse_decode_layer/baseline.py": "87d95a0c4b78f0fd6c772436b959330ca45652b10e82dfc8add9acf0549227d4",
+        "problems/muse_decode_layer/reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+        "problems/muse_decode_layer/task.yml": "6a73de4094ff00d7453fb94bd3aa40f5fae79ac7fbea149660eae2125dc5a0c7"
+      },
+      "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+    }
+  },
+  "comparisons": [
+    {
+      "parent_job": "7a8c4941741645ee",
+      "whole_score_ratio": 0.8747914635428591,
+      "affected_4_weighted_load_speed_GM": 0.8238655320528776,
+      "control_2_weighted_load_latency_GM": 1.0139091869469314,
+      "load_speed_ratios": [
+        0.7425031181966391,
+        0.8166745960079549,
+        0.8785458776659294,
+        0.8647957793966025,
+        0.9847496883284479,
+        0.9878159438490615
+      ],
+      "case_normalized_latencies": [
+        1.359646000373087,
+        1.3128861954900066,
+        1.2626410449425962,
+        1.157212347006978,
+        1.1908176944883508,
+        1.0697845121302754,
+        1.1550344369633163,
+        1.1599924470563527,
+        1.016092263134915,
+        1.013619295145253,
+        1.014382203683013,
+        1.0089134475273558
+      ],
+      "gates": {
+        "whole>=1.025": false,
+        "affected>=1.04": false,
+        "all_affected_latency<=1.03": false,
+        "controlGM[.97,1.03]": true,
+        "all_controls_latency<=1.03": true
+      }
+    },
+    {
+      "parent_job": "b2a773e2d7194de8",
+      "whole_score_ratio": 0.876611529359369,
+      "affected_4_weighted_load_speed_GM": 0.8258848187044208,
+      "control_2_weighted_load_latency_GM": 1.0125522225192372,
+      "load_speed_ratios": [
+        0.7348987018244195,
+        0.8280725997938937,
+        0.8861282464225336,
+        0.8627509716610221,
+        0.9819833531242507,
+        0.993255576260466
+      ],
+      "case_normalized_latencies": [
+        1.3733393169343604,
+        1.3278915409229597,
+        1.239382670847735,
+        1.1508506190711323,
+        1.1708540684435336,
+        1.074761001815407,
+        1.1581201568219106,
+        1.1625346244879695,
+        1.0177613106033347,
+        1.0192364267105918,
+        1.0046961413628457,
+        1.0110029501550222
+      ],
+      "gates": {
+        "whole>=1.025": false,
+        "affected>=1.04": false,
+        "all_affected_latency<=1.03": false,
+        "controlGM[.97,1.03]": true,
+        "all_controls_latency<=1.03": true
+      }
+    }
+  ],
+  "compiler_prediction": {
+    "passed": true,
+    "resources": [
+      {
+        "template": [
+          1,
+          8,
+          3,
+          1,
+          4,
+          2,
+          6,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          1,
+          2304,
+          8192,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 167168,
+        "registers": 115,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          3,
+          1,
+          4,
+          2,
+          5,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          16,
+          2304,
+          8192,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 180464,
+        "registers": 109,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          3,
+          1,
+          4,
+          2,
+          4,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          32,
+          2304,
+          8192,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 210144,
+        "registers": 136,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          4,
+          1,
+          4,
+          1,
+          4,
+          1,
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          1,
+          8192,
+          1024,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 70880,
+        "registers": 133,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 2,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          4,
+          1,
+          4,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          16,
+          8192,
+          1024,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 87264,
+        "registers": 127,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 2,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          2,
+          2,
+          2,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          32,
+          8192,
+          1024,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 90320,
+        "registers": 113,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 2,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          2,
+          2,
+          4,
+          3,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          1,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 65744,
+        "registers": 71,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 3,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          8,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          16,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 288,
+        "dynamic": 211184,
+        "registers": 127,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          2,
+          2,
+          2,
+          2,
+          5,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          32,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 149744,
+        "registers": 113,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          1,
+          8,
+          2,
+          4,
+          1,
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          1,
+          1024,
+          4096,
+          0
+        ],
+        "threads": 288,
+        "dynamic": 120032,
+        "registers": 77,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          4,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          16,
+          8192,
+          4096,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 108784,
+        "registers": 127,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 2,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          4,
+          2,
+          2,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "sample": [
+          32,
+          8192,
+          4096,
+          0
+        ],
+        "threads": 160,
+        "dynamic": 127184,
+        "registers": 157,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          1,
+          8,
+          1,
+          6,
+          0,
+          1,
+          4,
+          3,
+          1,
+          0,
+          0,
+          4
+        ],
+        "sample": [
+          1,
+          256,
+          8192,
+          0
+        ],
+        "threads": 320,
+        "dynamic": 157504,
+        "registers": 61,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          1,
+          1,
+          8,
+          1,
+          6,
+          0,
+          1,
+          4,
+          3,
+          0,
+          0,
+          0,
+          4
+        ],
+        "sample": [
+          16,
+          256,
+          8192,
+          0
+        ],
+        "threads": 320,
+        "dynamic": 206656,
+        "registers": 59,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          1,
+          1,
+          8,
+          1,
+          4,
+          0,
+          1,
+          4,
+          3,
+          0,
+          0,
+          0,
+          4
+        ],
+        "sample": [
+          32,
+          256,
+          8192,
+          0
+        ],
+        "threads": 320,
+        "dynamic": 215392,
+        "registers": 91,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          4,
+          1,
+          8,
+          1,
+          6,
+          1,
+          0,
+          2,
+          1,
+          1,
+          1,
+          0,
+          2
+        ],
+        "sample": [
+          1,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 288,
+        "dynamic": 204032,
+        "registers": 133,
+        "local": 0,
+        "static": 384,
+        "maxdynamic": 232064,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          8,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0,
+          2
+        ],
+        "sample": [
+          16,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 288,
+        "dynamic": 211184,
+        "registers": 127,
+        "local": 0,
+        "static": 384,
+        "maxdynamic": 232064,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          4,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0,
+          2
+        ],
+        "sample": [
+          32,
+          4096,
+          8192,
+          0
+        ],
+        "threads": 288,
+        "dynamic": 176336,
+        "registers": 168,
+        "local": 0,
+        "static": 384,
+        "maxdynamic": 232064,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          1,
+          1,
+          8,
+          1,
+          4,
+          0,
+          1,
+          4,
+          3,
+          1,
+          0,
+          0,
+          4
+        ],
+        "sample": [
+          24,
+          256,
+          8192,
+          0
+        ],
+        "threads": 320,
+        "dynamic": 215392,
+        "registers": 94,
+        "local": 0,
+        "static": 0,
+        "maxdynamic": 232448,
+        "capacity": 1,
+        "api": [
+          0,
+          0
+        ]
+      }
+    ],
+    "V31_deltas": [
+      {
+        "template": [
+          1,
+          8,
+          3,
+          1,
+          4,
+          2,
+          6,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          115
+        ],
+        "local_before_after": [
+          96,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          3,
+          1,
+          4,
+          2,
+          5,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          126,
+          109
+        ],
+        "local_before_after": [
+          96,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          3,
+          1,
+          4,
+          2,
+          4,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          154,
+          136
+        ],
+        "local_before_after": [
+          96,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          4,
+          1,
+          4,
+          1,
+          4,
+          1,
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          133
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          3,
+          2
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          4,
+          1,
+          4,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          127
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          2,
+          2
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          2,
+          2,
+          2,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          120,
+          113
+        ],
+        "local_before_after": [
+          64,
+          0
+        ],
+        "capacity_before_after": [
+          2,
+          2
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          2,
+          2,
+          4,
+          3,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          72,
+          71
+        ],
+        "local_before_after": [
+          32,
+          0
+        ],
+        "capacity_before_after": [
+          3,
+          3
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          8,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          127
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          2,
+          2,
+          2,
+          2,
+          5,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          120,
+          113
+        ],
+        "local_before_after": [
+          64,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          1,
+          8,
+          2,
+          4,
+          1,
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          76,
+          77
+        ],
+        "local_before_after": [
+          32,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          4,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          127
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          2,
+          2
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          4,
+          2,
+          2,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          188,
+          157
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          1,
+          1,
+          8,
+          1,
+          6,
+          0,
+          1,
+          4,
+          3,
+          1,
+          0,
+          0,
+          4
+        ],
+        "registers_before_after": [
+          61,
+          61
+        ],
+        "local_before_after": [
+          0,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          1,
+          1,
+          8,
+          1,
+          6,
+          0,
+          1,
+          4,
+          3,
+          0,
+          0,
+          0,
+          4
+        ],
+        "registers_before_after": [
+          59,
+          59
+        ],
+        "local_before_after": [
+          0,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          1,
+          1,
+          8,
+          1,
+          4,
+          0,
+          1,
+          4,
+          3,
+          0,
+          0,
+          0,
+          4
+        ],
+        "registers_before_after": [
+          91,
+          91
+        ],
+        "local_before_after": [
+          0,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          8,
+          4,
+          1,
+          8,
+          1,
+          6,
+          1,
+          0,
+          2,
+          1,
+          1,
+          1,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          133
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          1,
+          16,
+          4,
+          1,
+          8,
+          1,
+          5,
+          1,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          128,
+          127
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          4,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0,
+          2
+        ],
+        "registers_before_after": [
+          165,
+          168
+        ],
+        "local_before_after": [
+          128,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      },
+      {
+        "template": [
+          2,
+          32,
+          1,
+          1,
+          8,
+          1,
+          4,
+          0,
+          1,
+          4,
+          3,
+          1,
+          0,
+          0,
+          4
+        ],
+        "registers_before_after": [
+          94,
+          94
+        ],
+        "local_before_after": [
+          0,
+          0
+        ],
+        "capacity_before_after": [
+          1,
+          1
+        ]
+      }
+    ],
+    "all19localzero": true,
+    "scope": "Captured prepare/module pointers; no timed COMP activation or achieved occupancy claim"
+  },
+  "preparation": {
+    "selftests": 20,
+    "COMP_selftests": 16,
+    "router_selftests": 4,
+    "all_passed": true,
+    "max_BF16_selftest_error": 0.00019631256048071257,
+    "disabled": [],
+    "inner_rows_retained": 18,
+    "missing_inner": [
+      "unpooler M8",
+      "router M8"
+    ],
+    "outer_rows_retained": 24,
+    "exceptions": [],
+    "stops": [
+      "V32P_STOP group=inner coverage=incomplete reason=log_capacity"
+    ],
+    "outer_rows": [
+      {
+        "kind": "outer",
+        "m": 1,
+        "layer": "qkv",
+        "us": [
+          16.99,
+          17.25,
+          17.25,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 1,
+        "layer": "o",
+        "us": [
+          11.36,
+          11.17,
+          10.72,
+          null
+        ],
+        "pick": "bfp"
+      },
+      {
+        "kind": "outer",
+        "m": 1,
+        "layer": "pr",
+        "us": [
+          25.47,
+          26.37,
+          28.9,
+          26.94
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 1,
+        "layer": "un",
+        "us": [
+          8.32,
+          10.98,
+          9.89,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 2,
+        "layer": "qkv",
+        "us": [
+          17.09,
+          18.37,
+          18.11,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 2,
+        "layer": "o",
+        "us": [
+          11.26,
+          10.82,
+          10.82,
+          null
+        ],
+        "pick": "torch"
+      },
+      {
+        "kind": "outer",
+        "m": 2,
+        "layer": "pr",
+        "us": [
+          24.86,
+          27.07,
+          28.93,
+          27.14
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 2,
+        "layer": "un",
+        "us": [
+          8.35,
+          11.01,
+          9.89,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 4,
+        "layer": "qkv",
+        "us": [
+          17.09,
+          17.41,
+          17.09,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 4,
+        "layer": "o",
+        "us": [
+          11.33,
+          10.72,
+          10.85,
+          null
+        ],
+        "pick": "torch"
+      },
+      {
+        "kind": "outer",
+        "m": 4,
+        "layer": "pr",
+        "us": [
+          25.15,
+          26.4,
+          28.86,
+          27.39
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 4,
+        "layer": "un",
+        "us": [
+          8.42,
+          10.85,
+          10.05,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 8,
+        "layer": "qkv",
+        "us": [
+          17.18,
+          17.15,
+          17.34,
+          null
+        ],
+        "pick": "torch"
+      },
+      {
+        "kind": "outer",
+        "m": 8,
+        "layer": "o",
+        "us": [
+          11.33,
+          10.46,
+          10.5,
+          null
+        ],
+        "pick": "torch"
+      },
+      {
+        "kind": "outer",
+        "m": 8,
+        "layer": "pr",
+        "us": [
+          25.47,
+          26.46,
+          28.54,
+          27.33
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 8,
+        "layer": "un",
+        "us": [
+          8.35,
+          11.2,
+          10.05,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 16,
+        "layer": "qkv",
+        "us": [
+          16.77,
+          17.66,
+          17.76,
+          null
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 16,
+        "layer": "o",
+        "us": [
+          11.42,
+          10.69,
+          10.34,
+          null
+        ],
+        "pick": "bfp"
+      },
+      {
+        "kind": "outer",
+        "m": 16,
+        "layer": "pr",
+        "us": [
+          25.5,
+          26.66,
+          28.51,
+          27.17
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 16,
+        "layer": "un",
+        "us": [
+          22.46,
+          22.3,
+          22.11,
+          null
+        ],
+        "pick": "bfp"
+      },
+      {
+        "kind": "outer",
+        "m": 32,
+        "layer": "qkv",
+        "us": [
+          19.14,
+          18.78,
+          18.18,
+          null
+        ],
+        "pick": "bfp"
+      },
+      {
+        "kind": "outer",
+        "m": 32,
+        "layer": "o",
+        "us": [
+          12.0,
+          10.82,
+          10.59,
+          null
+        ],
+        "pick": "bfp"
+      },
+      {
+        "kind": "outer",
+        "m": 32,
+        "layer": "pr",
+        "us": [
+          26.88,
+          28.54,
+          30.46,
+          29.66
+        ],
+        "pick": "triton"
+      },
+      {
+        "kind": "outer",
+        "m": 32,
+        "layer": "un",
+        "us": [
+          23.33,
+          22.18,
+          22.98,
+          null
+        ],
+        "pick": "torch"
+      }
+    ],
+    "inner_cross_run_comparisons": [
+      {
+        "layer": "qkv_gate",
+        "M": 1,
+        "V31_SK2_us": 26.69,
+        "V32_SK2_us": 22.82,
+        "V32_Torch_us": 17.63,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8550018733608092
+      },
+      {
+        "layer": "o",
+        "M": 1,
+        "V31_SK2_us": 12.96,
+        "V32_SK2_us": 11.42,
+        "V32_Torch_us": 10.05,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8811728395061728
+      },
+      {
+        "layer": "pooler",
+        "M": 1,
+        "V31_SK2_us": 39.74,
+        "V32_SK2_us": 26.94,
+        "V32_Torch_us": 25.25,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.6779063915450427
+      },
+      {
+        "layer": "unpooler",
+        "M": 1,
+        "V31_SK2_us": 8.83,
+        "V32_SK2_us": 9.02,
+        "V32_Torch_us": 10.3,
+        "V32_inner_pick": "sk2",
+        "V32_to_V31_SK2_latency": 1.0215175537938845
+      },
+      {
+        "layer": "router",
+        "M": 1,
+        "V31_SK2_us": 8.13,
+        "V32_SK2_us": 8.38,
+        "V32_Torch_us": 17.86,
+        "V32_inner_pick": "sk2",
+        "V32_to_V31_SK2_latency": 1.030750307503075
+      },
+      {
+        "layer": "qkv_gate",
+        "M": 16,
+        "V31_SK2_us": 26.27,
+        "V32_SK2_us": 22.85,
+        "V32_Torch_us": 17.47,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8698134754472784
+      },
+      {
+        "layer": "o",
+        "M": 16,
+        "V31_SK2_us": 12.67,
+        "V32_SK2_us": 11.39,
+        "V32_Torch_us": 10.11,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8989739542225731
+      },
+      {
+        "layer": "pooler",
+        "M": 16,
+        "V31_SK2_us": 35.68,
+        "V32_SK2_us": 24.13,
+        "V32_Torch_us": 25.15,
+        "V32_inner_pick": "sk2",
+        "V32_to_V31_SK2_latency": 0.6762892376681614
+      },
+      {
+        "layer": "unpooler",
+        "M": 16,
+        "V31_SK2_us": 35.68,
+        "V32_SK2_us": 24.93,
+        "V32_Torch_us": 22.4,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.6987107623318386
+      },
+      {
+        "layer": "router",
+        "M": 16,
+        "V31_SK2_us": 8.22,
+        "V32_SK2_us": 8.38,
+        "V32_Torch_us": 18.5,
+        "V32_inner_pick": "sk2",
+        "V32_to_V31_SK2_latency": 1.0194647201946472
+      },
+      {
+        "layer": "qkv_gate",
+        "M": 32,
+        "V31_SK2_us": 25.02,
+        "V32_SK2_us": 23.58,
+        "V32_Torch_us": 17.63,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.9424460431654675
+      },
+      {
+        "layer": "o",
+        "M": 32,
+        "V31_SK2_us": 13.47,
+        "V32_SK2_us": 11.87,
+        "V32_Torch_us": 10.05,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8812175204157385
+      },
+      {
+        "layer": "pooler",
+        "M": 32,
+        "V31_SK2_us": 42.62,
+        "V32_SK2_us": 31.3,
+        "V32_Torch_us": 25.25,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.7343969967151572
+      },
+      {
+        "layer": "unpooler",
+        "M": 32,
+        "V31_SK2_us": 36.96,
+        "V32_SK2_us": 29.28,
+        "V32_Torch_us": 22.4,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.7922077922077922
+      },
+      {
+        "layer": "router",
+        "M": 32,
+        "V31_SK2_us": 8.74,
+        "V32_SK2_us": 8.96,
+        "V32_Torch_us": 18.5,
+        "V32_inner_pick": "sk2",
+        "V32_to_V31_SK2_latency": 1.0251716247139588
+      },
+      {
+        "layer": "qkv_gate",
+        "M": 8,
+        "V31_SK2_us": 26.82,
+        "V32_SK2_us": 22.53,
+        "V32_Torch_us": 17.66,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8400447427293065
+      },
+      {
+        "layer": "o",
+        "M": 8,
+        "V31_SK2_us": 12.93,
+        "V32_SK2_us": 11.33,
+        "V32_Torch_us": 9.92,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.8762567672080434
+      },
+      {
+        "layer": "pooler",
+        "M": 8,
+        "V31_SK2_us": 39.04,
+        "V32_SK2_us": 27.01,
+        "V32_Torch_us": 25.02,
+        "V32_inner_pick": "torch",
+        "V32_to_V31_SK2_latency": 0.6918545081967213
+      }
+    ],
+    "cross_run_caution": "Rounded tuner timing on different inputs/runs, not paired causal estimates; outer bfp may dispatch inner Torch and records precede PIN_PICK"
+  },
+  "activation": [
+    {
+      "index": 0,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 1,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 2,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 3,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 4,
+      "COMP_instances": 0,
+      "visible_SK2_rows": [
+        "void sk2_exact_patch_v32<2, 32, 1, 1, 8, 1, 4, false, tru...       5.4 \u00b5s   3.1%      1"
+      ]
+    },
+    {
+      "index": 5,
+      "COMP_instances": 0,
+      "visible_SK2_rows": [
+        "void sk2_exact_patch_v32<2, 32, 1, 1, 8, 1, 4, false, tru...       5.3 \u00b5s   1.6%      1"
+      ]
+    },
+    {
+      "index": 6,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 7,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 8,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 9,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 10,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    },
+    {
+      "index": 11,
+      "COMP_instances": 0,
+      "visible_SK2_rows": []
+    }
+  ],
+  "hypothesis_verdict": {
+    "compiler_storage": "Confirmed: captured COMP local storage disappeared.",
+    "whole_decoder_benefit": "Falsified for fixed candidate: no COMP profile activation; both performance gates fail.",
+    "why_no_translation": "13 of15 retained COMP inner options still lose; winning unpoolerM1 loses outer9.89vs8.32us and winning poolerM16 does not make either whole PR chain win:28.51/27.17vs25.50us. Profiles retain fallback mixture.",
+    "mechanism_cause_unknown": [
+      "Remaining descriptor/repair/control cost",
+      "Consumer raw sidecar loads",
+      "Packing/shared-memory layout effect",
+      "Instruction/cache/bandwidth or scheduling bottleneck"
+    ],
+    "capacity_caveat": "O TOK8 registers128\u2192133 and theoretical blockcapacity3\u21922 despite local128\u21920; no critical-path attribution."
+  },
+  "next_direction": {
+    "recommendation": "Return to retained97af. If continuing exact reconstruction, first assess a different regular hot loop: per-unit consecutive exponent window, cheap value decode8 with a per-unit base, whole-unit raw fallback, no per-word repair selection. No new candidate/check approved here.",
+    "material_difference": "Eliminates runtime scalar repair tests instead of re-expressing them; deliberately trades more raw bytes for simpler common work.",
+    "proxy_only_costs": [
+      {
+        "seed": 230401,
+        "units": 4096,
+        "raw_units": 240,
+        "raw_fraction": 0.05859375,
+        "bytes_per_unit_with_4B_header": 832.0,
+        "ratio_to768": 1.0833333333333333
+      },
+      {
+        "seed": 230402,
+        "units": 4096,
+        "raw_units": 246,
+        "raw_fraction": 0.06005859375,
+        "bytes_per_unit_with_4B_header": 833.5,
+        "ratio_to768": 1.0852864583333333
+      },
+      {
+        "seed": 230403,
+        "units": 4096,
+        "raw_units": 291,
+        "raw_fraction": 0.071044921875,
+        "bytes_per_unit_with_4B_header": 844.75,
+        "ratio_to768": 1.0999348958333333
+      }
+    ],
+    "premises_required": [
+      "Exact arbitrary-BF16 reconstruction and whole-matrix fallback",
+      "Actual input weight histogram and full stage-padding/request-byte accounting",
+      "Source/compiler evidence the repair selection is removed without restoring local storage",
+      "Preserved geometry/order/PDL and unchanged official numerical/performance gates"
+    ],
+    "strongest_objection": "Proxy6\u20137% raw fallback means8\u201310% extra weight requests versusunder1% here; if weights or bandwidth dominate, the simpler instruction stream can lose more. No claim current bottleneck is repair control.",
+    "kill": "Reject infeasible byte/operand/resource costs before implementation; any future device gate failure closes that fixed attempt. Do not force V32 selection or retry its source.",
+    "speed_forecast": null
+  },
+  "conditional_scope_estimate": {
+    "source": "Pre-result V32 root plan inherited97af profile scenario",
+    "20pct_entire_SK2_time_reduction_whole_ratio": 1.04973972,
+    "delete_all_SK2_whole_ratio": 1.336958,
+    "not_a_physical_bound_or_forecast": true,
+    "assumptions": "Separately profiled SK2 shares carry to normalized timing without overlap compensation; impossible free-removal scenario is only a scope screen. V32 gains are not measured on activeCOMP."
+  },
+  "official_or_provider_calls": 0,
+  "candidate_or_frozen_evidence_changes": false
+}
