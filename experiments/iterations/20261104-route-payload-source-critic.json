@@ -1,0 +1,88 @@
+{
+  "arithmetic_scope": [
+    "For finite nonnegative scores and IEEE-RNE additions, the parent masked sum has one selected nonzero score plus zeros; carrying that score preserves the modeled result. Finite ties pick the same absolute smallest expert index independent of tree order.",
+    "NaN comparator is not associative; same pair predicate and same-tree tests do not establish matching NaN results after backend tree/layout changes. NaN payload bits were not certified.",
+    "Negative-zero payload and a deliberately FTZ-add subnormal model are retained counterexamples. Normal finite sigmoid output does not have negative zero; actual GPU subnormal/lowering behavior remains subject to official correctness.",
+    "No actual Triton compilation, GPU execution or universal bit-equivalence proof was performed by this reviewer. Tuple JIT API compatibility is source/API evidence only."
+  ],
+  "blocking_findings": [],
+  "fixed_pre_result_gate": {
+    "aggregate_speed_ratio_at_least_vs_each_parent": 1.005,
+    "all_reported_setup_events_pass": true,
+    "baseline_jobs": [
+      "7a8c4941741645ee",
+      "b2a773e2d7194de8"
+    ],
+    "baseline_source": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "complete_benchmarks": 12,
+    "complete_clean_tests": 13,
+    "complete_profiles": 12,
+    "confidence": "Operational consistency screen; overlapping intervals remain explicit and no causal inference from router profile duration alone.",
+    "failure_policy": "One fixed attempt; no threshold lowering, noise-seeking repeat or automatic public promotion.",
+    "flags": "none; checks and return status clean",
+    "joint_positive_weighted_loads_at_least": 4,
+    "provenance": "exact source, full evaluator inventory and case/profile identity",
+    "score": "six-load geometric mean, each load speed=(46*sliding_baseline_ns+16*full_baseline_ns)/(46*sliding_median_ns+16*full_median_ns)",
+    "source": "8ab1cf33ef5b4a4eea8721625ad446358fcbd603dfe1277eee17b7e76a53d232",
+    "unchanged_controls": "none; all12 parent cases affected",
+    "weighted_load_normalized_latency_max_vs_either_parent": 1.02
+  },
+  "independent_checks": {
+    "GPU_or_official_calls": 0,
+    "actual_verifier_run_read_only": true,
+    "finite_FP32_loop_comparisons": 332,
+    "full_diff_read": true,
+    "full_module_AST_restoration_by_removing_one_helper_and_restoring_two_statement_pairs": true,
+    "negative_controls": 2,
+    "result_equal_to_frozen_author_report": true,
+    "same_tree_NaN_classification_comparisons": 32
+  },
+  "parent_activation": {
+    "all_12_targeted_parent_cases": true,
+    "candidate_requirement": "Report actual profile paths. Unchanged route_a/route_b fallback remains possible and must not be labeled changed-path evidence.",
+    "cases_0_to_7": "one _route_split each",
+    "cases_8_to_11": "one _route each",
+    "public_job": "7a8c4941741645ee"
+  },
+  "performance_hypothesis": "One collective reduction replaces two per selection, potentially removing separate cross-warp synchronization/layout work. It does not establish fewer scalar shuffles, emitted barriers or a speedup; extra payload register/select cost may offset it.",
+  "pins": {
+    "author_report": {
+      "path": "experiments/iterations/20261104-route-payload-cpu.json",
+      "sha256": "e0ab4720b704ba753f46d8a9e5be97e27f988255d89ad1f202f43dd780f003ee"
+    },
+    "candidate": {
+      "path": "muse_decode_layer/candidates/native_route_payload_v20.py",
+      "sha256": "8ab1cf33ef5b4a4eea8721625ad446358fcbd603dfe1277eee17b7e76a53d232"
+    },
+    "candidate_note": {
+      "path": "muse_decode_layer/candidates/native_route_payload_v20.md",
+      "sha256": "58c1788f2b81c5761a3f08acdab134663561d464b92e31d849c0f85e334a1162"
+    },
+    "parent": {
+      "path": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+      "sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2"
+    },
+    "verifier": {
+      "path": "tools/test_route_payload_cpu.py",
+      "sha256": "6355baa20300d70590c2ab3f4df4c213727ff8622ac8f334b78c021c6e9ae756"
+    }
+  },
+  "primary_sources": [
+    {
+      "supports": "argmax comparator/tie behavior and sigmoid definition",
+      "url": "https://raw.githubusercontent.com/triton-lang/triton/v3.8.0/python/triton/language/standard.py"
+    },
+    {
+      "supports": "tuple reduce argument grouping, @jit combiner requirement, and two-field argmax construction",
+      "url": "https://raw.githubusercontent.com/triton-lang/triton/v3.8.0/python/triton/language/core.py"
+    }
+  ],
+  "source_findings": [
+    "Exactly two selected route loops replace argmax plus masked score sum with a three-field tuple reduction; one six-argument @triton.jit combiner is added.",
+    "Comparator uses the exact Triton3.8.0 finite-value/left-index tie predicate. The helper returns value,index,payload in the same grouping that tl.reduce supplies as its two input tuples.",
+    "Payload is the original sigmoid score. All eight sequential selections/exclusions, weight normalization, local-ID mapping, output casts, pooled RMS normalization, UV reset and PDL source are unchanged.",
+    "All CUDA strings, preparation, dispatch, tuning and other source restore to the exact97af parent. Unchanged CUDA extension names are appropriate because their source is unchanged."
+  ],
+  "toolchain_limit": "Modal reports Triton3.8.0; this does not independently pin the official worker installed standard.py bytes.",
+  "verdict": "GO_ONE_OFFICIAL_PRIVATE_CORRECTNESS_AND_PERFORMANCE_CHECK_ONLY"
+}
