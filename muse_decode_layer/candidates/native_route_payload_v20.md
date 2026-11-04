@@ -5,7 +5,8 @@ Frozen candidate `native_route_payload_v20.py` has SHA256
 It starts from the exact scored decoder `97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2`
 (public `7a8c4941741645ee`, private `b2a773e2d7194de8`). The active submission
 and all CUDA sources, dispatch, preparation, projection, attention and expert
-math remain byte-identical. There is no official result for this candidate yet.
+math remain byte-identical. Official private job `99924cdcdb1f4952` completed and this candidate is rejected
+by the fixed whole-decoder performance screen.
 
 The two currently selected routing functions, `_route_split` at small token
 counts and `_route` at larger counts, each perform eight sequential argmax
@@ -75,3 +76,24 @@ This is one isolated experiment. Required evidence before promotion is all
 incumbent receipts, and an actual aggregate improvement. A small gain inside
 the reported timing interval is not statistical proof. No resource markers,
 tuning changes, separate diagnostic launches or source mutations are bundled.
+
+
+## Terminal official result
+
+Job `99924cdcdb1f4952` passed all 13 tests, 12 benchmarks and 12 profiles with
+clean checks. Score 2.148848476661277, CI [2.1166157495113582, 2.181081203811196].
+The exact six-load aggregate ratios are 0.9851756334 against the public parent
+and 0.9872253613 against the private parent. Zero of six weighted loads improve
+against both. The 2% weighted-load latency cap also fails for multiple loads.
+Both reported confidence intervals overlap the candidate's and nodes/seeds
+vary; this result does not establish a causal router slowdown.
+
+All twelve profiles show the intended changed route paths: eight `_route_split`
+and four `_route`. The eight small-route profile rows are 0.1–0.4 microseconds
+lower than both parents, while larger-route rows are mixed. Those non-exclusive
+profile measurements do not override the failed whole-decoder performance gate.
+
+Close this isolated attempt: no duplicate retry, public promotion or port.
+Public `97af...` remains unchanged. Root independently reproduced the six-load
+score and comparisons; independent terminal evidence is
+`experiments/iterations/20261104-route-payload-result-critic.json`.

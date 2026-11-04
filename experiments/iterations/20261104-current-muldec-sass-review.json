@@ -1,0 +1,166 @@
+{
+  "date": "2026-11-04",
+  "decision": "NO_NEW_CONCRETE_SIMPLIFICATION",
+  "run_id": "20261104T155445Z-1ed7603c",
+  "scope": "Read-only inspection of active WGS MULDEC decode, scale construction and folded broadcasts in complete BIG1 only; no candidate or additional run.",
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "native_source_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+  "cpp_source_sha256": "0214aeb6bfbce490dce0936ae55f2fe5f8dab38a8088655701bf5f01cf0aff75",
+  "artifacts": {
+    "baseline.py": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/baseline.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+      "bytes": 204388
+    },
+    "compile-cuda.cu": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-cuda.cu",
+      "sha256": "a3801c452e48ea12ac096bb3973f52af89c50edb095e5672a75761805de5f8ae",
+      "bytes": 168990
+    },
+    "compile-owned.so": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-owned.so",
+      "sha256": "ddd047fc1f9ca40e37e804411905750fe7c205bb501d7b3f10f6b36d29b92574",
+      "bytes": 4985088
+    },
+    "compile-owned.cubin": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-owned.cubin",
+      "sha256": "28fbd6ab9577e40741469244d6e9b096adf41f3523163712681a1bb0b2bcc92c",
+      "bytes": 3427792
+    },
+    "compile-sass.txt": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-sass.txt",
+      "sha256": "0c896a5f3fa98170e1df09c50efa5dab60fd21a7b0bb62d1caec7707e55b2d27",
+      "bytes": 33554432
+    },
+    "compile-build.ninja": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-build.ninja",
+      "sha256": "f09a548c39ff4618df63d92676ad4da45fba0ace9a5650e0eadbbaf83e6a164d",
+      "bytes": 2039
+    },
+    "compile-child.json": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/compile-child.json",
+      "sha256": "eb8931c61407b10a269c131b00e42eb8713fa18733986661a7263e9fbf93455e",
+      "bytes": 1138
+    },
+    "result.json": {
+      "path": "experiments/modal/20261104T155445Z-1ed7603c/result.json",
+      "sha256": "348ebc31de58edd4e62950211b892c79aad9deb1c3f4de283d6ecddc8ffc47a2",
+      "bytes": 14115
+    }
+  },
+  "run_status": {
+    "outer": "compile_failed",
+    "child": "compile_child_complete",
+    "one_ninja_build": true,
+    "gpu_execution": false,
+    "failure": "Annotated SASS exceeded fixed 32 MiB cap; BIG0 partial, no retry."
+  },
+  "complete_function": {
+    "symbol": "_ZN3okc9moe_fusedILb1EEEvNS_6ParamsE",
+    "first_line": 176912,
+    "end_label_line": 266485,
+    "first_pc": "0x0",
+    "last_pc": "0x531f0",
+    "contiguous_instructions": 21280,
+    "instruction_bytes": 340480
+  },
+  "representative_window": {
+    "first_pc": "0x6ef0",
+    "last_pc": "0x70f0",
+    "note": "Interleaved two-word decode window. Listed chain follows one original q in R12 and scale pair R3, not every instruction in the window.",
+    "one_word_decode": [
+      {
+        "line": 180469,
+        "pc": "0x6ef0",
+        "instruction": "SHF.R.W.U32 R16, R12.reuse, 0x3, R12.reuse ;"
+      },
+      {
+        "line": 180475,
+        "pc": "0x6f00",
+        "instruction": "LOP3.LUT R56, R12.reuse, 0x81c081c0, RZ, 0xc0, !PT ;"
+      },
+      {
+        "line": 180482,
+        "pc": "0x6f10",
+        "instruction": "SHF.R.W.U32 R18, R12, 0x6, R12 ;"
+      },
+      {
+        "line": 180518,
+        "pc": "0x6f70",
+        "instruction": "LOP3.LUT R12, R12, 0x1b001b, RZ, 0xc0, !PT ;"
+      },
+      {
+        "line": 180538,
+        "pc": "0x6fb0",
+        "instruction": "IMAD R12, R12, 0x1084, RZ ;"
+      },
+      {
+        "line": 180544,
+        "pc": "0x6fc0",
+        "instruction": "LOP3.LUT R16, R16, 0x81c081c0, RZ, 0xc0, !PT ;"
+      },
+      {
+        "line": 180556,
+        "pc": "0x6fe0",
+        "instruction": "LOP3.LUT R18, R18, 0x81c081c0, RZ, 0xc0, !PT ;"
+      },
+      {
+        "line": 180579,
+        "pc": "0x7020",
+        "instruction": "LOP3.LUT R12, R12, 0x81c081c0, RZ, 0xc0, !PT ;"
+      }
+    ],
+    "one_word_decode_counts": {
+      "LOP3_masks": 5,
+      "SHF_rotates": 2,
+      "IMAD_multiply": 1,
+      "total": 8
+    },
+    "four_bf16_multiplies": [
+      {
+        "line": 180587,
+        "pc": "0x7030",
+        "instruction": "HMUL2.BF16_V2 R57, R16, R3.reuse.H1_H1 ;"
+      },
+      {
+        "line": 180601,
+        "pc": "0x7050",
+        "instruction": "HMUL2.BF16_V2 R56, R56, R3.reuse.H0_H0 ;"
+      },
+      {
+        "line": 180614,
+        "pc": "0x7070",
+        "instruction": "HMUL2.BF16_V2 R58, R18, R3.reuse.H0_H0 ;"
+      },
+      {
+        "line": 180656,
+        "pc": "0x70d0",
+        "instruction": "HMUL2.BF16_V2 R59, R12, R3.H1_H1 ;"
+      }
+    ],
+    "scale_pair": [
+      {
+        "line": 180532,
+        "pc": "0x6fa0",
+        "instruction": "PRMT R3, R36, 0x4140, RZ ;"
+      },
+      {
+        "line": 180561,
+        "pc": "0x6ff0",
+        "instruction": "IMAD R3, R84, R3, 0x5c005c00 ;"
+      }
+    ]
+  },
+  "findings": [
+    "Native HMUL2 H0_H0/H1_H1 operands already fold the scale broadcasts; no separate broadcast instructions to remove.",
+    "Scale-pair extraction and rebias are PRMT plus IMAD; KPERM source reuses each constructed pair across four code groups.",
+    "Inspected active stream contains no extra BF16 conversion or duplicate same-input scale reconstruction.",
+    "Removing decode input/output masks is not valid for arbitrary packed code words. Replacing scale multiply with shift does not demonstrate an operation-count reduction."
+  ],
+  "limits": [
+    "Static instructions are not execution frequency or critical-path time. No causal attribution from aggregate NCU math pressure.",
+    "Complete BIG1 coverage only; bounded SASS ends partway through BIG0.",
+    "This CPU-built binary is pinned to source/build artifacts, not established as the byte-identical official evaluation binary.",
+    "No proof of global optimality; previously closed encoding/table/shared-A variants are not reopened."
+  ]
+}

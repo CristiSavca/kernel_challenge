@@ -1550,3 +1550,46 @@ use existingrates/margins; nofinancialcertificate ormanualrefund is approved.
 Latestofficialboard14:58: overall396/1970,decoder396/1268 at2.1812 versus
 leader2.5762;MoE298/1398 at2.3737 versus2.7817. Ownpublicscores/sources
 unchanged. Thegoalremainsactive andunachieved.
+
+
+## CPU compilation and router tuple experiment — November 4, 16:06 UTC
+
+CPU compile run `20261104T153757Z-d116f3fe` failed before the compiler because
+its dependency upload basename differed from its import. The packaging repair
+now has a real isolated three-file subprocess test and preserves the original
+worker failure separately from recovery errors. Original failure/reservation
+remain intact; source/helper fixes were independently reviewed.
+
+A separately reviewed fixed conservative-estimate revision for the original
+nine completed Modal runs is active: U11.63, E9.51 once, A3.74 once, P floor4.16,
+original journal unchanged and every newer reservation full. It retains60s
+teardown allowance,20%rate margin and full0.50build allowance per run. This is
+not final settlement or a provider cap; fresh full-cycle attributed cost<=U,
+cleanup and locking still gate each allocation. Root44accounting tests pass.
+
+Corrected CPU-only run `20261104T155445Z-1ed7603c` compiled exact247888/native85fb
+in69.27s without CUDA initialization. Its full diagnostic failed at the32MiB
+nvdisasm output cap; binaries/generated sources/logs were retrieved and sandbox
+terminated, appstopped0tasks. CompleteBIG1 has21280instructions/340480bytes;
+BIG0 is truncated. Both96regs,staticshared1024,zero stack/local/spills. Root and
+independentcritic cfa9b8e1 verified artifact/source/build/ELF coverage. Actual
+MULDEC is5LOP3+2SHF+1IMAD+4HMUL2 per packed word; broadcasts already fold and
+scale pairs usePRMT+IMAD. No concrete simplification emerged. No recompile.
+Latest saved provider max4.16434237,billed0; future preflight must retain this
+known observation in addition to existing4.16certificatefloor. Current allocation
+reserved0.78 and recorded8.97workingallowance (before later observed spend).
+
+Router v20/source8ab1cf33, job99924cdcdb1f4952, passed13tests/12benchmarks/12profiles
+with cleanchecks. Score2.1488484767 CI[2.1166157495,2.1810812038], aggregate ratios
+0.9851756334 public97af/0.9872253613 private97af, zero jointlypositive weighted
+loads, and multiple2%load capsfailed. All12 targetroutepathsvisible. Although
+smallroute profile rows are0.1–0.4uslower, CIs overlap/nodes differ and nonexclusive
+profiles do not override fixed whole-decoder gate. Root and independentcritic
+reproduced exact six-load scorer and full evaluator/profile/source identities.
+Close this attempt: no duplicate retry, promotion or port. Public97af,247888,
+87a9 remain unchanged. No official or Modal job remains live.
+
+Latest official snapshot15:45UTC: overall398/1973,decoder398/1271 at2.1812 versus
+leader2.5762;MoE300/1400 at2.3737 versus2.7817. No leaderboard improvement from
+this round. The #1 goal remains active and unachieved; completed diagnostics
+and rejected experiments are evidence, not grounds to mark the goal complete.
