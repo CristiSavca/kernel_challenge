@@ -1,0 +1,131 @@
+{
+  "author_cpu": {
+    "independently_rerun": [
+      "complete_source_checks",
+      "positive_92_case_native_range_store_owner_harness"
+    ],
+    "manifest_sha256": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+    "matches_author_subreports": true,
+    "native_coverage": {
+      "cases": 92,
+      "empty_ranges": 1208,
+      "float4_loads": 70863,
+      "limits": "Exact range/phase/store/owner source executed with CPU memory and FP32-add shim; GPU publication, progress, atomics and WGMMA are not emulated.",
+      "native_source_sha256": "288001716c1e432cf5fbc7e6c60c98fa8daecd32044efd9faeb3c8a58856f661",
+      "partial_contributions": 17347,
+      "rotated_ranges": 2852,
+      "split_units": 5919,
+      "two_boundary_ctas": 4882,
+      "verified_float_values": 283452
+    },
+    "negative_controls": "Three actual-source mutations reviewed; root owns independent full-suite rerun",
+    "report_sha256": "7a3960067993cac3c1cc7722fb3aa949ab9bacf3c549e47bb10f5ff2a0ddb381",
+    "verifier_sha256": "9521573f429ed85f05f8744963477e9bfe4859c70fb87924912c941300b96037"
+  },
+  "component_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "independent_boundary_model": {
+    "empty_ranges": 19542,
+    "partial_fragments": 465850,
+    "partitions": 47950,
+    "phase_partition_checks": 95900,
+    "same_unit_fragments": 166278,
+    "split_units": 206802,
+    "two_edge_ctas": 106368
+  },
+  "limits": [
+    "Source-bound expression model over arbitrary monotone partitions; not execution of CUDA memory operations",
+    "Inherited cost-to-range functions reviewed separately; author native source proof remains separate",
+    "No GPU publication/interleaving/performance proof"
+  ],
+  "model_counterexample_scope": "Constructed partition witnesses, not executable CUDA source mutants.",
+  "model_counterexample_witnesses": {
+    "collapsed_edges_detected": true,
+    "dropped_last_contributor_detected": true,
+    "empty_range_read_detected": true
+  },
+  "non_FTZ_sum": 5.877471754111438e-39,
+  "private_payload_bytes": 41943040,
+  "review_limits": [
+    "One isolated official component check only; no performance or deployment approval",
+    "Actual CUDA compilation/cooperative admission/numerical tolerance remain required",
+    "GPU publication/interleaving is source-reasoned, not emulated by CPU harness",
+    "Owner-ordered FP32 addition can differ from V25 CAS and Marlin order; no bit identity or relaxed tolerance",
+    "Workspace reuse requires the unchanged serial/capture lifetime contract"
+  ],
+  "source_review": {
+    "complete_parent_restoration": true,
+    "counter_reset_and_doneAs_publication_tail_exact": true,
+    "files": {
+      "serving/candidates/native_serving_v26/build.py": "024d415182693d8f4e514d8613ab62a98ddff38b3ce3a027db68f55bab11fc45",
+      "serving/candidates/native_serving_v26/component.py": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+      "serving/candidates/native_serving_v26/edits.json": "db8ea0de4947145a0e944c5bb16909a21b9125caf26633d009c4356cebdc1169",
+      "serving/candidates/native_serving_v26/manifest.json": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+      "serving/candidates/native_serving_v26/parent.py": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d"
+    },
+    "inherited_functions": {
+      "bmul2h": {
+        "exact": true,
+        "sha256": "2fc787fda24233acc46e9ecd470081c119854dbfb997d029a782baa805497d50"
+      },
+      "bmul2l": {
+        "exact": true,
+        "sha256": "87924c07ac7e7ebe26f7688d86bca4cd8e5ec3f596afe83dfaa37f576390c554"
+      },
+      "dq4": {
+        "exact": true,
+        "sha256": "c884f680f5df6d35e24e4cb60bdcce635142b1438495b4882c41c09e779a2a8e"
+      },
+      "route": {
+        "exact": true,
+        "sha256": "006f0cbfb3e5070c5ba84580a7582c5a1b5499074e765ee6f5d8813988acd95e"
+      },
+      "wgs_cta_of": {
+        "exact": true,
+        "sha256": "d9fee1f0bd66236ae85cde3f7936a022b55d3aacb792c0d2ec25be46a7d3915f"
+      },
+      "wgs_epi_tile": {
+        "exact": true,
+        "sha256": "6c47ccf36782cad9244c7d6fe1dfc93b0a873f2c25271180a0e3bc5b863e50cc"
+      },
+      "wgs_gather": {
+        "exact": true,
+        "sha256": "02b92a33d995088dfb6e811a10b48a5cdc5adf63a754c37d7c900e784087e273"
+      },
+      "wgs_phase": {
+        "exact": true,
+        "sha256": "861af04b4adb03de8b913fbce17c372efb354212888cc8fb99d83c7bf7554e1f"
+      },
+      "wgs_prefix": {
+        "exact": true,
+        "sha256": "cdb76dbf097f971bf7c219b44aead29552857d21bec7ec4db1f353e07b14bb5b"
+      },
+      "wgs_ranges": {
+        "exact": true,
+        "sha256": "9e71983a444ffae4abb305923250a10bf05cd0999c70430d9f3d0c13d10df959"
+      },
+      "wgs_split": {
+        "exact": true,
+        "sha256": "1cad91019edf5fe10d0eb8755d802aff3d9f9a1c312d984221613f1427df5d25"
+      },
+      "wgs_stage_at": {
+        "exact": true,
+        "sha256": "dd7eba8e5d9b6a88824bbc0f1a1656f6db00c425a2544649f372889aed8c5bba"
+      },
+      "wgs_wproducer": {
+        "exact": true,
+        "sha256": "42a0bbe8a0069fb51e051e4102c48c52b885ded43af58b553151f8df81d48aad"
+      },
+      "wgs_xproducer": {
+        "exact": true,
+        "sha256": "da3e2d3e822f4aed96ec221dbdc7015642b47e8e841d343b85213292c6a4056f"
+      }
+    },
+    "publication_and_owner_selection_prefix_exact": true
+  },
+  "status": "GO_FOR_OFFICIAL_COMPONENT_CHECK",
+  "sum_order_example": {
+    "different_arrival_order": 1.0,
+    "increasing_CTA": 0.0,
+    "scope": "Order-sensitive FP32 example, not full-kernel numerical error"
+  }
+}

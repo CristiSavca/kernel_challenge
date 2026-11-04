@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "iteration": "native-serving-v26",
+  "created_at": "2026-11-04T20:42:07.236552+00:00",
+  "candidate_path": "serving/candidates/native_serving_v26/component.py",
+  "candidate_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "source_review_status": "GO_FOR_OFFICIAL_COMPONENT_CHECK",
+  "hypothesis": "Immutable private boundary partials followed by one ordered non-FTZ FP32 owner reduction can remove costly CAS accumulation across every shape while preserving the WGS bank, numerical boundaries and stock finalizer.",
+  "fixed_gate": {
+    "GM_same_run_speed_min": 1.15,
+    "every_case_normalized_latency_max": 1.02
+  },
+  "core_profile_name": "native_serving_v26",
+  "baseline_sha256": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+  "stock_chain_source_binding": {
+    "common_import": "sglang.kernels.ops.muse_spark_v12.fused_post_expert_norm_weighted_sum_triton.fused_post_expert_norm_weighted_sum",
+    "function_AST_sha256": {
+      "kernel_fn": "452125517945f4b14509d08e32c51290f5b5ade1491245cf8d2b6bbe4ec1f6aa",
+      "prepare": "893f90a106293baef3545e7f212a46e787c8efa0e06f3c727b3e070e828ba302",
+      "expert_outputs": "b2389c9bd6084d4efaa2cc1539813104abda43da085a0acbe9079c36480a638c"
+    },
+    "V25_source_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+    "scope": "Exact reviewed call chain plus same qualified import as official baseline; full source review and evaluator/image binding remain required."
+  },
+  "comparators": {
+    "same_run_stock": "official component qualification comparator",
+    "closed_V25": "033a2d2eca374d82",
+    "public_native": "d24dd50196cb4158",
+    "limits": "Different runs/seeds are normalized comparisons. Official component baseline has different routing tile/alignment policy from actual serving."
+  },
+  "falsifiable_predictions": [
+    "Clean official1setup/5tests/6benchmarks/6profiles with no flags/rejections.",
+    "Exact new core and original stock finalization execute for every timed case.",
+    "GM speedup>=1.15 versus same-run stock and every normalized latency<=1.02.",
+    "M1 requires about10.2378% lower normalized latency than V25 to satisfy the unchanged stock cap."
+  ],
+  "kill_criteria": [
+    "Any ownership/publication/lifetime defect before upload.",
+    "Official compilation/admission/numerical/rule failure.",
+    "Failure of the fixed complete-chain/per-shape/aggregate screen."
+  ],
+  "rescue_policy": "No threshold change, small-M stock fallback, identical retry or shape-policy rescue; V25 remains closed.",
+  "upper_bound_estimate": {
+    "type": "Very loose conditional diagnostic ceiling, not a forecast or certified benchmark bound.",
+    "M1_entire_core_elimination_ceiling_speed_vs_V25": 3.0030030030030033,
+    "assumption": "The separate profile reports66.7% core share; this estimate assumes that fraction also holds in timed execution and hypothetically removes the entire core. The proposed reducer affects only part of it, so its gain is smaller under that assumption.",
+    "limitation": "Cold-cache benchmark fractions may differ; there is no measured CAS fraction or defensible numerical full-serving speed bound."
+  },
+  "implementation_scope": {
+    "bank_bytes": 905969664,
+    "estimated_private_partial_bytes": 41943040,
+    "estimated_serial_workspace_bytes": 129005088,
+    "all_shapes_same_new_reduction": true,
+    "retained_math": "Per-partial MMA sequence, exact V25 Marlin LUT/global preparation, both BF16 roundings, non-FTZ reduction, local activation FTZ, original stock finalizer.",
+    "numerical_change": "Fixed contributor addition order differs from CAS linearization; must pass official tests."
+  },
+  "activation_contract": {
+    "small": "Source chain matches reviewed V25 and same qualified helper import as official baseline, plus visible ATen reduce/elementwise families in abbreviated official reports.",
+    "large": "Same source chain plus original fused finalizer symbol.",
+    "format_test": "tools/test_analyze_native_serving_v26.py uses retained raw V25 official reports; no fixed launch-count or hidden-template-name assumption.",
+    "V25_verdict_unchanged": true
+  },
+  "resources": {
+    "planned_official_private_checks": 1,
+    "planned_Modal_allocations": 0,
+    "out_of_pocket_authorized_usd": 0
+  },
+  "unresolved_after_component_pass": [
+    "Generic EP ranks and empty routes on GPU",
+    "Two-stream/fresh graph ownership",
+    "Post-load one-bank ownership transition",
+    "Full loaded model memory and cache headroom",
+    "Large prefill and per-load TTFT",
+    "Official eight-H200 serving validation"
+  ],
+  "frozen_at": "2026-11-04T20:46:26.924876+00:00",
+  "evidence_sha256": {
+    "serving/candidates/native_serving_v26/manifest.json": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+    "serving/candidates/native_serving_v26/test_cpu.py": "9521573f429ed85f05f8744963477e9bfe4859c70fb87924912c941300b96037",
+    "serving/candidates/native_serving_v26/cpu_result.json": "7a3960067993cac3c1cc7722fb3aa949ab9bacf3c549e47bb10f5ff2a0ddb381",
+    "experiments/iterations/20261104-native-serving-v26-source-critic.json": "069bd787b782149c7604585aa411521dc64da578b9204f208cd5f1712fbbe0eb",
+    "experiments/iterations/20261104-native-serving-v26-reduction-review.json": "96ded17e6549aa01a86ed0c6e08acf08d703e908fecd219623e90281e9a90211",
+    "tools/analyze_native_serving_v26.py": "289f94b3f2de582c6e5d0d7f00143bc8e8c5b5ddfaa08ec04f31693e5a517865"
+  },
+  "root_CPU_rerun": {
+    "status": "PASS",
+    "exact_report_match": true,
+    "native_cases": 92,
+    "partial_contributions": 17347,
+    "split_units": 5919,
+    "representative_float_values": 283452,
+    "negative_controls_rejected": 3,
+    "does_not_validate_GPU": true
+  }
+}

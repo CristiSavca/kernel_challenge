@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "source_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "manifest_sha256": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+  "source_checks": {
+    "complete_parent_restoration": true,
+    "unchanged_source_functions": [
+      "void dq4(",
+      "void wgs_epi_tile(",
+      "void wgs_wproducer(",
+      "void wgs_xproducer(",
+      "void wgs_gather(",
+      "void route(",
+      "int wgs_split(",
+      "void wgs_prefix(",
+      "int wgs_stage_at(",
+      "void wgs_range(",
+      "void wgs_ranges(",
+      "int wgs_cta_of("
+    ],
+    "per_partial_MMA_unchanged": true,
+    "publication_and_reset_blocks_unchanged": true,
+    "precision_adapter_and_finalizer_unchanged": true,
+    "CAS_removed": true
+  },
+  "native_schedule_and_payload": {
+    "cases": 92,
+    "partial_contributions": 17347,
+    "split_units": 5919,
+    "empty_ranges": 1208,
+    "rotated_ranges": 2852,
+    "two_boundary_ctas": 4882,
+    "float4_loads": 70863,
+    "verified_float_values": 283452,
+    "native_source_sha256": "288001716c1e432cf5fbc7e6c60c98fa8daecd32044efd9faeb3c8a58856f661",
+    "limits": "Exact range/phase/store/owner source executed with CPU memory and FP32-add shim; GPU publication, progress, atomics and WGMMA are not emulated."
+  },
+  "negative_controls": [
+    {
+      "mutant": "wrong_boundary",
+      "caught": true,
+      "returncode": -6
+    },
+    {
+      "mutant": "lost_range_carry",
+      "caught": true,
+      "returncode": -6
+    },
+    {
+      "mutant": "read_empty",
+      "caught": true,
+      "returncode": -6
+    }
+  ],
+  "memory": {
+    "partial_payload_bytes": 41943040,
+    "counter_and_doneAs_bytes": 13824,
+    "workspace_bytes": 129005088,
+    "initialization": "Whole scratch is zeroed once in prepare; no partial clearing during consumption/replay."
+  },
+  "limits": [
+    "CPU proof does not establish CUDA compilation, GPU numerical tolerance or performance.",
+    "CTA-order FP32 summation differs from CAS arrival-order summation; unchanged precision is not bit identity.",
+    "Inherited cooperative/serial-workspace and full-serving deployment limits remain."
+  ]
+}

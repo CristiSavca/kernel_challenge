@@ -1,0 +1,110 @@
+{
+  "actual_source_review": {
+    "boundary_mapping": "Writer uses0 for physical range first unit and1 otherwise; phase-A rotated tail does not alter assignment. Same-unit ranges have one contribution.",
+    "lifetime": "No distinct unit reuses a boundary slice before grid completion; inherited128-thread publication and counter reset protocol retained. GPU ordering remains untested.",
+    "memory": {
+      "additional_payload_bytes": 20971520,
+      "initial_prepare_zeroing": true,
+      "per_consumption_payload_clear": false,
+      "private_payload_bytes": 41943040,
+      "workspace_bytes": 129005088
+    },
+    "no_blocker_yet": true,
+    "not_a_GPU_or_final_source_GO": false,
+    "numerical": "Explicit ordered add.rn.f32 preserves non-FTZ operation policy but changes association; GPU tolerance gate mandatory.",
+    "owner_enumeration": "Uses pd.slot and wgs_cta_of(unitlaststage), reconstructs exact weighted first g0 and subsequent g1, carries prior g1, skips empty/nonintersecting ranges.",
+    "scope": "Complete builder/diff and changed helper, owner reduction, scalar publication, host offset and Python allocation reads.",
+    "scope_of_GO": "One official private compilation/correctness/performance check only; no deployment/promotion."
+  },
+  "anchor_job": "033a2d2eca374d82",
+  "anchor_result_critic_sha256": "f017d2a61bdb81f51c53972c2ba3399cc8a5a3454d5ecf652e9ce22deccc4c23",
+  "anchor_source": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "candidate_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "conditional_M1_required_latency_reduction": 0.10237776070154792,
+  "conditional_cas_scenario_not_measured_histogram": true,
+  "diagnostic_ceiling_review": {
+    "assumption": "Separate profile core share equals benchmark share; wholecore disappears.",
+    "hypothetical_all_core_elimination": 3.0030030030030033,
+    "not_CAS_or_benchmark_bound": true,
+    "not_a_forecast": true
+  },
+  "fixed_gate": {
+    "each_case_normalized_latency_max": 1.02,
+    "same_run_stock_speed_GM_min": 1.15
+  },
+  "frozen_pins": {
+    "experiments/iterations/20261104-native-serving-v26-reduction-review.json": "96ded17e6549aa01a86ed0c6e08acf08d703e908fecd219623e90281e9a90211",
+    "serving/candidates/native_serving_v26/build.py": "024d415182693d8f4e514d8613ab62a98ddff38b3ce3a027db68f55bab11fc45",
+    "serving/candidates/native_serving_v26/component.py": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+    "serving/candidates/native_serving_v26/cpu_result.json": "7a3960067993cac3c1cc7722fb3aa949ab9bacf3c549e47bb10f5ff2a0ddb381",
+    "serving/candidates/native_serving_v26/edits.json": "db8ea0de4947145a0e944c5bb16909a21b9125caf26633d009c4356cebdc1169",
+    "serving/candidates/native_serving_v26/manifest.json": "24800f629e099809443e6de503438d5b5f7127ecef1e3039b21bdd13cae38368",
+    "serving/candidates/native_serving_v26/test_cpu.py": "9521573f429ed85f05f8744963477e9bfe4859c70fb87924912c941300b96037",
+    "tools/analyze_native_serving_v26.py": "289f94b3f2de582c6e5d0d7f00143bc8e8c5b5ddfaa08ec04f31693e5a517865",
+    "tools/test_analyze_native_serving_v26.py": "2f0ebd31577ba1d665ffe2b562fd10da9d6525794ad8538d28725452753105d5"
+  },
+  "hypothesis": "All-shape immutable boundary partials plus ordered non-FTZ owner reduction replace scalar CAS without changing the one-bank core math/geometry/stock finalizer.",
+  "independent_cpu_execution": {
+    "author_report_identical": true,
+    "native_schedule_and_payload": {
+      "cases": 92,
+      "empty_ranges": 1208,
+      "float4_loads": 70863,
+      "limits": "Exact range/phase/store/owner source executed with CPU memory and FP32-add shim; GPU publication, progress, atomics and WGMMA are not emulated.",
+      "native_source_sha256": "288001716c1e432cf5fbc7e6c60c98fa8daecd32044efd9faeb3c8a58856f661",
+      "partial_contributions": 17347,
+      "rotated_ranges": 2852,
+      "split_units": 5919,
+      "two_boundary_ctas": 4882,
+      "verified_float_values": 283452
+    },
+    "negative_controls": [
+      {
+        "caught": true,
+        "mutant": "wrong_boundary",
+        "returncode": -6
+      },
+      {
+        "caught": true,
+        "mutant": "lost_range_carry",
+        "returncode": -6
+      },
+      {
+        "caught": true,
+        "mutant": "read_empty",
+        "returncode": -6
+      }
+    ],
+    "no_shared_result_writes": true,
+    "publication_limit": "Native code executes ranges/stores/reads and CPU float-add shim; publication arrival counts are modeled, not GPU ordering.",
+    "representative_value_execution": "WG0/WT0; all complete slices separately checked, remaining lanes follow affine source layout.",
+    "status": "PASS"
+  },
+  "iteration": "V26",
+  "kill_pivot": "Any compilation/admission/numerical/rule or fixed1.15/1.02/fullchain failure closes this fixed attempt. No fallback, threshold change or retry.",
+  "no_candidate_edits": true,
+  "no_gpu_provider_official_calls": true,
+  "notes_path": "tools/SERVING_NATIVE_MOE_V26_CRITIC_20261104.md",
+  "notes_sha256": "ff68aaa9bb134457430b8af34b7979dd8bc543c3de6fe2f64805c9ce52ff8a39",
+  "performance_reader_review": {
+    "V25_remains_closed": true,
+    "fixed_gate_unchanged": true,
+    "fixtures_independently_passed": 8,
+    "not_arbitrary_python_proof": true,
+    "source_bound_abbreviated_profile_inference_accepted": true
+  },
+  "performance_upper_bound": null,
+  "required_source_proofs": [
+    "At most two distinct partial units per CTA/phase; same-unit contributes once; empty contributes none",
+    "Exact weighted range reconstruction and contributor enumeration",
+    "All stores before release count; acquire before owner reads; no counter/data reuse until safe",
+    "C++/host/Python scratch offsets and maximum sizes match",
+    "Poison/repeated calls/zero jobs/ragged stages",
+    "Explicit non-FTZ add and unchanged BF16/activation/finalizer boundaries"
+  ],
+  "reviewed_draft_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "schema": 1,
+  "stage": "frozen_actual_source_and_cpu_review_complete",
+  "strongest_failure_case": "Short/same-unit boundary range plus empty or rotated neighbor ranges causes duplicate slot publication or unwritten slot consumption.",
+  "verdict": "GO_FOR_ONE_OFFICIAL_PRIVATE_COMPONENT_CHECK"
+}
