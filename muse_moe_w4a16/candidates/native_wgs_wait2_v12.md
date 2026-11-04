@@ -2,10 +2,12 @@
 
 November 4, 2026. One isolated implementation from scored standalone KPERM.
 Final independent source review and the root's CPU rerun passed. Root submitted
-one official private check, `a0dd88ebc8964b3f`; it was queued at 09:26 UTC.
-Resume that exact receipt without submitting again. GPU correctness and speed
-remain pending. The failed NW4 candidate is not included. No active submission
-was changed.
+one official private check, `a0dd88ebc8964b3f`. At 09:32 UTC it returned an
+infrastructure error with no measurements; the service refunded it and explicitly
+permitted resubmission. Root submitted one recovery, `f685c2533ebc4214`, from
+the exact same immutable source. That receipt is received; resume it without
+another upload. GPU correctness and speed remain pending. The failed NW4
+candidate is not included. No active submission was changed.
 
 | Artifact | SHA-256 |
 | --- | --- |

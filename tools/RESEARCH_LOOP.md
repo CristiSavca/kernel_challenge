@@ -805,3 +805,13 @@ precision/scale contract. Its H100 GEMM wait2 results are mixed and do not predi
 our RS MoE result. If the new check exposes register pressure, full-producer-
 warpgroup register redistribution is a separate feasibility question, not an
 approved implementation. Neither source framework was installed or executed.
+
+09:32 UTC: a0dd88ebc8964b3f ended with official infra_error, no measurements,
+and an explicit refund plus instruction permitting the same code again. This
+is neither a correctness failure nor a performance result. Root retained that
+terminal receipt and submitted one exact-source recovery, f685c2533ebc4214,
+from the immutable 97ffccc snapshot. It is received; local session 11378 exited
+zero. Only f685 is pending. Do not resubmit either handle while recovery runs.
+The ordinary no-repeat rule still applies to measured outcomes; this recovery
+addresses the service's explicitly refunded infrastructure failure. Main work
+through the completed CPU filter and public-code audits is committed as3037716.
