@@ -51,6 +51,15 @@ class OverlapTests(unittest.TestCase):
             target = base / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / relative, target)
+        # Test the immutable certificate prefix, regardless of later real runs.
+        # Only this temporary copy is truncated; the project journal is read-only.
+        journal = base / "experiments/modal/credit-reservations-2026-11.jsonl"
+        lines = journal.read_bytes().splitlines(keepends=True)
+        count = cert["journal_prefix"]["records"]
+        prefix = b"".join(lines[:count])
+        if len(lines) < count or hashlib.sha256(prefix).hexdigest() != cert["journal_prefix"]["sha256"]:
+            raise AssertionError("Saved journal does not contain the certificate-pinned prefix")
+        journal.write_bytes(prefix)
 
     @classmethod
     def tearDownClass(cls):

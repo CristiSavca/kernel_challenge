@@ -26,6 +26,8 @@ class CreditGuardError(RuntimeError):
 # create a new grant. Every reservation and provider high-water remains counted.
 REVIEWED_OVERLAP_SHA256: str | None = "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce"
 OVERLAP_CERTIFICATE = "tools/modal_credit_overlap_20261104.json"
+RESOURCE_H200 = "h200_4cpu_32gib"
+RESOURCE_CPU = "cpu_4cpu_32gib"
 
 
 def money(value, label: str) -> Decimal:
@@ -40,11 +42,16 @@ def money(value, label: str) -> Decimal:
     return amount
 
 
-def reservation_usd(timeout: int) -> Decimal:
-    if not 60 <= timeout <= 900:
+def reservation_usd(timeout: int, resource_kind: str = RESOURCE_H200) -> Decimal:
+    if resource_kind not in (RESOURCE_H200, RESOURCE_CPU):
+        raise CreditGuardError("Unreviewed allocation resource kind")
+    if type(timeout) is not int or not 60 <= timeout <= 900:
         raise CreditGuardError("Allocation timeout must be 60..900 seconds")
     # Rounded-up H200/CPU/RAM rates, plus 20% margin and $0.50 image-build allowance.
-    hourly = Decimal("5.00") + 4 * Decimal("0.15") + 32 * Decimal("0.025")
+    # Both fixed kinds require hard 4-CPU/32-GiB limits in the caller; CPU has no GPU.
+    hourly = 4 * Decimal("0.15") + 32 * Decimal("0.025")
+    if resource_kind == RESOURCE_H200:
+        hourly += Decimal("5.00")
     return (hourly * Decimal("1.20") * timeout / 3600 + Decimal("0.50")).quantize(
         Decimal("0.01"), rounding=ROUND_CEILING)
 
@@ -245,8 +252,10 @@ def verified_overlap(root: Path, grant, records, journal: Path, billing, observe
 
 
 @contextmanager
-def allocation_guard(root: Path, run_id: str, timeout: int):
+def allocation_guard(root: Path, run_id: str, timeout: int, *, resource_kind: str = RESOURCE_H200):
     """Hold one project lock from preflight until the caller finishes termination."""
+    # Reject unreviewed kinds/timeouts before filesystem changes or provider calls.
+    reservation = reservation_usd(timeout, resource_kind)
     folder = root / "experiments" / "modal"
     folder.mkdir(parents=True, exist_ok=True)
     # Never unlink this inode: another process could otherwise lock a replacement.
@@ -297,6 +306,8 @@ def allocation_guard(root: Path, run_id: str, timeout: int):
             for record in records:
                 if not isinstance(record, dict) or record.get("grant_sha256") != digest:
                     raise CreditGuardError("Credit grant changed after reservations; manual reconciliation required")
+                if record.get("resource_kind", RESOURCE_H200) not in (RESOURCE_H200, RESOURCE_CPU):
+                    raise CreditGuardError("Unreviewed resource kind in reservation journal")
                 prior_id = record.get("run_id")
                 if not isinstance(prior_id, str) or Path(prior_id).name != prior_id or prior_id in seen:
                     raise CreditGuardError("Invalid or duplicate reservation identity")
@@ -319,7 +330,6 @@ def allocation_guard(root: Path, run_id: str, timeout: int):
             apps = modal_json("app", "list", "--json", "--limit", "0", "--profile", grant["profile"], "--env", grant["environment"])
             require_stopped_apps(apps)
             observed, overlap, overlap_pin = verified_overlap(root, grant, records, journal, billing, observed)
-            reservation = reservation_usd(timeout)
             available = ceiling - headroom - observed - reserved + overlap
             if available < reservation:
                 raise CreditGuardError(f"Free-credit working budget exhausted: ${available:.2f} available, ${reservation:.2f} required; no allocation")
@@ -329,6 +339,7 @@ def allocation_guard(root: Path, run_id: str, timeout: int):
                 "grant_sha256": digest, "grant_usd": str(ceiling), "headroom_usd": str(headroom),
                 "provider_observed_usd": str(observed), "prior_reservations_usd": str(reserved),
                 "reservation_usd": str(reservation), "working_budget_remaining_usd": str(available - reservation),
+                "resource_kind": resource_kind,
                 "estimate_is_provider_cap": False,
                 "billing_summary": json.loads(json.dumps(billing, default=str)),
             }

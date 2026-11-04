@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "GO_ONE_FIXED_CPU_COMPILE_DIAGNOSTIC_SUBJECT_TO_FRESH_EXISTING_CREDIT_GUARD",
+  "blocking_findings": [],
+  "reviewed_sha256": {
+    "tools/modal_compile_sass.py": "fe037ede216bd2e904390eae1d7260352c43022eb28639b1b81913a16a42f3d1",
+    "tools/modal_h200.py": "6af544c107669134676c7b8c1a1c88bc34a87bbce3599d4f2416267bfdbdf2f9",
+    "tools/modal_credit_budget.py": "8b05fb3a1540dd56de4815adf65d27488c00eccf57f1b059bb94f094aad6c8a2",
+    "tools/test_modal_compile_sass.py": "7c5484ed320fba168b46a379dc5b121dfa9bcb7e768f5b7843fcd8b1c6e66303",
+    "tools/test_modal_h200.py": "a038ee265f155cb8d00897aa33e9f7ac134c75b58058e1e1cae55c5a499427f2",
+    "experiments/iterations/20261104-cpu-compile-sass-local.json": "26db6eedc9f21168456d352719db4617ac95dac1b04b9cae850f64cafa71289e",
+    "experiments/iterations/20261104-modal-cpu-budget-cpu.json": "0ff8b785603e6088e4b94a98d2f7a008cce4c18f0e0ee8aa885ea7e84a883bea"
+  },
+  "scope": {
+    "parent_source": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "native_source": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "allowed_operation": "Compile and disassemble unchanged MAIN only; no prepare, weights, kernel_fn, tensors, device launch or profiler execution.",
+    "no_allocation_by_reviewer": true,
+    "no_provider_calls_by_reviewer": true
+  },
+  "source_review": {
+    "actual_parent_ext": "Unchanged _ext called once; exact CUDA/CPP strings, functions, namespace, flags and one ninja build enforced; device capability is locally substituted with(9,0), targeting explicit sm90a. Host PDL setter only sets g_okc_pdl=0.",
+    "device_guards": "No GPU allocation; CUDA_VISIBLE_DEVICES empty, availability/device-count false, lazy initialization/device/tensor entry points and prepare/kernel_fn guarded. Final CUDA initialization false required.",
+    "resources_and_receipt": "compile-sass CLI fixes600s. Guard called with cpu_4cpu_32gib; receipt kind checked before Sandbox.create. Actual allocation uses gpu=None,cpu=(4,4),memory=(32768,32768),network blocked,600s timeout and idle timeout. Other modes retain default H200 kind and gpu=H200.",
+    "single_compile_bounds": "400s child compile inside560s helper budget; commands use remaining deadline;580s outer worker and600s sandbox. Reviewed run_bounded kills owned process group on timeout/output excess. No retry path.",
+    "binary_evidence": "One exact-owned extension, one regular bounded cubin, resource and SASS records containing both BIG symbols, and generated CUDA source-line mapping required. Cubin basename is recorded without assuming an sm90a naming convention.",
+    "artifact_bounds": "Allowlisted10files with per-file byte/hash checks,96MiB compressed archive bound, capped2MiB result/96MiB archive reads, fixed paths, rejection of duplicate/nonregular/oversized/missing members. Completion recorded only after verified retrieval; recovery stored separately.",
+    "cleanup": "Existing finally termination retained; allocation lock held until termination, failure evidence preserved. Unconfirmed termination blocks later allocation via existing journal policy."
+  },
+  "credit_review": {
+    "CPU600_reservation_usd": "0.78",
+    "default_H200600_usd": "1.78",
+    "independently_checked_default_H200_timeouts": 841,
+    "overlap_helper_AST_unchanged": [
+      "money",
+      "modal_json",
+      "provider_spend",
+      "require_stopped_apps",
+      "read_json",
+      "_pinned_json",
+      "_cost_rows",
+      "verified_overlap"
+    ],
+    "all_prior_reservations_retained": true,
+    "fixed_overlap_applied_once": true,
+    "provider_high_water_unchanged": true,
+    "unknown_resource_kind_rejected": true,
+    "legacy_missing_kind": "H200, original recorded reservation retained",
+    "same_lock_and_fsync_before_allocation": true,
+    "no_lifetime_based_release": true,
+    "budget_estimate_not_provider_cap": true
+  },
+  "independent_validation": {
+    "hashes_checked": true,
+    "source_and_full_diff_read": true,
+    "targeted_mock_tests_passed": 4,
+    "tests": [
+      "actual unchanged _ext, exact flags, one build, host-only PDL",
+      "both BIG/source line mapping/single cubin/no retry, including sm_90 filename and multiple-cubin rejection",
+      "CPU kind binds actual noGPU4CPU32GiB with termination",
+      "wrong receipt kind stops before allocation"
+    ],
+    "default_H200_formula_checks": 841,
+    "CPU600_formula_check": "PASS",
+    "author_and_root_full_suites": "Root reported45compile+64hardware and dry-run PASS before narrow filename fix; author reports45compile+dry-run PASS on final helper. No duplicated whole suite by reviewer."
+  },
+  "limitations": [
+    "This records code generation for the pinned diagnostic image/toolchain, not identity with an official evaluator binary. No GPU execution or performance evidence results.",
+    "Tool versions, generated sources/build.ninja, cubin and .so are retained; individual installed CUDA/PyTorch header contents are not hashed.",
+    "Source mapping presence does not establish a dynamic source-PC attribution or line mapping for every instruction; inspect actual disassembly after completion.",
+    "Runtime compiler/tool/import availability and successful extraction remain untested by CPU mocks. Failure remains a terminal bounded diagnostic result, not retry authorization.",
+    "Fresh existing guard must still accept live provider usage and cleanup; this review does not override accounting failure."
+  ]
+}

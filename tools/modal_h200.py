@@ -661,9 +661,28 @@ def run_hardware_worker(payload: dict) -> None:
         raise
 
 
+def run_compile_worker(payload: dict) -> None:
+    """Only the fixed CPU compile helper and immutable parent enter this sandbox."""
+    import importlib.util
+    expected = {"baseline.py", "compile_sass.py", "hardware_metrics.py"}
+    if set(payload.get("files", {})) != expected or set(payload.get("file_sha256", {})) != expected:
+        raise ValueError("Unexpected compile payload files")
+    folder = Path("/tmp/okc-input")
+    folder.mkdir(exist_ok=True)
+    for name, source in payload["files"].items():
+        if type(source) is not str or sha(source) != payload["file_sha256"][name]:
+            raise ValueError("Compile payload hash mismatch")
+        (folder / name).write_text(source)
+    sys.path.insert(0, str(folder))
+    spec = importlib.util.spec_from_file_location("compile_sass", folder / "compile_sass.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.run(payload)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "attention-v10-screen", "attention-v11-screen", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -680,7 +699,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.mode == "worker":
         payload = json.loads(Path(args.payload).read_text())
-        if payload.get("hardware_profile") is True:
+        if payload.get("compile_sass") is True:
+            run_compile_worker(payload)
+        elif payload.get("hardware_profile") is True:
             run_hardware_worker(payload)
         else:
             run_worker(args.payload)
@@ -696,6 +717,22 @@ def main() -> None:
     if args.hardware_issue and args.mode != "hardware-profile":
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
+    compile_mode = args.mode == "compile-sass"
+    if compile_mode:
+        from modal_compile_sass import SOURCE_SHA, validate_payload
+        if (args.timeout != 600 or args.problem is not None or args.candidate or args.cases
+                or args.seed is not None or args.weight_seed != 7311 or args.repeats != 6):
+            parser.error("compile-sass has fixed source/CPU resources and requires --timeout 600")
+        source_path = ROOT / "experiments/candidates/muse_moe_w4a16" / f"{SOURCE_SHA}.py"
+        files = {"baseline.py": source_path.read_text(),
+                 "compile_sass.py": (ROOT / "tools/modal_compile_sass.py").read_text(),
+                 "hardware_metrics.py": (ROOT / "tools/modal_hardware_metrics.py").read_text()}
+        payload = {"compile_sass": True, "gpu": None, "resource_kind": "cpu_4cpu_32gib",
+                   "timeout_seconds": 600, "compile_budget_seconds": 560, "image": IMAGE,
+                   "source_sha256": SOURCE_SHA, "files": files,
+                   "file_sha256": {name: sha(text) for name, text in files.items()}}
+        validate_payload(payload)
+        for name, source in files.items(): compile(source, name, "exec")
     if args.mode in ("attention-v10-screen", "attention-v11-screen"):
         if (args.problem is not None or args.candidate or args.cases or args.seed is not None
                 or args.weight_seed != 7311 or args.repeats != 6):
@@ -762,7 +799,7 @@ def main() -> None:
                    "comparison_baseline": "incumbent" if incumbent else "official_public_baseline",
                    "incumbent": incumbent, "profile": args.profile, "resources": args.resources}
     worker_source = Path(__file__).read_text()
-    manifest = {"mode": args.mode, "gpu": "H200:1", "timeout_seconds": 120 if args.mode == "smoke" else args.timeout,
+    manifest = {"mode": args.mode, "gpu": None if compile_mode else "H200:1", "timeout_seconds": 120 if args.mode == "smoke" else args.timeout,
                 "official": False, "status": "prepared", "worker_sha256": sha(worker_source)}
     if payload:
         manifest.update({k: v for k, v in payload.items() if k != "files"})
@@ -775,8 +812,11 @@ def main() -> None:
     destination.mkdir(parents=True)
     manifest["modal_client"] = modal.__version__
     save(destination / "manifest.json", manifest)
-    from modal_credit_budget import allocation_guard
-    with allocation_guard(ROOT, stamp, manifest["timeout_seconds"]) as credit:
+    from modal_credit_budget import allocation_guard, RESOURCE_CPU
+    guard_kwargs = {"resource_kind": RESOURCE_CPU} if compile_mode else {}
+    with allocation_guard(ROOT, stamp, manifest["timeout_seconds"], **guard_kwargs) as credit:
+        if compile_mode and (credit.get("resource_kind") != RESOURCE_CPU or manifest["gpu"] is not None):
+            raise RuntimeError("CPU compile resource/credit kind mismatch")
         manifest["credit_guard"] = credit
         guard_source = Path(__file__).with_name("modal_credit_budget.py").read_text()
         manifest["credit_guard_sha256"] = sha(guard_source)
@@ -804,7 +844,7 @@ def main() -> None:
         try:
             with modal.enable_output(), app.run(environment_name=credit["environment"]):
                 sandbox = modal.Sandbox.create("sleep", str(manifest["timeout_seconds"]), app=app, image=image,
-                                              gpu="H200", cpu=(4, 4), memory=(32768, 32768), block_network=True,
+                                              gpu=None if compile_mode else "H200", cpu=(4, 4), memory=(32768, 32768), block_network=True,
                                               timeout=manifest["timeout_seconds"], idle_timeout=manifest["timeout_seconds"])
                 manifest.update(status="running", sandbox_id=sandbox.object_id, dashboard=sandbox.get_dashboard_url())
                 save(destination / "manifest.json", manifest)
@@ -827,11 +867,18 @@ def main() -> None:
                 command.wait()
                 manifest["exit_code"] = command.returncode
                 if payload:
-                    result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
-                    save(destination / "result.json", result)
+                    if compile_mode:
+                        from modal_compile_sass import retrieve
+                        result = retrieve(sandbox, destination)
+                        manifest["compile_artifacts_retrieved"] = True
+                    else:
+                        result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
+                        save(destination / "result.json", result)
                     if payload.get("attention_v10_screen") is True:
                         save_attention_v10_logs(destination, result)
                     manifest["status"] = result["status"]
+                    if compile_mode and result["status"] != "compile_complete":
+                        raise RuntimeError("CPU compile diagnostic did not complete; no retry")
                 else:
                     gpu_lines = (destination / "stdout.log").read_text().strip().splitlines()
                     if command.returncode == 0 and (len(gpu_lines) != 1 or "H200" not in gpu_lines[0]):
@@ -846,6 +893,14 @@ def main() -> None:
                 recover_attention_v10_checkpoint(sandbox, destination, manifest)
             if payload and payload.get("hardware_profile") is True and sandbox is not None:
                 recover_hardware_checkpoints(sandbox, destination, manifest)
+            if compile_mode and sandbox is not None and not manifest.get("compile_artifacts_retrieved"):
+                try:
+                    from modal_compile_sass import retrieve
+                    retrieve(sandbox, destination, recovery=True)
+                    manifest["compile_checkpoint_recovered"] = True
+                except Exception as recovery_error:
+                    manifest["compile_checkpoint_recovered"] = False
+                    manifest["compile_retrieval_error_type"] = type(recovery_error).__name__
             if sandbox is None:
                 manifest["sandbox_created"] = False
             raise

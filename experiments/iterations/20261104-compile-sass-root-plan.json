@@ -1,0 +1,66 @@
+{
+  "status": "GO_ONE_CPU600_COMPILE_AFTER_ROOT_AND_INDEPENDENT_REVIEW",
+  "recorded_at": "2026-11-04T15:27:07.061127+00:00",
+  "purpose": "Obtain full-translation-unit MAIN SASS for the accepted current kernel without weights or GPU allocation; inspect active MULDEC/scales/BF16x2 operations.",
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "native_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "resources": {
+    "gpu": null,
+    "cpu": [
+      4,
+      4
+    ],
+    "memory_mib": [
+      32768,
+      32768
+    ],
+    "timeout_seconds": 600,
+    "resource_kind": "cpu_4cpu_32gib",
+    "estimated_reservation_usd": "0.78"
+  },
+  "compile": "Unchanged _ext(MAIN_DEFINES + PRMTSC1,use_mul=True), fixed capability query(9,0), full original load_inline translation unit and flags. No prepare, kernel_fn, weights, tensor work or GPU fallback. One fresh extensioncache and one compile.",
+  "required_evidence": [
+    "source/native/generated CUDA andCPP identities",
+    "actual build.ninja commands/compiler andptxas versions",
+    "both BIG specializations inowned module",
+    "module hash andresource dump",
+    "bounded completeSASS withownedmodule identity; truncation explicit",
+    "compiler diagnostics includingserialization warnings",
+    "termination/credit/resourcekind binding"
+  ],
+  "limits": [
+    "CPU-image SASS is not claimed byte-identical to officialjudge image.",
+    "Staticinstruction counts are not exposedcycles or runtimebenefit.",
+    "No automaticcandidate/promotion/failure retry.",
+    "IfCPU-onlyloading fails, preserve reason andartifacts; noH200fallback."
+  ],
+  "review_required": [
+    "AuthorfocusedCPUtests",
+    "Rootindependenttests anddryrun",
+    "Attentionagent independent combinedrunner/budgetreview",
+    "Fresh actualallocation_guard beforeoneallocation"
+  ],
+  "reviewed_at": "2026-11-04T15:37:56.801616+00:00",
+  "frozen_files": {
+    "tools/modal_compile_sass.py": "fe037ede216bd2e904390eae1d7260352c43022eb28639b1b81913a16a42f3d1",
+    "tools/modal_h200.py": "6af544c107669134676c7b8c1a1c88bc34a87bbce3599d4f2416267bfdbdf2f9",
+    "tools/test_modal_compile_sass.py": "7c5484ed320fba168b46a379dc5b121dfa9bcb7e768f5b7843fcd8b1c6e66303",
+    "tools/test_modal_h200.py": "a038ee265f155cb8d00897aa33e9f7ac134c75b58058e1e1cae55c5a499427f2",
+    "tools/modal_credit_budget.py": "8b05fb3a1540dd56de4815adf65d27488c00eccf57f1b059bb94f094aad6c8a2",
+    "tools/test_modal_cpu_credit_budget.py": "12117cf0d010a3bba98d0f304b08bfde5656f4156e0e77f85348f5d6ff20208f",
+    "tools/test_modal_credit_overlap.py": "0f1a86bd08310d187203ea46bee2e652c41c2b3232c3ece7f6a798ac6f83a7a8"
+  },
+  "root_validation": {
+    "compile_suite_pass": 45,
+    "hardware_regression_suite_pass": 64,
+    "overlap_pass": 23,
+    "CPU_budget_pass": 10,
+    "actual_dry_run_pass": true,
+    "note": "Suitesinclude inheritedcases, notallindependentmechanisms; CPUmocksnotactualcompilerexecution."
+  },
+  "independent_review": {
+    "path": "experiments/iterations/20261104-cpu-compile-sass-source-critic.json",
+    "sha256": "18d0d58c5eef19f0a9d815996f782ab8f90ad320d4c6e29e3830c6c005b30493"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "accounting_evidence": {
+    "certificate_sha256": "7b93be1da79c69e8e49db9497dd32920631d38c6258ae21d8d9c938a972231ce",
+    "current_journal_record_count_observed_only": 10,
+    "current_journal_sha256_observed_only": "d1f2dc26bf16adbb19ed27feb43d34cf7e9e6af100b0dc6ac6e0fc2158121090",
+    "current_like_available_after_cpu600_usd": "0.24",
+    "current_like_available_before_cpu_usd": "1.02",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "original_R_retained": true,
+    "original_nine_record_prefix_sha256": "bbdc16eeb961b2e016113ed1caa47f464c50f30f5cfe102acac32dcecd859ed5",
+    "overlap_exactly_once": true,
+    "same_allocation_lock": true
+  },
+  "allocations": 0,
+  "base_guard_sha256": "cb604f7ad5ace935f43dfcf3a0c1bda1743f73f6aab10dea4056b5a5f68cc9a7",
+  "fixture_update": "Existing overlap fixture now copies only the immutable certificate prefix into its temporary journal, verifies its exact prefix hash, and leaves the real growing journal untouched.",
+  "guard_scope": {
+    "H200_timeout_comparisons": 841,
+    "cpu_600_seconds_usd": "0.78",
+    "cpu_900_seconds_usd": "0.92",
+    "cpu_gpu": null,
+    "cpu_resource_kind": "cpu_4cpu_32gib",
+    "default_resource_kind": "h200_4cpu_32gib",
+    "fixed_cpu_cores": 4,
+    "fixed_memory_gib": 32,
+    "h200_600_seconds_usd": "1.78",
+    "h200_900_seconds_usd": "2.42",
+    "invalid_kind_rejected_before_provider_or_filesystem": true,
+    "legacy_missing_kind": "H200; original recorded debit retained",
+    "new_receipts_record_kind": true
+  },
+  "hashes": {
+    "tools/modal_credit_budget.py": "8b05fb3a1540dd56de4815adf65d27488c00eccf57f1b059bb94f094aad6c8a2",
+    "tools/test_modal_cpu_credit_budget.py": "12117cf0d010a3bba98d0f304b08bfde5656f4156e0e77f85348f5d6ff20208f",
+    "tools/test_modal_credit_overlap.py": "0f1a86bd08310d187203ea46bee2e652c41c2b3232c3ece7f6a798ac6f83a7a8"
+  },
+  "integration_requirement": "Compile runner must bind RESOURCE_CPU receipt to actual GPU=None/CPU(4,4)/memory(32768,32768); this guard cannot itself inspect Sandbox.create arguments. Independent reviewer checks runner binding before allocation.",
+  "provider_calls": 0,
+  "real_journal_writes": 0,
+  "status": "CPU_PASS_FROZEN_FOR_INDEPENDENT_REVIEW",
+  "suite_counts": {
+    "existing_overlap": 23,
+    "fixed_CPU_budget": 10
+  },
+  "test_commands": [
+    ".venv-modal/bin/python -m unittest discover -s tools -p test_modal_credit_overlap.py -v",
+    ".venv-modal/bin/python -m unittest discover -s tools -p test_modal_cpu_credit_budget.py -v"
+  ],
+  "tests_cover": [
+    "all841 default H200 timeout amounts equal old formula",
+    "fixed CPU60/600/900 amounts",
+    "invalid kind/timeout before provider or filesystem",
+    "full CPU debits and fixed overlap offset",
+    "mixed H200+CPU accounting at4.16 provider high-water",
+    "missing legacy kind compatibility and unknown prior kind rejection",
+    "CPU crash retains full debit and requires cleanup evidence",
+    "downward provider revision rejection",
+    "default H200 receipt",
+    "CPU/H200 same lock"
+  ],
+  "tests_passed": 33,
+  "unchanged_helper_AST": [
+    "money",
+    "modal_json",
+    "provider_spend",
+    "require_stopped_apps",
+    "read_json",
+    "_pinned_json",
+    "_cost_rows",
+    "verified_overlap"
+  ]
+}

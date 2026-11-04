@@ -88,7 +88,7 @@ class LifecycleTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def invoke(self, mode, sandbox=None, create_error=None, dry_run=False, incumbent=None, profile=False):
+    def invoke(self, mode, sandbox=None, create_error=None, dry_run=False, incumbent=None, profile=False, extra_args=()):
         created = []
 
         def create(*args, **kwargs):
@@ -112,6 +112,7 @@ class LifecycleTests(unittest.TestCase):
             argv += ["--incumbent", str(incumbent)]
         if profile:
             argv.append("--profile")
+        argv.extend(extra_args)
         with patch.object(runner, "ROOT", self.root), patch.object(sys, "argv", argv), \
              patch.object(budget, "modal_json", self.modal_json), \
              patch.dict(sys.modules, {"modal": fake}), contextlib.redirect_stdout(io.StringIO()), \
