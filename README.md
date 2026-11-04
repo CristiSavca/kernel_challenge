@@ -1,17 +1,34 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 20:56 UTC (board), with the completed V26 experiment below.
+Status updated November 4, 2026, 21:27 UTC (board), after the V28 private check.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
 ## Latest measured state
 
-CristiSavca is 405th overall. Public scores are dense projections 1.4868×,
+CristiSavca is 408th overall. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
+
+Decoder V28 passed all 13 official numerical tests but failed its frozen speed
+gate: **2.1146x**, versus the preserved public decoder's **2.1812x**. The three
+affected weighted loads have 5.15% higher normalized latency than the public
+parent; all six affected cases are slower than both exact-source anchors.
+Root and independent critic agree: close the attempt without scoring or retry.
+Replacing the public kernel's vector atomics with private owner sums did not
+carry over the gain seen against the serving prototype's scalar CAS path.
+See [V28 results](experiments/iterations/20261104-decoder-v28-closeout.json).
+
+Serving V27 now has an isolated, reproducible 213,160-byte patch connecting the
+passing V26 core to actual SGLang weight loading, forward dispatch and serial
+model-owned workspaces. Independent CPU review passed rank mapping, atomic
+installation/rollback, norm handling and chunk boundaries. The stock norm
+setter's device lookup was adapted for released raw weights. Device validation
+is being prepared against the exact stock methods; this is not yet a GPU,
+full-engine or official serving pass. The dirty serving checkout was preserved.
 
 Serving expert prototype V26 passed official private job `274c69cbc0954d76`
 with all five tests, six benchmarks and clean checks. Its same-run stock score
@@ -26,8 +43,8 @@ unverified. See [V26 results](experiments/iterations/20261104-native-serving-v26
 
 V25 remains closed: it passed correctness at 1.2538x but made M1 13.63% slower
 than stock. V26's cross-run normalized aggregate is 1.3440x V25's; this is not
-same-input causal attribution. The next owner is resolving actual SGLang weight
-replacement and workspace lifetime before a serving port.
+same-input causal attribution. The next experiment tests the installed V27
+adapter's numerical and workspace behavior on one bounded H200.
 
 The research loop now adapts EAT's diagnosis-driven role changes using our
 existing tools. Its [current handoff](tools/RESEARCH_LOOP.md) is separated from

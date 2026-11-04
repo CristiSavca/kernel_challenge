@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T21:28:59.198387+00:00",
+  "iteration": "decoder-v28",
+  "decision": "CLOSE_FIXED_ATTEMPT_NO_SCORE_NO_RETRY",
+  "source_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+  "job": "2976c25cc3dc41b1",
+  "source_commit": "b0c3eb5",
+  "hypothesis": "Replace public MAIN vector atomic split accumulation with private partials and ordered owner reduction; preserve small kernels and FTZ.",
+  "official": {
+    "correctness_passed": true,
+    "setup": 1,
+    "tests": 13,
+    "benchmarks": 12,
+    "profiles": 12,
+    "checks": {
+      "flagged": [],
+      "ok": true,
+      "rejected": []
+    },
+    "flags": [],
+    "score": 2.1146266797718747,
+    "score_ci": [
+      2.0829072795752968,
+      2.1463460799684526
+    ],
+    "evaluator": {
+      "code_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+      "files": {
+        "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+        "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+        "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+        "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+        "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+        "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+        "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+        "problems/muse_decode_layer/baseline.py": "87d95a0c4b78f0fd6c772436b959330ca45652b10e82dfc8add9acf0549227d4",
+        "problems/muse_decode_layer/reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+        "problems/muse_decode_layer/task.yml": "6a73de4094ff00d7453fb94bd3aa40f5fae79ac7fbea149660eae2125dc5a0c7"
+      },
+      "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+    }
+  },
+  "comparisons": [
+    {
+      "parent": {
+        "job": "7a8c4941741645ee",
+        "mode": "run",
+        "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+        "source": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+        "receipt": "experiments/runs/7a8c4941741645ee.json",
+        "receipt_sha256": "442b6b85121027ee51d7c3038fb25ba4ffa07d38a666073e3dcea341ab3f6f63",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.7a8c4941741645ee.json",
+        "profile_sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+      },
+      "affected_weighted_load_GM_speedup_ratio": 0.9510135555086241,
+      "control_weighted_load_GM_latency_ratio": 1.0118206878162568,
+      "whole_score_ratio": 0.9694860765283653,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p03": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p015": false
+      },
+      "performance_gate_passed": false
+    },
+    {
+      "parent": {
+        "job": "b2a773e2d7194de8",
+        "mode": "check",
+        "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+        "source": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+        "receipt": "experiments/runs/b2a773e2d7194de8.json",
+        "receipt_sha256": "1b2616abd7e31b5023792af228ac5bd5aa723e05b50611d58acb12c0af5056c3",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.b2a773e2d7194de8.json",
+        "profile_sha256": "52a5ba91651e4bf94ea3ebfe70ea9a4d1637f9a685c3f0c88de84f22457b81cf",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+      },
+      "affected_weighted_load_GM_speedup_ratio": 0.9545935676741133,
+      "control_weighted_load_GM_latency_ratio": 1.011416577073028,
+      "whole_score_ratio": 0.9715031612176984,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p03": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": false,
+        "whole_score_ratio_at_least_1p015": false
+      },
+      "performance_gate_passed": false
+    }
+  ],
+  "critic_response": "Agree with independent recomputation: changed cases slower than both exact parents; no score, identical retry, threshold rescue or shape dispatch salvage. All required activation markers present. Profile times do not identify causal register/traffic/atomic cost.",
+  "public_incumbents_changed": false,
+  "gpu_costs": {
+    "official_private_checks": 1,
+    "modal_allocations": 0,
+    "out_of_pocket_usd": 0
+  },
+  "public_state": {
+    "observed_at": "2026-11-04T21:27:47.627Z",
+    "overall_rank": 408,
+    "decoder_rank": 408,
+    "decoder_score": 2.181183135031857,
+    "decoder_leader": 2.5761628683765747,
+    "identity": "CristiSavca",
+    "snapshot": "experiments/leaderboards/20261104T2127-v28-closeout-v27-device.json"
+  },
+  "limits_after": {
+    "decoder_private": 28,
+    "decoder_scored": 18
+  },
+  "next_experiment": "V27 actual serving-adapter device validation; source-frozen V26 component gain remains distinct. No new public decoder probe justified without a new measured bottleneck and mechanism.",
+  "evidence_sha256": {
+    "experiments/iterations/20261104-decoder-v28-root-result.json": "656d12a95c8a48281000f5c8b892022b178008c36ec468741daa39bf9819b17e",
+    "experiments/iterations/20261104-decoder-v28-result-critic.json": "b32ba64314a64b061ef3ba26741c6671110110c85847e3a9a84a8e9c1ee196a5",
+    "tools/DECODER_V28_RESULT_CRITIC_20261104.md": "9e564e4a41b443d9ce06259878add4aeb4620aaafd69846e8952ba228e50bc87",
+    "experiments/runs/2976c25cc3dc41b1.json": "baeda6882195410aa90f8bda1e50d9e37134de53b65b70202b06b8981d3e0dcb",
+    "experiments/candidates/muse_decode_layer/profiles/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.2976c25cc3dc41b1.json": "34184890427a4ef4e25a911cc0b76c2578816969f732f10da2b604a149cde842",
+    "experiments/candidates/muse_decode_layer/profiles/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.2976c25cc3dc41b1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "experiments/candidates/muse_decode_layer/profiles/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.2976c25cc3dc41b1.txt": "78f849b274e3df79bfacf42d1ccdf92285978ab8a94d3de268444444d92c4135"
+  }
+}

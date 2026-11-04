@@ -1,0 +1,844 @@
+{
+  "schema": 1,
+  "plan": "experiments/iterations/20261104-decoder-v28-root-plan.json",
+  "plan_sha256": "ce8573f71a21ec6bdd83ecc4e28362ef0db196ef941931ec3e21098b5c0eaab1",
+  "candidate": {
+    "job": "2976c25cc3dc41b1",
+    "mode": "check",
+    "source_sha256": "d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b",
+    "source": "experiments/candidates/muse_decode_layer/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.py",
+    "receipt": "experiments/runs/2976c25cc3dc41b1.json",
+    "receipt_sha256": "baeda6882195410aa90f8bda1e50d9e37134de53b65b70202b06b8981d3e0dcb",
+    "profile": "experiments/candidates/muse_decode_layer/profiles/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.2976c25cc3dc41b1.json",
+    "profile_sha256": "34184890427a4ef4e25a911cc0b76c2578816969f732f10da2b604a149cde842",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+  },
+  "automatic_promotion": false,
+  "full_serving_validated": false,
+  "status": "CLOSE_FIXED_ATTEMPT",
+  "fixed_screen_passed": false,
+  "score": 2.1146266797718747,
+  "score_ci": [
+    2.0829072795752968,
+    2.1463460799684526
+  ],
+  "comparisons": [
+    {
+      "parent": {
+        "job": "7a8c4941741645ee",
+        "mode": "run",
+        "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+        "source": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+        "receipt": "experiments/runs/7a8c4941741645ee.json",
+        "receipt_sha256": "442b6b85121027ee51d7c3038fb25ba4ffa07d38a666073e3dcea341ab3f6f63",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.7a8c4941741645ee.json",
+        "profile_sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+      },
+      "cases": [
+        {
+          "index": 0,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 4500781357980892582,
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9770373394870573,
+          "normalized_latency_ratio": 1.023502336691654,
+          "candidate_us": 72.63147874228957,
+          "parent_us": 71.60626340150985,
+          "candidate_stock_us": 171.39199376106262,
+          "parent_stock_us": 172.94399812817574,
+          "candidate_raw_us": 76.79999992251396,
+          "parent_raw_us": 76.06400176882744
+        },
+        {
+          "index": 1,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 4500892297540060314,
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 0.992484330956834,
+          "normalized_latency_ratio": 1.0075725820637595,
+          "candidate_us": 79.30156179358573,
+          "parent_us": 78.20872829338322,
+          "candidate_stock_us": 182.49600613489747,
+          "parent_stock_us": 181.34399922564626,
+          "candidate_raw_us": 84.87999811768532,
+          "parent_raw_us": 81.03999868035316
+        },
+        {
+          "index": 2,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 4501003237099228047,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9786891794329874,
+          "normalized_latency_ratio": 1.0217748607166162,
+          "candidate_us": 134.702849267351,
+          "parent_us": 128.23900848718233,
+          "candidate_stock_us": 268.27200781553984,
+          "parent_stock_us": 260.95999917015433,
+          "candidate_raw_us": 139.23200219869614,
+          "parent_raw_us": 131.29600137472153
+        },
+        {
+          "index": 3,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 4501114176658395781,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 0.9954577836150371,
+          "normalized_latency_ratio": 1.0045629422560418,
+          "candidate_us": 213.3944050250742,
+          "parent_us": 204.58418756305937,
+          "candidate_stock_us": 443.8719991594553,
+          "parent_stock_us": 427.48800944536924,
+          "candidate_raw_us": 217.13600307703018,
+          "parent_raw_us": 209.6799984574318
+        },
+        {
+          "index": 4,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 4501225116217563516,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9194519236679314,
+          "normalized_latency_ratio": 1.0876044459298553,
+          "candidate_us": 161.16804478790252,
+          "parent_us": 145.12449811573936,
+          "candidate_stock_us": 264.0639944002032,
+          "parent_stock_us": 258.6080003529787,
+          "candidate_raw_us": 162.4479964375496,
+          "parent_raw_us": 150.64000338315964
+        },
+        {
+          "index": 5,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 4501336055776731252,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.9715611052175515,
+          "normalized_latency_ratio": 1.0292713393215556,
+          "candidate_us": 315.00152273691737,
+          "parent_us": 305.9795603649358,
+          "candidate_stock_us": 615.2479955926538,
+          "parent_stock_us": 615.1200034655631,
+          "candidate_raw_us": 319.583997130394,
+          "parent_raw_us": 310.38399040699005
+        },
+        {
+          "index": 6,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501446995335898989,
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9988041417302203,
+          "normalized_latency_ratio": 1.001197290058998,
+          "candidate_us": 110.98197366136694,
+          "parent_us": 110.34668913522762,
+          "candidate_stock_us": 268.2079994119704,
+          "parent_stock_us": 266.99200412258506,
+          "candidate_raw_us": 115.07199704647064,
+          "parent_raw_us": 114.25599828362465
+        },
+        {
+          "index": 7,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501557934895066727,
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 1.0006044703682169,
+          "normalized_latency_ratio": 0.9993958947954785,
+          "candidate_us": 117.34835908894867,
+          "parent_us": 111.15443590516288,
+          "candidate_stock_us": 280.68799059838057,
+          "parent_stock_us": 265.71200136095285,
+          "candidate_raw_us": 123.21599945425987,
+          "parent_raw_us": 116.38399958610535
+        },
+        {
+          "index": 8,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501668874454234466,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9377300663560896,
+          "normalized_latency_ratio": 1.0664049665015907,
+          "candidate_us": 270.8613478059723,
+          "parent_us": 248.6737007269938,
+          "candidate_stock_us": 543.7759910710156,
+          "parent_stock_us": 532.3840184137225,
+          "candidate_raw_us": 268.5760110616684,
+          "parent_raw_us": 252.4000108242035
+        },
+        {
+          "index": 9,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501779814013402206,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.9508721975422473,
+          "normalized_latency_ratio": 1.0516660415403196,
+          "candidate_us": 351.26229955428846,
+          "parent_us": 334.272849369229,
+          "candidate_stock_us": 699.776001740247,
+          "parent_stock_us": 700.3360115922987,
+          "candidate_raw_us": 358.0479919910431,
+          "parent_raw_us": 338.9279991388321
+        },
+        {
+          "index": 10,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501890753572569947,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9592720873432309,
+          "normalized_latency_ratio": 1.0424571017901374,
+          "candidate_us": 341.5444502555604,
+          "parent_us": 312.2398952704211,
+          "candidate_stock_us": 755.6320130825043,
+          "parent_stock_us": 720.128005836159,
+          "candidate_raw_us": 341.39201045036316,
+          "parent_raw_us": 316.27199053764343
+        },
+        {
+          "index": 11,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4502001693131737689,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.9950049243788702,
+          "normalized_latency_ratio": 1.0050201516582924,
+          "candidate_us": 499.4208405819138,
+          "parent_us": 483.89859509241955,
+          "candidate_stock_us": 1105.2640043199062,
+          "parent_stock_us": 1076.2879950925708,
+          "candidate_raw_us": 505.8880150318146,
+          "parent_raw_us": 487.64799535274506
+        }
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "affected": false,
+          "speedup_ratio": 0.9811671903166927,
+          "normalized_latency_ratio": 1.0191942921340742
+        },
+        {
+          "load": "decode 16",
+          "affected": false,
+          "speedup_ratio": 0.9847064480082927,
+          "normalized_latency_ratio": 1.0155310773303463
+        },
+        {
+          "load": "decode 32",
+          "affected": true,
+          "speedup_ratio": 0.9399645835028776,
+          "normalized_latency_ratio": 1.0638698707917207
+        },
+        {
+          "load": "verify 1",
+          "affected": false,
+          "speedup_ratio": 0.9991703467465209,
+          "normalized_latency_ratio": 1.000830342149545
+        },
+        {
+          "load": "verify 16",
+          "affected": true,
+          "speedup_ratio": 0.9419117192587048,
+          "normalized_latency_ratio": 1.0616706210928253
+        },
+        {
+          "load": "verify 32",
+          "affected": true,
+          "speedup_ratio": 0.971490216113844,
+          "normalized_latency_ratio": 1.029346444681863
+        }
+      ],
+      "affected_weighted_load_GM_speedup_ratio": 0.9510135555086241,
+      "control_weighted_load_GM_latency_ratio": 1.0118206878162568,
+      "whole_score_ratio": 0.9694860765283653,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p03": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": true,
+        "whole_score_ratio_at_least_1p015": false
+      },
+      "performance_gate_passed": false,
+      "candidate_CI": [
+        2.0829072795752968,
+        2.1463460799684526
+      ],
+      "parent_CI": [
+        2.1484653880063793,
+        2.213900882057335
+      ],
+      "limit": "Different runs/seeds; normalized official ratios, not direct same-input A/B."
+    },
+    {
+      "parent": {
+        "job": "b2a773e2d7194de8",
+        "mode": "check",
+        "source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+        "source": "experiments/candidates/muse_decode_layer/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.py",
+        "receipt": "experiments/runs/b2a773e2d7194de8.json",
+        "receipt_sha256": "1b2616abd7e31b5023792af228ac5bd5aa723e05b50611d58acb12c0af5056c3",
+        "profile": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.b2a773e2d7194de8.json",
+        "profile_sha256": "52a5ba91651e4bf94ea3ebfe70ea9a4d1637f9a685c3f0c88de84f22457b81cf",
+        "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+      },
+      "cases": [
+        {
+          "index": 0,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 4500781357980892582,
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9672954778678576,
+          "normalized_latency_ratio": 1.0338102708845809,
+          "candidate_us": 72.63147874228957,
+          "parent_us": 70.5315664903839,
+          "candidate_stock_us": 171.39199376106262,
+          "parent_stock_us": 172.06400074064732,
+          "candidate_raw_us": 76.79999992251396,
+          "parent_raw_us": 74.15999844670296
+        },
+        {
+          "index": 1,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 1",
+            "page": 1,
+            "repeats": 60,
+            "seed": 4500892297540060314,
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 0.9812691301939392,
+          "normalized_latency_ratio": 1.0190884123730242,
+          "candidate_us": 79.30156179358573,
+          "parent_us": 77.88439619653866,
+          "candidate_stock_us": 182.49600613489747,
+          "parent_stock_us": 182.6560008339584,
+          "candidate_raw_us": 84.87999811768532,
+          "parent_raw_us": 80.32000064849854
+        },
+        {
+          "index": 2,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 4501003237099228047,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9970553544596849,
+          "normalized_latency_ratio": 1.0029533420859176,
+          "candidate_us": 134.702849267351,
+          "parent_us": 133.52119686420778,
+          "candidate_stock_us": 268.27200781553984,
+          "parent_stock_us": 266.7039968073368,
+          "candidate_raw_us": 139.23200219869614,
+          "parent_raw_us": 137.7279981970787
+        },
+        {
+          "index": 3,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 16",
+            "page": 1,
+            "seed": 4501114176658395781,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 1.0009605234893837,
+          "normalized_latency_ratio": 0.9990403982306563,
+          "candidate_us": 213.3944050250742,
+          "parent_us": 212.19036879792802,
+          "candidate_stock_us": 443.8719991594553,
+          "parent_stock_us": 440.94400107860565,
+          "candidate_raw_us": 217.13600307703018,
+          "parent_raw_us": 215.56799858808517
+        },
+        {
+          "index": 4,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 4501225116217563516,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9351290220058098,
+          "normalized_latency_ratio": 1.06937115250155,
+          "candidate_us": 161.16804478790252,
+          "parent_us": 150.81336513604072,
+          "candidate_stock_us": 264.0639944002032,
+          "parent_stock_us": 264.2399910837412,
+          "candidate_raw_us": 162.4479964375496,
+          "parent_raw_us": 154.67200428247452
+        },
+        {
+          "index": 5,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "decode 32",
+            "page": 1,
+            "seed": 4501336055776731252,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.967062464300712,
+          "normalized_latency_ratio": 1.0340593673264997,
+          "candidate_us": 315.00152273691737,
+          "parent_us": 304.6023843841093,
+          "candidate_stock_us": 615.2479955926538,
+          "parent_stock_us": 615.1999989524484,
+          "candidate_raw_us": 319.583997130394,
+          "parent_raw_us": 308.1279993057251
+        },
+        {
+          "index": 6,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501446995335898989,
+            "weight": 46
+          },
+          "affected": false,
+          "speedup_ratio": 0.9961429068343172,
+          "normalized_latency_ratio": 1.0038720279381805,
+          "candidate_us": 110.98197366136694,
+          "parent_us": 106.62321832649656,
+          "candidate_stock_us": 268.2079994119704,
+          "parent_stock_us": 258.67200130596757,
+          "candidate_raw_us": 115.07199704647064,
+          "parent_raw_us": 109.29600149393082
+        },
+        {
+          "index": 7,
+          "case": {
+            "batch": 1,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 1",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501557934895066727,
+            "weight": 16
+          },
+          "affected": false,
+          "speedup_ratio": 0.9984163943754993,
+          "normalized_latency_ratio": 1.0015861174089506,
+          "candidate_us": 117.34835908894867,
+          "parent_us": 115.47284189767629,
+          "candidate_stock_us": 280.68799059838057,
+          "parent_stock_us": 276.63999050855637,
+          "candidate_raw_us": 123.21599945425987,
+          "parent_raw_us": 121.48799747228622
+        },
+        {
+          "index": 8,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501668874454234466,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9361922637524666,
+          "normalized_latency_ratio": 1.068156658325479,
+          "candidate_us": 270.8613478059723,
+          "parent_us": 244.8635521247409,
+          "candidate_stock_us": 543.7759910710156,
+          "parent_stock_us": 525.0879968516529,
+          "candidate_raw_us": 268.5760110616684,
+          "parent_raw_us": 252.0959973335266
+        },
+        {
+          "index": 9,
+          "case": {
+            "batch": 16,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 16",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501779814013402206,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.9456318292670912,
+          "normalized_latency_ratio": 1.0574940151655499,
+          "candidate_us": 351.26229955428846,
+          "parent_us": 333.40275193398367,
+          "candidate_stock_us": 699.776001740247,
+          "parent_stock_us": 702.3839885368943,
+          "candidate_raw_us": 358.0479919910431,
+          "parent_raw_us": 335.1840078830719
+        },
+        {
+          "index": 10,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "sliding",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4501890753572569947,
+            "spread": "agentic",
+            "weight": 46
+          },
+          "affected": true,
+          "speedup_ratio": 0.9685202259967741,
+          "normalized_latency_ratio": 1.0325029598332114,
+          "candidate_us": 341.5444502555604,
+          "parent_us": 316.62998000260194,
+          "candidate_stock_us": 755.6320130825043,
+          "parent_stock_us": 723.2799977064133,
+          "candidate_raw_us": 341.39201045036316,
+          "parent_raw_us": 319.69600915908813
+        },
+        {
+          "index": 11,
+          "case": {
+            "batch": 32,
+            "ctx": 80000,
+            "dist": "soft",
+            "layer": "full",
+            "load": "verify 32",
+            "page": 1,
+            "q_len": 8,
+            "seed": 4502001693131737689,
+            "spread": "agentic",
+            "weight": 16
+          },
+          "affected": true,
+          "speedup_ratio": 0.9929484858653012,
+          "normalized_latency_ratio": 1.007101591104753,
+          "candidate_us": 499.4208405819138,
+          "parent_us": 482.10882557864346,
+          "candidate_stock_us": 1105.2640043199062,
+          "parent_stock_us": 1074.5279807597399,
+          "candidate_raw_us": 505.8880150318146,
+          "parent_raw_us": 482.31999576091766
+        }
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "affected": false,
+          "speedup_ratio": 0.9711184731287429,
+          "normalized_latency_ratio": 1.0297404772645369
+        },
+        {
+          "load": "decode 16",
+          "affected": false,
+          "speedup_ratio": 0.9984496057816581,
+          "normalized_latency_ratio": 1.0015528016730781
+        },
+        {
+          "load": "decode 32",
+          "affected": true,
+          "speedup_ratio": 0.9480770318922569,
+          "normalized_latency_ratio": 1.0547666132192979
+        },
+        {
+          "load": "verify 1",
+          "affected": false,
+          "speedup_ratio": 0.996807810639308,
+          "normalized_latency_ratio": 1.003202412066419
+        },
+        {
+          "load": "verify 16",
+          "affected": true,
+          "speedup_ratio": 0.9392657234497045,
+          "normalized_latency_ratio": 1.0646614424800178
+        },
+        {
+          "load": "verify 32",
+          "affected": true,
+          "speedup_ratio": 0.9768399472047838,
+          "normalized_latency_ratio": 1.0237091581496933
+        }
+      ],
+      "affected_weighted_load_GM_speedup_ratio": 0.9545935676741133,
+      "control_weighted_load_GM_latency_ratio": 1.011416577073028,
+      "whole_score_ratio": 0.9715031612176984,
+      "gates": {
+        "affected_weighted_load_GM_at_least_1p03": false,
+        "each_affected_latency_at_most_1p03": false,
+        "control_weighted_load_GM_latency_within_3pct": true,
+        "each_control_latency_at_most_1p03": false,
+        "whole_score_ratio_at_least_1p015": false
+      },
+      "performance_gate_passed": false,
+      "candidate_CI": [
+        2.0829072795752968,
+        2.1463460799684526
+      ],
+      "parent_CI": [
+        2.1440046339782834,
+        2.2093042675004644
+      ],
+      "limit": "Different runs/seeds; normalized official ratios, not direct same-input A/B."
+    }
+  ],
+  "activation": {
+    "cases": [
+      {
+        "index": 0,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 1,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 2,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 3,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 4,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      },
+      {
+        "index": 5,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      },
+      {
+        "index": 6,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 7,
+        "affected": false,
+        "MAIN_marker": false,
+        "small_incumbent_marker": true,
+        "pass": true
+      },
+      {
+        "index": 8,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      },
+      {
+        "index": 9,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      },
+      {
+        "index": 10,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      },
+      {
+        "index": 11,
+        "affected": true,
+        "MAIN_marker": true,
+        "small_incumbent_marker": false,
+        "pass": true
+      }
+    ],
+    "passed": true
+  },
+  "evaluator": {
+    "code_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_decode_layer/baseline.py": "87d95a0c4b78f0fd6c772436b959330ca45652b10e82dfc8add9acf0549227d4",
+      "problems/muse_decode_layer/reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+      "problems/muse_decode_layer/task.yml": "6a73de4094ff00d7453fb94bd3aa40f5fae79ac7fbea149660eae2125dc5a0c7"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "flags": []
+}

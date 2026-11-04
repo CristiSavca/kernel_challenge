@@ -1,61 +1,71 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 after official V26 job `274c69cbc0954d76` completed.
+Updated November 4, 2026 after V28 private job `2976c25cc3dc41b1` completed.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
-serving throughput are distinct outcomes; state which each experiment measures.
+serving throughput are distinct outcomes.
 
 ## Resume here
 
-V26 source `944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7`
-passed its official private MoE component check: 1 setup, 5 tests, 6 benchmarks,
-6 profiles, clean checks/flags. Same-run stock speedup is **1.6851100701x**,
-CI [1.6598334191, 1.7103867212]. All four frozen component gates pass. Normalized
-latencies at M1/8/16/32/128/256: .869651/.755557/.725845/.632443/.406860/.355883.
-Root evidence: `experiments/iterations/20261104-native-serving-v26-root-result.json`.
-Source/preflight/review commit: `3189741`. Plan and evidence pins:
-`experiments/iterations/20261104-native-serving-v26-root-plan.json`.
-Independent terminal-result review agrees: keep for contract validation, no
-public promotion. Its pinned evidence is
-`experiments/iterations/20261104-native-serving-v26-result-critic.json`;
-the compact terminal record is `20261104-native-serving-v26-closeout.json`.
+**V28 closed; no score or retry.** Exact decoder source
+`d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b`
+passed 1 setup/13 tests/12 benchmarks/12 profiles with clean checks and correct
+activation markers. Score 2.1146266798, CI [2.0829072796, 2.1463460800], fails
+both exact public/private 97af parents. Affected weighted-load latency GM is
+1.051510 public / 1.047566 private; every affected case is slower. Unchanged
+control average drifts about 1.1–1.2%; separate profile timings do not establish
+atomic, traffic or register causality. The source replaced public vector atomics
+with private partials/owner sums, retaining public FTZ. This does not negate the
+independently passing serving V26 scalar-CAS replacement.
 
-V26 replaces scalar CAS accumulation with private boundary partials and an
-ordered non-FTZ FP32 owner sum. It retains reviewed per-partial MMA order,
-Marlin scale LUT/BF16 boundaries, local activation FTZ, cooperative launch and
-stock finalizer. One weight bank is 864 MiB; one serial workspace is 123.028839
-MiB. Both specializations report 576 threads, 231168 dynamic shared bytes,
-96 registers, 32 local bytes, occupancy admission 1 and a 132-block cooperative
-grid. Local bytes alone do not prove spill cost; profile times are not timings.
+Frozen source/plans/reviews: commit `b0c3eb5`. Terminal records:
+`experiments/iterations/20261104-decoder-v28-root-result.json`,
+`20261104-decoder-v28-result-critic.json`, `20261104-decoder-v28-closeout.json`.
+Retain raw receipt/profile JSON, text and log. Do not change thresholds, rescue
+selected shapes or repeat this attempt. `tools/DECODER_AFTER_V28_PRIORITY_20261104.md`
+found no evidence-ready high-value public probe; the next useful work is V27
+serving integration, not another WGS parameter sweep.
 
-Keep V26 for serving validation. Its normalized aggregate is 1.3440x V25's but
-only .7099x the faster public native score. These are cross-run comparisons
-with different seeds, not direct same-input A/B. Do not score V26 or replace
-public sources. No full-model memory, generic rank/empty route, stream/graph,
-large prefill, TTFT or official eight-H200 serving pass has been established.
-All known official jobs are terminal. No Modal allocation was made for V25/V26.
+**V27 adapter implemented and source-reviewed; device validation pending.**
+Isolated package: `serving/candidates/native_serving_v27/`.
+Native module SHA `7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1`;
+patch SHA `c0ca4e41e595df59046ccb67d3641053148090b9ed4019dc534eb229522700c6`,
+213,160 bytes across four allowed source files. No dirty serving checkout export.
+Installer sees actual rank-local raw weights before Marlin repack; qualifies
+supported serial execution, prepares before mutation, registers the bank and
+releases six raw slots transactionally. It retains actual norm metadata, pre-norm,
+original finalizer, BF16 boundaries and outer all-reduce. Model/device/lane owners
+share serial workspace; unsupported overlap/partition/offload/compile policies
+fall back before mutation. Norm setter uses the native bank device after release.
+CPU checks cover real hooks, eight rank installations, policy/metadata declines,
+rollback, all chunk/norm cases and source restoration/patch application. Root
+and independent critic reproduced them; this is not device or scheduler proof.
 
-The integration owner completed `SERVING_NATIVE_MOE_V26_INTEGRATION_CONTRACT_20261104.md`
-and its paired experiment JSON. **Next implementation:** isolate a pre-Marlin
-prepare/commit installer, a formatting-only export of the reviewed core, a
-chunked `_forward_marlin` branch and model/device/execution-lane workspace owner.
-Use already rank-local raw weights with `source_is_local=True`; do not recover
-them after Marlin repacking. Preserve actual pre/post norm metadata and epsilon,
-original stock finalizer and outer all-reduce. Do not use official component
-`prepare/kernel_fn` verbatim or bundle the dirty V22 finalizer/alignment edits.
+Root owns `tools/modal_h200.py` and `test_serving_native_v27_controller.py`.
+Author owns `tools/serving_native_v27_worker.py`, its CPU tests and device plan;
+critic independently reviews the frozen full package before any allocation.
+The proposed single-H200 diagnostic is fixed at 300s sandbox/240s worker, generated
+weights, actual stock preparation/methods and actual native installer/forward.
+Only rank3 installs a real 32-expert bank; all eight maps rebind immutable tensors
+with explicit metadata. Test zero/remote/live/poison routes, chunk boundaries,
+large prefill, norms, serial sharing, distinct-owner streams and changed-input
+graphs. Preserve partial checkpoints. PRMT-only coverage and eager diagnostic
+timings must be explicit; no full-engine/performance promotion inferred. Root
+must freeze worker/controller/review hashes and pass a fresh mandatory credit
+guard before allocation. No automatic retries. Resume any existing manifest
+before launching anything; never overlap writers or accepted jobs.
 
-The 864 MiB bank replaces original code/scales; conversion still needs at least
-two banks plus >=64 MiB packing temporary for one layer. One-bank ownership is
-a design objective, not a contest mandate. T16384 needs 43 core/finalizer chunks;
-six timed cases <=256 do not establish prefill/TTFT. Full model capacity is
-unknown. Any stock-fallback/dual-bank alternative needs its own memory/timing
-comparison. CPU hook/lifecycle tests precede one frozen device validation plan;
-generic ranks, empty routes, changed-input graphs and distinct-workspace streams
-must pass before full serving validation. Root alone owns allocation, after a
-fresh guard; do not assume the remaining 300-second budget fits compilation and
-all cases. Another parameter sweep does not address these integration risks.
-Check live agents/processes/manifests/receipts first; never duplicate an accepted
-job or overlap writers to an artifact.
+V26 official private `274c69cbc0954d76`, source
+`944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7`, remains
+clean: 1 setup/5 tests/6 benchmarks/6 profiles, same-run stock score1.6851100701,
+all four frozen gates pass. M1/8/16/32/128/256 normalized latency:
+.869651/.755557/.725845/.632443/.406860/.355883. This is1.3440x V25's normalized
+aggregate but only.7099x public native, across different runs/seeds. Keep for
+serving integration; never score it as a public improvement. One bank864MiB,
+serial workspace123.03MiB; conversion needs two-bank overlap plus packing temps.
+T16384 requires43 core/finalizer chunks. Full-model memory, eight-GPU scheduling,
+TTFT and throughput remain unmeasured. Integration contract and V26 result/critic
+records are retained; all official jobs are terminal as of this update.
 
 ## Incumbents, deadlines and money
 
@@ -65,20 +75,20 @@ Preserve public sources:
 - Decoder: `97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2`.
 - Attention: `87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c`.
 
-At 20:56 UTC: CristiSavca #405 overall; MoE #310 at 2.3736910444x; decoder #405
+At 21:27 UTC: CristiSavca #408 overall; MoE #311 at 2.3736910444x; decoder #408
 at 2.1811831350x. Leaders: 2.7817206619x MoE, 2.5761628684x decoder. No public
-score changed in V26. Snapshot: `experiments/leaderboards/20261104T2056-native-serving-v26-closeout.json`.
+score changed in V26/V28. Snapshot: `experiments/leaderboards/20261104T2127-v28-closeout-v27-device.json`.
 
 Live API then: kernel cutoff **November 5 08:00 UTC**; serving opens **November
 10 17:00 UTC**, closes **November 20 08:00 UTC**. Recheck live rules/API before
 new work. Kernel limits: 40 private/20 scored daily per problem; after V26,
-MoE has 25 private checks and 17 scores left today. Serving: 3 checks/1 score daily,
+MoE has 25 private checks/17 scores and decoder 28 checks/18 scores left today. Serving: 3 checks/1 score daily,
 eight H200s, private board. Overall kernel top 50 earns queue priority, not
 prizes. Stop kernel submissions at kernel cutoff; stop experiments and disable
 the monitor at final contest cutoff. Live precision/patch/concurrency/TTFT rules
 are authoritative over historical notes.
 
-Read `MODAL.md`; use mandatory guarded runners only. At 20:37 UTC provider cost
+Read `MODAL.md`; use mandatory guarded runners only. At 21:28 UTC provider cost
 floor was $4.25390221, billed $0; recent apps stopped and manifests terminal/
 terminated. $30 grant, $5 headroom and immutable reservation/correction ledger
 leave conservative working allowance $1.25609779. This dated value cannot bypass
@@ -134,8 +144,8 @@ in nested `serving/sglang`, pinned at `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f`
 
 Serving export must use allowed source/JSON files under `python/sglang`, never
 `python/sglang/srt/model_loader/`, no binary/rename edits, <=409600 patch bytes
-and no added line longer than 400 characters. V26 has nine overlong lines;
-it cannot be exported verbatim. Recheck live rules before the isolated adapter.
+and no added line longer than 400 characters. V27 wraps the nine overlong V26 assembly-constraint lines without changing tokens;
+its patch passes these static bounds. Recheck live rules before submission.
 
 Freeze source/gates before measuring. Check full numerical coverage, flags,
 per-shape/aggregate timings, evaluator/image identity and whole-chain activation.
@@ -183,4 +193,4 @@ Heartbeat `okc-research-and-harsh-critic` runs every 15 minutes. Resume live wor
 first; notify only meaningful verified gain/rank change, material failure,
 rule/deadline change, completion or required user action. Commit compact evidence,
 keep scratch bounded and close owned processes. Turn-start physical free space
-53,796,264 KiB; no cleanup was needed.
+61,319,245,824 bytes; no cleanup was needed.

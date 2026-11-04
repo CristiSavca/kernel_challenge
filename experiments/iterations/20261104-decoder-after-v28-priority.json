@@ -1,0 +1,244 @@
+{
+  "status": "NO_NEW_EVIDENCE_READY_HIGH_VALUE_PUBLIC_PROBE",
+  "priority": "Validate actual V27 serving installer/caller integration under separately reviewed resources; preserve current public97af/247888.",
+  "source_date": "2026-11-04",
+  "evidence": [
+    {
+      "path": "experiments/iterations/20261104-decoder-v28-root-result.json",
+      "sha256": "656d12a95c8a48281000f5c8b892022b178008c36ec468741daa39bf9819b17e"
+    },
+    {
+      "path": "experiments/runs/2976c25cc3dc41b1.json",
+      "sha256": "baeda6882195410aa90f8bda1e50d9e37134de53b65b70202b06b8981d3e0dcb"
+    },
+    {
+      "path": "experiments/candidates/muse_decode_layer/profiles/d1b1bcf5c241710697bc0d2fb39836b1d7064c262bff7f820b564085e2136d9b.2976c25cc3dc41b1.json",
+      "sha256": "34184890427a4ef4e25a911cc0b76c2578816969f732f10da2b604a149cde842"
+    },
+    {
+      "path": "experiments/candidates/muse_decode_layer/profiles/97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2.7a8c4941741645ee.json",
+      "sha256": "35ad7364409d49c2ded613234beea1572adc691c33f3c154a53b3dff313a2414"
+    },
+    {
+      "path": "experiments/iterations/20261104-decoder-selected-resource-analysis.json",
+      "sha256": "f06c325721acb10b4581521c9ddec84be24b4212778f0c76c3eb1088f7d64548"
+    },
+    {
+      "path": "experiments/iterations/20261104-current-kperm-ncu-analysis.json",
+      "sha256": "74f8fc9a6b56e07b9c06a502d87f511f628e8d4bfd2fd70d457930f5c889add6"
+    },
+    {
+      "path": "tools/DENSE_UNIT_DICTIONARY_FEASIBILITY_20261104.md",
+      "sha256": "f9f04da2e4b0361b108e79a65b88fbae4496a14996b96b3f047e6882db5afc07"
+    },
+    {
+      "path": "tools/DENSE_LOSSLESS_STRUCTURE_REVIEW_20261104.md",
+      "sha256": "48a364a7afd9323ce303c272e8c7ad454c741211093767fef8e0768dc8a6d030"
+    },
+    {
+      "path": "tools/ATTENTION_NEW_KV_PACKING_FEASIBILITY_20261104.md",
+      "sha256": "7e61f36898759a4e437927366e2e4df27500128374d2cf27caf07dd17a0cc22c"
+    },
+    {
+      "path": "tools/DECODER_BOUNDARY_REVIEW_20261104.md",
+      "sha256": "6d18536422d11338fef9f68dd4082d8790d9b0425e2c2f300c145b8cbadb5b7e"
+    },
+    {
+      "path": "serving/candidates/native_serving_v27/manifest.json",
+      "sha256": "b23fdd9023b8325165ba1ac46bfa33e4509cfdf50c2488179ba060ce15ef304c"
+    },
+    {
+      "path": "tools/SERVING_NATIVE_MOE_V26_INTEGRATION_CONTRACT_20261104.md",
+      "sha256": "49edcf68652a112ae049fbce8ae70035d1465a0b48e07bb7134ba33b750d8fc6"
+    }
+  ],
+  "V28": {
+    "job": "2976c25cc3dc41b1",
+    "decision": "CLOSE_FIXED_ATTEMPT_NO_TUNE_OR_RETRY",
+    "score": 2.1146266797718747,
+    "comparisons": [
+      {
+        "parent_job": "7a8c4941741645ee",
+        "whole_score_ratio": 0.9694860765283653,
+        "affected_weighted_load_GM_speedup_ratio": 0.9510135555086241,
+        "control_weighted_load_GM_latency_ratio": 1.0118206878162568
+      },
+      {
+        "parent_job": "b2a773e2d7194de8",
+        "whole_score_ratio": 0.9715031612176984,
+        "affected_weighted_load_GM_speedup_ratio": 0.9545935676741133,
+        "control_weighted_load_GM_latency_ratio": 1.011416577073028
+      }
+    ],
+    "profile_rows": [
+      {
+        "index": 0,
+        "load": "decode 1",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 29.2,
+        "V28_MoE_profile_us": 29.1,
+        "parent_SK2_share": 0.4346733668341709
+      },
+      {
+        "index": 1,
+        "load": "decode 1",
+        "layer": "full",
+        "parent_MoE_profile_us": 22.5,
+        "V28_MoE_profile_us": 22.9,
+        "parent_SK2_share": 0.44375
+      },
+      {
+        "index": 2,
+        "load": "decode 16",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 73.8,
+        "V28_MoE_profile_us": 75.0,
+        "parent_SK2_share": 0.38268156424581007
+      },
+      {
+        "index": 3,
+        "load": "decode 16",
+        "layer": "full",
+        "parent_MoE_profile_us": 65.8,
+        "V28_MoE_profile_us": 72.3,
+        "parent_SK2_share": 0.2496526169522927
+      },
+      {
+        "index": 4,
+        "load": "decode 32",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 80.3,
+        "V28_MoE_profile_us": 102.8,
+        "parent_SK2_share": 0.3663551401869159
+      },
+      {
+        "index": 5,
+        "load": "decode 32",
+        "layer": "full",
+        "parent_MoE_profile_us": 85.2,
+        "V28_MoE_profile_us": 98.9,
+        "parent_SK2_share": 0.18827067669172934
+      },
+      {
+        "index": 6,
+        "load": "verify 1",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 51.8,
+        "V28_MoE_profile_us": 64.6,
+        "parent_SK2_share": 0.3393025447690858
+      },
+      {
+        "index": 7,
+        "load": "verify 1",
+        "layer": "full",
+        "parent_MoE_profile_us": 44.9,
+        "V28_MoE_profile_us": 45.3,
+        "parent_SK2_share": 0.34105653382761814
+      },
+      {
+        "index": 8,
+        "load": "verify 16",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 143.9,
+        "V28_MoE_profile_us": 179.1,
+        "parent_SK2_share": 0.0
+      },
+      {
+        "index": 9,
+        "load": "verify 16",
+        "layer": "full",
+        "parent_MoE_profile_us": 140.6,
+        "V28_MoE_profile_us": 172.9,
+        "parent_SK2_share": 0.0
+      },
+      {
+        "index": 10,
+        "load": "verify 32",
+        "layer": "sliding",
+        "parent_MoE_profile_us": 205.8,
+        "V28_MoE_profile_us": 210.3,
+        "parent_SK2_share": 0.0
+      },
+      {
+        "index": 11,
+        "load": "verify 32",
+        "layer": "full",
+        "parent_MoE_profile_us": 204.6,
+        "V28_MoE_profile_us": 217.7,
+        "parent_SK2_share": 0.0
+      }
+    ],
+    "cause_not_established": true,
+    "new_compiled_resources_available": false
+  },
+  "dictionary": {
+    "implementation_ready": false,
+    "new_premise_since_saved_review": false,
+    "proxy_fallback_fraction": 0.006673177083333333,
+    "proxy_extra_requested_bytes_approx": 0.03,
+    "integer_decode_ops_per_8_old_new": [
+      12,
+      15
+    ],
+    "unchanged_geometry_second_CTA_fit": false,
+    "missing": [
+      "Actual prepared-unit cardinalities/fallback stage histogram",
+      "Compiled resources and actual correction-critical-path evidence",
+      "Complete source/lifetime/precision implementation proof"
+    ]
+  },
+  "conditional_SK2_scenarios": [
+    {
+      "all_SK2_time_reduction": 0.1,
+      "whole_score_ratio": 1.0241019149920205,
+      "whole_latency_reduction": 0.023534684037973208
+    },
+    {
+      "all_SK2_time_reduction": 0.2,
+      "whole_score_ratio": 1.0497347191402788,
+      "whole_latency_reduction": 0.047378369252196406
+    },
+    {
+      "all_SK2_time_reduction": 0.3,
+      "whole_score_ratio": 1.0770630819045208,
+      "whole_latency_reduction": 0.0715492743175764
+    },
+    {
+      "all_SK2_time_reduction": 1,
+      "whole_score_ratio": 1.3369007810070899,
+      "whole_latency_reduction": 0.2520013345742097
+    }
+  ],
+  "scenario_warning": "Profile-scaled scope scenarios, not causal timing, forecasts or physical ceilings.",
+  "required_SK2_reduction_to_saved_leader_scenario": 0.6277067392593112,
+  "leader_gap": {
+    "saved_public_score": 2.181183135031857,
+    "saved_leader_score": 2.5761628683765747,
+    "required_score_ratio": 1.1810850849710741
+  },
+  "next_experiment": {
+    "scope": "Actual V27 stock-serving call path, not unchanged V26 component repetition or public-kernel port",
+    "must_validate": [
+      "pre-Marlin bank replacement and actual caller activation",
+      "stock numerical contract including arbitrary rank/remote slots",
+      "all-remote to live workspace reuse",
+      "changed-input graph replay",
+      "independent workspace streams",
+      "384/385 chunk boundary",
+      "large prefill and all allocation/copy/finalizer work"
+    ],
+    "kill": [
+      "numerical or ownership/concurrency/domain failure",
+      "slower complete chain",
+      "unacceptable prefill or full-model memory"
+    ],
+    "public_decoder_score_impact": 1.0,
+    "whole_serving_speed_ceiling": "Unknown without actual expert fraction/communication/TTFT traces",
+    "resources": "Not authorized by this note; root must fit a separately reviewed bounded session to fresh budget."
+  },
+  "review_only": true,
+  "note": {
+    "path": "tools/DECODER_AFTER_V28_PRIORITY_20261104.md",
+    "sha256": "10231c438a65aa73998d09d33ebe159fca30ce8406f7560b3e4794903e28d415"
+  }
+}
