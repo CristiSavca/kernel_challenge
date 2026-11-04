@@ -540,3 +540,5 @@ AFTERsavingproofandcriticplanreview. PreserveSC6off/FP32ybuf/FCI3/joinedpipeline
 jobcosts/allterms; provecorrectnaturalpackedweights fornonWGStiny/MIDfallbacks,
 activationspermutedinsidetimedkernels only. NoGPU/officialsubmitbyauthor.
 Officialprivatequotasremainavailable; #1goalactive andnotachieved.
+
+06:34UTC authoritative refresh: overall/decoder396,2.1502x; leader2.5401x, top50cutoff2.3493x. Privatejob88f84f79fb11462d remainsqueued/check, notmissingorfailed; pollsamejoblater, neverresubmit. AllModalappsconfirmedstopped; noactiveGPU/localprocess. Latestcommittedresearch7e8b474. Thisgoalturnmadeconcreteprogress(tworesourceexperiments, astructuralrevision, separatelyapprovedofficialcheck, newlicensedKPERMlead); goalnotcompleteandnoblockingcondition.
