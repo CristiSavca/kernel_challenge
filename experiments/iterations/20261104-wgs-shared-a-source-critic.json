@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "verdict": "SOURCE_GO_FOR_ONE_PRIVATE_CHECK_AFTER_ROOT_INDEPENDENT_CPU_PASS",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "artifacts": {
+    "candidate": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_shared_a_v15.py",
+      "sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38"
+    },
+    "builder": {
+      "path": "tools/build_wgs_shared_a_candidate.py",
+      "sha256": "251690b8f1093f1f6a7c6e2bfd8dd5488b292a431fc436913f195a12cfae52e4"
+    },
+    "combined_verifier": {
+      "path": "tools/test_wgs_shared_a_cpu.py",
+      "sha256": "4947eca364ce0f948577b1b5cabbaea03d694bb4dbe08ef434ecbe440f8c8137"
+    },
+    "combined_evidence": {
+      "path": "experiments/iterations/20261104-wgs-shared-a-cpu.json",
+      "sha256": "57400109290853f0b52b52bebd2ffcd5814ce068134df90e2ef32bf5e8b244f0"
+    },
+    "lifetime_verifier": {
+      "path": "tools/test_wgs_shared_a_lifetimes_critic.py",
+      "sha256": "02bf25a945a543feafe1f07efd66d6add71bfa0529a55f49372b30343a775eb8"
+    },
+    "lifetime_evidence": {
+      "path": "experiments/iterations/20261104-wgs-shared-a-lifetimes-critic.json",
+      "sha256": "68286947ca40ef12aa620617fb776ebcc55d6fb31c8a4d91ee711662ad33ba4d"
+    },
+    "performance_reader": {
+      "path": "tools/analyze_wgs_shared_a_result.py",
+      "sha256": "d51fd306e8d83b0cb2f165d1dc7a82eccaddbbdee9d2b1bf7e5a7502dda7bf7d"
+    },
+    "performance_fixtures": {
+      "path": "tools/test_analyze_wgs_shared_a_result.py",
+      "sha256": "a39bb81dc9dbd4289eafca03746650f65c22f359ea7f0f92f8c13d9f97fb22e0"
+    }
+  },
+  "candidate_cuda_sha256": "894b9f7141272419cdc9b91b61cadba0b671263ed719c2719c87e47621940ed7",
+  "reviewed_scope": [
+    "All 16 SS BF16 m64n8..64k16 wrappers retain FP32 output constraints, scaleD initialization and nontransposed K-major descriptors.",
+    "Actual paired BF16 store offsets, second-k16 descriptor increment and all six MMA call branches preserve scale decode, KPERM, NTT1 even/odd accumulation and B operand order.",
+    "Two joined raw/X slots and two A banks match producer modulo/parity, barrier index/count initialization and exact host allocation 194304 bytes at 576 threads.",
+    "All writers join before A-bank overwrite; every writer executes async proxy fence before a second WG publication barrier. wait1 and final wait0, previous-X release and FCI3 flushing remain in parent order.",
+    "Unchanged producers, route/gather/range/epilogue/fixup/finalizer and PDL flow are exact source contracts. Both BIG resource queries require API success and occupancy at least one; no register/local-byte rejection.",
+    "No timed input work moved to prepare; no new input-dependent selector, harness introspection or timing modification. WGS compiler verbosity and unique extension name are host diagnostic changes."
+  ],
+  "author_cpu_evidence_reviewed": {
+    "scope": {
+      "restored_parent_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+      "non_wgs_preprocessed_builds": 16,
+      "ss_wrappers": 16,
+      "unchanged_python_nodes": 41,
+      "unchanged_producer_gather_route_epilogue_fixup_finalizer": true
+    },
+    "native_layout": {
+      "bf16_coordinates": 16384,
+      "bank_conflict_free_warp_store_groups": 256,
+      "exhaustive_bit_half_checks": 524288
+    },
+    "trace": {
+      "trace_hash": 10371978497574556803,
+      "mma_calls": 1462272,
+      "commit_groups": 731136,
+      "flushes": 10752,
+      "x_releases": 39168,
+      "barriers": 1462272
+    },
+    "packed_code_comparisons": 100663296,
+    "packed_scale_comparisons": 6291456,
+    "host_modes": 10,
+    "independent_schedules": 48,
+    "independent_events": 631632,
+    "independent_range_cases": 32,
+    "negative_controls": [
+      {
+        "case": "single_A_bank",
+        "caught": "A bank reused while live"
+      },
+      {
+        "case": "X_depth_one",
+        "caught": "deadlock: missing release or insufficient X lookahead"
+      },
+      {
+        "case": "missing_16th_weight_release",
+        "caught": "deadlock: missing release or insufficient X lookahead"
+      },
+      {
+        "case": "premature_previous_X_release",
+        "caught": "premature previous X release"
+      },
+      {
+        "case": "missing_publication_barrier",
+        "caught": "missing collective publication"
+      }
+    ],
+    "root_independent_rerun": "REQUIRED_SEPARATELY; this critic reviewed source and proof rather than duplicating the full suite"
+  },
+  "critic_executed": {
+    "performance_fixtures": 20,
+    "status": "PASS",
+    "both_real_incumbent_receipts_loaded": true
+  },
+  "limits": [
+    "CPU traces execute actual control flow with mocked decode/CUDA operations; unchanged real decode source and exhaustive bit transport support equivalence, but no GPU numerical or compiler result exists yet.",
+    "The event model treats wait retirement as a collective WG event. Unequal warp completion is not simulated; preoverwrite barrier necessity is a source/PTX argument with removal negatives.",
+    "Cross-CTA readiness/fixup arithmetic and nj==0 global routing are not numerically emulated. Empty CTA ranges are covered and parent source remains unchanged.",
+    "A substantial additional shared traffic/barrier cost and reduced weight/X lookahead can outweigh smaller register operand use. Parent compiler serialization is unknown.",
+    "No occupancy, achieved overlap, speedup or leaderboard promotion follows from this source GO."
+  ],
+  "future_gpu_gates": {
+    "validity": "Exact frozen source, official correctness/tests/checks clean and all actual launch-admission APIs successful with BIG0/BIG1 occupancy >=1.",
+    "performance": "Affected M32/128/256 speedup-ratio GM >=1.03 over BOTH public d24dd50196cb4158 and private bcb761dfca264db0; each affected normalized latency <=1.03; control M1/8/16 normalized-latency GM in [0.97,1.03].",
+    "diagnostics": "Local bytes and C7511/C7512 warnings are informational. Absence from a retained/truncated tail is not proof of absence.",
+    "source_and_activation": "Root must verify exact receipt hash and intended MAIN activation. No automatic scored submission or repeated measurement-seeking checks."
+  }
+}

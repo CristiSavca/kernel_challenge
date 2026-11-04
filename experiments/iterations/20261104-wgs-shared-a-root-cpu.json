@@ -1,0 +1,1444 @@
+{
+  "status": "PASS",
+  "source_sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "cuda_sha256": "894b9f7141272419cdc9b91b61cadba0b671263ed719c2719c87e47621940ed7",
+  "conformance": {
+    "restored_parent_cuda_sha256": "85fb417494c6eab5baabad6813275b256f7bae84c0329d0e94cb61a15030445c",
+    "non_wgs_preprocessed_builds": 16,
+    "ss_wrappers": 16,
+    "unchanged_python_nodes": 41,
+    "unchanged_producer_gather_route_epilogue_fixup_finalizer": true
+  },
+  "native_layout": {
+    "bf16_coordinates": 16384,
+    "bank_conflict_free_warp_store_groups": 256,
+    "exhaustive_bit_half_checks": 524288
+  },
+  "native_parent_operand_trace": {
+    "trace_hash": 10371978497574556803,
+    "mma_calls": 1462272,
+    "commit_groups": 731136,
+    "flushes": 10752,
+    "x_releases": 39168,
+    "barriers": 0
+  },
+  "native_shared_operand_trace": {
+    "trace_hash": 10371978497574556803,
+    "mma_calls": 1462272,
+    "commit_groups": 731136,
+    "flushes": 10752,
+    "x_releases": 39168,
+    "barriers": 1462272
+  },
+  "host_resources": {
+    "modes": 10,
+    "records": 20,
+    "max_record_bytes": 100,
+    "local_allocation_does_not_reject": true,
+    "actual_first_call_failure_propagates": true,
+    "failed_call_does_not_cache_success": true,
+    "successful_attributes_cached": true
+  },
+  "packing": {
+    "actual_candidate_packing": true,
+    "output": [
+      "PASS unchanged dispatch/defines/precision/fallback packing and entries0..11; WGMIN9 excludes non-WGS natural-fat aliases",
+      "PASS exact gather map, gate/up pairing, and unchanged256-column B-readiness groups",
+      "PASS W13 _POS: actual 18874368 packed bytes -> 33554432 exact FP4 codes, 2097152 exact scale bytes",
+      "PASS W2 _POS: actual 9437184 packed bytes -> 16777216 exact FP4 codes, 1048576 exact scale bytes",
+      "PASS W13 _POS_MUL: actual 18874368 packed bytes -> 33554432 exact FP4 codes, 2097152 exact scale bytes",
+      "PASS W2 _POS_MUL: actual 9437184 packed bytes -> 16777216 exact FP4 codes, 1048576 exact scale bytes",
+      "PASS all14161 allowed PRMT scale pairs; precision is unchanged, reduction-order correctness remains GPU-untested",
+      "candidate_sha256 93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38"
+    ]
+  },
+  "native_negative_controls": [
+    "wrong_register_pair",
+    "wrong_A_descriptor_step",
+    "one_A_bank_wait1"
+  ],
+  "limits": "CPU execution uses actual source control flow/scatter/descriptor with mocked CUDA and decode arithmetic; it proves operand transport/order and source preservation, not tensor numerical results, CUDA compilation, GPU ordering, compiler scheduling or speed.",
+  "independent_lifetimes": {
+    "status": "PASS_CPU_MODEL_NOT_GPU_PROOF",
+    "candidate_sha256": "93c2d0fbfe1d37792389402b335d34f8e00328e84ce25ad8ea732b9726d08a38",
+    "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "verifier_sha256": "02bf25a945a543feafe1f07efd66d6add71bfa0529a55f49372b30343a775eb8",
+    "source_contract": {
+      "unchanged_function_sha256": {
+        "wgs_split": "55ebeedf87eac12e97c43605aa8828746dcd768f4f4e9a136b18361c5ed8b7c4",
+        "wgs_wproducer": "b64ac1a3af9622c0a6a9f2a529498dc3ab6e38351a78d27243900e6a34d64dfc",
+        "wgs_xproducer": "7636c5ec07ba6c85dcac021cb4d48bbb0d30a067a96c736b066d5ec0dc3ec145",
+        "wgs_gather": "831a448fd122da0c0f138939eaf0fa17858d14718081ba22bb3a148b3a6b950d",
+        "wgs_epi_tile": "28dd607ea61bf8ec811f453ea4a9e9f072db5945d4b5df1dacaf9492ef0a9ea7",
+        "wgs_flush": "40ae9c63bf5cbba80b5ccea1f5207d16fbca1768ad2167f93222cca8929a160b",
+        "wgs_phase": "d3e2e197e2a2be065f51d3de480558ffa74e70cfebd5c2aa4290550c63eb61fd",
+        "wgs_prefix": "c62bf5c3ed2d4ab9255dea8fea8fef5644d518b6f9e96bf484a4320b75ed9f23",
+        "wgs_stage_at": "6367e7504f2b8edc0dd67855219639daed040d71f7ab4d86855b33e08f69acf3",
+        "wgs_range": "4f1d7efe8c823166fa327f43b54a17634f5a08c49eefe8a3d47e291fa6f5d19e",
+        "wgs_cta_of": "b62bae9eb8012f5738b9d60dde03d26074cabdb1aed9d42886e03645d0ec6a1e",
+        "wgs_ranges": "a3f04aaea139a044d7085d628cbdc96819de2cb862f9dff4a5362acec53a4901",
+        "moe_fused": "8e0e5358d9a3bae38fa6ae4c33b0cb62728b7eaec3141e1868dc0002ed258762"
+      },
+      "segment_sha256": "31ef08aa8d5af113c3eb18edf852094a9420e696efa027e1e187bde7055e68bf",
+      "changed_source_contract": "PASS_EXACT_SCOPED_CANONICAL_RESTORATION",
+      "MMA_shape_variants": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "missing_barrier_negative_controls": 2,
+      "wrong_second_k16_descriptor_negative_detected": true,
+      "native_descriptor_scatter": {
+        "actual_helper_sha256": "6a6bf125482ac84a6d199eb8361196a8b8a91f5aba091b5ec0e969018272420f",
+        "actual_descriptor_sha256": "042080f6092ac03d0f055a6a9e73f68828e9364d9d0e38bccccd18ebef2d1aed",
+        "native_translation_sha256": "88cdf518e56b4c2f8653fea225d4267023e2c10c446fb3c65243e8ca46a933c3",
+        "BF16_coordinates": 16384,
+        "descriptors": 16,
+        "wrong_row_stride_negative_detected": true
+      }
+    },
+    "model": {
+      "cases": [
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 0,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 1,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 2,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 3,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 4,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 5,
+          "stages": 0,
+          "segments": 0,
+          "events": 4,
+          "joined_stage_acquires": 0,
+          "deferred_flushes": 0,
+          "warp_releases": 0
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 0,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 1,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 2,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 3,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 4,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            1
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 5,
+          "stages": 2,
+          "segments": 2,
+          "events": 1060,
+          "joined_stage_acquires": 8,
+          "deferred_flushes": 8,
+          "warp_releases": 64
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 0,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 1,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 2,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 3,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 4,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            0,
+            32
+          ],
+          "b": [
+            0,
+            16
+          ],
+          "seed": 5,
+          "stages": 48,
+          "segments": 3,
+          "events": 24988,
+          "joined_stage_acquires": 192,
+          "deferred_flushes": 12,
+          "warp_releases": 1536
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 0,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 1,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 2,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 3,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 4,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            3,
+            49
+          ],
+          "b": [
+            7,
+            35
+          ],
+          "seed": 5,
+          "stages": 74,
+          "segments": 7,
+          "events": 38540,
+          "joined_stage_acquires": 296,
+          "deferred_flushes": 28,
+          "warp_releases": 2368
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 0,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 1,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 2,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 3,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 4,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            15,
+            33
+          ],
+          "b": [
+            15,
+            17
+          ],
+          "seed": 5,
+          "stages": 20,
+          "segments": 5,
+          "events": 10444,
+          "joined_stage_acquires": 80,
+          "deferred_flushes": 20,
+          "warp_releases": 640
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 0,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 1,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 2,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 3,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 4,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            25,
+            65
+          ],
+          "b": [
+            3,
+            17
+          ],
+          "seed": 5,
+          "stages": 54,
+          "segments": 6,
+          "events": 28132,
+          "joined_stage_acquires": 216,
+          "deferred_flushes": 24,
+          "warp_releases": 1728
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 0,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 1,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 2,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 3,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 4,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            3
+          ],
+          "b": [
+            0,
+            0
+          ],
+          "seed": 5,
+          "stages": 3,
+          "segments": 1,
+          "events": 1572,
+          "joined_stage_acquires": 12,
+          "deferred_flushes": 4,
+          "warp_releases": 96
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 0,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 1,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 2,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 3,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 4,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        },
+        {
+          "a": [
+            0,
+            0
+          ],
+          "b": [
+            0,
+            1
+          ],
+          "seed": 5,
+          "stages": 1,
+          "segments": 1,
+          "events": 532,
+          "joined_stage_acquires": 4,
+          "deferred_flushes": 4,
+          "warp_releases": 32
+        }
+      ],
+      "event_count": 631632,
+      "negative_controls": [
+        {
+          "case": "single_A_bank",
+          "caught": "A bank reused while live"
+        },
+        {
+          "case": "X_depth_one",
+          "caught": "deadlock: missing release or insufficient X lookahead"
+        },
+        {
+          "case": "missing_16th_weight_release",
+          "caught": "deadlock: missing release or insufficient X lookahead"
+        },
+        {
+          "case": "premature_previous_X_release",
+          "caught": "premature previous X release"
+        },
+        {
+          "case": "missing_publication_barrier",
+          "caught": "missing collective publication"
+        }
+      ]
+    },
+    "range_contract": {
+      "cases": [
+        {
+          "histogram": [
+            1
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            1
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            1
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 32
+        },
+        {
+          "histogram": [
+            1
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 16
+        },
+        {
+          "histogram": [
+            8
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            8
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            8
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 32
+        },
+        {
+          "histogram": [
+            8
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 16
+        },
+        {
+          "histogram": [
+            9
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            9
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            9
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 32
+        },
+        {
+          "histogram": [
+            9
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 16
+        },
+        {
+          "histogram": [
+            16
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            16
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            16
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 32
+        },
+        {
+          "histogram": [
+            16
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 16
+        },
+        {
+          "histogram": [
+            64
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            64
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            64
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 1,
+          "stages": 512,
+          "split_units": 32
+        },
+        {
+          "histogram": [
+            64
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 1,
+          "stages": 256,
+          "split_units": 16
+        },
+        {
+          "histogram": [
+            384
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 6,
+          "stages": 3072,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            384
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 6,
+          "stages": 1536,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            384
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 6,
+          "stages": 3072,
+          "split_units": 120
+        },
+        {
+          "histogram": [
+            384
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 6,
+          "stages": 1536,
+          "split_units": 96
+        },
+        {
+          "histogram": [
+            1,
+            8,
+            9,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 10,
+          "stages": 5120,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            1,
+            8,
+            9,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 10,
+          "stages": 2560,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            1,
+            8,
+            9,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 10,
+          "stages": 5120,
+          "split_units": 123
+        },
+        {
+          "histogram": [
+            1,
+            8,
+            9,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 10,
+          "stages": 2560,
+          "split_units": 123
+        },
+        {
+          "histogram": [
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            129,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "grid": 7,
+          "phase": 0,
+          "jobs": 79,
+          "stages": 40448,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            129,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "grid": 7,
+          "phase": 1,
+          "jobs": 79,
+          "stages": 20224,
+          "split_units": 6
+        },
+        {
+          "histogram": [
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            129,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "grid": 132,
+          "phase": 0,
+          "jobs": 79,
+          "stages": 40448,
+          "split_units": 125
+        },
+        {
+          "histogram": [
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            321,
+            129,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "grid": 132,
+          "phase": 1,
+          "jobs": 79,
+          "stages": 20224,
+          "split_units": 126
+        }
+      ],
+      "case_count": 32,
+      "claim": "Exact stage partition and inverse split owner; B finisher dependencies point to later CTAs.",
+      "limits": "No global numerical fixup or GPU visibility emulation; unchanged flush/gather/range bodies are separately byte-bound."
+    },
+    "limits": [
+      "Independent actors represent producer issue/completion and collective WG operations; no CUDA memory model is emulated.",
+      "Wait-group retirement is a WG-collective event: four warps returning from wait1 at unequal times are not separately simulated. Pre-overwrite-barrier justification rests on the explicit source/PTX contract; its negative is a source-conformance check, not a simulated GPU hazard witness.",
+      "Cross-CTA input readiness and split-fixup arithmetic are inherited source contracts, not emulated global numerical data.",
+      "Zero-stage/empty CTA ranges are modeled; global nj==0 routing is not proven. Inherited wgs_ranges has no explicit nj==0 guard; official reference defaults to busiest rank and rejects zero-local-output cases.",
+      "No compiler/resource/numerical/performance claim."
+    ]
+  }
+}
