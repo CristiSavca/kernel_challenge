@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:56 UTC with V32 closed; no official job in flight.
+Updated November 4, 2026 at 23:10 UTC with V33 frozen for one official check.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -61,10 +61,22 @@ including15COMP, have local_bytes0. Still zero timed COMP activation; all20
 prepare selftests pass with no disabled keys. Removing array local allocation
 was real but insufficient. No forced selection, identical retry, or gate changes.
 Raw receipt/profiles/log, root result and compact closeout are retained underV32.
-Independent critic reproduces root result. Proposed next distinct feasibility:
-fixed12bit primary + missing-high-nibble sidecar for whole-unit raw fallbacks,
-removing all per-word repair without duplicating full16bit raw payload. NoGPU
-allocation until exact mapping and source review. Public source unchanged.
+Independent critic reproduces root result. Next V33 is now frozen and independently reviewed.
+
+**V33 frozen; root owns one next official check.** Source
+`a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090`
+at `muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py`.
+Fixed matrix-window normal decoder; escaped units use literal primary high-byte
+low nibbles plus256B missing-nibble sidecar instead of per-word repairs/full-raw
+sidecars. Primary loads no longer depend on descriptor. Geometry/selection/MMA
+order/handback remain. Actual retained V32 logical bytes predict+2.15..2.80%
+versus768B primary,+1.44..1.92% versusV32; more frequent global requests may lose.
+Root/author/critic reproduceCPU98355753:2,572,288 bit comparisons,2,808 mappings,
+4 rejected mutations. Separate layout review passes; six analyzer fixtures pass.
+Source critic GO4385170f. Fixed plan `20261104-decoder-nibble-sidecar-v33-root-plan.json`
+requires whole>=1.025/affectedGM>=1.04 against BOTH97af, all latency caps/controls,
+clean13tests/12benchmarks/profiles, exact COMP activation and observedlocal0.
+No retries, forced selection or gate relaxation. No public source changes.
 
 The unique-expert traffic audit is closed read-only, no new implementation:
 retained job duplicates offer at most a conditional+1.465% decoder scenario,

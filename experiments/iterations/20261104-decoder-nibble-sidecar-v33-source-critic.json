@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "verdict": "GO_FOR_ONE_FIXED_PRIVATE_OFFICIAL_CHECK",
+  "candidate_sha256": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090",
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/parent.py": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/build.py": "e591017915552744c19e30c816401de244531761b6e51f141c045896cf24d25b",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/edits.json": "f3b7315503f99f9b9038cd09a090d0175b2de35ee36a1d5bdf2084fd75c6c07a",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/manifest.json": "0c91fb9334b0f4482a7101c4bacf1ab947723ab277ad3cb4d75307e04a5317ca",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/test_cpu.py": "ad95f61d7a50e13e69bb08d47ee8a2d8ceac3cb07166d223e52d1e257b164aa8",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/cpu_result.json": "98355753444201635fba3d021cc5e497e8c3246705efc54cb92c35c1f14848e7",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/README.md": "5738b64da80f75f7bef8eeaf9afa08bf64941b3529c6f817fe3aa559d3557bc0",
+    "tools/analyze_decoder_v33.py": "c4d210d50c95a127378393846aa056843f45dcb26ba5363b860d1a381d64df96",
+    "tools/test_analyze_decoder_v33.py": "d14d549b97d5eaff6ef1942cfaba3c38a8d8a430cd163589eea2fc1d4b611063",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-byte-model.json": "f3a16e2fc8f012fca3261f26fa1044ce6683610b590839466e1ca163807d3a02",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-layout-critic.json": "db982b213a157b162b8dabe7cd50aa8a9a5dfd810157600e995afed36c253972"
+  },
+  "reviewed_scope": {
+    "full_diff_and_builder_read": true,
+    "ten_edits_reverse_to_exact_V32": true,
+    "actual_pack_boolean_indexing_and_nibble_order": true,
+    "index31_descriptor_signed_storage_and_unsigned_device_mask": true,
+    "global_sidecar_uint2_address": "(size_t)index*32+lane; byte offset=index*256+lane*8",
+    "no_uninitialized_normal_or_raw_word": true,
+    "zero_sidecar_dummy_and_full_entropy_fallback": true,
+    "primary_LDS_before_header_and_handoff": true,
+    "post_handoff_reads": "Only immutable global sidecar; no shared references retained",
+    "state_retains_sidecar_after_compression_cache_pop": true,
+    "packing_geometry_MMA_nonCOMP_PDL_fused_reductions_flags_unchanged": true,
+    "no_source_blocker": true
+  },
+  "independent_execution": {
+    "command": "Import test_cpu.py and call run() with .venv-modal/bin/python; no shared output writes",
+    "report_byte_equal": true,
+    "report_sha256": "98355753444201635fba3d021cc5e497e8c3246705efc54cb92c35c1f14848e7",
+    "native": {
+      "units": 5024,
+      "raw_units": 4352,
+      "BF16_bit_comparisons": 2572288,
+      "native_source_sha256": "437f5ab369e43f6f2a57ba7068c086ed90c60624527e02392cde31b519d36183",
+      "negative_controls": [
+        "wrong_high_half",
+        "wrong_raw_stride",
+        "wrong_lane",
+        "wrong_second_plane"
+      ],
+      "raw_index31_boundaries_checked": true
+    },
+    "actual_stream_unit_mappings": 2808,
+    "actual_generated_geometries": 17,
+    "aligned_header_tails_no_extra_padding": true,
+    "six_analyzer_fixtures_pass": true
+  },
+  "secondary_layout_evidence": "Separate reviewer actual raw helper4194304 outputs and479232 affine stage-unit pairs; no claim that affine model is GPU execution. Exact evidence pinned.",
+  "measured_anchor": "V32 removed all observed local allocation but produced zero timed COMP activation and failed both performance anchors. V33 is a different work/bytes tradeoff, not a quota or forced-selection retry.",
+  "mechanism": {
+    "normal": "Unchanged matrix-window decode8 without any per-word repair selection",
+    "escaped": "Literal lower high-byte nibble in primary plus missing upper nibble in256B sidecar; normal/escaped unit bit31 header branch",
+    "independent_change": "Primary LDS instructions no longer depend on descriptor branch",
+    "format_bytes": "768primary+4header+256*f per512BF16 weights",
+    "saved_V32_distribution_costs": [
+      {
+        "layer": "o",
+        "sidecar_fraction": 0.05657958984375,
+        "total_bytes_over_primary": 1.0240681966145833,
+        "total_bytes_over_V32": 1.017197477972678,
+        "source_vector_load_call_ratio_to_V32": 24.394736842105264
+      },
+      {
+        "layer": "pooler",
+        "sidecar_fraction": 0.068511962890625,
+        "total_bytes_over_primary": 1.028045654296875,
+        "total_bytes_over_V32": 1.0191710367083502,
+        "source_vector_load_call_ratio_to_V32": 13.05232558139535
+      },
+      {
+        "layer": "qkv_gate",
+        "sidecar_fraction": 0.0673556857638889,
+        "total_bytes_over_primary": 1.027660228587963,
+        "total_bytes_over_V32": 1.0187432771602725,
+        "source_vector_load_call_ratio_to_V32": 12.668367346938776
+      },
+      {
+        "layer": "unpooler",
+        "sidecar_fraction": 0.0487823486328125,
+        "total_bytes_over_primary": 1.0214691162109375,
+        "total_bytes_over_V32": 1.014431333723961,
+        "source_vector_load_call_ratio_to_V32": 18.805882352941175
+      }
+    ],
+    "limits": "Logical requests/source load call counts only; not physical DRAM transactions or critical-path latency; future weight distribution unknown"
+  },
+  "strongest_failure": "Consumer sidecar loads apply to every escaped unit. Source vector-load calls grow12.67\u201324.39x on saved V32 weights despite only1.44\u20131.92% more total bytes; the resulting latency may exceed removed repair predicates. Local0 is necessary screen evidence, not sufficient speed evidence.",
+  "fixed_gate": {
+    "parents": [
+      "7a8c4941741645ee",
+      "b2a773e2d7194de8"
+    ],
+    "parent_source": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "whole_score_ratio_min": 1.025,
+    "affected_four_weighted_load_speed_GM_min": 1.04,
+    "every_case_normalized_latency_max": 1.03,
+    "control_two_weighted_load_latency_GM": [
+      0.97,
+      1.03
+    ],
+    "within_load_weights": [
+      46,
+      16
+    ],
+    "record_counts": {
+      "setup": 1,
+      "test": 13,
+      "benchmark": 12,
+      "profile": 12
+    },
+    "clean_flags_source_evaluator_image_binding": true,
+    "expected_COMP_instance_counts": [
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      3,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "all_captured_COMP_local0_and_API_success_capacity_ge1": true,
+    "resource_STOP_allowed": false,
+    "active_first7_signatures_need_recorded_match": true
+  },
+  "activation_parser_review": {
+    "new_marker": "sk2_nibble_sidecar_v33",
+    "COMP_index": 7,
+    "characters_through_true_for_parent_target_geometries": [
+      53,
+      54
+    ],
+    "shortened_name_limit": "Visible first7+COMP only; hiddenPK/FUSE/BND/runtime pointer identity not inferred",
+    "old_V29_V32_and_parent_COMP_markers_rejected": true
+  },
+  "estimated_scope": {
+    "speed_forecast": null,
+    "conditional_preexisting_97af_SK2_deletion_scenario": 1.336958,
+    "conditional_20pct_SK2_time_reduction_scenario": 1.04973972,
+    "not_physical_bound": "Assumes separate profile shares transfer to normalized timing without overlap changes. No #1/2x promise."
+  },
+  "kill": "Any compiler/numerical/flags/resource/activation/performance failure closes this fixed source. No forced selection, weakened gates, unchanged retry or automatic scoring.",
+  "limits": [
+    "Actual Python helpers execute through NumPy adapter, not Torch/CUDA",
+    "CPU PRMT/LOP3 models do not prove CUDA code generation",
+    "No GPU, register allocation, achieved occupancy or speed claim",
+    "Unchanged MMA and ring source inherit prior proof, not a new device-order proof",
+    "Packing executes NumPy Torch adapter, not installed CUDA Torch; actual device path still required",
+    "Native bit checks are broad finite coverage, not an exhaustive Cartesian product",
+    "Source instruction ordering does not certify final SASS scheduling"
+  ],
+  "GPU_provider_official_calls": 0,
+  "candidate_edits": false
+}

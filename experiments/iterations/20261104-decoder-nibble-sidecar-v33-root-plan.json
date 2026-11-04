@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "iteration": "decoder-nibble-sidecar-v33",
+  "created_at": "2026-11-04T23:08:59.093657+00:00",
+  "source_review_status": "GO_FOR_OFFICIAL_CHECK",
+  "candidate_sha256": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090",
+  "candidate_path": "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parents": [
+    {
+      "job": "7a8c4941741645ee",
+      "mode": "run"
+    },
+    {
+      "job": "b2a773e2d7194de8",
+      "mode": "check"
+    }
+  ],
+  "code_lineage": {
+    "V32": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35"
+  },
+  "hypothesis": "Matrix-window coding with only missing high nibbles for escaped units removes scalar repair predicates and header-dependent primary loads, enough to beat original correction-warp SK2 at fixed geometry and selection.",
+  "falsifiable_predictions": [
+    "Observed COMP pointers retain local_bytes0 and successful admission; no resource STOP",
+    "All affected profiles restore exact original COMP template coverage under V33 marker",
+    "Whole score >=1.025 and affected four-load GM >=1.04 against both exact incumbent receipts with all per-case/control caps"
+  ],
+  "fixed_gate": {
+    "affected_load_GM_min": 1.04,
+    "each_affected_latency_max": 1.03,
+    "control_load_GM_latency_min": 0.97,
+    "control_load_GM_latency_max": 1.03,
+    "each_control_latency_max": 1.03,
+    "whole_score_ratio_min": 1.025
+  },
+  "compiler_gate": "All observed COMP local_bytes=0; no resource STOP; active signatures covered",
+  "strongest_failure_reason": "Consumer global sidecar loads occur for every escaped unit (4.88\u20136.85% in retained weights), so increased issue/latency and codegen pressure can exceed the eliminated repair work. Fewer bits per sidecar do not mean less overall traffic than V32.",
+  "upper_bound_estimate": {
+    "type": "Conditional profile scenario, not forecast or physical bound",
+    "20pct_SK2_time_reduction_whole_ratio": 1.04973972,
+    "delete_all_SK2_whole_ratio": 1.336958,
+    "limit": "Separate profile shares are not exclusive critical path. This codec alone cannot justify a 100% score gain."
+  },
+  "kill_criteria": [
+    "Any numerical, flags, resource coverage, activation or fixed performance failure closes the attempt",
+    "No forced selection, identical retry, gate relaxation or post-result shape rescue"
+  ],
+  "resources": {
+    "official_private_checks_planned": 1,
+    "Modal_allocations_planned": 0,
+    "out_of_pocket_authorized_usd": 0,
+    "automatic_scored_submission": false
+  },
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/parent.py": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/build.py": "e591017915552744c19e30c816401de244531761b6e51f141c045896cf24d25b",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/test_cpu.py": "ad95f61d7a50e13e69bb08d47ee8a2d8ceac3cb07166d223e52d1e257b164aa8",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/edits.json": "f3b7315503f99f9b9038cd09a090d0175b2de35ee36a1d5bdf2084fd75c6c07a",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/manifest.json": "0c91fb9334b0f4482a7101c4bacf1ab947723ab277ad3cb4d75307e04a5317ca",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/cpu_result.json": "98355753444201635fba3d021cc5e497e8c3246705efc54cb92c35c1f14848e7",
+    "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/README.md": "5738b64da80f75f7bef8eeaf9afa08bf64941b3529c6f817fe3aa559d3557bc0",
+    "muse_decode_layer/candidates/decoder_exact_patch_v29/test_cpu.py": "d2232fe8d6ea951b53fec51500784239b6f8799ef32ed6f93c455468d35ab33d",
+    "tools/test_dense_escape_global_cpu.py": "373d021e28dd0c83a4c8167a2192f347be0487a953277bf147250db58d9dd649",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-byte-model.json": "f3a16e2fc8f012fca3261f26fa1044ce6683610b590839466e1ca163807d3a02",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-layout-critic.json": "db982b213a157b162b8dabe7cd50aa8a9a5dfd810157600e995afed36c253972",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-root-cpu.json": "98355753444201635fba3d021cc5e497e8c3246705efc54cb92c35c1f14848e7",
+    "tools/analyze_decoder_v33.py": "c4d210d50c95a127378393846aa056843f45dcb26ba5363b860d1a381d64df96",
+    "tools/test_analyze_decoder_v33.py": "d14d549b97d5eaff6ef1942cfaba3c38a8d8a430cd163589eea2fc1d4b611063",
+    "tools/analyze_decoder_v32.py": "3e47ec4801d5b1d73a35c40b003d76bb8a977d9ea668aea25211197ea121584e",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "experiments/iterations/20261104-decoder-nibble-sidecar-v33-source-critic.json": "4385170f0dfa9edb7808ec42a904f45f7726c8674115cb3e778540b0fd9f2391",
+    "tools/DECODER_NIBBLE_SIDECAR_V33_SOURCE_CRITIC_20261104.md": "88458df73953c958aee02a96a8b6f0073999599ea1603c6f19c0f448a7dad4a6"
+  },
+  "frozen_at": "2026-11-04T23:09:38.326237+00:00"
+}

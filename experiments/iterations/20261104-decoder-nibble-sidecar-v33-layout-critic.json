@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "scope": "Independent V33 layout, raw-bit reconstruction and ring-lifetime source review",
+  "verdict": "NO_SOURCE_LAYOUT_BLOCKER_FOUND",
+  "candidate": {
+    "path": "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/submission.py",
+    "sha256": "a8a619eaa0c531aa115d39fd2db8718d7d52828feac8e6fdea005c4e61a3c090"
+  },
+  "parent": {
+    "path": "muse_decode_layer/candidates/decoder_nibble_sidecar_v33/parent.py",
+    "sha256": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35"
+  },
+  "builder_sha256": "e591017915552744c19e30c816401de244531761b6e51f141c045896cf24d25b",
+  "edits_sha256": "f3b7315503f99f9b9038cd09a090d0175b2de35ee36a1d5bdf2084fd75c6c07a",
+  "checks": {
+    "reverse_all_10_edits_restores_parent_bytes": true,
+    "raw_helper": {
+      "actual_source_extracted": true,
+      "native_cpu_compiler": "clang++ -std=c++17 -O2",
+      "shims": [
+        "uint4 aggregate",
+        "make_uint4",
+        "PRMT byte-selector semantics"
+      ],
+      "all_65536_bf16_bits_at_each_of_8_positions": true,
+      "calls": 524288,
+      "compared_output_values": 4194304,
+      "gpu_execution": false
+    },
+    "stream_map": {
+      "method": "Independent affine enumeration of exact host/device coordinate expressions, not execution of Torch gather",
+      "packing_configs": 11,
+      "unit_pairs": 479232,
+      "exact_once_coverage": true,
+      "header_tail_bytes": [
+        64,
+        96,
+        128
+      ],
+      "all_tail_primary_and_stage_pitch_16B_aligned": true,
+      "header_padding_required": false
+    },
+    "raw_address": "ptab + 256 * index + 8 * lane, size_t promotion before multiplication; each warp requests one256B sidecar unit",
+    "slot_lifetime": "Primary LDS, descriptor LDS and activation LDS precede inherited handback; subsequent sidecar access uses immutable global weights. UPW>1 releases after all unit iterations as before.",
+    "unchanged_geometry": "WPAY/WBY/SST, producer copy bytes and transaction expectations, release counts and MMA order unchanged versus V32.",
+    "fallback": "Whole-matrix packed-byte comparison declines compression at772*units+256*raw_count >=1024*units; header alignment introduces no omitted padding for the current configurations. Raw descriptor bit31/index31 is masked before pointer arithmetic; no-raw sentinel sidecar is never read."
+  },
+  "limitations": [
+    "CPU PRMT shim is not GPU compiler/ISA validation.",
+    "Affine map proof does not execute CUDA TMA or memory-order semantics.",
+    "Declared arrays do not establish ptxas registers, local memory or occupancy.",
+    "Sidecar instructions can increase substantially versus V32 singleton repair even when logical bytes increase only modestly. No speed forecast or hardware transaction count is claimed.",
+    "First observed resource markers and generic source eligibility do not establish selected profile activation."
+  ]
+}

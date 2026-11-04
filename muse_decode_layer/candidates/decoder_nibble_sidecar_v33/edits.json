@@ -1,0 +1,52 @@
+[
+  {
+    "old": "def bfp_sk2_compress(w):\n    \"\"\"V29: parent 12-bit primary plus exact single-bit-pattern repair or raw unit.\n\n    Descriptor: top two bits 00=none, 01=single(position9,bits16), 10=raw index30.\n    No distribution assumption: every overflow unit retains all 1024 original bytes.\n    Entire matrices whose requested bytes exceed raw BF16 use existing other backends.\n    \"\"\"\n    n, k = w.shape\n    tu = bfp_sk2_tileunits(w)\n    bits = tu.contiguous().view(torch.int16).to(torch.int32) & 0xFFFF\n    hi, low = bits >> 8, bits & 0xFF\n    e71, sign = hi & 0x7F, hi >> 7\n    hist = torch.bincount(e71.flatten(), minlength=128)\n    win = torch.stack([hist[b:b + 8].sum() for b in range(121)])\n    base = int(win.argmax())\n    off = (e71 - base).clamp(0, 7)\n    code = (sign << 3) | off\n    esc = ((e71 < base) | (e71 > base + 7)).reshape(n // 8, k // 64, 512)\n    counts = esc.sum(-1)\n    raw_mask, single = counts >= 2, counts == 1\n    raw_count, single_count = int(raw_mask.sum()), int(single.sum())\n    units = (n // 8) * (k // 64)\n    if units * 772 + raw_count * 1024 >= units * 1024:\n        return None\n    T, U = n // 8, k // 64\n    c8 = code.to(torch.uint8)\n    codes = torch.cat([c8[..., 0:4] | (c8[..., 4:8] << 4),\n                       c8[..., 8:12] | (c8[..., 12:16] << 4)], dim=-1)\n    packed = torch.cat([low.to(torch.uint8).reshape(T, U, 512),\n                        codes.reshape(T, U, 256)], dim=-1).contiguous()\n    position = esc.to(torch.int32).argmax(-1)\n    original = bits.reshape(T, U, 512).gather(-1, position.unsqueeze(-1)).squeeze(-1)\n    desc = torch.zeros((T, U), dtype=torch.int64, device=w.device)\n    desc[single] = (1 << 30) | (position[single].long() << 16) | original[single].long()\n    raw_index = torch.arange(raw_count, dtype=torch.int64, device=w.device)\n    desc[raw_mask] = (2 << 30) | raw_index\n    raw = bits.reshape(T, U, 512)[raw_mask].to(torch.int16).contiguous().view(torch.uint8).reshape(raw_count, 1024)\n    if raw_count == 0:\n        raw = torch.zeros((1, 1024), dtype=torch.uint8, device=w.device)\n    return {\"packed\": packed, \"base4\": base * 0x01010101,\n            \"descriptors\": desc.to(torch.int32).contiguous(), \"raw\": raw,\n            \"stats\": (units, single_count, raw_count, units * 772 + raw_count * 1024)}",
+    "new": "def bfp_sk2_compress(w):\n    \"\"\"V33: original matrix window; escaped units retain only missing high nibbles.\n\n    Every primary unit is768B: low8 bits plus four code bits/weight. Normal\n    units use parent sign/window codes. Raw-mode codes are literal high-byte\n    low nibbles; a256B sidecar supplies high nibbles, including sign. Header0\n    means normal; bit31 plus index31 selects the exact raw completion unit.\n    \"\"\"\n    n, k = w.shape\n    tu = bfp_sk2_tileunits(w)\n    bits = tu.contiguous().view(torch.int16).to(torch.int32) & 0xFFFF\n    hi, low = bits >> 8, bits & 0xFF\n    e71, sign = hi & 0x7F, hi >> 7\n    hist = torch.bincount(e71.flatten(), minlength=128)\n    win = torch.stack([hist[b:b + 8].sum() for b in range(121)])\n    base = int(win.argmax())\n    off = (e71 - base).clamp(0, 7)\n    code = (sign << 3) | off\n    T, U = n // 8, k // 64\n    esc = ((e71 < base) | (e71 > base + 7)).reshape(T, U, 512)\n    raw_mask = esc.sum(-1) > 0\n    raw_count = int(raw_mask.sum())\n    units = T * U\n    if units * 772 + raw_count * 256 >= units * 1024:\n        return None\n    assert raw_count < (1 << 31)\n    code[raw_mask] = (hi & 15)[raw_mask]\n    c8 = code.to(torch.uint8)\n    codes = torch.cat([c8[..., 0:4] | (c8[..., 4:8] << 4),\n                       c8[..., 8:12] | (c8[..., 12:16] << 4)], dim=-1)\n    packed = torch.cat([low.to(torch.uint8).reshape(T, U, 512),\n                        codes.reshape(T, U, 256)], dim=-1).contiguous()\n    h8 = (hi >> 4)[raw_mask].to(torch.uint8)\n    raw = torch.cat([h8[..., 0:4] | (h8[..., 4:8] << 4),\n                     h8[..., 8:12] | (h8[..., 12:16] << 4)], dim=-1).reshape(raw_count, 256).contiguous()\n    if raw_count == 0:\n        raw = torch.zeros((1, 256), dtype=torch.uint8, device=w.device)\n    desc = torch.zeros((T, U), dtype=torch.int64, device=w.device)\n    desc[raw_mask] = (1 << 31) | torch.arange(raw_count, dtype=torch.int64, device=w.device)\n    return {\"packed\": packed, \"base4\": base * 0x01010101,\n            \"descriptors\": desc.to(torch.int32).contiguous(), \"raw\": raw,\n            \"stats\": (units, units - raw_count, raw_count, units * 772 + raw_count * 256)}",
+    "count": 1
+  },
+  {
+    "old": "template <unsigned WORD>\n__device__ __forceinline__ uint32_t sk2_patch_word_v32(uint32_t old, uint32_t d, int lane) {\n  static_assert(WORD < 8, \"BF16x2 word index\");\n  const unsigned v = (d >> 16) & 15u;\n  if ((d >> 30) == 1u && lane == (int)((d >> 20) & 31u) && (v >> 1) == WORD) {\n    const unsigned shift = (v & 1u) * 16u;\n    const uint32_t mask = 0xffffu << shift;\n    return (old & ~mask) | ((d & 0xffffu) << shift);\n  }\n  return old;\n}\n\ntemplate <unsigned HALF>\n__device__ __forceinline__ uint4 sk2_decode_patch_v32(uint32_t lw0, uint32_t lw1, uint32_t nw,\n                                                    uint32_t base4, uint32_t d, int lane) {\n  static_assert(HALF < 2, \"eight-weight half\");\n  const uint4 q = sk2_decode_value_v32(lw0, lw1, nw, base4);\n  return make_uint4(sk2_patch_word_v32<4 * HALF + 0>(q.x, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 1>(q.y, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 2>(q.z, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 3>(q.w, d, lane));\n}\n\n",
+    "new": "// V33 raw completion: identical nibble order in primary and missing-bit planes.\n__device__ __forceinline__ uint4 sk2_decode_raw_v33(uint32_t lw0, uint32_t lw1, uint32_t nw, uint32_t hw) {\n  const uint32_t ha = (nw & 0x0f0f0f0fu) | ((hw & 0x0f0f0f0fu) << 4);\n  const uint32_t hb = ((nw >> 4) & 0x0f0f0f0fu) | (hw & 0xf0f0f0f0u);\n  return make_uint4(prmt(lw0, ha, 0x5140), prmt(lw0, ha, 0x7362),\n                    prmt(lw1, hb, 0x5140), prmt(lw1, hb, 0x7362));\n}\n\n",
+    "count": 1
+  },
+  {
+    "old": "        if constexpr (COMP) {\n          const uint32_t ha = s0 + XBY + WPAY + ((warp * UPW + uu) * NT + nt) * 4;\n          asm volatile(\"ld.shared.u32 %0, [%1];\" : \"=r\"(repair[nt]) : \"r\"(ha));\n          if ((repair[nt] >> 30) == 2u) {\n            const uint4* rp = reinterpret_cast<const uint4*>(ptab) +\n                (size_t)(repair[nt] & 0x3fffffffu) * 64 + lane * 2;\n            const uint4 r0 = __ldg(rp), r1 = __ldg(rp + 1);\n            bv0[nt] = r0; bv1[nt] = r1;\n          } else {\n            asm volatile(\"ld.shared.v4.u32 {%0,%1,%2,%3}, [%4];\" : \"=r\"(lw[nt].x), \"=r\"(lw[nt].y), \"=r\"(lw[nt].z), \"=r\"(lw[nt].w) : \"r\"(wb + nt * TU + lane * 16));\n            asm volatile(\"ld.shared.v2.u32 {%0,%1}, [%2];\" : \"=r\"(cw[nt].x), \"=r\"(cw[nt].y) : \"r\"(wb + nt * TU + 512 + lane * 8));\n          }",
+    "new": "        if constexpr (COMP) {\n          // Primary payload has no dependency on the header: issue it unconditionally.\n          asm volatile(\"ld.shared.v4.u32 {%0,%1,%2,%3}, [%4];\" : \"=r\"(lw[nt].x), \"=r\"(lw[nt].y), \"=r\"(lw[nt].z), \"=r\"(lw[nt].w) : \"r\"(wb + nt * TU + lane * 16));\n          asm volatile(\"ld.shared.v2.u32 {%0,%1}, [%2];\" : \"=r\"(cw[nt].x), \"=r\"(cw[nt].y) : \"r\"(wb + nt * TU + 512 + lane * 8));\n          const uint32_t ha = s0 + XBY + WPAY + ((warp * UPW + uu) * NT + nt) * 4;\n          asm volatile(\"ld.shared.u32 %0, [%1];\" : \"=r\"(repair[nt]) : \"r\"(ha));",
+    "count": 1
+  },
+  {
+    "old": "          if ((repair[nt] >> 30) != 2u) {\n            bv0[nt] = sk2_decode_patch_v32<0>(lw[nt].x, lw[nt].y, cw[nt].x, base4, repair[nt], lane);\n            bv1[nt] = sk2_decode_patch_v32<1>(lw[nt].z, lw[nt].w, cw[nt].y, base4, repair[nt], lane);\n          }",
+    "new": "          if (repair[nt] & 0x80000000u) {\n            const uint2* hp = reinterpret_cast<const uint2*>(ptab) +\n                (size_t)(repair[nt] & 0x7fffffffu) * 32 + lane;\n            const uint2 h = __ldg(hp);\n            bv0[nt] = sk2_decode_raw_v33(lw[nt].x, lw[nt].y, cw[nt].x, h.x);\n            bv1[nt] = sk2_decode_raw_v33(lw[nt].z, lw[nt].w, cw[nt].y, h.y);\n          } else {\n            bv0[nt] = sk2_decode_value_v32(lw[nt].x, lw[nt].y, cw[nt].x, base4);\n            bv1[nt] = sk2_decode_value_v32(lw[nt].z, lw[nt].w, cw[nt].y, base4);\n          }",
+    "count": 1
+  },
+  {
+    "old": "\"\"\"V29 ABI: ptab retains the immutable BF16 sidecar; no shared correction table.\"\"\"",
+    "new": "\"\"\"V33 ABI: ptab retains immutable missing-high-nibble units; no shared correction table.\"\"\"",
+    "count": 1
+  },
+  {
+    "old": "print(\"SK2_PATCH_V29\", layer, \"units,single,raw,requested_bytes\", comp[\"stats\"], flush=True)",
+    "new": "print(\"SK2_NIBBLE_V33\", layer, \"units,normal,raw,requested_bytes\", comp[\"stats\"], flush=True)",
+    "count": 1
+  },
+  {
+    "old": "sk2_exact_patch_v32",
+    "new": "sk2_nibble_sidecar_v33",
+    "count": 2
+  },
+  {
+    "old": "dl_okc_bf16proj_scalarpatch_v32_",
+    "new": "dl_okc_bf16proj_nibblesidecar_v33_",
+    "count": 1
+  },
+  {
+    "old": "V32P",
+    "new": "V33P",
+    "count": 2
+  },
+  {
+    "old": "V32R",
+    "new": "V33R",
+    "count": 3
+  }
+]
