@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:20 UTC after V29 closed and V30 was accepted.
+Updated November 4, 2026 at 22:26 UTC after V29 and V30 closed.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -28,22 +28,21 @@ Source bbbc37f8 and all raw evidence/critics are preserved. New V31 will expose
 those existing decisions without changing math, geometry, thresholds or selection;
 it is a single diagnostic-only experiment, never scored or a noise retry.
 
-**V30 accepted as official check `d0510bc0412a4537`; inspect it, never duplicate.**
-Exact source ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4
-in `muse_moe_w4a16/candidates/moe_arch_v30/`. Complete-K tiles replace MAIN
-Stream-K with cold/hot geometry and six ordered launches. Author/root/critic
-CPU reports match eb785e69; all10 analyzer fixtures pass. Fixed gate: affected
-three-load GM>=1.04, whole>=1.02 against both247888 parents, all case latency<=1.03,
-controlsGM [.97,1.03], full coverage/cleanflags, six active kernels and observed
-cold>=2/hot>=1 block capacity. A useful component still needs a decoder port/check.
-Plan and sources committed dd4b6bc. Plan explicitly records an ordering mistake:
-missing optional README made root plan/commit commands fail, but orchestration
-continued to upload reviewed source; plan was written immediately after acceptance,
-before result observation. Source/gates/reviews were fixed beforehand and unchanged.
+**V30 closed; no retry, port or promotion.** Official `d0510bc0412a4537`
+passed1setup/5tests/6benchmarks/6profiles with clean flags. Score2.0335370900,
+CI[2.0030340336,2.0640401463], against public2.3736910444. Whole ratios
+.856698/.850911; affected speed GM .730721/.724071 against exact public/private.
+M32/128/256 normalized latency public1.41853/1.34930/1.33905; controls stable.
+All six phases activate; actual cold kernels64regs/local0/capacity2 and hot
+96regs/capacity1 (hotA8B local, hotB0). Route+final only4.4..5.1% of profiletime;
+no single causal blame for the loss is established. Source ac03c2ca and all
+raw receipt/profile/log evidence, root results and independent critic retained.
+Plan timing exception remains explicit: plan/commit followed upload by27seconds,
+while source/gates/review were fixed beforehand and terminal result arrived later.
 
 Root owns all GPU calls. `moe_research_reset` builds V31 eligibility diagnostics;
 `attention_paper_reset` independently reviews that delta. `result_and_strategy_critic`
-reviews V30 terminal evidence. No Modal allocation; serving work stays backlog.
+completed V30 terminal review and is available for the V31 result. No Modal allocation; serving work stays backlog.
 
 
 **V28 closed; no score or retry.** Exact decoder source

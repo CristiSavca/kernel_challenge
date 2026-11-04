@@ -1,0 +1,62 @@
+okc run d0510bc0412a4537 on muse_moe_w4a16
+submission  /Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/candidates/muse_moe_w4a16/ac03c2cab756b1ed9dee884c3104a345661c64ec7da6af1894d9ee244c94e0f4.py
+status      ok
+passed      true
+speedup     2.033537089976134
+speedup_ci  [2.003034033626492 2.064040146325776]
+score_us    6613.353681273566
+tests       5/5 passed
+
+scored shapes (µs; speed of light is the reference's bound)
+case                                                         sglang      yours  speedup        sol  
+bs=1 load=decode 1 sharding=ep8                               77.12      24.87   3.100x      11.42  
+bs=16 load=decode 16 sharding=ep8                            187.65      93.74   2.002x      52.52  
+bs=32 load=decode 32 sharding=ep8                            210.13     177.83   1.182x      70.76  
+bs=8 load=verify 1 sharding=ep8                              150.93      68.56   2.201x      37.32  
+bs=128 load=verify 16 sharding=ep8                           467.22     236.96   1.972x     101.34  
+bs=256 load=verify 32 sharding=ep8                           630.00     283.55   2.222x     108.94  
+
+profile 0: bs=1 load=decode 1 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::moe_fused<false>(okc::Params)                           23.3 µs 100.0%      1
+total                                                             23.3 µs
+
+profile 1: bs=16 load=decode 16 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::moe_fused<false>(okc::Params)                          119.9 µs 100.0%      1
+total                                                            119.9 µs
+
+profile 2: bs=32 load=decode 32 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::v30_tiles<false, true>(okc::Params, okc::Smem c...      72.0 µs  41.9%      1
+void okc::v30_tiles<true, true>(okc::Params, okc::Smem co...      41.8 µs  24.3%      1
+void okc::v30_tiles<false, false>(okc::Params, okc::Smem ...      26.3 µs  15.3%      1
+void okc::v30_tiles<true, false>(okc::Params, okc::Smem c...      24.1 µs  14.0%      1
+okc::v30_route_gather(okc::Params, okc::Smem*)                     4.0 µs   2.3%      1
+okc::v30_final(okc::Params, okc::Smem const*)                      3.6 µs   2.1%      1
+total                                                            171.8 µs
+
+profile 3: bs=8 load=verify 1 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::moe_fused<false>(okc::Params)                           42.8 µs 100.0%      1
+total                                                             42.8 µs
+
+profile 4: bs=128 load=verify 16 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::v30_tiles<false, true>(okc::Params, okc::Smem c...      62.5 µs  31.4%      1
+void okc::v30_tiles<false, false>(okc::Params, okc::Smem ...      51.0 µs  25.6%      1
+void okc::v30_tiles<true, true>(okc::Params, okc::Smem co...      41.6 µs  20.9%      1
+void okc::v30_tiles<true, false>(okc::Params, okc::Smem c...      33.8 µs  17.0%      1
+okc::v30_route_gather(okc::Params, okc::Smem*)                     5.8 µs   2.9%      1
+okc::v30_final(okc::Params, okc::Smem const*)                      4.3 µs   2.2%      1
+total                                                            199.0 µs
+
+profile 5: bs=256 load=verify 32 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::v30_tiles<false, true>(okc::Params, okc::Smem c...      84.1 µs  29.6%      1
+void okc::v30_tiles<false, false>(okc::Params, okc::Smem ...      84.1 µs  29.6%      1
+void okc::v30_tiles<true, false>(okc::Params, okc::Smem c...      60.7 µs  21.4%      1
+void okc::v30_tiles<true, true>(okc::Params, okc::Smem co...      41.6 µs  14.7%      1
+okc::v30_route_gather(okc::Params, okc::Smem*)                     7.6 µs   2.7%      1
+okc::v30_final(okc::Params, okc::Smem const*)                      5.8 µs   2.0%      1
+total                                                            283.8 µs

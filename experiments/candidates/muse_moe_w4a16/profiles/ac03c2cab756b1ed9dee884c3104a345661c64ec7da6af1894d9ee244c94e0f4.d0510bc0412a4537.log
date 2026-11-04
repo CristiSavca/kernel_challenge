@@ -1,0 +1,80 @@
+[1/3] ccache c++ -MMD -MF main.o.d -DTORCH_EXTENSION_NAME=okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -fPIC -std=c++20 -c /tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/main.cpp -o main.o 
+[2/3] ccache /usr/local/cuda/bin/nvcc -MD -MF cuda.cuda.o.d -DTORCH_EXTENSION_NAME=okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options '-fPIC' -O3 --use_fast_math -Xptxas -v,-O3 -gencode=arch=compute_90a,code=sm_90a -lineinfo -DOKC_NS=3 -DOKC_FNST=4 -DOKC_NSF=3 -DOKC_NW=16 -DOKC_FAST1=0 -DOKC_EPI4=0 -DOKC_WGS=1 -DOKC_V30=1 -DOKC_PRMTSC=1 -DOKC_MULDEC=1 -DOKC_DQ7=1 -std=c++20 -c /tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu -o cuda.cuda.o 
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(3597): warning #177-D: variable "g" was declared but never referenced
+    const int wg = warp >> 2, wp = warp & 3, g = lane >> 2, wt = tid & 127;
+                                             ^
+          detected during instantiation of "void okc::v30_tiles<PB,COLD>(okc::Params, const okc::Smem *) [with PB=false, COLD=true]" at line 3890
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(3597): warning #177-D: variable "wt" was declared but never referenced
+    const int wg = warp >> 2, wp = warp & 3, g = lane >> 2, wt = tid & 127;
+                                                            ^
+          detected during instantiation of "void okc::v30_tiles<PB,COLD>(okc::Params, const okc::Smem *) [with PB=false, COLD=true]" at line 3890
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(3839): warning #177-D: function "okc_smem_bytes" was declared but never referenced
+  static size_t okc_smem_bytes() {
+                ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(240): warning #177-D: variable "okc::NRB" was declared but never referenced
+  constexpr int NRB = 0 ? 4 : 2;
+                ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(260): warning #177-D: variable "okc::UB_A" was declared but never referenced
+  constexpr int UB_A = RB_A / 16, UB_B = RB_B / 16;
+                ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(260): warning #177-D: variable "okc::UB_B" was declared but never referenced
+  constexpr int UB_A = RB_A / 16, UB_B = RB_B / 16;
+                                  ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(263): warning #177-D: variable "okc::BFLAG" was declared but never referenced
+  constexpr int BFLAG = 1 << 30;
+                ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(269): warning #177-D: variable "okc::XP_SK" was declared but never referenced
+  constexpr int XP_SK = HD + 8;
+                ^
+
+/tmp/muse_moe_w4a16-mzue8dm3/sandbox/cache/torch_extensions/okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a/cuda.cu(272): warning #177-D: variable "okc::NST" was declared but never referenced
+  constexpr int NST = 3;
+                ^
+
+ptxas info    : 28 bytes gmem
+ptxas info    : Compiling entry function '_ZN3okc9v30_tilesILb1ELb0EEEvNS_6ParamsEPKNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc9v30_tilesILb1ELb0EEEvNS_6ParamsEPKNS_4SmemE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 1 barriers
+ptxas info    : Compile time = 629.726 ms
+ptxas info    : Compiling entry function '_ZN3okc9v30_tilesILb1ELb1EEEvNS_6ParamsEPKNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc9v30_tilesILb1ELb1EEEvNS_6ParamsEPKNS_4SmemE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers
+ptxas info    : Compile time = 39.022 ms
+ptxas info    : Compiling entry function '_ZN3okc9v30_tilesILb0ELb0EEEvNS_6ParamsEPKNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc9v30_tilesILb0ELb0EEEvNS_6ParamsEPKNS_4SmemE
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Used 96 registers, used 1 barriers, 8 bytes cumulative stack size
+ptxas info    : Compile time = 614.037 ms
+ptxas info    : Compiling entry function '_ZN3okc9v30_tilesILb0ELb1EEEvNS_6ParamsEPKNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc9v30_tilesILb0ELb1EEEvNS_6ParamsEPKNS_4SmemE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers
+ptxas info    : Compile time = 38.540 ms
+ptxas info    : Compiling entry function '_ZN3okc9v30_finalENS_6ParamsEPKNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc9v30_finalENS_6ParamsEPKNS_4SmemE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 99 registers, used 2 barriers
+ptxas info    : Compile time = 19.334 ms
+ptxas info    : Compiling entry function '_ZN3okc16v30_route_gatherENS_6ParamsEPNS_4SmemE' for 'sm_90a'
+ptxas info    : Function properties for _ZN3okc16v30_route_gatherENS_6ParamsEPNS_4SmemE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 2 barriers
+ptxas info    : Compile time = 60.724 ms
+[3/3] ccache c++ main.o cuda.cuda.o -shared -L/opt/sglang/lib/python3.12/site-packages/torch/lib -lc10 -lc10_cuda -ltorch_cpu -ltorch_cuda -ltorch -ltorch_python -L/usr/local/cuda/lib64 -lcudart -o okc_moe_wholek_v30_7a8cea46349d7eb3_sm90a.so
+V30R name=route nt=512 dyn=22272 regs=80 local=0 static=0 maxdyn=22272 occ=1 min=1 api=0,0,0
+V30R name=coldA nt=320 dyn=89856 regs=64 local=0 static=0 maxdyn=89856 occ=2 min=2 api=0,0,0
+V30R name=hotA nt=576 dyn=231168 regs=96 local=8 static=0 maxdyn=231168 occ=1 min=1 api=0,0,0
+V30R name=coldB nt=320 dyn=89856 regs=64 local=0 static=0 maxdyn=89856 occ=2 min=2 api=0,0,0
+V30R name=hotB nt=576 dyn=231168 regs=96 local=0 static=0 maxdyn=231168 occ=1 min=1 api=0,0,0
+V30R name=final nt=512 dyn=23296 regs=99 local=0 static=0 maxdyn=23296 occ=1 min=1 api=0,0,0
