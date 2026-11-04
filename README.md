@@ -1,14 +1,14 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 18:44 UTC (board), with subsequent validation below.
+Status updated November 4, 2026, 19:06 UTC (board), with subsequent validation below.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
 ## Latest measured state
 
-CristiSavca is 403rd overall. Public scores are dense projections 1.4868×,
+CristiSavca is 404th overall. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
@@ -23,21 +23,27 @@ failed the generic H511 cancellation case; the first runner lost its detailed
 checkpoint after application teardown. The repaired runner recovered a second
 run: our candidate equals the independent FP32 oracle exactly on that case,
 while stock differs by at most 2.3842e-7. The strict relative check still fails;
-15 later cases and generic stream/graph coverage remain untested. A completed
-stage diagnostic reproduced all three helper outputs bitwise. It localized
+the later coverage run passed all 15 remaining cases, eight stream calls and
+eight fresh graph replays. Across the two runs, 89 of 90 numerical cases pass;
+the cancellation failure remains explicit. A completed stage diagnostic
+reproduced all three helper outputs bitwise. It localized
 the residual to unequal original means/inverses on identical opposing-route
 squares. Keeping logical H511 while changing physical row layout removed that
 inequality. This supports reduction-layout dependence; it does not establish
 general correctness or clear the component for serving promotion. No public
 kernel score/source was replaced. See
 [the failure evidence](tools/SERVING_FINALIZER_VALIDATION_FAILURE_20261104.md)
-and [independent stage review](tools/SERVING_FINALIZER_STAGE_RESULT_CRITIC_20261104.md).
+and [coverage evidence](experiments/iterations/20261104-finalizer-coverage-root-result.json).
 
 Fresh arXiv, X/release, DeepSeek, Hugging Face and CUTLASS research is linked in
 [the active handoff](tools/RESEARCH_LOOP.md). Current official receipts and
 research retain exact sources, licenses, evaluator identity and measured limits.
-The next serving experiment should complete the outstanding coverage while
-retaining the known failed case and every threshold. Separately, exact-one
+The next serving experiment targets the router's separate expert-ID mapping
+launch: preserve global IDs and FP32 scores while optionally emitting the local
+IDs Marlin needs. This is a source-supported hypothesis, not an implemented or
+measured gain; see [the scout](tools/SERVING_NEXT_OP_SCOUT_20261104.md).
+Unchanged-finalizer diagnostics are closed; full serving compatibility remains
+unverified. Separately, exact-one
 attention rescale candidate V23 passed official private correctness check
 `0193a093baa446f3` but failed its fixed speed gate: 2.5911× versus the public
 parent's 2.6120× and private parent's 2.6425×. It is closed without a scored

@@ -20,60 +20,76 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-Latest terminal results, November4 after18:52UTC: attention V23 job
-`0193a093baa446f3`, exact c6b90f16, passed16 correctness tests/12benchmarks/
-12profiles with clean checks. Its score2.59112783 fails the fixed improvement
-gate versus public2.61197011 and private2.64253889. The affected-five speed
-GM ratios are0.98374659/0.97139198; zero cases improve against both parents.
-Control latency GMs1.00755123/1.00161346 stay within the fixed band. Close this
-attempt without retry, policy sweep, Q8 extension, decoder port or scored
-promotion. Root and independent result audits agree; the offline analyzer
-reproduces the exact fixed gate and eight focused analyzer tests pass.
-See `20261104-attention-exact-rescale-root-result.json` and
-`ATTENTION_EXACT_RESCALE_V23_RESULT_CRITIC_20261104.md`. Active attention87a9,
-MoE247888 and decoder97af remain unchanged.
+Latest terminal result, November 4 at 19:13 UTC: bounded serving-finalizer
+coverage run `20261104T191321Z-25f35b45` completed on one H200. All 15 remaining
+numerical cases passed, followed by eight calls on two streams and eight fresh
+replays across two independent graphs. Input byte checks and output/input
+storage checks passed on all 15 cases; graph scratch/output ranges are disjoint,
+and replaying graph B preserves graph A's retained output. Actual simultaneous
+hardware execution overlap was not measured. Worker time was 5.9149 seconds,
+not a kernel timing result. Frozen worker c18de827, runner b289c8ed, helper
+91e6173b, original 9b816e97 and reference c94c3134 are retained in the run.
 
-Serving stage diagnostic `20261104T185116Z-a8743472` completed, exit0 with
-verified sandbox termination and stopped app. Exact helper91e6173b, original
-9b816e97, reference c94c3134, stage worker368af79c and runner690d4a46 are frozen.
-Root and critic independently decoded144 scalar values and verified all three
-bitwise recompositions. Original token2 variance/inverse each differ by1ULP
-between identical opposing-route squares; same logical H511 squares with
-physical pitch512 or separate aligned rows remove that difference. Original
-normalization already contains381 residual values (max_abs2.3841858e-7)
-before final route sum. Candidate/oracle final outputs are verified zero, but
-their token0 inverses differ by1ULP. This supports reduction-layout dependence,
-not a specific SASS cause or universal aligned-domain guarantee. Generic
-validation remains FAILED:74 earlier passing cases, one retained failure,
-15 later cases plus stream/graph checks still unexecuted. No helper/threshold
-change or serving promotion. Root evidence:
-`20261104-finalizer-stage-root-result.json`; independent critic:
-`20261104-finalizer-stage-result-critic.json`.
+Root independently checked all 93 new comparisons and the exact union of the
+prior 75 and new 15 descriptors. Combined numerical coverage is 89 passing cases
+and one retained failure, `finite_cancellation`. The two runs share the same
+recorded software/device environment. All 45 comparisons from the remaining
+cases have zero finite error and matching exceptional classifications. Stream
+maxima are whole relative L2 5.1672e-7 / worst row 4.4969e-6; graph maxima are
+4.5616e-6 / 1.9601e-5, below the unchanged .015 / .075 thresholds. This does not
+prove NaN payload equality, universal correctness or full-model compatibility.
+`coverage_complete` is not generic PASS: `generic_validation_status` remains
+`failed_at_finite_cancellation`. Root result:
+`20261104-finalizer-coverage-root-result.json`; independent result review:
+`SERVING_FINALIZER_COVERAGE_RESULT_CRITIC_20261104.md`.
 
-Next concrete serving experiment: separately review a coverage-only protocol
-for the remaining15 cases, two streams and repeated fresh-input graphs using
-unchanged helpers. Retain the known failure explicitly and do not report generic
-PASS. Do not repeat the same cancellation diagnostic or force production to
-reproduce its stock rounding artifact. Full eight-H200 serving validation is
-still required when that track opens November10 at17:00UTC.
+The prior stage diagnostic `20261104T185116Z-a8743472` explained the retained
+case: identical opposing-route squares produce original means/inverses differing
+by one ULP; same logical H511 data with different physical row layout removes
+the inequality. The residual exists before final summation. Candidate/oracle
+outputs are zero but their token0 inverses differ. Keep the explanation, strict
+failure and earlier official component speed result separate. No helper,
+threshold, public incumbent or serving patch was promoted. Stop additional
+unchanged-helper diagnostic sweeps. The official eight-H200 serving check when
+available must still establish output agreement, TTFT and required concurrency.
 
-The stage run retains its full $1.14 reservation; both prior validation runs
-retain their full $1.78 each. All15 journal records total29.82; original14-row
-byte prefix is preserved. Fresh post-stage billing is display4.18/component
-4.18466342, billed0; all visible apps are stopped with zero tasks. Preserve this
-new high-water receipt `experiments/modal/20261104T185116Z-a8743472/billing-after.json`
-(SHA5707549e). The runner saved-floor binding is raised to it; the guard,
-grant, financial formula and both immutable corrections remain unchanged.
-Conservative working allowance is4.24533658 with $5 additional headroom. This
-is a dated estimate; all fresh identity/attribution/lock checks apply before a
-new allocation. No GPU or official job remains live after these terminal runs.
+Next concrete optimization: the optional dual global/local expert-ID output
+specified in `SERVING_NEXT_OP_SCOUT_20261104.md`. The selected Marlin path ignores
+TRT packed IDs and separately indexes the expert map; its captured index row is
+1.8–3.3us, only 0.5–3.2% of that MoE component. There is no full-model speed bound.
+Preserve global IDs, FP32 scores, global capture, SP fallback, padding, backend
+selection and stream ownership. Native decoder97af already combines mapping,
+so this targets serving only. Implement an isolated patch from pinned a55ab7
+sources, preserving the existing finalizer and alignment edits; do not bundle
+them. Root must fix a pre-result net router-plus-map timing gate and obtain an
+independent source/harness review before the single-GPU component experiment.
+No source implementation or GPU run for this next idea has started.
 
-Latest board18:44UTC: overall/decoder403, MoE305; own scores unchanged.
-Decoder2.1812 versus leader2.5762 still needs about15.33% less latency. Bounded
-public GitHub scouting found no new compatible large rewrite in the inspected
-latest20 leader repositories; this is not a claim that no implementation exists.
-Lean source-bound integer fragment proof is committed in bff9cd8 and remains
-independently approved. The #1 goal remains active and unachieved.
+The coverage sandbox is terminated and its provider app stopped with zero tasks.
+CLI final-log collection timed out only after worker completion; exit0, complete
+result, termination and fresh provider state are confirmed. Do not restart it.
+Its full $1.14 reservation remains; all 16 journal rows total $30.96, with the
+original 15-row byte prefix preserved. Post-run billing is display $4.21,
+component $4.21235928, billed $0. Conservative working allowance is $3.07764072,
+with a separate $5 headroom. Save this higher observation even if a later display
+falls: `experiments/modal/20261104T191321Z-25f35b45/billing-after.json`, SHA4626955e.
+The existing saved-floor function binds that receipt; its three literal updates
+only raise the debit. Guard, grant, correction certificates and old reservations
+remain unchanged. Any future mode, including the router experiment, must carry
+this high-water observation into the fresh mandatory guard. No live official or
+Modal job remains after this run.
+
+Attention V23 job `0193a093baa446f3` is closed: clean 16/12/12 correctness,
+benchmark/profile records, but score2.59112783 fails both preserved parent
+comparisons. No retry, branch-policy sweep, Q8 extension, decoder port or scored
+promotion. Active attention87a9, MoE247888 and decoder97af remain exact.
+Latest board at 19:06 UTC: overall/decoder404 and MoE307, unchanged own scores.
+Decoder2.1812 versus leader2.5762 still needs about15.33% less latency. Kernel
+cutoff is November5 08:00UTC; serving opens November10 17:00UTC and closes
+November20 08:00UTC. Current checks remaining are attention35/MoE27/decoder29;
+scored attempts18/17/18. These are dated snapshots, not substitutes for fresh
+limits or rules before another allocation/submission. Lean implementation bff9cd8
+remains in place. The #1 goal is active and unachieved.
 
 Latest continuation, November 4 after 18:25 UTC: the user-requested Lean
 methodology is implemented as an independent source-bound MULDEC integer
