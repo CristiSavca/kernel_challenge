@@ -1,0 +1,49 @@
+{
+  "recorded_at": "2026-11-04T11:42:59.485109+00:00",
+  "reviewer": "result_and_strategy_critic",
+  "plan_path": "tools/SK2_R16_IMPLEMENTATION_PLAN.md",
+  "plan_sha256": "704a211aad7f2dd9e09b0a30e43a5cd7dc4c01529a631eeb9312f6149e041562",
+  "decision": "GO_CPU_IMPLEMENTATION_WITH_EXPLICIT_SOURCE_GATES",
+  "authority": "Root already authorized CPU implementation; this review does not authorize GPU, submission or promotion.",
+  "blocking_plan_defects_found": [],
+  "coverage_clarification": {
+    "named_layouts": 7,
+    "named_reachable_resource_cases": 12,
+    "additional_path": "The modified shared pooler config also generates ordinary FUSE=false TOKR16 PK=false and PK=true.",
+    "expected_preflight_resource_case_count": 14,
+    "expected_unique_compiled_pointer_count": 12,
+    "shared_pointer_detail": "B32 pooler and C32 QKV have identical compile-time template values in both PK variants; runtime N and prepared pmax differ, so both resource cases remain necessary.",
+    "uv_identity": "UV mode is a runtime TArgs field, not a distinct compiled template.",
+    "status": "Actual generated draft source independently enumerated; complete frozen source still pending.",
+    "correction": "Initial review incorrectly called all14 resource cases distinct compiled pointers; corrected after actual generated-template enumeration."
+  },
+  "required_source_gates": [
+    "Uniform eight-piece router reduction in every FUSE specialization and both scratch allocation sites; no four-piece counter user.",
+    "Device, host and Python agree on FUSE ring padding using max(WBY,WBYR), with actual transaction sizes unchanged.",
+    "All actual prepared target pmax values and reachable PK pointers preflight outside tuner exception handling; missing prepared target state is not coverage.",
+    "Actual CUDA API success, localSizeBytes=0 and occupancy gates for exact pointers; no register cap or algorithm fallback.",
+    "FUSE32 compatibility capacity1 is allowed only with unambiguous offline proof it was absent from selected timed profiles.",
+    "Unchanged PDL placement, escape stage handbacks, cbar/named barriers, UV lifetimes, compiler options and unrelated device sources.",
+    "Actual-source CPU proofs followed by frozen full diff critique and root rerun before any official check."
+  ],
+  "promotion_gate_review": {
+    "method": "46/16 weighted per-load speedups, six-load geometric aggregate; four affected-load GM and two control-load GM separately.",
+    "minimum_aggregate_speedup_over_each_comparator": 1.02,
+    "maximum_each_affected_case_normalized_latency_ratio": 1.03,
+    "control_load_geometric_latency_ratio_range": [
+      0.97,
+      1.03
+    ],
+    "comparators": [
+      "7a8c4941741645ee",
+      "b2a773e2d7194de8"
+    ],
+    "claims": "Provisional measured improvement only. Report confidence overlap and provenance; no significance or speed forecast."
+  },
+  "limitations": [
+    "This is a plan review, not a review of a completed candidate.",
+    "Actual register allocation, occupancy and speed remain unknown.",
+    "The profile-based potential estimates are scenarios, not upper bounds or forecasts.",
+    "CPU publication-order models cannot prove GPU memory ordering."
+  ]
+}

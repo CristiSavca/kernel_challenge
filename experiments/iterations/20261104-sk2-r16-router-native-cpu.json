@@ -1,0 +1,55 @@
+{
+  "verdict": "PASS",
+  "candidate_sha256": "094ddc92c0840409c139cbd38979c8d5ad45be143b448394b453b4a81e373cd8",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "test_source_sha256": "dbd4005fcbd69ab36232999059a560d13c43487521a369de369dc86d9f19dad3",
+  "native_translation_sha256": "669d49c478a6c8ba23f88ab9386c182a1c9da3116800c6b95cb2502d7c0dd36d",
+  "snippet_sha256": {
+    "geometry": "8af5ca59ec8cdd47bfcab4efa57554a509fd589d5b4b502a229b703d278670c6",
+    "nstr": "93f049af0275aa87df8b0d68d1253fa0a371a449194a55ce61cedef21abd3231",
+    "route": "b8bc660235a282ef3ba1c579a0d37c0b8b6b3e7800f1211edfa61b3a9605f59d",
+    "gsr": "517159333a36e319f71b480ab963cbb10db8b4147d4f61d31e64d250e08df7e0",
+    "wsr": "b58de9aefd2564334dafcf41c327c8ac5ee12d109c2688922980205dbf8d8299",
+    "a0": "9a7bb07aad8f4068f247c190bb5aa41860c543480d84b147def8eb7e08d0e1fc",
+    "producer": "c783c1ba9c5f5beb7ba922564b3b93f5dfd88ec99c9f9b71974198812c6c1137",
+    "scatter": "1f2771617ba8d015ccdc8cd2486e871fe95155789344c3f397e7dbfb861a2932",
+    "writer": "af797414d6fb55f3dd9c651b0d0f53b8169f50297019424f4ee41417376db7fc",
+    "reader": "04a66acf7e79db30c9f84fe0aa5c5f63da0db5bf65d8c042e59c33880f007337",
+    "predicate": "b04ae163c96225c204e97039c6eaa800228edc97fac7142d069637a15b119c6b"
+  },
+  "inherited_mma_source_sha256": "f3c989270e395c225719447c229908bd39e45553bc4840493b92958d63f5e23d",
+  "explicit_reduction_order": "Source-parsed left-associated sums read pieces0..7 in order, separately forordinary/u/v.",
+  "partial_allocation_float_counts": [
+    65536,
+    65536
+  ],
+  "results": {
+    "actual": {
+      "arrival_permutations": 40320,
+      "completed_calls": 41664,
+      "part_stores": 43450368,
+      "part_loads": 3670016,
+      "geometry_cases": 3,
+      "unique_BF16_hi_lo_coordinates_per_geometry": 4194304
+    },
+    "old_four_way_counter": {
+      "caught": true,
+      "message": "premature/four-way last arrival"
+    },
+    "old_partial_writer_stride": {
+      "caught": true,
+      "message": "stale/unpublished partial"
+    },
+    "undersized_old_ring": {
+      "caught": true,
+      "message": "undersized router ring slot"
+    }
+  },
+  "limits": [
+    "CPU publication is sequential and assumes all writes become visible before the modeled release counter; no CUDA release/acquire proof.",
+    "32-bit unsigned wrap models counter bits; this does not execute GPU atomics or test overlapping kernel invocations.",
+    "Actual scatter/writer/reader and addressing snippets execute natively; synthetic accumulator operands are used, not tensor-core MMA emulation.",
+    "All40320 arrival permutations cover canonical M1/TOKR8/tile0. Directed mixed-TOKR/ragged/UV/tile31/wrap tests are separate coverage, not the full Cartesian product.",
+    "Unchanged router MMA source and complete hi/lo packed-address coverage do not establish GPU numerical correctness or performance."
+  ]
+}

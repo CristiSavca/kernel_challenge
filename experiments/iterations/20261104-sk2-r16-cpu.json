@@ -1,0 +1,874 @@
+{
+  "candidate": "muse_decode_layer/candidates/native_sk2_r16_v14.py",
+  "candidate_sha256": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "conformance": {
+    "restored_parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "patch_count": 29,
+    "changed_top_level_nodes": [
+      "_uv_pooler",
+      "bfp_CPP_SRC",
+      "bfp_SK2_CONFIGS",
+      "bfp_SK2_SRC",
+      "bfp__get_ext",
+      "bfp__sk2_geom",
+      "bfp__sk2_src",
+      "bfp_fused_pooler_router",
+      "bfp_prepare",
+      "prepare"
+    ],
+    "added_top_level_nodes": [
+      "bfp_sk2_r16_preflight"
+    ],
+    "unaffected_embedded_sources": {
+      "ATT7_CUDA_SRC": "17ccf33fe224afe1a3470747db337378cd9ec00ed2f7dbf2bd505d7f529ee787",
+      "ATT7_CPP_SRC": "efae8977759cfde781ba25b1f2b75273815d0b2e817596c8c8ed0ce7b9d9a254",
+      "MOE_CUDA_SRC": "127d71a93710b37d6636c398458546cb7980e98b906ee32f6501d38e699623cf",
+      "MOE_CPP_SRC": "0214aeb6bfbce490dce0936ae55f2fe5f8dab38a8088655701bf5f01cf0aff75",
+      "bfp_CUDA_SRC": "00868fa7c842e582065d2ff6a202e7e844e67dac7ace9e5c5c1f9f4bab269de4",
+      "bfp_TMA_SRC": "cf895b113b1c154d9422b14f7faa4881739bb639fd16fc497d8d5e23e741e606",
+      "bfp_MAP_SRC": "688528f3c2e5643eefed561d33470d31c3cfdc8408b8c60f4a2a7b0c238c1825",
+      "bfp_GEMM_SRC": "fe44a932771327ffbd450832fdbfb90c5b4baf1fad96b29e947d5833b2f1d506",
+      "bfp_WIDE_SRC": "86fb642dc96336555ad71f9b88d6ff24ac939c7fc7c24596db9bfc5918761d94",
+      "bfp_GQ_SRC": "72609e539fa5eb0399b4495f92dcfbac6b6212102fa8ac08bfbe769dde944dda",
+      "UB2_CUDA_SRC": "4f3d5c08b5157e511aa2bc4cb91a39f271b0f3a2e197886c45d56414946670cf",
+      "UB2_CPP_SRC": "cd5326c901a5a415c0afbe26c269d6caddbb30165a1b196f21a2d6761e9e70e9"
+    }
+  },
+  "host_admission": {
+    "generated_resource_records": 14,
+    "negative_admission_cases": 11,
+    "log_bytes": 8134,
+    "unique_compiled_pointers": 12,
+    "pointers": [
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        "x": [
+          1,
+          4096,
+          8192,
+          56,
+          384,
+          256,
+          90960
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          1
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        "x": [
+          16,
+          4096,
+          8192,
+          56,
+          384,
+          256,
+          90960
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          1
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          8,
+          2,
+          1,
+          8,
+          1,
+          4,
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          1,
+          0
+        ],
+        "x": [
+          1,
+          4096,
+          8192,
+          56,
+          416,
+          256,
+          104352
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          1,
+          0
+        ],
+        "x": [
+          1,
+          4096,
+          8192,
+          56,
+          384,
+          256,
+          103248
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          8,
+          1,
+          3,
+          1,
+          0,
+          2,
+          1,
+          2,
+          0,
+          1,
+          0
+        ],
+        "x": [
+          16,
+          4096,
+          8192,
+          56,
+          384,
+          256,
+          103248
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          8,
+          1,
+          2,
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          1,
+          0
+        ],
+        "x": [
+          1,
+          4096,
+          8192,
+          56,
+          352,
+          256,
+          104320
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          1
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          8,
+          1,
+          2,
+          1,
+          0,
+          2,
+          1,
+          2,
+          0,
+          1,
+          0
+        ],
+        "x": [
+          32,
+          4096,
+          8192,
+          56,
+          352,
+          256,
+          104320
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          1
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          4,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        "x": [
+          1,
+          4096,
+          8192,
+          56,
+          224,
+          256,
+          96128
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          4,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        "x": [
+          32,
+          4096,
+          8192,
+          56,
+          224,
+          256,
+          96128
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          4,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        "x": [
+          1,
+          2304,
+          8192,
+          88,
+          256,
+          144,
+          91216
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          16,
+          2,
+          1,
+          4,
+          2,
+          3,
+          1,
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        "x": [
+          16,
+          2304,
+          8192,
+          88,
+          256,
+          144,
+          91216
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          4,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        "x": [
+          1,
+          2304,
+          8192,
+          88,
+          224,
+          144,
+          96384
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          2,
+          32,
+          2,
+          1,
+          4,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        "x": [
+          32,
+          2304,
+          8192,
+          88,
+          224,
+          144,
+          96384
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "t": [
+          1,
+          8,
+          2,
+          1,
+          4,
+          2,
+          5,
+          1,
+          0,
+          1,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        "x": [
+          1,
+          2304,
+          8192,
+          88,
+          288,
+          144,
+          108720
+        ],
+        "a": [
+          64,
+          0,
+          384,
+          233088,
+          1024
+        ],
+        "occ": [
+          2
+        ],
+        "min": [
+          2
+        ],
+        "err": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "actual_resources": "UNKNOWN: CUDA APIs mocked on CPU"
+  },
+  "packing": {
+    "actual_helper_stream_units": 241664,
+    "configurations": [
+      {
+        "name": "pooler",
+        "units": 65536,
+        "shape": [
+          16,
+          256,
+          8,
+          1,
+          2,
+          1
+        ]
+      },
+      {
+        "name": "pooler32_r144",
+        "units": 65536,
+        "shape": [
+          16,
+          256,
+          4,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "name": "qkv16_r176",
+        "units": 36864,
+        "shape": [
+          16,
+          144,
+          4,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "name": "qkv32_r208",
+        "units": 36864,
+        "shape": [
+          16,
+          144,
+          4,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "name": "qkv8_r176",
+        "units": 36864,
+        "shape": [
+          16,
+          144,
+          4,
+          2,
+          2,
+          1
+        ]
+      }
+    ],
+    "decoded_bf16_words": 98304,
+    "table_cases": 6,
+    "table_entries": 33408,
+    "codec_source": "byte-identical to97af; actual stream/table helpers executed via NumPy shim"
+  },
+  "codec": {
+    "actual_decode8_bf16_words": 3964928,
+    "intrinsics": "CPU bitwise models of unchanged lop3_sel and prmt"
+  },
+  "lifecycle": {
+    "positive_queries": 5,
+    "negative_lifecycle_cases": 9,
+    "placement": "after immutable packing, before selftest/tuner; outer failure gate outside catch"
+  },
+  "ring": {
+    "interleaving_models": 224,
+    "early_reuse_negative_control": "detected",
+    "all_physical_M_checked": true,
+    "scope": "source-identical handbacks with changed constant geometry; CPU model assumes GPU barrier semantics"
+  },
+  "router": {
+    "verdict": "PASS",
+    "candidate_sha256": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
+    "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "test_source_sha256": "dbd4005fcbd69ab36232999059a560d13c43487521a369de369dc86d9f19dad3",
+    "native_translation_sha256": "669d49c478a6c8ba23f88ab9386c182a1c9da3116800c6b95cb2502d7c0dd36d",
+    "snippet_sha256": {
+      "geometry": "8af5ca59ec8cdd47bfcab4efa57554a509fd589d5b4b502a229b703d278670c6",
+      "nstr": "93f049af0275aa87df8b0d68d1253fa0a371a449194a55ce61cedef21abd3231",
+      "route": "b8bc660235a282ef3ba1c579a0d37c0b8b6b3e7800f1211edfa61b3a9605f59d",
+      "gsr": "517159333a36e319f71b480ab963cbb10db8b4147d4f61d31e64d250e08df7e0",
+      "wsr": "b58de9aefd2564334dafcf41c327c8ac5ee12d109c2688922980205dbf8d8299",
+      "a0": "9a7bb07aad8f4068f247c190bb5aa41860c543480d84b147def8eb7e08d0e1fc",
+      "producer": "c783c1ba9c5f5beb7ba922564b3b93f5dfd88ec99c9f9b71974198812c6c1137",
+      "scatter": "1f2771617ba8d015ccdc8cd2486e871fe95155789344c3f397e7dbfb861a2932",
+      "writer": "af797414d6fb55f3dd9c651b0d0f53b8169f50297019424f4ee41417376db7fc",
+      "reader": "04a66acf7e79db30c9f84fe0aa5c5f63da0db5bf65d8c042e59c33880f007337",
+      "predicate": "b04ae163c96225c204e97039c6eaa800228edc97fac7142d069637a15b119c6b"
+    },
+    "inherited_mma_source_sha256": "f3c989270e395c225719447c229908bd39e45553bc4840493b92958d63f5e23d",
+    "explicit_reduction_order": "Source-parsed left-associated sums read pieces0..7 in order, separately forordinary/u/v.",
+    "partial_allocation_float_counts": [
+      65536,
+      65536
+    ],
+    "results": {
+      "actual": {
+        "arrival_permutations": 40320,
+        "completed_calls": 41664,
+        "part_stores": 43450368,
+        "part_loads": 3670016,
+        "geometry_cases": 3,
+        "unique_BF16_hi_lo_coordinates_per_geometry": 4194304
+      },
+      "old_four_way_counter": {
+        "caught": true,
+        "message": "premature/four-way last arrival"
+      },
+      "old_partial_writer_stride": {
+        "caught": true,
+        "message": "stale/unpublished partial"
+      },
+      "undersized_old_ring": {
+        "caught": true,
+        "message": "undersized router ring slot"
+      }
+    },
+    "limits": [
+      "CPU publication is sequential and assumes all writes become visible before the modeled release counter; no CUDA release/acquire proof.",
+      "32-bit unsigned wrap models counter bits; this does not execute GPU atomics or test overlapping kernel invocations.",
+      "Actual scatter/writer/reader and addressing snippets execute natively; synthetic accumulator operands are used, not tensor-core MMA emulation.",
+      "All40320 arrival permutations cover canonical M1/TOKR8/tile0. Directed mixed-TOKR/ragged/UV/tile31/wrap tests are separate coverage, not the full Cartesian product.",
+      "Unchanged router MMA source and complete hi/lo packed-address coverage do not establish GPU numerical correctness or performance."
+    ]
+  },
+  "status": "PASS",
+  "scope": "CPU source/helper/native mock proof only; CUDA compilation, actual resources, numerical GPU correctness and speed UNKNOWN"
+}

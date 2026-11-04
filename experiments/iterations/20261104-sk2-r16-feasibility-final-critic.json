@@ -1,0 +1,57 @@
+{
+  "recorded_at": "2026-11-04T11:32:37Z",
+  "reviewer": "result_and_strategy_critic",
+  "verdict": "GO_DETAILED_IMPLEMENTATION_PLAN_REVIEW_ONLY",
+  "reviewed_study": "tools/SK2_R16_FEASIBILITY_20261104.md",
+  "study_sha256": "bc4990dab4d8480359b2fc79b0b67ce53bf3555396c94fff8ffecaa117c11466",
+  "author_arithmetic_tool_sha256": "88f0683010dc870aef3f40115a028036e66a5f1cfafb8252d97462064049ed8b",
+  "author_evidence_sha256": "b775712d883df6be469ce9c796b0aa75dddf704c35fc3d333008148efc4e2b94",
+  "parent_source_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "independent_evidence": [
+    "experiments/iterations/20261104-sk2-r16-register-admission-critic.json",
+    "experiments/iterations/20261104-sk2-r16-router-feasibility-critic.json",
+    "tools/audit_sk2_r16_router_critic.py"
+  ],
+  "resource_review": {
+    "seven_fixed_shared_layouts": "All independently agree with the author's stage extents and dynamic formula before actual pmax/static allocation. Recorded-weight pmax bounds are not universal input bounds.",
+    "NVIDIA_register_limit_probe": "Unmodified pinned CUDA13.0.96 occupancy function executed under native clang for SM90, six block sizes and reported registers1..192. Root independently reproduced all1152 rows and thresholds.",
+    "two_block_reported_register_ceilings": {"416_threads": 72, "384_threads": 80, "352_threads": 80, "288_threads": 96, "256_threads": 128, "224_threads": 128},
+    "important_correction": "Per-SM-subpartition warp availability invalidates naive ceilings88 at352threads and112 at288threads. Conversely416threads can admit two blocks at72; per-CTA verification rounding does not impose64 here.",
+    "new_compiled_resources": "UNKNOWN; no source arrays, old attributes or CPU model establish actual new registers, local allocation or occupancy.",
+    "header_handling": "Primary header remains local and untracked because its notice restricts redistribution. Commit only source URL/hash, probe/results and findings; no header enters a candidate."
+  },
+  "router_and_lifetime_review": {
+    "coordinate_bijection": "256 CTAs, tile=cta/8 and piece=cta%8, two512-K stages per piece cover all32 router tiles and all128 K64 units exactly once. Original router stream layout,8MiB payload and512 copy pairs remain unchanged.",
+    "counter_bug_found": "Mixing old four-way and new eight-way launches with shared counters can leave residue4mod8 and falsely elect arrival4 as last.",
+    "fixed_policy": "Every FUSE specialization, including TOKR32 used during tuning, uses eight-way routing. Both ordinary and UV paths allocate32*8*32*8 FP32 partials and retain counters advancing by8 per complete call.",
+    "counter_model": "All40320 eight-arrival permutations and a32-bit wrap boundary pass the abstract publication-before-increment model. This is not a GPU memory-order proof.",
+    "stage_allocation": "Pooler12KiB weight payload is smaller than router16KiB. DeviceSST, host allocation and preparation geometry must all use the larger extent for FUSE, while transaction counts retain actual copied byte counts.",
+    "ring_reuse": "Keep every escape-warp handback, cbar wait and consumer named barrier before router and pooler scratch reuse. The proposed reduction scratch fits entirely inside the ring in all seven layouts.",
+    "PDL": "Preserve existing waits and trigger placement. The later route dependency must continue protecting UV statistics against reset until all pooler readers finish.",
+    "progress": "Non-last router contributors do not spin, so eight-way reduction itself does not require whole-grid residency. Two-block capacity is the performance hypothesis gate; the unchanged BND grid barrier has a separate correctness admission requirement.",
+    "precision": "Router partial grouping, escape grouping and separateT32 K-warp grouping change FP32 association. Retain all BF16/hi-lo operands and FP32 terms; no bit-equivalence claim."
+  },
+  "mechanism_assessment": {
+    "plausible_distinct_mechanism": "Independent admitted half-row streams and compute warps for unchanged weight/MMA totals; fused pooler grid128to256 nearly fills two-block capacity, and MT1/NACC2 pooler accumulator state held through router falls32to16 FP32 words.",
+    "costs_not_hidden": [
+      "Fused pooler main copy count and activation requests double; total stage pairs2560to4608. Router copy count stays512, while router partial stores/reads and atomic count increase.",
+      "Fused main-weight lookahead perSM decreases144to96KiB atTOKR8 and120to72KiB atTOKR16 despite more stage slots.",
+      "SeparateT32 pooler retains4096 weight copy pairs but doubles activation requests and changes K reduction from two to four warps.",
+      "QKV grid96to144 does not populate two blocks on every SM. It increases activation/copy requests50percent and can expose tail costs. Capacity alone does not predict a gain."
+    ],
+    "performance_evidence": "No measured parent stall bottleneck, no new compiler result and no speed forecast. That uncertainty does not by itself forbid one well-gated experiment.",
+    "five_percent_decoder_threshold": "Prioritization heuristic only, not a required gain or user constraint. A well-measured useful incremental gain can be worthwhile."
+  },
+  "required_next_plan": [
+    "Declare the isolated causal scope and exact config/dispatch/packing/buffer changes before implementation; no geometry sweep.",
+    "Prove all generated ordinary/FUSE/UV paths and ragged PK specializations use the intended stream and scratch schema, including tuner-only alternatives.",
+    "Use actual prepared pmax and exact function queries. PrimaryA8/A16/B32/C8/C16/C32 performance targets require at least two admitted blocks and clean resource evidence.",
+    "Uniform FUSE32 compatibility may admit one block with valid resources/local0 only if terminal timed profiles do not select it. This is an offline interpretation gate; candidate code must not detect timing phases.",
+    "Emit bounded resource evidence before any checked failure; legacy tuner exception handling can swallow an unsuccessful alternative, so privatePASS alone does not prove all resource gates.",
+    "CPU tests must execute actual packing/address/reduction code where possible, preserve unchanged source controls, and stress router generations, UV pairs, ragged physical M and ring lifetimes.",
+    "Require official numerical correctness and a declared measured promotion/kill criterion. Resource failure does not authorize forced quotas or nearby-parameter retries."
+  ],
+  "candidate_implementation_approved": false,
+  "GPU_check_approved": false,
+  "GPU_used": false
+}

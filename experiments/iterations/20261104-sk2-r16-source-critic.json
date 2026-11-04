@@ -1,0 +1,86 @@
+{
+  "reviewer": "result_and_strategy_critic",
+  "recorded_at": "2026-11-04T11:56:26.957827+00:00",
+  "decision": "GO_ONE_OFFICIAL_PRIVATE_CHECK_CONDITIONAL_ON_ROOT_FINAL_CPU_PASS",
+  "source_frozen": true,
+  "paths": {
+    "candidate": "muse_decode_layer/candidates/native_sk2_r16_v14.py",
+    "parent": "muse_decode_layer/submission.py",
+    "verifier": "tools/test_sk2_r16_cpu.py",
+    "native_router_verifier": "tools/test_sk2_r16_router_native_cpu.py",
+    "builder": "tools/build_sk2_r16_candidate.py",
+    "author_proof": "experiments/iterations/20261104-sk2-r16-cpu.json",
+    "implementation_plan": "tools/SK2_R16_IMPLEMENTATION_PLAN.md",
+    "performance_analyzer": "tools/analyze_sk2_r16_result.py",
+    "performance_tests": "tools/test_analyze_sk2_r16_result.py"
+  },
+  "sha256": {
+    "candidate": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
+    "parent": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "verifier": "cc592f8f5d1e14774dc6dc0f8498bf505774b3c8e862f18b5f25bdb8771b489e",
+    "native_router_verifier": "dbd4005fcbd69ab36232999059a560d13c43487521a369de369dc86d9f19dad3",
+    "builder": "0e092399fe33a38f99b9439eeca7ef6b05acf063fdce1c3633f3e50506e74c29",
+    "author_proof": "f5d75febd9e083563bd42e4edbd73cd93657ffe282e0bc7cc95bda32fbd54c57",
+    "implementation_plan": "704a211aad7f2dd9e09b0a30e43a5cd7dc4c01529a631eeb9312f6149e041562",
+    "performance_analyzer": "2d1603f53683c5d2280c74827cc4ffc3ed9b696758d5d4f64f39fdcd56b8ab85",
+    "performance_tests": "db3e6466ad18cfd992ccbec1b8de9620407b2fa3de134a70cf3a3ddfb2f9941b"
+  },
+  "blocking_source_defects_found": [],
+  "independent_actions": [
+    "Read complete candidate diff against97af and actual generated ordinary/FUSE/UV/BND paths.",
+    "Independently enumerated14 preflight runtime cases and12 unique compiled pointers.",
+    "Read complete final combined/native router verifiers; did not duplicate full native run or write shared author output.",
+    "Executed read-only conformance against frozen source:29 reversible patches exactly restore97af and12 unrelated embedded sources remain unchanged.",
+    "Independently ran all18 offline performance-analysis fixtures successfully."
+  ],
+  "source_findings": {
+    "resource_preflight": "Runs after immutable packing and before self-test/tuning. The actual generated host prefix returns before any tensor/data/tensor-map/launch access. _bfp_prepare exceptions leave bfp=None and the outer prepare gate rejects them before tuning. No resource error can silently select another backend.",
+    "compiled_identity": "B32 pooler and C32 QKV share PK0/PK1 templates.14 resource cases remain necessary because runtime N and actual pmax/dynamic differ; these are12 compiled identities.",
+    "admission": "All six API statuses must succeed, local bytes must be zero and thread/shared capacities sufficient.10 primary resource cases require>=2 blocks/SM; ordinary pooler16 and FUSE32 compatibility cases require>=1. FUSE32 at1 cannot qualify if selected in timed profiles.",
+    "router": "All FUSE templates use NSTR2 and eight pieces, consistent CTA decomposition and eight-slot writer/reader strides. Both ordinary/UV scratch sites allocate256KiB. Fixed0..7 sums preserve all BF16 hi/lo terms with changed FP32 association.",
+    "ring": "Device and host use align1024(XBY+max(WBY,WBYR)) for FUSE. Actual main/router copy extents remain separate. Escape handbacks, cbar, consumer named barriers and PDL placement remain unchanged.",
+    "unaffected": "Lossless codec source, non-target dispatches, UV-O generation, BND, attention, expert kernels and compiler option lists remain unchanged. Cache namespace and export list change deliberately.",
+    "logging": "Preparation-only markers are capped at8192B with explicit STOP. Queries and rejection continue after logging stops. STOP or missing exact evidence prevents accepting the planned resource gate."
+  },
+  "reviewed_author_cpu_coverage": {
+    "stream_units": 241664,
+    "packed_stream_bf16_words": 98304,
+    "codec_bf16_words": 3964928,
+    "escape_table_cases": 6,
+    "escape_table_entries": 33408,
+    "ring_interleavings": 224,
+    "native_router": {
+      "arrival_permutations": 40320,
+      "completed_calls": 41664,
+      "part_stores": 43450368,
+      "part_loads": 3670016,
+      "geometry_cases": 3,
+      "unique_BF16_hi_lo_coordinates_per_geometry": 4194304
+    },
+    "host_negative_cases": 11,
+    "host_max_log_bytes": 8134,
+    "lifecycle": {
+      "positive_queries": 5,
+      "negative_lifecycle_cases": 9,
+      "placement": "after immutable packing, before selftest/tuner; outer failure gate outside catch"
+    }
+  },
+  "material_limitations": [
+    "No CUDA compilation, actual numRegs/occupancy or GPU numerical/performance evidence exists at this review.",
+    "QKV R16 newly enables compilation of the unused generic ta.mode1 UV epilogue (R4=4 versus oldR4=6). This can affect peak registers; do not infer savings from NT reduction alone.",
+    "Native router tests use synthetic accumulator values and sequential publication.40320 permutations cover canonicalM1/tile0;1344 directed calls separately cover ragged/UV/mixed-TOKR/tile31/wrap. They do not prove CUDA memory ordering, all Cartesian combinations or tensor-MMA numerical correctness.",
+    "Ring schedules assume hardware barrier semantics; no GPU barrier proof is claimed.",
+    "Packing helpers execute on NumPy shims. Actual unchanged decode8 runs natively with bitwise intrinsic models; this is not CUDA compilation.",
+    "The experiment adds activation requests/coordination and reduces some ring lookahead. No speed forecast follows from admission.",
+    "Passing private correctness and admission alone does not qualify promotion; exact selected activation/fusion and the predeclared performance/control gates remain required."
+  ],
+  "remaining_before_submission": [
+    "Root independent full combined CPU suite must pass on this exact frozen source."
+  ],
+  "remaining_after_submission": [
+    "Official13 tests/12 benchmarks/12 profiles clean; exact resource/status markers and selection/fusion coverage; weighted comparison to both97af incumbents using predeclared gates."
+  ],
+  "automatic_promotion_allowed": false,
+  "official_calls_by_reviewer": 0,
+  "gpu_allocations_by_reviewer": 0
+}

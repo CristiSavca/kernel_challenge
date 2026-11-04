@@ -20,15 +20,15 @@ cutoff, preserve evidence and disable the heartbeat. Do not promise #1 or cash.
 
 ## Current target and critique
 
-At November 4, 11:12 UTC, the official decoder leader was 2.5510×. Our exact
+At November 4, 11:56 UTC, the official decoder leader was 2.5510×. Our exact
 scored incumbent is 2.181183×, job `7a8c4941741645ee`, source `97af3994…`;
-overall/decoder rank was 391. Passing that observed leader needs approximately
+decoder rank was392 (last overall snapshot at11:12 was391). Passing that observed leader needs approximately
 14.50% less normalized latency. This remains an unachieved goal, not a forecast.
 Standalone MoE is 2.373691×, job `d24dd50196cb4158`, source `247888ac…`, rank292.
 Both active submission.py files equal their scored snapshots. The preceding
 80a4/ef7 files remain frozen; private experiments never replace these incumbents
 without a useful verified result. See the dated live snapshot in
-`experiments/leaderboards/20261104T111211Z-selected-diagnostic-result.json`.
+`experiments/leaderboards/20261104T115651Z-r16-presubmit.json`.
 
 The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
@@ -1042,3 +1042,44 @@ CTAs/SM onaverage, nottwoeverywhere. These costs must be explicit in the final
 plan. Critic accepts a plausible independent-pipeline hypothesis as sufficient
 for a bounded experiment after concrete geometry/lifetime/admission gates; no
 priorproof of a speedup is demanded. Author's fixed feasibility plan is pending.
+
+
+## Fixed R16 family submitted — November4 11:58 UTC
+
+The feasibility review and detailed implementation plan were accepted for one
+bounded experiment. Exact candidate464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8
+implements the whole A/B/C family: R16 pooler/QKV, uniform eight-way fused router,
+matching scratch/ring layouts, and14 resource cases covering12 compiled pointers.
+It preserves all unrelated device sources, compiler options and tuning policy.
+Actual preparation admission requires primary two-block capacity, zero local
+allocation and clean CUDA APIs; compatibility paths have the documented limits.
+
+Independent final source review f8165595de8a93756b02b85bb1d076bf089f2bbccc8d06409447c2b21f2576f3
+found no source blocker, with CUDA compilation/registers/numerics/speed unknown.
+Root reran the complete CPU proof at11:57 with exit0 and regenerated the identical
+full report f5d75febd9e083563bd42e4edbd73cd93657ffe282e0bc7cc95bda32fbd54c57.
+The separate root summary is20261104-sk2-r16-root-cpu.json. The combined report
+includes final-source native router tests; the standalone router-native artifact
+preserves the earlier094ddc92 review and is not the final-source proof.
+
+Root submitted ONE private check28d3c46e68504ee4 at11:58:46UTC. At12:05 it was
+queued with server-confirmed board/mode/team identity. Root alone polls; no duplicate
+upload. Before submission decoder had18 scored and31 checks left. This pending
+check is not a gain, a passing correctness result or a leaderboard replacement.
+
+The fixed promotion decision needs >=2% whole-decoder speedup over BOTH exact97af
+public7a8c4941741645ee and privateb2a773e2d7194de8, positive affected-load gain,
+no affected case >3% normalized regression, control-load geometric drift within3%,
+clean13 tests/12 timings/12 profiles, and intended activation/resource evidence.
+The performance analyzer reproduces46/16 weighted loads, checks source/receipt/
+profile/evaluator provenance, and keeps raw/harness/baseline ratios separate.
+Its21 fixtures pass independently, including minimal received acknowledgements
+without metrics and strict full terminal identity. Resource/activation analysis
+is a separate gate; neither script can authorize automatic public promotion.
+
+A failed fixed attempt is closed without quota rescue, nearby sweeps, duplicate
+retry or automatic further diagnostic. Actual new compiler resources and the
+previously dead generic QKV UV epilogue branch remain experimental risks.
+Public97af/247888 are unchanged. The11:56 decoder board is392/1265 at2.1812,
+leader2.5510; no new overall rank was fetched. Modal guard and permanent journal
+are unchanged, with no new allocation. Current goal remains active/unachieved.
