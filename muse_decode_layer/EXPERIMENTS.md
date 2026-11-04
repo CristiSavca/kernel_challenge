@@ -108,3 +108,34 @@ Whole-layer numerical accuracy and routing still require the official check.
 notice in the compact alignment integration. Its executable AST is identical
 to queued V3, including docstrings. It is not uploaded yet; wait for V3's
 result before choosing the next decoder candidate.
+
+## Compact alignment integration passed
+
+Check `41920b5cf4bf423f` passed all 13 numerical tests and 12 timed shapes at
+**1.1581602895×**, CI [1.1407878851, 1.1755326938], with no flags. The previous
+V2 private result was 1.0811975012×. Larger verify gains are substantial:
+batch-16 sliding improved from 552.55 us in the V2 run to 406.29 us in V3;
+paired baseline ratios increased from 0.9592× to 1.2503×. These are separate
+runs, so use the official within-run ratios rather than subtracting times
+as an isolated measurement of the change.
+
+The complete-notice V6 source has an identical AST and is now in private check
+`83d9b48acd01462e`, raw hash
+`5eb7205b63185fb60ba2a33b53b697d6cc176cff68eb541f1f5c3ef8696e5112`.
+Promote and score the exact fully attributed source after its check passes.
+The native decoder and own window-attention integration checks remain live.
+
+## Combined window attention and expert alignment, V7
+
+After V3's expert integration passed, `candidates/window_and_alignment_v7.py`
+combined that integration's fully attributed V6 source with the exact
+attention-only prefix and window kernels from V5. Private check:
+`b255f6b17f1b4758`; raw SHA-256:
+`d0eaeccd0f776cdca3cd953d8d7cdd84301816c28850d21fdad7c18eddc3a3f4`.
+
+All non-attention functions/classes, including `_experts`, remain identical
+to V6. Code from O projection onward is byte-identical to V6. The attention
+prefix is byte-identical to V5 and copied kernels match its AST. Syntax and
+independent merge invariants passed; the complete MIT notice is retained.
+This combined decoder is not GPU-validated yet. Keep individual control jobs
+to distinguish integration failures from performance interactions.

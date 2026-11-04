@@ -34,7 +34,7 @@ earn serving-queue priority for the overall top 50.
 | Dense projections | `ce713efc5e9b44d8` passed | 1.1320× | `b5538a0dd25d46be`, passed 1.1303× |
 | Attention decode | `05f77382a0c84254` passed | 1.2050× | `52117bcc7137435e` queued; `8727d7d1d2da427c` passed 1.1345× |
 | Routed experts | `7d7d9292e9054337` passed | 1.3348× | `d674d6a1ada44d16`, passed 1.3383× |
-| Whole decoder layer | `a28df47ba0584bed` passed | 1.0812× | `846bf3fd98c54703` passed 1.0813× |
+| Whole decoder layer | `41920b5cf4bf423f` passed | 1.1582× | Attribution-complete variant in private check; `846bf3fd98c54703` passed 1.0813× |
 | Prefill layer | Official starter | — | — |
 
 The official remote checks provide compilation, numerical tests, paired SGLang
@@ -60,10 +60,12 @@ for serving priority, so it is lower priority during this pass.
 | Attention | `c21d391dbf604bb5` pending | Reviewed public CUDA attention with fresh output and full-batch traversal guard |
 | Experts | `143f8587286e4384` pending | Reviewed public CUDA packed-weight experts; diagnostics removed |
 | Experts | `cac648f3b3904842` pending | Compact V4 with the full upstream MIT notice embedded; identical executable AST |
-| Whole decoder | `41920b5cf4bf423f` pending | Passing V2 decoder with the public V4 expert alignment/finalization |
+| Whole decoder | `41920b5cf4bf423f` passed 1.1582× | Passing V2 decoder with the public V4 expert alignment/finalization |
+| Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
 | Projections | `8c992affff0e45b8` pending | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` pending | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
 | Whole decoder | `8e13cd6e80194b4f` pending | Passing decoder V2 with our validated grouped window attention for decode and small verify batches |
+| Whole decoder | `b255f6b17f1b4758` pending | Validated compact expert integration plus grouped window attention, with full attribution |
 
 **Active submission.py files hold passing candidates:** attention V3, the public
 compact MoE V4, projection hybrid V3 and decoder V2. Pending alternatives are

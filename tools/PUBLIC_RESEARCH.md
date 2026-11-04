@@ -24,8 +24,9 @@ The original compact adaptation points to the retained license. The separate
 `public_local_align_v7_licensed.py` now embeds the complete upstream MIT notice
 inside the uploaded file; its AST including docstrings is identical to V4.
 Its exact source is in private check `cac648f3b3904842`. The analogous
-`public_alignment_v6_licensed.py` is prepared for decoder attribution, with
-AST equality against V3, but awaits that decoder's first result before upload.
+`public_alignment_v6_licensed.py` has AST equality against decoder V3. V3
+passed at 1.1582×; the complete-notice source is now in private check
+`83d9b48acd01462e` before scored promotion.
 
 The larger Gemini cohort reports approximately 2.65× attention, 2.38× MoE and
 2.17× decoder speedups in that repository's local protocol. These are research
