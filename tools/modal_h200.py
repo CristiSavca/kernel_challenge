@@ -26,6 +26,15 @@ V10_SOURCES = {
 }
 V10_CASES_SHA = "8ed2eccb574fb8eb5255f9c4dc6ab52c3f0e11c5cfa97bf346119ab11122d8ad"
 V10_FILES = frozenset(V10_SOURCES) | {"reference.py", "checks.py"}
+V11_SOURCES = {**V10_SOURCES, "candidate.py": (
+    "muse_attention_decode/candidates/decoder_q8_role_v11.py",
+    "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f")}
+
+
+def attention_screen_sources(variant: str) -> dict:
+    if variant not in ("v10", "v11"):
+        raise ValueError("Unknown fixed attention screen variant")
+    return V10_SOURCES if variant == "v10" else V11_SOURCES
 
 
 def attention_v10_cases() -> list[dict]:
@@ -39,8 +48,9 @@ def attention_v10_cases() -> list[dict]:
 
 
 def validate_attention_v10_payload(payload: dict) -> None:
-    """Fail closed before importing uploaded code; this mode admits one fixed experiment."""
+    """Fail closed before imports; each revision admits one fixed source pair."""
     import re
+    sources = attention_screen_sources(payload.get("attention_variant", "v10"))
     if (payload.get("attention_v10_screen") is not True or payload.get("problem") != "muse_attention_decode"
             or payload.get("cases") != attention_v10_cases() or payload.get("seed") != 121021
             or payload.get("repeats") != 6 or payload.get("weight_seed") != 7311
@@ -51,36 +61,39 @@ def validate_attention_v10_payload(payload: dict) -> None:
     for name, source in payload["files"].items():
         if type(source) is not str or sha(source) != payload.get("file_sha256", {}).get(name):
             raise ValueError(f"attention V10 uploaded digest mismatch: {name}")
-        if name in V10_SOURCES and sha(source) != V10_SOURCES[name][1]:
+        if name in sources and sha(source) != sources[name][1]:
             raise ValueError(f"attention V10 frozen source changed: {name}")
-    if (payload.get("source_sha256") != V10_SOURCES["candidate.py"][1]
-            or payload.get("incumbent", {}).get("sha256") != V10_SOURCES["baseline.py"][1]
+    if (payload.get("source_sha256") != sources["candidate.py"][1]
+            or payload.get("incumbent", {}).get("sha256") != sources["baseline.py"][1]
             or payload.get("attention_v10_cases_sha256") != V10_CASES_SHA):
         raise ValueError("attention V10 original-source identity mismatch")
 
 
-def build_attention_v10_payload(root: Path, tag: str) -> dict:
+def build_attention_v10_payload(root: Path, tag: str, *, variant: str = "v10") -> dict:
     from attention_resource_probe import instrument_source
+    sources = attention_screen_sources(variant)
     cases_text = (root / "experiments/attention_q8_role_v10_cases.json").read_text()
     if sha(cases_text) != V10_CASES_SHA or json.loads(cases_text) != attention_v10_cases():
         raise ValueError("attention V10 fixed case file changed")
-    files = {name: (root / path).read_text() for name, (path, _) in V10_SOURCES.items()}
+    files = {name: (root / path).read_text() for name, (path, _) in sources.items()}
     files.update({name: (root / "muse_attention_decode" / name).read_text()
                   for name in ("reference.py", "checks.py")})
     payload = {"problem": "muse_attention_decode", "files": files, "image": IMAGE,
                "attention_v10_screen": True, "attention_v10_tag": tag,
                "attention_v10_cases_sha256": V10_CASES_SHA,
-               "source_sha256": V10_SOURCES["candidate.py"][1],
+               "source_sha256": sources["candidate.py"][1],
                "file_sha256": {name: sha(source) for name, source in files.items()},
                "cases": attention_v10_cases(), "repeats": 6, "seed": 121021, "weight_seed": 7311,
                "comparison_baseline": "exact_decoder_attention_parent",
-               "incumbent": dict(zip(("path", "sha256"), V10_SOURCES["baseline.py"])),
+               "incumbent": dict(zip(("path", "sha256"), sources["baseline.py"])),
                "profile": True, "resources": False}
+    if variant != "v10":
+        payload["attention_variant"] = variant
     validate_attention_v10_payload(payload)
     payload["attention_v10_instrumentation"] = {}
     for name in ("baseline", "candidate"):
         source, proof = instrument_source(files[name + ".py"],
-            expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{tag}_{name}")
+            expected_sha256=sources[name + ".py"][1], tag=f"{tag}_{name}")
         compile(source, name, "exec")
         payload["attention_v10_instrumentation"][name] = proof
     for name, source in files.items():
@@ -244,6 +257,7 @@ def run_worker(payload_path: str) -> None:
     attention_v10 = payload.get("attention_v10_screen") is True
     if attention_v10:
         validate_attention_v10_payload(payload)
+        attention_sources = attention_screen_sources(payload.get("attention_variant", "v10"))
     folder = Path("/tmp/okc-input")
     folder.mkdir(exist_ok=True)
     for name, source in payload["files"].items():
@@ -323,9 +337,10 @@ def run_worker(payload_path: str) -> None:
             probe = load("attention_resource_probe")
             report["attention_v10"] = {"instrumentation": {}, "compilation": {}, "resources": {},
                                        "expected_regular_checks": 128, "checks_are_official": False}
+            report["attention_v10"]["candidate_revision"] = payload.get("attention_variant", "v10")
             for name in ("baseline", "candidate"):
                 transformed, proof = probe.instrument_source(payload["files"][name + ".py"],
-                    expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
+                    expected_sha256=attention_sources[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
                 if proof != payload["attention_v10_instrumentation"][name]:
                     raise RuntimeError("attention V10 local/remote source transform provenance mismatch")
                 (folder / (name + ".py")).write_text(transformed)
@@ -595,7 +610,7 @@ def run_hardware_worker(payload: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "attention-v10-screen", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "attention-v10-screen", "attention-v11-screen", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -628,11 +643,12 @@ def main() -> None:
     if args.hardware_issue and args.mode != "hardware-profile":
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
-    if args.mode == "attention-v10-screen":
+    if args.mode in ("attention-v10-screen", "attention-v11-screen"):
         if (args.problem is not None or args.candidate or args.cases or args.seed is not None
                 or args.weight_seed != 7311 or args.repeats != 6):
-            parser.error("attention-v10-screen has fixed sources, eight cases, seed121021 and six pairs")
-        payload = build_attention_v10_payload(ROOT, uuid.uuid4().hex[:16])
+            parser.error("attention screen has fixed sources, eight cases, seed121021 and six pairs")
+        payload = build_attention_v10_payload(ROOT, uuid.uuid4().hex[:16],
+            variant="v11" if args.mode == "attention-v11-screen" else "v10")
     if args.mode == "hardware-profile":
         from modal_hardware_metrics import CASES, FILES, POLICY, PROFILE_SEEDS, SOURCE_SHA, REQUIRED, ISSUE, validate_payload
         if (args.problem not in (None, "muse_moe_w4a16") or args.candidate or args.cases
@@ -720,9 +736,10 @@ def main() -> None:
                 (destination / name).write_text(source)
             if payload.get("attention_v10_screen") is True:
                 from attention_resource_probe import instrument_source
+                attention_sources = attention_screen_sources(payload.get("attention_variant", "v10"))
                 for name in ("baseline", "candidate"):
                     transformed, proof = instrument_source(payload["files"][name + ".py"],
-                        expected_sha256=V10_SOURCES[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
+                        expected_sha256=attention_sources[name + ".py"][1], tag=f"{payload['attention_v10_tag']}_{name}")
                     if proof != payload["attention_v10_instrumentation"][name]:
                         raise RuntimeError("attention V10 frozen instrumented source changed")
                     (destination / f"instrumented_{name}.py").write_text(transformed)

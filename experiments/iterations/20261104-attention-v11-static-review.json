@@ -1,0 +1,36 @@
+{
+  "reviewed_at": "2026-11-04T06:22:50.280672+00:00",
+  "status": "static_go_for_one_bounded_v11_screen",
+  "official": false,
+  "gpu_validated": false,
+  "sha256": {
+    "tools/modal_h200.py": "60cbfa932ba6904f2a82265d1019eff500a8d9020601d3dc3cd5e2be6e0d51c0",
+    "tools/test_modal_attention_v10.py": "69292ae12a5472faa7d7eafb2717893a85a8c1e338e4a378207af8b19697a98d",
+    "tools/attention_resource_probe.py": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+    "muse_decode_layer/candidates/native_q8_role_pipeline_v11.py": "7b57f0f8a1936a818ac6a399c047d9a1739e3c865070621a57afdd9e420cc5ed",
+    "muse_attention_decode/candidates/decoder_q8_role_v11.py": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+    "tools/build_q8_role_pipeline_v11.py": "aa13bea4ef1faedb9f6adead59fa864a2d65c14d43f234ee72fc0de2c0d7c4e3",
+    "muse_decode_layer/candidates/native_q8_role_pipeline_v11_verify.py": "c3d54076fe24367d8fd952956c3d7f61b2402d0c11466f602663de3b0d000133",
+    "tools/modal_credit_budget.py": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+    "tools/modal_credit_grant.json": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71"
+  },
+  "hypothesis": "compile-time role separation may restore allocator visibility without changing96/112/32 register budgets, math, storage, scheduler orgrid",
+  "previous_result": "V10 rejected C7512/296localbytes; currentcause remainsinferred",
+  "root_checks": [
+    "V11fullCPUverifier passed bothroletemplates,exactreverse,roles/barriers/math/layout/schedule",
+    "85runner test executions passed(inheritedduplicates included)",
+    "600sec dryrun pins exact reviewedwrapper andvariant",
+    "AST unchanged forresource/activation/observer/capture/recovery/check/cache-sweep/hardware functions"
+  ],
+  "independent_critic": "leaderboard_critic exactsource andrunner GO; independently85tests/dryrun",
+  "protocol": {
+    "cases": 8,
+    "expected_checks": 128,
+    "pairs_per_case": 6,
+    "timeout_s": 600,
+    "required_resource_gates": "no target WGMMAserialization, localBytes0,2CTA,114688dynamicshared",
+    "source_revision": "v11",
+    "retained_json_protocol_key": "attention_v10",
+    "credit_guard": "fresh mandatorypreflight; noreservationsreset/nooutofpocket"
+  }
+}

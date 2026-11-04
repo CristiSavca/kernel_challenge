@@ -78,6 +78,32 @@ class AttentionV10Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "frozen source changed"):
                 runner.validate_attention_v10_payload(payload)
 
+    def test_v11_revision_pins_only_the_reviewed_candidate_change(self):
+        newer = runner.build_attention_v10_payload(runner.ROOT, "0123456789abcdef", variant="v11")
+        runner.validate_attention_v10_payload(newer)
+        self.assertEqual(newer["source_sha256"], runner.V11_SOURCES["candidate.py"][1])
+        self.assertEqual(newer["attention_variant"], "v11")
+        for name in runner.V10_FILES - {"candidate.py"}:
+            self.assertEqual(newer["files"][name], self.payload["files"][name])
+        for key in ("cases", "seed", "repeats", "profile", "resources", "incumbent", "image"):
+            self.assertEqual(newer[key], self.payload[key])
+        for variant in ("v10", "v12", None):
+            changed = {**newer, "attention_variant": variant}
+            with self.assertRaises(ValueError):
+                runner.validate_attention_v10_payload(changed)
+        with self.assertRaises(ValueError):
+            runner.validate_attention_v10_payload({**self.payload, "attention_variant": "v11"})
+
+    def test_v11_dry_run_selects_frozen_revision_without_allocation(self):
+        with patch.object(sys, "argv", ["modal_h200.py", "attention-v11-screen", "--dry-run", "--timeout", "600"]), \
+                patch.dict(sys.modules, {"modal": None}), contextlib.redirect_stdout(io.StringIO()) as output:
+            runner.main()
+        manifest = json.loads(output.getvalue())
+        self.assertEqual(manifest["mode"], "attention-v11-screen")
+        self.assertEqual(manifest["timeout_seconds"], 600)
+        self.assertEqual(manifest["attention_variant"], "v11")
+        self.assertEqual(manifest["source_sha256"], runner.V11_SOURCES["candidate.py"][1])
+
     def test_dry_run_does_not_import_modal_or_acquire_guard(self):
         with patch.object(sys, "argv", ["modal_h200.py", "attention-v10-screen", "--dry-run", "--timeout", "900"]), \
                 patch.dict(sys.modules, {"modal": None}), contextlib.redirect_stdout(io.StringIO()) as output:

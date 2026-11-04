@@ -1,5 +1,12 @@
 # Modal H200 experiments
 
+The fixed `attention-v11-screen --timeout 600` mode tests the reviewed
+compile-time-role revision after V10 failed its register/spill gate. It changes
+only the pinned candidate in the existing eight-case attention protocol; the
+parent, resource/activation gates, 128 checks, paired timing and allocation guard
+are unchanged. It requires fresh credit preflight and independent source review.
+See `tools/ATTENTION_Q8_V11_ALLOCATOR_HYPOTHESIS.md` for the falsifiable hypothesis.
+
 Setup checked November 3, 2026. Modal 1.6.3 is installed in `.venv-modal` with
 Python 3.13. The CLI is authenticated to workspace `cristisavca44`; credentials
 remain in the user's normal Modal configuration, outside this repository.
