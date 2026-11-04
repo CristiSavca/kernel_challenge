@@ -718,6 +718,23 @@ def run_finalizer_validation_worker(payload: dict, *, stages=False, coverage=Fal
     module.run(payload)
 
 
+def run_router_local_ids_worker(payload: dict) -> None:
+    """Load the frozen router experiment driver; it validates its full package."""
+    import importlib.util
+    name = "router_local_ids.py"
+    source = payload.get("files", {}).get(name)
+    if type(source) is not str or sha(source) != payload.get("file_sha256", {}).get(name):
+        raise ValueError("Router worker source/hash mismatch")
+    folder = Path("/tmp/okc-input")
+    folder.mkdir(exist_ok=True)
+    (folder / name).write_text(source)
+    spec = importlib.util.spec_from_file_location("router_local_ids", folder / name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.validate_payload(payload)
+    module.run(payload)
+
+
 FINALIZER_READ_RESULT = """import sys
 with open("/tmp/okc-result.json", "rb") as stream:
     data = stream.read(1048577)
@@ -825,6 +842,31 @@ def retrieve_finalizer_coverage_result(sandbox, destination: Path, payload: dict
     return result
 
 
+def is_component_payload(payload) -> bool:
+    return bool(is_finalizer_payload(payload) or (payload and payload.get("serving_router_local_ids") is True))
+
+
+def retrieve_router_local_ids_result(sandbox, destination: Path, payload: dict, *, recovery=False) -> dict:
+    """Bounded router component evidence; completion does not imply a speed gain."""
+    import serving_router_local_ids_worker as router
+    if sha(Path(router.__file__).read_text()) != payload["file_sha256"]["router_local_ids.py"]:
+        raise ValueError("Local router worker changed after upload")
+    process = sandbox.exec("python3", "-c", FINALIZER_READ_RESULT, timeout=10, text=False)
+    content = process.stdout.read()
+    process.stderr.read()
+    process.wait()
+    if process.returncode != 0:
+        raise RuntimeError(f"Router result read exited {process.returncode}")
+    if type(content) is not bytes or len(content) > 1024 * 1024:
+        raise ValueError("Router result exceeds local byte/type bound")
+    result = json.loads(content)
+    router.validate_result(result, payload)
+    local = ("result.json" if not recovery and result["status"] == "screen_complete"
+             else "result-checkpoint.json")
+    save(destination / local, result)
+    return result
+
+
 @contextmanager
 def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payload: dict):
     """Exit before app.run: that context may destroy the sandbox on failure."""
@@ -836,7 +878,8 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
             manifest["validation_recovery_inside_app_context"] = True
             try:
                 if not (destination / "result.json").exists() and not (destination / "result-checkpoint.json").exists():
-                    retrieve = (retrieve_finalizer_coverage_result if payload.get("serving_finalizer_coverage") is True
+                    retrieve = (retrieve_router_local_ids_result if payload.get("serving_router_local_ids") is True
+                                else retrieve_finalizer_coverage_result if payload.get("serving_finalizer_coverage") is True
                                 else retrieve_finalizer_stage_result if payload.get("serving_finalizer_stages") is True
                                 else retrieve_finalizer_validation_result)
                     retrieve(sandbox, destination, payload, recovery=True)
@@ -849,7 +892,7 @@ def finalizer_live_recovery(get_sandbox, destination: Path, manifest: dict, payl
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage", "worker"))
+    parser.add_argument("mode", choices=("smoke", "benchmark", "hardware-profile", "compile-sass", "attention-v10-screen", "attention-v11-screen", "serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage", "serving-router-local-ids", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
@@ -866,7 +909,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.mode == "worker":
         payload = json.loads(Path(args.payload).read_text())
-        if payload.get("serving_finalizer_coverage") is True:
+        if payload.get("serving_router_local_ids") is True:
+            run_router_local_ids_worker(payload)
+        elif payload.get("serving_finalizer_coverage") is True:
             run_finalizer_validation_worker(payload, coverage=True)
         elif payload.get("serving_finalizer_stages") is True:
             run_finalizer_validation_worker(payload, stages=True)
@@ -891,6 +936,16 @@ def main() -> None:
         parser.error("--hardware-issue requires hardware-profile mode")
     payload = None
     compile_mode = args.mode == "compile-sass"
+    if args.mode == "serving-router-local-ids":
+        from serving_router_local_ids_worker import build_payload
+        if (args.timeout != 600 or args.problem is not None or args.candidate or args.cases
+                or args.seed is not None or args.weight_seed != 7311 or args.repeats != 6):
+            parser.error("serving-router-local-ids has fixed sources/cases and requires --timeout 600")
+        payload = build_payload(ROOT, IMAGE)
+        payload["provider_observed_floor_evidence"] = finalizer_observed_floor(ROOT)
+        for name, source in payload["files"].items():
+            if name.endswith(".py"):
+                compile(source, name, "exec")
     if args.mode in ("serving-finalizer-validation", "serving-finalizer-stages", "serving-finalizer-coverage"):
         if args.mode == "serving-finalizer-coverage":
             from serving_finalizer_coverage_worker import build_payload
@@ -1004,7 +1059,7 @@ def main() -> None:
     save(destination / "manifest.json", manifest)
     from modal_credit_budget import allocation_guard, RESOURCE_CPU
     guard_kwargs = {"resource_kind": RESOURCE_CPU} if compile_mode else {}
-    if is_finalizer_payload(payload):
+    if is_component_payload(payload):
         guard_kwargs["observed_spend_floor"] = payload["provider_observed_floor_evidence"]["usd"]
     with allocation_guard(ROOT, stamp, manifest["timeout_seconds"], **guard_kwargs) as credit:
         if compile_mode and (credit.get("resource_kind") != RESOURCE_CPU or manifest["gpu"] is not None):
@@ -1035,7 +1090,7 @@ def main() -> None:
         sandbox = None
         try:
             recovery_scope = (finalizer_live_recovery(lambda: sandbox, destination, manifest, payload)
-                              if is_finalizer_payload(payload) else nullcontext())
+                              if is_component_payload(payload) else nullcontext())
             # Contexts exit in reverse order: recover while the app still owns
             # a live sandbox, then allow app.run to perform its cleanup.
             with modal.enable_output(), app.run(environment_name=credit["environment"]), recovery_scope:
@@ -1062,11 +1117,11 @@ def main() -> None:
                 (destination / "stderr.log").write_text(stderr)
                 command.wait()
                 manifest["exit_code"] = command.returncode
-                if (compile_mode or is_finalizer_payload(payload)) and command.returncode:
+                if (compile_mode or is_component_payload(payload)) and command.returncode:
                     # The worker may fail before creating any result checkpoint.
                     # Preserve its actual exit/logs; recovery failures are separate.
                     manifest["remote_failure"] = {"exit_code": command.returncode, "stderr_log": "stderr.log"}
-                    if is_finalizer_payload(payload):
+                    if is_component_payload(payload):
                         save(destination / "manifest.json", manifest)
                     print(stderr[-6000:], file=sys.stderr)
                     raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
@@ -1084,6 +1139,9 @@ def main() -> None:
                     elif payload.get("serving_finalizer_coverage") is True:
                         result = retrieve_finalizer_coverage_result(sandbox, destination, payload)
                         manifest["validation_result_retrieved"] = True
+                    elif payload.get("serving_router_local_ids") is True:
+                        result = retrieve_router_local_ids_result(sandbox, destination, payload)
+                        manifest["validation_result_retrieved"] = True
                     else:
                         result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
                         save(destination / "result.json", result)
@@ -1096,6 +1154,8 @@ def main() -> None:
                         raise RuntimeError("Finalizer stage diagnostic incomplete or failed; no automatic retry")
                     if payload.get("serving_finalizer_coverage") is True and result["status"] != "coverage_complete":
                         raise RuntimeError("Finalizer coverage incomplete or failed; no automatic retry")
+                    if payload.get("serving_router_local_ids") is True and result["status"] != "screen_complete":
+                        raise RuntimeError("Router component screen incomplete or failed; no automatic retry")
                     if compile_mode and result["status"] != "compile_complete":
                         raise RuntimeError("CPU compile diagnostic did not complete; no retry")
                 else:

@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "iteration": "router-local-ids-v24",
+  "status": "independent_source_and_harness_go_for_one_fixed_run",
+  "hypothesis": "The pinned serving JIT router can write global IDs, unchanged FP32 scores and separate local IDs in one launch; selected non-SP Marlin then avoids its expert-map indexing launch and unused packed output.",
+  "parent": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+  "preserved_public_sources": {
+    "moe": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "decoder": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "attention": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c"
+  },
+  "fixed_gate": {
+    "chain": "actual original JIT + packed output + Torch local-ID map vs actual candidate JIT dual IDs/no packed",
+    "tokens": [
+      8,
+      16,
+      32,
+      128,
+      256
+    ],
+    "gm_candidate_over_parent_max": 0.95,
+    "each_ratio_max": 1.02,
+    "exact_global_ids": true,
+    "exact_fp32_score_bits": true,
+    "exact_local_ids": true,
+    "indexing_launches_removed": 1,
+    "extra_gpu_copy_or_launch": false
+  },
+  "kill": "Fail any source/correctness/ownership/activation gate, or fail the fixed chain speed screen: keep isolated evidence, discard promotion, no repeat/flag/shape-policy sweep.",
+  "scope_limit": "Captured index row is only0.5\u20133.2% of MoE component. Optimistic zero-cost removal scenario, not a full-model bound. Native decoder already emits local IDs. Requires8-H200 official serving validation; no kernel submission from this component screen.",
+  "critic_findings_and_response": [
+    "Actual dispatcher must certify output availability: explicit opt-in fourth output only from actual JIT; fallback None retains old mapping.",
+    "Padding old map[-1] semantics differ byrank: production fastpath excludes valid-token state; separate lowlevel sentinel checks.",
+    "Reject aliases among optional local output/map and writable outputs before kernel writes.",
+    "Private exact wrapper copies with one import adapter and isolated hash-qualified JIT names; installed common dependencies verified before compilation."
+  ],
+  "budget": {
+    "gpu": "H200:1",
+    "outer_seconds": 600,
+    "worker_seconds": 540,
+    "reservation_usd": "1.78",
+    "known_observed_floor_usd": "4.21235928",
+    "working_before_usd": "3.07764072",
+    "estimated_working_after_before_new_usage_usd": "1.29764072",
+    "separate_headroom_usd": "5.00",
+    "no_allocation_retry": true,
+    "guard_required": true,
+    "termination_required": true
+  },
+  "preflight_evidence": [
+    "experiments/leaderboards/20261104T192300Z-router-preflight.json",
+    "experiments/iterations/20261104-router-resource-preflight.json",
+    "experiments/iterations/20261104-router-preallocation-provider.json",
+    "experiments/iterations/20261104-router-preallocation-rules.json"
+  ],
+  "rules_snapshot": {
+    "kernel_cutoff_utc": "2026-11-05T08:00:00Z",
+    "serving_open_utc": "2026-11-10T17:00:00Z",
+    "serving_cutoff_utc": "2026-11-20T08:00:00Z"
+  },
+  "validation_so_far": {
+    "shared_runner_tests": 26,
+    "worker_transport_tests_root_before_final_two_fixtures": 19,
+    "worker_transport_tests_final_independent_critic": 21,
+    "source_cpu_suite": "PASS; five exact restorations,21 dispatch,5 wrapper,12 call boundaries,167936 extracted terms,14 alias/pair negatives,32 sentinel slots",
+    "dry_run": "PASS; no provider calls",
+    "gpu_or_official_result": null
+  },
+  "frozen_hashes_pending": false,
+  "goal_achieved": false,
+  "frozen_source_sha256": {
+    "tools/modal_h200.py": "3c18303d12d5e62c3a2a9ee555b5a26c2df7cc28d90b60da9d8021c4e83ed6f6",
+    "tools/serving_router_local_ids_worker.py": "65a2bdcc7436fc84a7f937ac8b0ab840ecb904d928b1d052be96114e01fc28d4",
+    "tools/test_serving_router_local_ids_worker.py": "41a337940d6c8e82e2e98a8fcc60fd485ee68a0979d0e7786626430bf369a919",
+    "tools/test_modal_router_local_ids_runner.py": "1b2e106bdb7a26cc22a225650e10ae759a044e7a6d49deead25db1258c2e365e",
+    "serving/candidates/router_local_ids_v24/manifest.json": "f245464b26b65a65359cd8dd688b20e937a22775c3bd0ab7a09776c61f518e67",
+    "serving/candidates/router_local_ids_v24/router_local_ids_v24.patch": "0cfa4586ec63737c28e7db3bafa16e27cfe358f1f5dd3802d1b51ff3282a33a5"
+  },
+  "disk_preflight_available_kib": 35430624,
+  "independent_review": "result_and_strategy_critic final GO for worker65a2bdcc/runner3c18303d/patch0cfa4586;21 focused tests, source CPU suite and no-provider dry-run."
+}

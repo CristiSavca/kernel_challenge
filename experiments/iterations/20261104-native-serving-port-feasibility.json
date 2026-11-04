@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "date_utc": "2026-11-04",
+  "status": "source_only_scout_not_candidate_or_gpu_evidence",
+  "purpose": "Identify a larger serving mechanism after the fixed V24 router screen; avoid a blind native-kernel transplant.",
+  "source_sha256": {
+    "muse_moe_w4a16/submission.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "serving/sglang/python/sglang/srt/layers/muse_spark_fp4_moe.py": "bf166896bf1b2184abd27cf49f222a72ee118ffe116049f050a1cf0f1c0e960b",
+    "serving/sglang/python/sglang/srt/configs/muse_spark.py": "00a8aea1bece20afaf12be997933edb89fdad2aaa9e864bf911031d0fec138a4"
+  },
+  "native_parent": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "findings": [
+    {
+      "issue": "BF16 stage boundaries differ",
+      "native": "epi_A and repeated A epilogues apply SwiGLU to FP32 GEMM accumulators before casting the activation BF16. B epilogues multiply FP32 GEMM accumulators by post-norm weight and store FP32 ybuf before the finalizer.",
+      "serving": "Stock Marlin writes gate/up GEMM results to hidden-state-dtype cache1 before silu_and_mul, and down GEMM output to hidden-state-dtype cache3 before post-expert norm. Selected BF16 serving therefore requires the intermediate BF16 roundings.",
+      "action": "A fused serving implementation must round scaled gate/up and down values at those exact boundaries. This cannot be solved by casting only final output."
+    },
+    {
+      "issue": "Post-norm weight differs",
+      "native": "Forms 1 + given BF16 post_norm_w in FP32 in B epilogues.",
+      "serving": "set_post_expert_norm caches _get_effective_weight().detach().to(BF16).",
+      "action": "Consume the already effective BF16 norm weight; do not reconstruct 1+w in higher precision."
+    },
+    {
+      "issue": "Persistent weight copies cannot be copied wholesale",
+      "native": "Each _prepare_layout retains natural, fat, unit and WGS code+scale layouts; prepare calls it twice for tiny and larger bit layouts.",
+      "action": "Design one serving packing strategy and establish every retained allocation and applicable path before any full-model port."
+    },
+    {
+      "issue": "Expert ownership and state lifetime",
+      "native": "_prepare_layout fixes lo=0,cnt=32; state owns reusable scratch shared by kernel_fn calls.",
+      "action": "Use actual per-rank expert IDs and separate supported execution scratch ownership; verify stream/capture lifecycle before concurrent serving."
+    }
+  ],
+  "weight_memory_arithmetic": {
+    "assumptions": "32 local experts; each has gate/up/down 4096x4096; 4-bit codes and one FP8 scale per16 values; four retained code+scale copies per prepared layout, two layouts. Excludes gs/norm/LUT, scratch, input/original weights, repack temporaries and every other model component.",
+    "single_copy_bytes_per_layer": 905969664.0,
+    "eight_copies_gib_per_layer": 6.75,
+    "illustrative_62_sparse_layers_gib": 418.5,
+    "scope": "62 is the source configuration default, not an inspected loaded checkpoint; total shown only as an illustrative scenario."
+  },
+  "next_falsifiable_step": "After V24 closes, choose a single serving-compatible weight layout and produce a source/byte-count plan preserving BF16 endpoints. Kill a direct transplant immediately if it retains the eight native copies or omits required BF16 roundings. No performance upper bound is defensible until matched BF16-boundary component evidence exists.",
+  "no_gpu_allocated": true,
+  "review_status": "independent_source_review_agrees",
+  "critic": {
+    "agent": "result_and_strategy_critic",
+    "verdict": "Direct transplant blocked by precision boundaries, effective norm weight, memory and runtime ownership; scout arithmetic and source correspondence confirmed.",
+    "memory_check": "With WGS enabled, natural+fat+unit+WGS are each full code+scale copies in both layouts. 905969664 bytes/copy,6.75GiB/layer;418.5GiB only62-sparse-layer source-default scenario.",
+    "no_performance_claim": true
+  }
+}

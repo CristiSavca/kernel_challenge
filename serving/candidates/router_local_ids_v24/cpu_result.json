@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "manifest_sha256": "f245464b26b65a65359cd8dd688b20e937a22775c3bd0ab7a09776c61f518e67",
+  "patch_sha256": "0cfa4586ec63737c28e7db3bafa16e27cfe358f1f5dd3802d1b51ff3282a33a5",
+  "complete_file_restorations": 5,
+  "dispatch": {
+    "cases": 21,
+    "names": [
+      "default_False",
+      "default_True",
+      "selected_jit",
+      "map_replacement",
+      "forced_triton",
+      "forced_torch",
+      "forced_torch_compile",
+      "forced_aot",
+      "forced_jit_actual",
+      "state_local_expert_mapping",
+      "state_num_valid_tokens",
+      "state_sol_topk_out",
+      "enter_leave_compile",
+      "oot_old_signature",
+      "custom_cached_old_signature",
+      "map_metadata_fallback",
+      "map_metadata_fallback",
+      "map_metadata_fallback",
+      "map_metadata_fallback",
+      "map_metadata_fallback",
+      "dynamic_ineligible"
+    ],
+    "base_fused_op_sha256": "652ceeea3bbbdc2b864c3fa3cf914148d486392a90384506043d5c2ccf60eb3e",
+    "limits": "Actual dispatch/guards; backend numerical bodies and CUDA are stubbed."
+  },
+  "low_wrapper": {
+    "cases": 5,
+    "default_return_length": 3,
+    "ffi_arity": 12
+  },
+  "call_boundaries": {
+    "cases": 12,
+    "scope": "Actual Marlin mapping/metadata branch and model routing/join/record_stream statements; tensor/stream execution mocked."
+  },
+  "native": {
+    "terms": 167936,
+    "alias_or_pair_negatives": 14,
+    "sentinel_slots": 32,
+    "extracted_program_sha256": "431b70fc9f639d43ca9bc8c4fc6a371c88c5562071a08e05002d5d83c6e7e579",
+    "limits": "Host execution of actual extracted store/sentinel/span expressions; CUDA/TVM metadata checks and GPU floating point are not emulated."
+  },
+  "limitations": [
+    "No CUDA compile/run, score-bit, resource, graph/capture or timing claim.",
+    "Untouched numerical backend bodies are stubbed only in dispatch tests.",
+    "Full serving and GPU component validation remain pending."
+  ]
+}

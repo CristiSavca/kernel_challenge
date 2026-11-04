@@ -1,5 +1,21 @@
 # Modal H200 experiments
 
+`serving-router-local-ids --timeout 600` compares the pinned SGLang JIT router
+plus its downstream expert-map indexing against the isolated V24 dual-ID
+router. It uses exact source/dependency hashes, the serving source's router
+parameters, all eight expert maps, strict output-bit comparisons, stream/graph
+checks and paired timing of the entire chain. The fixed performance gate is at
+least 5% geometric mean latency reduction across T8/16/32/128/256, with no case
+over 2% slower and one indexing launch removed. `screen_complete` only means
+the evidence was collected; `performance_gate_passed` records the separate
+decision. This is not an official or full-serving check. See
+`SERVING_ROUTER_LOCAL_IDS_SCREEN_20261104.md` for the protocol.
+The usual mandatory credit guard, saved provider-spend high-water mark,
+one-H200 limit, bounded result retrieval and sandbox termination apply.
+The worker has a 540-second cooperative budget inside the 600-second sandbox.
+There is no automatic retry. Use `--dry-run` to inspect the frozen package
+without allocating resources; only run after the independent source review.
+
 `serving-finalizer-coverage --timeout 300` completes the 15 unexecuted cases
 from the pinned generic finalizer suite, followed by its existing two-stream
 and two-graph checks. It uploads the unchanged candidate, original and reference

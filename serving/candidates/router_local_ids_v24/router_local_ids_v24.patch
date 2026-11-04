@@ -1,0 +1,423 @@
+--- a/python/sglang/kernels/jit/csrc/muse_spark_v12/routing.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark_v12/routing.cuh
+@@ -79,6 +79,10 @@
+   int32_t* __restrict__ packed_topk_ids;             // nullptr => not requested
+   const int32_t* __restrict__ local_expert_mapping;  // nullptr => identity
+   const int32_t* __restrict__ num_valid_tokens;      // nullptr => all rows real
++  // V24: independent Marlin output; topk_ids keeps its original contract.
++  const int32_t* __restrict__ marlin_expert_map;
++  int32_t* __restrict__ marlin_topk_ids;
++  int64_t stride_mm;
+   int num_tokens;
+   int num_experts;
+   int64_t stride_gm;
+@@ -114,6 +118,9 @@
+   if (params.num_valid_tokens != nullptr && token >= *params.num_valid_tokens) {
+     if (lane < kTopK) {
+       params.topk_ids[token * params.stride_im + lane] = -1;
++      if (params.marlin_topk_ids != nullptr) {
++        params.marlin_topk_ids[token * params.stride_mm + lane] = -1;
++      }
+       // The Triton op emits the id sentinel with a zero weight half.
+       if (params.packed_topk_ids != nullptr) {
+         params.packed_topk_ids[token * params.stride_pm + lane] = -1 << 16;
+@@ -266,6 +273,9 @@
+     const float weight = out_score * inv_sum_scaled;
+     params.topk_ids[token * params.stride_im + lane] = id;
+     params.topk_weights[token * params.stride_wm + lane] = weight;
++    if (params.marlin_topk_ids != nullptr) {
++      params.marlin_topk_ids[token * params.stride_mm + lane] = params.marlin_expert_map[out_id];
++    }
+     if (params.packed_topk_ids != nullptr) {
+       params.packed_topk_ids[token * params.stride_pm + lane] = pack_id_weight(id, weight);
+     }
+@@ -285,7 +295,9 @@
+     tvm::ffi::Optional<tvm::ffi::TensorView> num_valid_tokens,
+     double router_output_multiplier,
+     double route_scale,
+-    double division_eps) {
++    double division_eps,
++    tvm::ffi::Optional<tvm::ffi::TensorView> marlin_expert_map,
++    tvm::ffi::Optional<tvm::ffi::TensorView> marlin_topk_ids) {
+   using namespace host;
+   using Trait = muse_spark::RoutingTrait<kTopK, kExpertsPerLane, kNormMode, kWarpsPerBlock>;
+ 
+@@ -320,6 +332,9 @@
+       .packed_topk_ids = nullptr,
+       .local_expert_mapping = nullptr,
+       .num_valid_tokens = nullptr,
++      .marlin_expert_map = nullptr,
++      .marlin_topk_ids = nullptr,
++      .stride_mm = 0,
+       .num_tokens = num_tokens,
+       .num_experts = num_experts,
+       .stride_gm = gating_output.stride(0),
+@@ -349,6 +364,54 @@
+     params.num_valid_tokens = static_cast<const int32_t*>(num_valid_tokens.value().data_ptr());
+   }
+ 
++  RuntimeCheck(marlin_expert_map.has_value() == marlin_topk_ids.has_value(),
++               "Marlin map and output must be supplied together");
++  if (marlin_topk_ids.has_value()) {
++    const auto& map = marlin_expert_map.value();
++    const auto& ids = marlin_topk_ids.value();
++    TensorMatcher({E}).with_dtype<int32_t>().with_device(device_).verify(map);
++    TensorMatcher({T, K}).with_dtype<int32_t>().with_device(device_).verify(ids);
++    RuntimeCheck(map.stride(0) == 1, "Marlin map must be contiguous");
++    RuntimeCheck(ids.stride(1) == 1 && ids.stride(0) == kTopK, "Marlin output must be contiguous");
++    // Reject overlapping storage, including offset views, before any write.
++    const auto lo = reinterpret_cast<uintptr_t>(ids.data_ptr());
++    const auto hi = lo + static_cast<uint64_t>(num_tokens) * kTopK * sizeof(int32_t);
++    const auto disjoint = [&](tvm::ffi::TensorView x, uint64_t elements) {
++      const auto begin = reinterpret_cast<uintptr_t>(x.data_ptr());
++      const auto end = begin + elements * sizeof(int32_t);
++      return lo == hi || begin == end || hi <= begin || end <= lo;
++    };
++    const auto rows_span = [&](tvm::ffi::TensorView x, int cols) -> uint64_t {
++      return num_tokens == 0 ? 0 : static_cast<uint64_t>(num_tokens - 1) * x.stride(0) + cols;
++    };
++    RuntimeCheck(disjoint(gating_output, rows_span(gating_output, num_experts)) &&
++                 disjoint(bias, num_experts) && disjoint(map, num_experts) &&
++                 disjoint(topk_weights, rows_span(topk_weights, kTopK)) &&
++                 disjoint(topk_ids, rows_span(topk_ids, kTopK)), "Marlin output aliases router storage");
++    if (packed_topk_ids.has_value())
++      RuntimeCheck(disjoint(packed_topk_ids.value(), rows_span(packed_topk_ids.value(), kTopK)),
++                   "Marlin output aliases packed output");
++    if (local_expert_mapping.has_value())
++      RuntimeCheck(disjoint(local_expert_mapping.value(), num_experts), "Marlin output aliases old map");
++    if (num_valid_tokens.has_value())
++      RuntimeCheck(disjoint(num_valid_tokens.value(), 1), "Marlin output aliases valid-token count");
++    const auto map_lo = reinterpret_cast<uintptr_t>(map.data_ptr());
++    const auto map_hi = map_lo + static_cast<uint64_t>(num_experts) * sizeof(int32_t);
++    const auto map_disjoint = [&](tvm::ffi::TensorView x, uint64_t elements) {
++      const auto begin = reinterpret_cast<uintptr_t>(x.data_ptr());
++      const auto end = begin + elements * sizeof(int32_t);
++      return map_lo == map_hi || begin == end || map_hi <= begin || end <= map_lo;
++    };
++    RuntimeCheck(map_disjoint(topk_weights, rows_span(topk_weights, kTopK)) &&
++                 map_disjoint(topk_ids, rows_span(topk_ids, kTopK)), "Marlin map aliases writable routing output");
++    if (packed_topk_ids.has_value())
++      RuntimeCheck(map_disjoint(packed_topk_ids.value(), rows_span(packed_topk_ids.value(), kTopK)),
++                   "Marlin map aliases packed output");
++    params.marlin_expert_map = static_cast<const int32_t*>(map.data_ptr());
++    params.marlin_topk_ids = static_cast<int32_t*>(ids.data_ptr());
++    params.stride_mm = ids.stride(0);
++  }
++
+   if (num_tokens == 0) return;
+ 
+   const dim3 grid(static_cast<unsigned>((num_tokens + kWarpsPerBlock - 1) / kWarpsPerBlock));
+--- a/python/sglang/kernels/ops/muse_spark_v12/routing.py
++++ b/python/sglang/kernels/ops/muse_spark_v12/routing.py
+@@ -70,6 +70,8 @@
+     local_expert_mapping: Optional[torch.Tensor] = None,  # [num_experts] int32
+     num_valid_tokens: Optional[torch.Tensor] = None,  # [1] int32, device scalar
+     packed_topk_ids: Optional[torch.Tensor] = None,  # [num_tokens, topk] int32
++    marlin_expert_map: Optional[torch.Tensor] = None,  # separate global->local map
++    marlin_topk_ids: Optional[torch.Tensor] = None,  # separate [num_tokens, topk] out
+ ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+     assert gating_output.dim() == 2 and gating_output.is_contiguous()
+     assert gating_output.dtype == torch.float32
+@@ -93,6 +95,10 @@
+         packed_topk_ids[:num_tokens, :topk] if packed_topk_ids is not None else None
+     )
+ 
++    assert (marlin_expert_map is None) == (marlin_topk_ids is None)
++    # The new output is exact-sized; no implicit slicing or aliasing with IDs.
++    if marlin_topk_ids is not None:
++        assert marlin_topk_ids.shape == (num_tokens, topk)
+     module = _jit_module(
+         topk,
+         _experts_per_lane(num_experts),
+@@ -114,5 +120,7 @@
+         float(
+             router_score_division_eps if router_score_division_eps is not None else 0.0
+         ),
++        marlin_expert_map,
++        marlin_topk_ids,
+     )
+     return topk_weights_view, topk_ids_view, packed_view
+--- a/python/sglang/kernels/ops/muse_spark_v12/fused_muse_spark_routing.py
++++ b/python/sglang/kernels/ops/muse_spark_v12/fused_muse_spark_routing.py
+@@ -23,7 +23,7 @@
+ import triton
+ import triton.language as tl
+ 
+-from sglang.kernels.fused_op import BaseFusedOp
++from sglang.kernels.fused_op import BaseFusedOp, get_fused_op_backend
+ from sglang.kernels.jit.utils import is_arch_support_pdl
+ from sglang.kernels.spec import CapabilityRequirement, KernelBackend
+ from sglang.srt.environ import envs
+@@ -871,6 +871,53 @@
+         """
+         self.num_valid_tokens = num_valid_tokens
+ 
++    def forward_with_local_ids(
++        self, hidden_states, gating_output, topk, renormalize, marlin_expert_map
++    ):
++        """Return (scores, global IDs, packed or None, Marlin IDs or None).
++
++        Only actual JIT dispatch fills the fourth result. Unsupported state or
++        dispatch uses the original packed call; callers must retain its mapping.
++        No backend is forced and no result validity is inferred from priority.
++        """
++        fallback = lambda: (*self(
++            hidden_states, gating_output, topk, renormalize, want_packed=True
++        ), None)
++        if (
++            type(self) is not FusedMuseSparkRouting
++            or self.is_torch_compile
++            or self.local_expert_mapping is not None
++            or self.num_valid_tokens is not None
++            or self.sol_topk_out is not None
++            or marlin_expert_map is None
++            or marlin_expert_map.dtype != torch.int32
++            or marlin_expert_map.device != gating_output.device
++            or not marlin_expert_map.is_cuda
++            or marlin_expert_map.shape != (gating_output.shape[-1],)
++            or not marlin_expert_map.is_contiguous()
++        ):
++            return fallback()
++        forced = get_fused_op_backend()
++        if forced not in (None, KernelBackend.JIT, KernelBackend.TRITON, KernelBackend.TORCH):
++            return fallback()
++        if forced is None:
++            method = self._forward_method
++            if method is None:
++                method = self._resolve_forward_method()
++            known = (
++                BaseFusedOp._forward_backend_dynamic,
++                FusedMuseSparkRouting.forward_jit,
++                FusedMuseSparkRouting.forward_triton,
++                FusedMuseSparkRouting.forward_native,
++                FusedMuseSparkRouting.forward_cpu,
++            )
++            if getattr(method, "__func__", None) not in known:
++                return fallback()
++        return self(
++            hidden_states, gating_output, topk, renormalize, want_packed=True,
++            marlin_expert_map=marlin_expert_map,
++        )
++
+     def backend_eligible(
+         self,
+         backend: KernelBackend,
+@@ -879,6 +926,7 @@
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        marlin_expert_map: Optional[torch.Tensor] = None,
+     ) -> bool:
+         if not super().backend_eligible(
+             backend, hidden_states, gating_output, topk, renormalize, want_packed
+@@ -901,8 +949,12 @@
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        marlin_expert_map: Optional[torch.Tensor] = None,
+     ):
+         """Fused JIT CUDA kernel implementation."""
++        if marlin_expert_map is not None:
++            assert self.local_expert_mapping is None and self.num_valid_tokens is None
++            assert self.sol_topk_out is None
+         assert renormalize, "MuseSpark routing requires renormalize=True"
+         from sglang.kernels.ops.muse_spark_v12.routing import (
+             fused_muse_spark_routing as _jit_fused_muse_spark_routing,
+@@ -917,8 +969,12 @@
+             torch.empty(
+                 (gating.shape[0], topk), dtype=torch.int32, device=gating.device
+             )
+-            if want_packed
++            if want_packed and marlin_expert_map is None
+             else None
++        )
++        marlin_ids = (
++            torch.empty((gating.shape[0], topk), dtype=torch.int32, device=gating.device)
++            if marlin_expert_map is not None else None
+         )
+         topk_weights, topk_ids, packed = _jit_fused_muse_spark_routing(
+             gating,
+@@ -932,7 +988,11 @@
+             local_expert_mapping=self.local_expert_mapping,
+             num_valid_tokens=self.num_valid_tokens,
+             packed_topk_ids=packed,
+-        )
++            marlin_expert_map=marlin_expert_map,
++            marlin_topk_ids=marlin_ids,
++        )
++        if marlin_ids is not None:
++            return topk_weights, topk_ids, packed, marlin_ids
+         if want_packed:
+             return topk_weights, topk_ids, packed
+         return topk_weights, topk_ids
+@@ -944,8 +1004,13 @@
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        marlin_expert_map: Optional[torch.Tensor] = None,
+     ):
+         """PyTorch reference implementation."""
++        if marlin_expert_map is not None:
++            return (*self.forward_native(
++                hidden_states, gating_output, topk, renormalize, want_packed=True
++            ), None)
+         assert renormalize, "MuseSpark routing requires renormalize=True"
+         if self.router_output_multiplier is not None:
+             gating_output = gating_output * self.router_output_multiplier
+@@ -1015,12 +1080,17 @@
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        marlin_expert_map: Optional[torch.Tensor] = None,
+     ):
+         """sgl-kernel sigmoid + biased top-k; the tail stays shared.
+ 
+         The kernel's own renormalization has no division epsilon, so it runs
+         with renormalize=False and ``_finalize`` does the scaling.
+         """
++        if marlin_expert_map is not None:
++            return (*self.forward_cpu(
++                hidden_states, gating_output, topk, renormalize, want_packed=True
++            ), None)
+         assert renormalize, "MuseSpark routing requires renormalize=True"
+         if self.router_output_multiplier is not None:
+             gating_output = gating_output * self.router_output_multiplier
+@@ -1044,8 +1114,13 @@
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        marlin_expert_map: Optional[torch.Tensor] = None,
+     ):
+         """Fused Triton kernel implementation."""
++        if marlin_expert_map is not None:
++            return (*self.forward_triton(
++                hidden_states, gating_output, topk, renormalize, want_packed=True
++            ), None)
+         assert renormalize, "MuseSpark routing requires renormalize=True"
+         # Capture routing into the SoL buffer (the routing's own write is the capture
+         # -- no copy). The decode-vs-prefill gate is upstream: MuseSparkMoE.forward only
+--- a/python/sglang/srt/layers/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark_fp4_moe.py
+@@ -453,6 +453,7 @@
+         hidden_states: torch.Tensor,
+         topk_scores: torch.Tensor,
+         topk_ids: torch.Tensor,
++        local_topk_ids: Optional[torch.Tensor] = None,
+     ) -> torch.Tensor:
+         from sgl_kernel.scalar_type import scalar_types
+ 
+@@ -468,10 +469,18 @@
+         gemm1_n = 2 * size_n
+         expert_map = self._expert_map
+ 
+-        local_topk_ids = topk_ids.to(torch.int32)
+-        if expert_map is not None:
+-            local_topk_ids = expert_map[local_topk_ids]
+-        local_topk_ids = local_topk_ids.contiguous()
++        if local_topk_ids is None:
++            local_topk_ids = topk_ids.to(torch.int32)
++            if expert_map is not None:
++                local_topk_ids = expert_map[local_topk_ids]
++            local_topk_ids = local_topk_ids.contiguous()
++        elif (
++            local_topk_ids.dtype != torch.int32
++            or local_topk_ids.device != topk_ids.device
++            or local_topk_ids.shape != topk_ids.shape
++            or not local_topk_ids.is_contiguous()
++        ):
++            raise ValueError("Explicit Marlin local IDs must match the contiguous int32 routing output")
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+@@ -580,6 +589,7 @@
+         topk_ids: torch.Tensor,
+         post_expert_norm: Optional[nn.Module],
+         pre_expert_norm: Optional[nn.Module] = None,
++        local_topk_ids: Optional[torch.Tensor] = None,
+     ) -> torch.Tensor:
+         if post_expert_norm is None:
+             raise ValueError(
+@@ -595,7 +605,7 @@
+         if pre_expert_norm is not None:
+             hidden_states = pre_expert_norm(hidden_states)
+         expert_outputs, local_topk_ids = self._marlin_expert_outputs(
+-            hidden_states, topk_scores, topk_ids
++            hidden_states, topk_scores, topk_ids, local_topk_ids=local_topk_ids
+         )
+         if self._post_expert_norm is not post_expert_norm:
+             self.set_post_expert_norm(post_expert_norm)
+@@ -693,7 +703,10 @@
+         ] = None,
+         *,
+         ar_workspace: FinalizePushWorkspace | None = None,
++        local_topk_ids: Optional[torch.Tensor] = None,
+     ) -> torch.Tensor:
++        if local_topk_ids is not None and not self.use_marlin:
++            raise ValueError("Explicit local IDs are only supported by Marlin")
+         if self.use_marlin:
+             return self._forward_marlin(
+                 hidden_states,
+@@ -701,6 +714,7 @@
+                 topk_ids,
+                 post_expert_norm,
+                 pre_expert_norm=pre_expert_norm,
++                local_topk_ids=local_topk_ids,
+             )
+ 
+         from flashinfer.fused_moe import trtllm_fp4_block_scale_routed_moe
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -858,6 +858,13 @@
+             prepared_input = self.experts.prepare_input(
+                 expert_input, self.pre_expert_norm
+             )
++        # Read the current EP map per invocation, never cache it on the router.
++        marlin_expert_map = (
++            self.experts._expert_map
++            if self.nvfp4_checkpoint and not sp_active and getattr(self.experts, "use_marlin", False)
++            else None
++        )
++        local_topk_ids = None
+         with (
+             torch.cuda.stream(side_stream)
+             if use_side_stream
+@@ -868,20 +875,27 @@
+                 if use_split2
+                 else self.gate(router_input)
+             )
+-            topk_scores, topk_ids, packed_topk_ids = self._routing_op()(
+-                None, router_logits, self.top_k, True, want_packed=True
+-            )
++            if marlin_expert_map is not None:
++                topk_scores, topk_ids, packed_topk_ids, local_topk_ids = self._routing_op().forward_with_local_ids(
++                    None, router_logits, self.top_k, True, marlin_expert_map
++                )
++            else:
++                topk_scores, topk_ids, packed_topk_ids = self._routing_op()(
++                    None, router_logits, self.top_k, True, want_packed=True
++                )
+         if use_side_stream:
+             main_stream.wait_stream(side_stream)
+         if use_side_stream and not torch.cuda.is_current_stream_capturing():
+             cross_stream_tensors = (
+                 (router_logits, topk_scores, topk_ids)
+                 if getattr(get_forward(), "sp_active", False)
+-                else (topk_scores, topk_ids, packed_topk_ids)
++                else (topk_scores, topk_ids, packed_topk_ids, local_topk_ids)
+             )
+             for tensor in cross_stream_tensors:
+                 if tensor is not None:
+                     tensor.record_stream(main_stream)
++            if local_topk_ids is not None:
++                marlin_expert_map.record_stream(side_stream)
+ 
+         if (capturer := get_global_experts_capturer()) is not None:
+             # Capture on main after the router join, in full unpadded token order.
+@@ -906,6 +920,7 @@
+                 prepared_input=prepared_input,
+                 packed_topk_ids=packed_topk_ids,
+                 ar_workspace=ar_workspace,
++                local_topk_ids=local_topk_ids,
+             )
+         else:
+             if self.pre_expert_norm is not None:
