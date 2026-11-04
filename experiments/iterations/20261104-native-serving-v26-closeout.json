@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "at": "2026-11-04T20:57:38.618785+00:00",
+  "iteration": "native-serving-v26",
+  "status": "KEEP_COMPONENT_FOR_SERVING_CONTRACT_VALIDATION_NO_PUBLIC_PROMOTION",
+  "hypothesis": "Immutable private boundary partials and ordered owner FP32 reduction can remove CAS accumulation across all shapes while preserving serving numerical boundaries and stock finalizer.",
+  "source_commit": "3189741",
+  "source_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+  "official_job": "274c69cbc0954d76",
+  "official_mode": "check",
+  "official_result": "PASS",
+  "coverage": {
+    "setup": 1,
+    "test": 5,
+    "benchmark": 6,
+    "profile": 6
+  },
+  "score": 1.685110070128997,
+  "score_ci": [
+    1.659833419077062,
+    1.7103867211809318
+  ],
+  "fixed_gates": {
+    "all_six_GM_speed_at_least_1p15": true,
+    "every_case_normalized_latency_at_most_1p02": true,
+    "all_six_intended_core_profiles": true,
+    "all_six_stock_finalizer_chains": true
+  },
+  "per_shape": [
+    {
+      "M": 1,
+      "load": "decode 1",
+      "baseline_us": 79.51999921351671,
+      "candidate_us": 69.1546615266583,
+      "speedup": 1.1498863194184343,
+      "normalized_latency": 0.8696511847412527,
+      "latency_change_pct": -13.03488152587473
+    },
+    {
+      "M": 16,
+      "load": "decode 16",
+      "baseline_us": 186.73599464818835,
+      "candidate_us": 135.54145355640804,
+      "speedup": 1.3777039403703513,
+      "normalized_latency": 0.7258453508750089,
+      "latency_change_pct": -27.41546491249911
+    },
+    {
+      "M": 32,
+      "load": "decode 32",
+      "baseline_us": 202.40000123158097,
+      "candidate_us": 128.00655301912374,
+      "speedup": 1.5811690609413027,
+      "normalized_latency": 0.6324434399220279,
+      "latency_change_pct": -36.755656007797214
+    },
+    {
+      "M": 8,
+      "load": "verify 1",
+      "baseline_us": 142.54400273784995,
+      "candidate_us": 107.70005151893166,
+      "speedup": 1.3235277117095285,
+      "normalized_latency": 0.7555565260574367,
+      "latency_change_pct": -24.444347394256326
+    },
+    {
+      "M": 128,
+      "load": "verify 16",
+      "baseline_us": 456.8159976042807,
+      "candidate_us": 185.86008627894665,
+      "speedup": 2.4578488407600974,
+      "normalized_latency": 0.4068598456570449,
+      "latency_change_pct": -59.314015434295506
+    },
+    {
+      "M": 256,
+      "load": "verify 32",
+      "baseline_us": 618.3679951354861,
+      "candidate_us": 220.06687908007942,
+      "speedup": 2.8099094135400096,
+      "normalized_latency": 0.35588335879489064,
+      "latency_change_pct": -64.41166412051093
+    }
+  ],
+  "comparisons": {
+    "V25_relative_score": 1.3440077494646652,
+    "V25_relative_normalized_latency": 0.7440433289155605,
+    "public_native_relative_score": 0.7099112894747986,
+    "limit": "Different runs/seeds; normalized comparisons, not same-input A/B."
+  },
+  "critic": {
+    "path": "experiments/iterations/20261104-native-serving-v26-result-critic.json",
+    "sha256": "ae6c9ef383bb1a404aa757c3b9a406f13fd9f6d84b462257eb1f1d5dbbabca58",
+    "verdict": "KEEP_COMPONENT_FOR_CONTRACT_VALIDATION_NO_PROMOTION",
+    "response": "Accepted: retain V26, do not score it, assign serving ownership/integration contract specialist before more tuning."
+  },
+  "causal_limit": "Observed improvement is not proof of measured CAS cost. Owner scheduling/register/local-memory changes may contribute. Source operation counts and profile fractions are not a causal timing decomposition.",
+  "compiler_attributes": {
+    "threads": 576,
+    "dynamic_shared_bytes": 231168,
+    "registers": 96,
+    "local_bytes": 32,
+    "static_shared_bytes": 0,
+    "occupancy_capacity": 1,
+    "grid_blocks": 132,
+    "cooperative": true,
+    "both_specializations": true,
+    "limits": "No achieved-occupancy, spill-cost or full SASS attribution."
+  },
+  "memory": {
+    "bank_bytes": 905969664,
+    "serial_workspace_bytes": 129005088,
+    "workspace_delta_vs_V25_bytes": 20971520,
+    "full_loaded_model_peak_unverified": true
+  },
+  "resources": {
+    "official_private_checks": 1,
+    "scored_submissions": 0,
+    "Modal_allocations": 0,
+    "Modal_incremental_reserved_usd": 0,
+    "out_of_pocket_spend_usd": 0,
+    "remaining_MoE_daily_private_checks": 25,
+    "remaining_MoE_daily_scored": 17,
+    "saved_conservative_Modal_working_usd": 1.25609779,
+    "Modal_balance_time": "2026-11-04T20:37:31.890Z",
+    "fresh_guard_required_before_allocation": true
+  },
+  "public_action": "No upload for scoring; incumbent hashes unchanged. Own public scores unchanged; MoE position310, decoder405, overall405 at20:56UTC.",
+  "unresolved": [
+    "generic rank/empty-route numerical coverage",
+    "two-stream and fresh-graph ownership",
+    "post-load weight adapter",
+    "single-bank full-model memory",
+    "large prefill and TTFT",
+    "official eight-H200 serving"
+  ],
+  "next_concrete_experiment": "First establish pre-Marlin one-bank ownership transition and one model/device workspace lifetime against pinned SGLang. Then prepare a bounded generic-rank/empty-route/two-stream/graph correctness test with exact stock comparator; no paid or automatic allocation.",
+  "evidence": {
+    "experiments/iterations/20261104-native-serving-v26-root-plan.json": "6d72695727bfb2d32067a375a3bdc48462cdc5d69a6a7a395355804c0ea01799",
+    "experiments/iterations/20261104-native-serving-v26-root-result.json": "78c71110aa5a8083df39bade55e40a7d5c55db04ea78ea0f5364213a7f9f8aa3",
+    "experiments/iterations/20261104-native-serving-v26-result-critic.json": "ae6c9ef383bb1a404aa757c3b9a406f13fd9f6d84b462257eb1f1d5dbbabca58",
+    "experiments/runs/274c69cbc0954d76.json": "2ff00784c44b8a5393895c9abbcaf0cd05d5bd688f01c23e93cb8f720664c41e",
+    "experiments/candidates/muse_moe_w4a16/profiles/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.274c69cbc0954d76.json": "09a9edfd3301fa8f56176f1165335e7d1cb9260245056489a4631474a1794388",
+    "experiments/candidates/muse_moe_w4a16/profiles/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.274c69cbc0954d76.txt": "f4c923ef0d8b5848932a77388ae67b1f292620bb7e793e47c7d712c305480ca9",
+    "experiments/candidates/muse_moe_w4a16/profiles/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.274c69cbc0954d76.log": "5fc52d39507bf6ed2ead53562365a462ffb924f36127e14348110b585dd14707",
+    "experiments/leaderboards/20261104T2056-native-serving-v26-closeout.json": "4fda360733407be2328db0c12a46c385fbca49477eab0ccffe0fd553efa5451a"
+  }
+}

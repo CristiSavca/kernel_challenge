@@ -1,0 +1,83 @@
+okc run 274c69cbc0954d76 on muse_moe_w4a16
+submission  /Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/candidates/muse_moe_w4a16/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.py
+status      ok
+passed      true
+speedup     1.685110070128997
+speedup_ci  [1.659833419077062 1.7103867211809318]
+score_us    7980.784305069463
+tests       5/5 passed
+
+scored shapes (µs; speed of light is the reference's bound)
+case                                                         sglang      yours  speedup        sol  
+bs=1 load=decode 1 sharding=ep8                               79.52      69.15   1.150x      11.42  
+bs=16 load=decode 16 sharding=ep8                            186.74     135.54   1.378x      52.52  
+bs=32 load=decode 32 sharding=ep8                            202.40     128.01   1.581x      70.76  
+bs=8 load=verify 1 sharding=ep8                              142.54     107.70   1.324x      37.32  
+bs=128 load=verify 16 sharding=ep8                           456.82     185.86   2.458x     101.34  
+bs=256 load=verify 32 sharding=ep8                           618.37     220.07   2.810x     108.94  
+
+profile 0: bs=1 load=decode 1 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<false>(okc::Params)                  38.8 µs  59.9%      1
+void at::native::reduce_kernel<512, 1, at::native::Reduce...       5.2 µs   8.0%      1
+void at::native::elementwise_kernel<128, 2, at::native::g...       4.7 µs   7.3%      3
+void at::native::unrolled_elementwise_kernel<at::native::...       4.5 µs   7.0%      2
+void at::native::reduce_kernel<128, 4, at::native::Reduce...       3.1 µs   4.7%      1
+void at::native::elementwise_kernel<128, 4, at::native::g...       2.8 µs   4.3%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       1.1 µs   1.7%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       1.0 µs   1.6%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       1.0 µs   1.5%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       0.9 µs   1.4%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       0.9 µs   1.4%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       0.8 µs   1.2%      1
+total                                                             64.8 µs
+
+profile 1: bs=16 load=decode 16 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<false>(okc::Params)                  71.8 µs  66.5%      1
+void at::native::reduce_kernel<512, 1, at::native::Reduce...       9.0 µs   8.3%      1
+void at::native::elementwise_kernel<128, 2, at::native::g...       8.5 µs   7.9%      3
+void at::native::unrolled_elementwise_kernel<at::native::...       5.1 µs   4.7%      2
+void at::native::reduce_kernel<128, 4, at::native::Reduce...       4.0 µs   3.7%      1
+void at::native::elementwise_kernel<128, 4, at::native::g...       3.3 µs   3.1%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       1.7 µs   1.5%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       1.2 µs   1.2%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       0.9 µs   0.9%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       0.9 µs   0.8%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       0.9 µs   0.8%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       0.7 µs   0.6%      1
+total                                                            107.9 µs
+
+profile 2: bs=32 load=decode 32 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<true>(okc::Params)                  135.1 µs  97.7%      1
+_post_expert_norm_weighted_sum_kernel                              3.1 µs   2.3%      1
+total                                                            138.2 µs
+
+profile 3: bs=8 load=verify 1 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<false>(okc::Params)                  80.4 µs  71.1%      1
+void at::native::reduce_kernel<512, 1, at::native::Reduce...       8.8 µs   7.8%      1
+void at::native::elementwise_kernel<128, 2, at::native::g...       6.3 µs   5.6%      3
+void at::native::unrolled_elementwise_kernel<at::native::...       4.7 µs   4.2%      2
+void at::native::reduce_kernel<128, 4, at::native::Reduce...       3.7 µs   3.3%      1
+void at::native::elementwise_kernel<128, 4, at::native::g...       2.9 µs   2.6%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       1.3 µs   1.2%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       1.2 µs   1.1%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       1.0 µs   0.9%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       1.0 µs   0.8%      1
+void at::native::vectorized_elementwise_kernel<4, at::nat...       0.9 µs   0.8%      1
+void at::native::vectorized_elementwise_kernel<8, at::nat...       0.7 µs   0.7%      1
+total                                                            113.0 µs
+
+profile 4: bs=128 load=verify 16 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<true>(okc::Params)                  184.9 µs  97.6%      1
+_post_expert_norm_weighted_sum_kernel                              4.5 µs   2.4%      1
+total                                                            189.3 µs
+
+profile 5: bs=256 load=verify 32 sharding=ep8
+kernel                                                           GPU time  share  calls
+void okc::native_serving_v26<true>(okc::Params)                  207.6 µs  98.1%      1
+_post_expert_norm_weighted_sum_kernel                              4.0 µs   1.9%      1
+total                                                            211.6 µs

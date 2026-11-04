@@ -1,0 +1,179 @@
+{
+  "status": "RESEARCH_COMPLETE_NO_IMPLEMENTATION",
+  "created_utc": "2026-11-04T20:51:56.903953+00:00",
+  "review_path": "tools/PARALLEL_KERNEL_BENCH_REVIEW_20261104.md",
+  "review_sha256": "6d5732b28b904a01c606649697f95e25d90a935ceb68597d5aa10be2013f5f0b",
+  "paper": {
+    "url": "https://www.alphaxiv.org/abs/2606.parallel-kernel-bench",
+    "pdf": "https://www.alphaxiv.org/abs/2606.parallel-kernel-bench.pdf",
+    "title": "ParallelKernelBench: Can LLMs Write Fast Multi-GPU Kernels?",
+    "authors": [
+      "Willy Chan",
+      "Nathan Paek",
+      "Simon Guo",
+      "Simran Arora",
+      "Daniel Y. Fu"
+    ],
+    "landing_submitted": "2026-06-23",
+    "pdf_title_date": "2026-06-22",
+    "landing_version": "v2",
+    "publisher_label": "alphaXiv Exclusive",
+    "numeric_arxiv_id": "not located in bounded search",
+    "main_experiment": {
+      "gpus": 4,
+      "gpu": "H100 80GB",
+      "interconnect": "NVLink/NVSwitch",
+      "inputs": "BF16",
+      "pytorch": "2.11",
+      "cuda": "12.6",
+      "baseline": "unoverlapped PyTorch + NCCL",
+      "tasks": 87,
+      "one_shot_gpt55_correct": 28,
+      "one_shot_gpt55_faster": 22
+    },
+    "agent_count_inconsistency": {
+      "section_5_3_correct": 35,
+      "figure_7_and_appendix_E_correct": 31,
+      "both_faster": 26,
+      "model": "Gemini 3 Pro",
+      "use_exact_improvement_claim": false
+    }
+  },
+  "repository": {
+    "url": "https://github.com/togethercomputer/ParallelKernelBench",
+    "default_branch": "main",
+    "head": "3cc0f9b435010b4957ccf7b4b85791480c7c69a6",
+    "head_date": "2026-06-24T22:46:22Z",
+    "api_pushed_at": "2026-10-22T07:04:04Z",
+    "license": "Apache-2.0",
+    "tree_truncated": false,
+    "numbered_reference_count": 87,
+    "github_releases_count": 0,
+    "public_agent_code": true,
+    "advertised_roofline_directory_present": false,
+    "full_generated_solutions_collection_present": false,
+    "in_context_solution_examples_present": true,
+    "latest_security_branch": {
+      "sha": "4a1a03fda33818075d52aa0168b7c96f1d569e74",
+      "date": "2026-10-22T07:04:02Z",
+      "files": [
+        "run_modal.py"
+      ]
+    },
+    "inspected_source_files": [
+      {
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "bytes": 11357,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/LICENSE"
+      },
+      {
+        "path": "README.md",
+        "sha256": "d6bb5bb6a582f17ec65364d3b8d3b340a058189f8100041aed857fcb0c127907",
+        "bytes": 13192,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/README.md"
+      },
+      {
+        "path": "kernelgen/generate_kernel_agent.py",
+        "sha256": "4fee7cbcd85f365bfaf48135a67b152322c06cad32c331e2ff8779cdddfd2457",
+        "bytes": 23561,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/kernelgen/generate_kernel_agent.py"
+      },
+      {
+        "path": "kernelgen/prompts.toml",
+        "sha256": "5d90e86902c96906f6ffc22f6b21263f07f04fd424cd4a8445baf107db358f1b",
+        "bytes": 20094,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/kernelgen/prompts.toml"
+      },
+      {
+        "path": "utils/performance.py",
+        "sha256": "a5ad39fa3845add27a0f92ee402d05d68d8a9c5fe52f18cde7a18ca4e69a092f",
+        "bytes": 5001,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/utils/performance.py"
+      },
+      {
+        "path": "utils/compare_outputs.py",
+        "sha256": "80c51c6972bdf70b8d06fd8f5d4681c6629cced3aac2aff58106a90e5c107cce",
+        "bytes": 17208,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/utils/compare_outputs.py"
+      },
+      {
+        "path": "utils/compare_performance.py",
+        "sha256": "b08c302ae08580c85c70572218fa8706c0fa635e2891f9992fa72db98d6101df",
+        "bytes": 7201,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/utils/compare_performance.py"
+      },
+      {
+        "path": "scripts/worker.py",
+        "sha256": "bbe9649025b6138516e339d97796a9f47883b180c5a1d98ef0392afe6bc51ba3",
+        "bytes": 11396,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/scripts/worker.py"
+      },
+      {
+        "path": "reference/31_fused_moe_fwd.py",
+        "sha256": "380a1e74ad93273279bff869d9ae4850f081cae56b691dbb87a9cb97795ac2e8",
+        "bytes": 10571,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/reference/31_fused_moe_fwd.py"
+      },
+      {
+        "path": "pyproject.toml",
+        "sha256": "ee1f69220a735a049d925230d48a37a9057adaea4838ee4ee823490c9488563f",
+        "bytes": 2903,
+        "url": "https://github.com/togethercomputer/ParallelKernelBench/blob/3cc0f9b435010b4957ccf7b4b85791480c7c69a6/pyproject.toml"
+      }
+    ]
+  },
+  "huggingface": {
+    "url": "https://huggingface.co/datasets/togethercomputer/ParallelKernelBench_Problems",
+    "rows": 87,
+    "license": "apache-2.0",
+    "displayed_default_world_size": 8,
+    "optimized_solution_dataset_verified": false
+  },
+  "broken_showcase_link": {
+    "url": "https://nathanjpaek.github.io/parallel-kernel-bench/kernels/vocabplogtopk-kernel.txt",
+    "observed_http_status": 404,
+    "scope": "single blog-linked NeMo example, not universal absence"
+  },
+  "code_caveats": [
+    "CUDA-event timing is labeled wall_time_ms; not service latency",
+    "Input-buffer rotation selects one tensor and caps groups at128; no all-operands cold guarantee",
+    "CLI allclose tolerance1e-2 and FP32 casts do not preserve OKC exact IDs/dtypes/rounding requirements",
+    "Agent model cost limit is not a GPU budget guard",
+    "Reference MoE softmax/eight-expert base differs from Muse W4A16"
+  ],
+  "actionable_methods": [
+    "Add explicit rank, topology, ownership, publication and collective-order contract to distributed candidate plans",
+    "Use phase-aware compute/HBM/NVLink bounds rather than infer recoverable time",
+    "Compare actual whole-chain and slowest-rank timings, retain existing numerical and cost gates"
+  ],
+  "local_serving": {
+    "source_commit": "a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f",
+    "path": "serving/sglang/python/sglang/srt/models/muse_spark.py",
+    "sha256": "7e5018b3cb2ef41ee6cf09407e91e28dde069e5a33719ea58beb0d7137087355",
+    "working_file_equals_pin": true,
+    "existing_reduce_boundary_line": 760,
+    "blackwell_finalize_ar_gate_lines": [
+      1164,
+      1181
+    ],
+    "hypothesis": "Measure Hopper finalizer-to-existing-custom-AR boundary before considering fused publication",
+    "implementation_authorized": false,
+    "speedup_forecast": null
+  },
+  "decision": {
+    "current_single_H200_kernel": "NO_DIRECT_PORT_SUPPORTED",
+    "future_multi_H200_serving": "CONDITIONAL_BOUNDARY_MEASUREMENT",
+    "critic_loop": "SMALL_METHOD_ADDITIONS_ONLY",
+    "candidate_implemented": false
+  },
+  "operations": {
+    "public_read_only_network": true,
+    "external_code_executed": false,
+    "gpu_calls": 0,
+    "provider_calls": 0,
+    "official_calls": 0,
+    "candidate_edits": 0,
+    "commits": 0
+  }
+}

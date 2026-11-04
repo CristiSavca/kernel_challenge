@@ -1,7 +1,7 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 20:30 UTC (board), with the completed V25 experiment below.
+Status updated November 4, 2026, 20:56 UTC (board), with the completed V26 experiment below.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
@@ -13,14 +13,29 @@ attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder lea
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
 
-Serving expert prototype V25 passed official private job `033a2d2eca374d82`
+Serving expert prototype V26 passed official private job `274c69cbc0954d76`
 with all five tests, six benchmarks and clean checks. Its same-run stock score
-is **1.2538x**, but M1 latency increased **13.63%**, failing the fixed all-case
-screen. It is closed without a scored submission or serving promotion. Other
-loads improved 7.03%–46.08%. The one-bank source with the required BF16 boundaries remains useful
-architectural evidence. A new private-partial reduction algorithm is the next
-hypothesis; full serving memory, concurrency and throughput are still unverified.
-See [the result and next experiment](experiments/iterations/20261104-native-serving-v25-closeout.json).
+is **1.6851x**, CI [1.6598, 1.7104], and every tested load is faster: latency
+falls 13.03% at M1 and 64.41% at M256. Root and independent critic reproduced
+all frozen gates. Private partials and ordered FP32 reduction replace scalar
+CAS accumulation while retaining the reviewed serving BF16 boundaries and
+original finalizer. Keep this component for integration validation. It remains
+slower than our public native kernel, so no scored source was replaced. Full
+serving memory, generic ranks, concurrency, graphs, prefill and throughput remain
+unverified. See [V26 results](experiments/iterations/20261104-native-serving-v26-closeout.json).
+
+V25 remains closed: it passed correctness at 1.2538x but made M1 13.63% slower
+than stock. V26's cross-run normalized aggregate is 1.3440x V25's; this is not
+same-input causal attribution. The next owner is resolving actual SGLang weight
+replacement and workspace lifetime before a serving port.
+
+The research loop now adapts EAT's diagnosis-driven role changes using our
+existing tools. Its [current handoff](tools/RESEARCH_LOOP.md) is separated from
+the preserved historical log. Primary-source reviews cover
+[EAT](tools/EAT_REVIEW_20261104.md),
+[ParallelKernelBench](tools/PARALLEL_KERNEL_BENCH_REVIEW_20261104.md) and
+[Together Compiler](tools/TOGETHER_COMPILER_REVIEW_20261104.md).
+No external paid agent framework was installed; published gains are not our scores.
 
 Serving-finalizer v22 passed official private job `cffa322caeff4aa2`, with all
 five correctness tests, six timed cases and clean checks. Compared with the

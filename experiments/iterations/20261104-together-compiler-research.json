@@ -1,0 +1,149 @@
+{
+  "status": "RESEARCH_COMPLETE_NO_IMPLEMENTATION",
+  "created_utc": "2026-11-04T20:57:04.871440+00:00",
+  "review_path": "tools/TOGETHER_COMPILER_REVIEW_20261104.md",
+  "review_sha256": "1685eba6f12373fb90629709b76d57cdbe3dc5a77d9138530ebd6c6d1f182afe",
+  "resolved_links": {
+    "https://t.co/FYRuKtXs7E": "https://www.alphaxiv.org/abs/2611.together-compiler-continual-ai-inference",
+    "https://t.co/0Zj8omrGTA": "https://www.together.ai/blog/together-compiler-continual-compilation-for-ai-inference",
+    "https://t.co/W9pRerBCP7": "https://www.together.ai/blog/polymorphic-inference"
+  },
+  "paper": {
+    "title": "Together Compiler: Continual Compilation for AI Inference",
+    "date": "2026-11-04",
+    "authors": [
+      "Reyna Abhyankar",
+      "Dylan Lim",
+      "Drew Wadsworth",
+      "Venkata Hasith Vattikuti",
+      "YuTong",
+      "Julia Zhang",
+      "Jung Hwan Heo",
+      "Taeksang Kim",
+      "Kesavan Ramakrishnan",
+      "Evangelene Stanley",
+      "Xinyu Fang",
+      "Daniel Y. Fu",
+      "Simran Arora"
+    ],
+    "equal_contribution": [
+      "Reyna Abhyankar",
+      "Dylan Lim"
+    ],
+    "affiliation": "Together AI Research",
+    "landing_label": "alphaXiv Exclusive",
+    "landing_arxivId": null,
+    "landing_canonicalId": "2611.together-compiler-continual-ai-inferencev1",
+    "landing_license_label": "User Uploaded",
+    "pdf_url": "https://www.alphaxiv.org/abs/2611.together-compiler-continual-ai-inference.pdf",
+    "pdf_sha256": "c1ce4a8a7a3772f31d7135626ad443ae2d1bce844f8fab25213403097698a3ef",
+    "pdf_bytes": 4638700,
+    "pdf_pages": 38,
+    "method": "Native PDFKit text extraction in memory; no paper saved",
+    "read_scope": [
+      "title",
+      "sections3\u20135",
+      "AppendixA",
+      "AppendixB numerical scope",
+      "AppendixC context and trace analysis"
+    ],
+    "numerical_scope": "Required BF16/FP4/FP8 contracts must be independently reviewed for our serving path; scientific bit-exact tables do not certify every LLM operation"
+  },
+  "primary_html_snapshots": [
+    {
+      "url": "https://www.alphaxiv.org/abs/2611.together-compiler-continual-ai-inference",
+      "sha256": "cb3916b9fd582178a8167fcd6cd9341a7e92664cca3d1845504fbb2c0957b2b4",
+      "bytes": 204267
+    },
+    {
+      "url": "https://www.together.ai/blog/together-compiler-continual-compilation-for-ai-inference",
+      "sha256": "056f98f38e24291b67646283e4d373e75bcd1fa0916ee5c1954b822ceb753cfb",
+      "bytes": 685135
+    },
+    {
+      "url": "https://www.together.ai/blog/polymorphic-inference",
+      "sha256": "3921624392ba0ee9a3cd9704fcbd54ad479cb11ae973449481aa1157ff62adae",
+      "bytes": 557457
+    }
+  ],
+  "public_implementation": {
+    "primary_pages_link_TKCC_repo": false,
+    "github_repo_searches": [
+      {
+        "query": "org:togethercomputer compiler",
+        "count": 1,
+        "repos": [
+          "togethercomputer/xorl-wheels"
+        ]
+      },
+      {
+        "query": "org:togethercomputer tkcc",
+        "count": 0,
+        "repos": []
+      }
+    ],
+    "verified_TKCC_code_commit": null,
+    "verified_TKCC_code_license": null,
+    "access_claim": "limited beta now; self-service future",
+    "scope": "No corresponding repository found in bounded search; not universal absence"
+  },
+  "verified_claim_scope": {
+    "persistent_engine": "Weights loaded once, forward pointer replacement and graph recapture, baseline teardown/restore",
+    "tier_comparison": {
+      "two_tier_candidates": 1354,
+      "single_slow_tier_candidates": 168,
+      "claimed_final_relative_improvement_percent": 7.2,
+      "independently_reproduced": false
+    },
+    "optimization_budget": {
+      "hours_per_setting": 24,
+      "resources": "2x serving replica size"
+    },
+    "distribution_correction": "13\u201338% more experts with random data is separate from 1.3x full-engine slowdown caused by sparse top-k quadratic behavior",
+    "comparison_confounds": [
+      "H100 Llama1B is not Muse H200",
+      "Some low-concurrency comparisons change TP configuration",
+      "P90 TPS/user is reciprocal inter-token latency, not TTFT or aggregate token throughput",
+      "Scientific-model bit-exactness scope differs from LLM protocol",
+      "No public compiled champions or full verifier implementation audited"
+    ]
+  },
+  "decisions": {
+    "accept": [
+      "component screen followed by representative serving validation",
+      "rank and route-distribution evidence without input shortcuts",
+      "concise records, actual source access and less prescribed architecture",
+      "frozen exact source, numerical and concurrency review remain"
+    ],
+    "reject_now": [
+      "two-full-engine platform under current free-credit budget",
+      "automatic reopening of failed prefetch/fusion variants",
+      "headlined speedup transfer to Muse/H200",
+      "treating beta/roadmap as downloadable code"
+    ]
+  },
+  "conditional_experiment": {
+    "description": "Same-process paired whole-boundary candidate vs stock on representative routes, isolated states and graphs, baseline-after-candidate leakage check",
+    "prerequisite": "Useful frozen component and authorized hardware",
+    "promotion_falsifiers": [
+      "representative distribution reverses gain",
+      "production dispatch differs",
+      "state/graph contamination",
+      "any required numerical/rank failure"
+    ],
+    "implementation_authorized": false,
+    "implemented": false,
+    "performance_forecast": null
+  },
+  "operations": {
+    "read_only_public_network": true,
+    "gpu_calls": 0,
+    "provider_calls": 0,
+    "official_calls": 0,
+    "weights_downloaded": false,
+    "external_repository_code_executed": false,
+    "candidate_edits": 0,
+    "runner_edits": 0,
+    "commits": 0
+  }
+}

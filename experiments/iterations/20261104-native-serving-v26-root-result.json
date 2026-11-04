@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "candidate": {
+    "job": "274c69cbc0954d76",
+    "source_sha256": "944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7",
+    "receipt_sha256": "2ff00784c44b8a5393895c9abbcaf0cd05d5bd688f01c23e93cb8f720664c41e",
+    "receipt": "experiments/runs/274c69cbc0954d76.json",
+    "source": "experiments/candidates/muse_moe_w4a16/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/944768d40e380bfb88f917ed5e69fcc1f9470995d3e6d65cfb6267b756e04bb7.274c69cbc0954d76.json",
+    "profile_sha256": "09a9edfd3301fa8f56176f1165335e7d1cb9260245056489a4631474a1794388",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "plan": "experiments/iterations/20261104-native-serving-v26-root-plan.json",
+  "plan_sha256": "6d72695727bfb2d32067a375a3bdc48462cdc5d69a6a7a395355804c0ea01799",
+  "automatic_scored_promotion": false,
+  "scope": "Same-run official stock MoE component; not matched actual serving or native incumbent.",
+  "unresolved_serving_gates": [
+    "generic rank/empty-route numerical coverage",
+    "two-stream and fresh-graph ownership",
+    "post-load weight adapter",
+    "single-bank full-model memory",
+    "large prefill and TTFT",
+    "official eight-H200 serving"
+  ],
+  "score": 1.685110070128997,
+  "score_ci": [
+    1.659833419077062,
+    1.7103867211809318
+  ],
+  "gates": {
+    "all_six_GM_speed_at_least_1p15": true,
+    "every_case_normalized_latency_at_most_1p02": true,
+    "all_six_intended_core_profiles": true,
+    "all_six_stock_finalizer_chains": true
+  },
+  "cases": [
+    {
+      "index": 0,
+      "M": 1,
+      "load": "decode 1",
+      "seed": 8880257347728165540,
+      "speedup": 1.1498863194184343,
+      "normalized_latency": 0.8696511847412527,
+      "baseline_us": 79.51999921351671,
+      "candidate_us": 69.1546615266583,
+      "baseline_raw_us": 83.55199918150902,
+      "candidate_raw_us": 74.11199808120728,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible ATen reduction/elementwise families; full template names are abbreviated.",
+      "speedup_relative_to_V25": 1.3066566250892862,
+      "speedup_relative_to_public_native": 0.3753191116794206
+    },
+    {
+      "index": 1,
+      "M": 16,
+      "load": "decode 16",
+      "seed": 8880348656596780299,
+      "speedup": 1.3777039403703513,
+      "normalized_latency": 0.7258453508750089,
+      "baseline_us": 186.73599464818835,
+      "candidate_us": 135.54145355640804,
+      "baseline_raw_us": 190.60799479484558,
+      "candidate_raw_us": 139.44000005722046,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible ATen reduction/elementwise families; full template names are abbreviated.",
+      "speedup_relative_to_V25": 1.223999434370778,
+      "speedup_relative_to_public_native": 0.6972266011049091
+    },
+    {
+      "index": 2,
+      "M": 32,
+      "load": "decode 32",
+      "seed": 8880439965465395059,
+      "speedup": 1.5811690609413027,
+      "normalized_latency": 0.6324434399220279,
+      "baseline_us": 202.40000123158097,
+      "candidate_us": 128.00655301912374,
+      "baseline_raw_us": 206.65600150823593,
+      "candidate_raw_us": 131.72800093889236,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible original fused finalizer name.",
+      "speedup_relative_to_V25": 1.331251538571119,
+      "speedup_relative_to_public_native": 0.9433262546415633
+    },
+    {
+      "index": 3,
+      "M": 8,
+      "load": "verify 1",
+      "seed": 8880531274334009820,
+      "speedup": 1.3235277117095285,
+      "normalized_latency": 0.7555565260574367,
+      "baseline_us": 142.54400273784995,
+      "candidate_us": 107.70005151893166,
+      "baseline_raw_us": 146.70400321483612,
+      "candidate_raw_us": 113.08800056576729,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible ATen reduction/elementwise families; full template names are abbreviated.",
+      "speedup_relative_to_V25": 1.2305287919098382,
+      "speedup_relative_to_public_native": 0.5942908010269937
+    },
+    {
+      "index": 4,
+      "M": 128,
+      "load": "verify 16",
+      "seed": 8880622583202624582,
+      "speedup": 2.4578488407600974,
+      "normalized_latency": 0.4068598456570449,
+      "baseline_us": 456.8159976042807,
+      "candidate_us": 185.86008627894665,
+      "baseline_raw_us": 461.07199788093567,
+      "candidate_raw_us": 190.7839998602867,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible original fused finalizer name.",
+      "speedup_relative_to_V25": 1.4847716151343133,
+      "speedup_relative_to_public_native": 0.9238695804497963
+    },
+    {
+      "index": 5,
+      "M": 256,
+      "load": "verify 32",
+      "seed": 8880713892071239345,
+      "speedup": 2.8099094135400096,
+      "normalized_latency": 0.35588335879489064,
+      "baseline_us": 618.3679951354861,
+      "candidate_us": 220.06687908007942,
+      "baseline_raw_us": 622.6879954338074,
+      "candidate_raw_us": 224.95999932289124,
+      "intended_core_in_profile": true,
+      "stock_finalizer_observable_evidence": true,
+      "stock_finalizer_chain_established": true,
+      "activation_evidence_method": "Exact common stock-helper source chain plus visible original fused finalizer name.",
+      "speedup_relative_to_V25": 1.5151526377818851,
+      "speedup_relative_to_public_native": 0.9444484767907623
+    }
+  ],
+  "fixed_component_screen_passed": true,
+  "status": "KEEP_COMPONENT_FURTHER_VALIDATION_REQUIRED",
+  "stock_chain_source_binding": {
+    "common_import": "sglang.kernels.ops.muse_spark_v12.fused_post_expert_norm_weighted_sum_triton.fused_post_expert_norm_weighted_sum",
+    "function_AST_sha256": {
+      "kernel_fn": "452125517945f4b14509d08e32c51290f5b5ade1491245cf8d2b6bbe4ec1f6aa",
+      "prepare": "893f90a106293baef3545e7f212a46e787c8efa0e06f3c727b3e070e828ba302",
+      "expert_outputs": "b2389c9bd6084d4efaa2cc1539813104abda43da085a0acbe9079c36480a638c"
+    },
+    "V25_source_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+    "scope": "Exact reviewed call chain plus same qualified import as official baseline; full source review and evaluator/image binding remain required."
+  },
+  "closed_V25": {
+    "job": "033a2d2eca374d82",
+    "source_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+    "receipt_sha256": "c47ccb0f3149b35ce487ced1011c4d03862ec758003f9b3472ba179d420884d2",
+    "receipt": "experiments/runs/033a2d2eca374d82.json",
+    "source": "experiments/candidates/muse_moe_w4a16/3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d.033a2d2eca374d82.json",
+    "profile_sha256": "254c99b2e17ce08fc987fdfb328925eb66d9edbe4d310df5ecfdbc0e6df2fd2f",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "relative_GM_to_V25": 1.3440077494646652,
+  "native_incumbent": {
+    "job": "d24dd50196cb4158",
+    "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "receipt_sha256": "dc6ecf5b212644f29ae8b9da1dc8307245ea7f304311d6959d0a910545c226f1",
+    "receipt": "experiments/runs/d24dd50196cb4158.json",
+    "source": "experiments/candidates/muse_moe_w4a16/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.py",
+    "profile": "experiments/candidates/muse_moe_w4a16/profiles/247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0.d24dd50196cb4158.json",
+    "profile_sha256": "563d259d696c429ea45d51195184f53e0dd9f61b81fe0123877394d2cd71a682",
+    "evaluator_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0"
+  },
+  "relative_GM_to_public_native": 0.7099112894747986,
+  "native_comparison_limit": "Different runs/seeds; normalized baseline ratios, not direct same-input A/B.",
+  "correctness": [
+    {
+      "case": {
+        "bs": 4,
+        "seed": 8871126460866694690,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 0,
+      "message": "relative L2 error 5.464e-03 (worst row 5.487e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 33,
+        "seed": 8871217769735309349,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 1,
+      "message": "relative L2 error 5.538e-03 (worst row 5.860e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 257,
+        "seed": 8871400387472538670,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 2,
+      "message": "relative L2 error 5.566e-03 (worst row 6.089e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 128,
+        "dist": "skewed",
+        "seed": 8871491696341153332,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 3,
+      "message": "relative L2 error 5.368e-03 (worst row 5.692e-03)",
+      "status": "pass"
+    },
+    {
+      "case": {
+        "bs": 1,
+        "seed": 8871583005209767995,
+        "sharding": "ep8"
+      },
+      "event": "test",
+      "index": 4,
+      "message": "relative L2 error 5.551e-03 (worst row 5.551e-03)",
+      "status": "pass"
+    }
+  ],
+  "evaluator": {
+    "code_sha256": "c8a380059e3d1f0afaa9914d6d48b09cdc83efc7e110e7301bca3413720092c0",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_moe_w4a16/baseline.py": "4fc48bd9cdfd749863c93a2dbf4e556e0c38fb04acc4fa48a53ef34cbf6c92a1",
+      "problems/muse_moe_w4a16/reference.py": "a7e0b4fa86aa477a4e7bb5745b2b258954d72636b6da153bd239a717927cba44",
+      "problems/muse_moe_w4a16/task.yml": "cc6870087c1a115e69f40093478553e0a03c1b3e92f527c2e55c4115e2db42ad"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "checks": {
+    "flagged": [],
+    "ok": true,
+    "rejected": []
+  },
+  "flags": []
+}
