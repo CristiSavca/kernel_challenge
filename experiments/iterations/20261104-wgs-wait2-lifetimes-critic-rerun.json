@@ -1,0 +1,33 @@
+{
+  "source_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "candidate_created": false,
+  "gpu_used": false,
+  "cases": 13872,
+  "commit_groups": 3662208,
+  "deferred_flush_boundaries": 53856,
+  "peak_live_af_words": 24,
+  "declared_af_words": 32,
+  "parent_peak_live_af_words": 16,
+  "instruction_trace_equal": true,
+  "negative_controls": [
+    {
+      "case": "three-banks-reset-every-stage",
+      "detected": "('af-overwrite', 1, 0, [(0, 0, 6), (1, 0, 7)])"
+    },
+    {
+      "case": "two-banks-with-depth-two",
+      "detected": "('af-overwrite', 0, 2, [(0, 0, 0), (1, 0, 1)])"
+    },
+    {
+      "case": "old-x-release-ci0",
+      "detected": "('x-early-release', 1, 0, [(3, 0, 7), (0, 1, 0)])"
+    }
+  ],
+  "assumptions": [
+    "Conservative ordered group retirement allowed by wait_group N.",
+    "Every segment retains wait_group0 before generic accumulator accesses.",
+    "Actual source producer/barrier participants and all pending-work semantics remain inherited.",
+    "This abstract model is not candidate-source validation, CUDA compilation, full-grid simulation, or performance evidence.",
+    "Peak logical AF words do not predict physical register allocation or compiler serialization."
+  ]
+}

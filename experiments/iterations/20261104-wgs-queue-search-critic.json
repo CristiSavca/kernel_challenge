@@ -1,0 +1,47 @@
+{
+  "decision": "GO as a bounded CPU lifetime filter only; zero additional GPU candidates approved",
+  "tool": "tools/search_wgs_queue_cpu.py",
+  "tool_sha256": "5c9d7991ca1b3f8bff76b7eda1eee34fa995c1bbf88c54c183167d790fcf9bcc",
+  "manifest": "tools/wgs_queue_search_manifest.json",
+  "manifest_sha256": "0e3041fb0e2fd762f202b0169eb7d56aef7673c4447b052f7b42069a5c34d874",
+  "execution_owner": "Root owns independent full rerun; author owns primary output. Critic did not duplicate full event-model execution.",
+  "independent_critic_actions": [
+    "Read entire frozen tool, manifest, pinned lifetime checker and documentation; independently verified the three pinned input hashes.",
+    "Derived and independently enumerated the closed-form conditions over all320 configurations without invoking the event checker.",
+    "Reviewed isolated hazard witnesses, parent trace comparison and independent flat-K/parity oracle; checked bank16 aliases bank8 only in the abstract model.",
+    "Checked default command makes no external model calls, CUDA candidates, GPU jobs or speed ranking. Python -O fails closed rather than disabling assertions silently.",
+    "Checked selected wait2/four-bank/ci1 experiment is explicitly pre-existing, not claimed as the search's discovered optimum."
+  ],
+  "independent_counts": {
+    "survivors_by_wait_depth_0_through_7": [40, 32, 21, 18, 10, 8, 6, 4],
+    "configurations": 320,
+    "lifetime_safe_device_unknown": 139,
+    "rejected": 181,
+    "af_overwrite_reasons": 136,
+    "x_early_release_reasons": 105,
+    "both_reasons": 60,
+    "safe_deeper_queue_schedules": 67,
+    "gpu_approvals": 0
+  },
+  "reasoning": [
+    "For the bounded power-of-two bank counts, an eight-group stage resetting ci has bank reuse distance min(banks,8). Before decoding, the previous depth committed groups can remain live, so depth must be strictly smaller than that distance.",
+    "After committing ci+1 groups of the successor stage and waiting down to depth, no previous-stage group can remain iff ci+1>=depth. Earlier X release is unsafe.",
+    "The independent conditions can both fail. Setting release_ci7 isolates AF overwrite; replacing AF banks with8 isolates X release for the bounded depths0..7. Keeping both witnesses is stronger than recording only the first thrown assertion.",
+    "Segment-end wait0 and inherited release/progress protocol are assumptions; the wrapper does not validate arbitrary CUDA or arbitrary barrier protocols.",
+    "Eight and sixteen declared banks reference the same bank indices0..7 in this model, but their source allocations need not produce identical compiled code."
+  ],
+  "negative_control_scope": {
+    "actual_event_checker_failures": 3,
+    "constructed_trace_order_or_parity_examples": 2,
+    "caveat": "The two trace examples demonstrate comparison behavior on constructed model traces; they are not mutant CUDA-source executions or numerical validation."
+  },
+  "required_interpretation": [
+    "139 survivors means modeled lifetime-safe schedules with device behavior unknown; it does not mean139 useful optimizations or139 compiled feasible kernels.",
+    "672 finite cases per surviving schedule are model coverage, not all possible routes or scheduling interleavings. Six initial sequences cover logical slot/generation values, but barrier phases themselves are not simulated.",
+    "The flat trace represents K order and NTT1 accumulator parity, not actual floating-point operands, first-write behavior or tensor numerical arithmetic.",
+    "The NVIDIA occupancy-header96-register limit is necessary register-admission evidence only. Actual physical registers, local memory, static shared memory, serialization and occupancy require exact compiled queries.",
+    "Logical AF counts cannot predict speed. No Lean theorem, surrogate validation, measured gain, automatic GPU search or formal whole-kernel correctness proof is claimed."
+  ],
+  "source_candidates_edited": false,
+  "gpu_used": false
+}

@@ -1,8 +1,52 @@
-# Small-token NW4/NS2 candidate, November 4
+# Small-token NW4/NS2 candidate — terminal rejection, November 4
 
-One isolated implementation from the scored KPERM parent, awaiting an official
-GPU check. It has not replaced either active submission. Root owns submission
-and polling; the author used CPU checks only.
+Private job `f46b93032b5548c1` completed with all five correctness tests and six
+timed cases passing, six profiles, and no flags or rejections. Exact source
+34ee99c scored **2.2587515996x**, CI [2.2248703256, 2.2926328736].
+**Reject this candidate: no score, decoder integration, identical retry or
+automatic parameter sweep.** Neither active submission was replaced.
+
+The public exact247888 parent scored2.3736910444x and its private run scored
+2.3898359607x: this candidate is4.84% and5.49% lower, respectively. Its reported
+aggregate interval is below and disjoint from both parent intervals. Fresh
+weights/routes, seeds and nodes still limit precise causal interpretation.
+
+All three preparation markers report160 threads,101632 dynamic shared bytes,
+capacity2/2,168 registers and32 local bytes for the two compiled specializations.
+The guarded two-CTA launch mechanism was admitted; it did not deliver the gain.
+These are resource attributes, not achieved-occupancy or spill-traffic measures.
+
+| Tokens | Candidate normalized us | Baseline-relative latency change vs public247888 | vs private247888 |
+| --- | ---: | ---: | ---: |
+| 1, affected |31.43 |+23.55% |+23.63% |
+| 8, affected |69.20 |+7.06% |+6.55% |
+| 16, affected |97.68 |+2.48% |+4.28% |
+| 32, unchanged |122.87 |-0.08% |+0.06% |
+| 128, unchanged |175.86 |-0.75% |+0.48% |
+| 256, unchanged |202.57 |+0.19% |+1.57% |
+
+Affected M1/M8/M16 geometric-mean baseline-relative latency rose10.67% against
+the public parent and11.16% against its private run. Unchanged MAIN control
+speedup ratios were+0.215% and-0.697%, respectively. The predeclared15% gain and
+maximum3% regression gates fail. The three affected raw replay times also rise
+against both parents.
+
+Profiles retain one `moe_fused` launch per case and the expected false/true BIG
+specialization. Single capture durations can move opposite to the paired graph
+results: M16 is82.2us in the candidate profile versus106.7us in the public parent
+profile, despite2.48% worse baseline-relative benchmark latency. They do not
+override the benchmark verdict or isolate consumer/helper/ring/finalizer costs.
+The128-register activation cache, changed CTA/helper count, two-slot lookahead,
+extra activation requests and different reduction/finalizer grouping remain
+plausible costs, not established causes. **Do not attribute the regression to
+32 local bytes without instruction/traffic evidence.**
+
+Root's analysis is `experiments/iterations/20261104-small-nw4-official-analysis.json`.
+An independent receipt/source/hash, resource, per-case and profile audit reproduced
+both comparisons in
+`experiments/iterations/20261104-small-nw4-official-independent-critic.json`.
+The distinct MAIN queue-depth proposal is separate and receives no approval or
+performance inference from this failed small-token experiment.
 
 | Artifact | SHA-256 |
 | --- | --- |
@@ -13,7 +57,7 @@ and polling; the author used CPU checks only.
 
 The earlier source prefix `265ca69b` has identical executable code; the final
 header and Python tuple comments distinguish inherited measurements from this
-unmeasured rewrite. Licenses and upstream notices remain intact.
+rewrite's then-unmeasured hypothesis. Licenses and upstream notices remain intact.
 
 ## Mechanism and exact scope
 
@@ -22,7 +66,8 @@ one CTA/SM, to four compute warps plus one helper, two CTAs/SM. Their weight rin
 changes from three to two slots. The host stops reserving the unused fat path's
 workspace for this exact TINY+WS+NW4 build. Shared allocation becomes 101,632
 dynamic bytes per CTA; two CTAs plus the inherited 1 KiB static allocation each
-fit within 233,472 bytes. This is a capacity calculation, not a runtime result.
+fit within 233,472 bytes. The arithmetic was the pre-run capacity hypothesis;
+the completed run's actual capacity query independently confirmed2/2 above.
 
 Each unit still produces sixteen output rows from all 4096 K elements. Every
 job still requests 512 A units and 256 B units, each 36 KiB: 768 TMA requests and

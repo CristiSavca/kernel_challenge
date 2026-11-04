@@ -1,0 +1,91 @@
+{
+  "decision": "Reuse evidence and measurement practices; no framework installation, model calls, GPU search, kernel transplant or surrogate speed predictions justified by this audit",
+  "source_snapshot": "experiments/source_audits/20261104-kernel-workflows/manifest.json",
+  "snapshot_files": 25,
+  "snapshot_bytes": 1296881,
+  "free_space_before_snapshot": "36 GiB reported by df",
+  "repositories": {
+    "giveen/KernelOPT": "516a36f32edf8b1f1503a9876a29dd9430c03858",
+    "OpenBMB/ForgeKernel": "312f20f31b2909cf05dfdde6016fd12f7942ed51"
+  },
+  "provenance": [
+    {
+      "finding": "giveen's NOTICE and CITATION explicitly identify an independent implementation. Its Rust search/performance extensions are not the paper authors' evaluated implementation.",
+      "source": "https://github.com/giveen/KernelOPT/blob/516a36f32edf8b1f1503a9876a29dd9430c03858/NOTICE"
+    },
+    {
+      "finding": "The paper points to TorchedHat/KernelOPT; both webpage and GitHub API returned404 during this audit. Paper results must not be attributed to the independent giveen repository.",
+      "source": "https://arxiv.org/html/2609.30059v2",
+      "failed_code_url": "https://github.com/TorchedHat/KernelOPT"
+    },
+    {
+      "finding": "ForgeKernel's kernel index identifies a separate ForgeKernel paper under review on OpenReview. The README also links JustGoal arXiv2610.36434, a related but differently titled paper. OpenReview PDF was inaccessible through the web tool, so no claims of reviewing its full experimental protocol are made.",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/kernels/README.md",
+      "paper_url": "https://openreview.net/pdf?id=EtV3f5BPD4"
+    }
+  ],
+  "practical_workflow_findings": [
+    {
+      "method": "Measured-shape correctness and fresh final comparison",
+      "evidence": "giveen's CUDA pipeline compiles/tests the selected source, then interleaves fresh baseline and candidate builds/benchmarks, records per-shape timings, and verifies correctness on the actually measured shape. Final performance verdict requires an effect beyond configured minimum and measured spread, all rounds won, and a bandwidth plausibility check.",
+      "source": "https://github.com/giveen/KernelOPT/blob/516a36f32edf8b1f1503a9876a29dd9430c03858/src/cuda_pipeline.rs#L1995",
+      "critique": "The loop always benchmarks baseline before candidate; its own testing guide recommends varying order. The noise variable used by the final verdict is the latest bench's recorded noise, not a derived confidence interval over paired ratios. All-round wins with few rounds are evidence, not statistical certainty. A generic 4x-DRAM ceiling is a diagnostic heuristic; cache residency and byte accounting must be checked. We cannot impose extra repetitions on the official fixed harness or spend unauthorized credits."
+    },
+    {
+      "method": "Bounded branch diversity with observed rewards",
+      "evidence": "giveen's search filters to passed candidates, retains best-per-chain candidates and allocates expansions using an exploration heuristic based on measured latency and expansion count. It detects repetitive directions in recent plans.",
+      "source": "https://github.com/giveen/KernelOPT/blob/516a36f32edf8b1f1503a9876a29dd9430c03858/src/search.rs#L103",
+      "critique": "The score is 1/(1+latency_ms) plus c*sqrt(log(1+total)/log(1+expansions)); this is an implementation heuristic, not a calibrated performance model or standard finite-sample UCB guarantee. No fitted latency surrogate or held-out predictive validation was present in the inspected search implementation. Use it only as inspiration for an explicit experiment budget, not as a speed forecast."
+    },
+    {
+      "method": "Frozen-winner confirmation with node identity and per-workload rows",
+      "evidence": "ForgeKernel's run_best_confirmation remeasures an exact source revision, keeps reference/candidate same-job ratios where available, records node identity and per-workload medians, warns when all samples came from one node, and labels incomplete confirmation provisional.",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/src/forgekernel/loop/driver.py#L11791",
+      "critique": "Transfer source identity, ratio provenance and node accounting now. Do not copy automatic retries or repeated GPU confirmation under our exhausted local credit guard and bounded official quota. A separately measured median-versus-median fallback is weaker than a paired result."
+    },
+    {
+      "method": "Architecture contracts and evidence-backed knowledge records",
+      "evidence": "ForgeKernel separates architectural decisions from later tuning, and stores hardware recipes with probe provenance. Its harvest guide explicitly says an agent-written probe only proves that mechanism ran, and human review still checks the knowledge claim.",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/docs/kb-harvest.md",
+      "critique": "Our CPU proofs, compiler attributes, official correctness and measured speed must remain separate evidence fields. A valid schedule is not a performant schedule; a resource query is not achieved occupancy. Preserve failed mechanisms rather than silently promoting them into reusable truths."
+    },
+    {
+      "method": "Conservative reference promotion",
+      "evidence": "ForgeKernel's self_evolve.py promotes only confirmed source with a gain above max(1.5%, observed same-job ratio spread); each new task preserves semantics and shape files with a copied reference.",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/scripts/self_evolve.py#L47",
+      "critique": "This spread threshold is a heuristic, not a confidence interval. Stopping when a search finds no further gain does not prove the hardware has no headroom, despite that wording in the script. Our existing frozen-incumbent policy already supplies most of the useful mechanism."
+    }
+  ],
+  "released_kernel_compatibility": [
+    {
+      "kernel": "ForgeKernel H100 gemm_fp16 (actual contract BF16 inputs/output, FP32 accumulation)",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/kernels/gemm/gemm_fp16/h100/kernel.py",
+      "observed": "Persistent384-thread CTA, one128-thread producer warpgroup and two128-thread consumers, WGMMA shared/shared operands,128x256x64 tiles and four operand stages. Released code assigns producer/consumer register quotas40/232 with setmaxnreg. Its source ledger reports settled wait1 after comparing wait0/1/2; wait2 readings were mixed.",
+      "relevance": "Mechanism and lifecycle example only. Its dense8192-cubed campaign, shared/shared operands and large output accumulator differ from our small-token compressed-weight register/shared MoE and compressed dense projections. The source ledger's timing claims were not independently reproduced. It offers no reason to predict our WAIT2 gain."
+    },
+    {
+      "kernel": "ForgeKernel B200 FP4 grouped GEMM",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/kernels/gemm/fp4_grouped_gemm/b200/kernel.py",
+      "observed": "SM100-specific FP8 E4M3 activations times E2M1 weights, UE8M0 power-of-two scale factors, block-scaled tensor operations and a large grouped campaign. Its preparation contract permits metadata/layout work different from our challenge rules.",
+      "relevance": "Reject direct transplant: H200 SM90 and BF16 activations with E4M3 NVFP4 scales require different hardware and arithmetic. Do not import its cached input-derived scheduling metadata or its precision contract into our submission."
+    },
+    {
+      "kernel": "ForgeKernel SM90 persistent ring-continuity recipe",
+      "source": "https://github.com/OpenBMB/ForgeKernel/blob/312f20f31b2909cf05dfdde6016fd12f7942ed51/hw_kb/cutedsl/sm90/persistent_tile_loop_ring_continuity.md",
+      "observed": "Keeps running stage/phase counters across persistent tiles and calls for tests that actually wrap both work-tile and ring boundaries.",
+      "relevance": "Useful adversarial coverage principle already present in our WAIT2 and NW4 tests. No additional speed claim or new candidate follows from it."
+    }
+  ],
+  "next_actions": [
+    "Resolve the already-submitted WAIT2 exact-source result before selecting another GPU experiment. Compare changed M32/M128/M256 and unchanged M1/M8/M16, plus compiler/resource evidence, using the predefined gate.",
+    "Review the sibling's320-schedule CPU pruner as a correctness/resource-feasibility manifest only. Keep unmeasured physical registers, local memory, actual occupancy and speed explicitly UNKNOWN; do not rank legal schedules by predicted speed without validated measurements.",
+    "If WAIT2 exposes register pressure or forced serialization, consider a CPU-only feasibility plan for full-warpgroup producer/consumer register redistribution. Current WGS has512 compute plus64 producer threads and no setmaxnreg. NVIDIA requires all warps in a warpgroup to execute the same setmaxnreg; a naive two-warp producer decrease is invalid. A640-thread design with a full128-thread producer group would be a separate architecture, with barrier/role/launch/PDL and actual-resource proofs before any candidate.",
+    "Do not fit a latency surrogate to our handful of heterogeneous structural failures. First define stable features, same-workload paired targets, missing-resource values, and a held-out mechanism or shape evaluation; until those exist, analytical pruning and measured final gates are the defensible tools."
+  ],
+  "setmaxnreg_primary_spec": "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg",
+  "no_framework_installed": true,
+  "no_imported_code_executed": true,
+  "no_model_calls": true,
+  "no_gpu_work": true,
+  "no_candidate_edits": true
+}

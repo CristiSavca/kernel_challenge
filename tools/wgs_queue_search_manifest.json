@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "name": "WGS GS2 queue lifetime search",
+  "purpose": "CPU admission filtering only; no generated CUDA variants, GPU use, timing prediction, or Lean proof",
+  "pinned_inputs": {
+    "parent": {
+      "path": "muse_moe_w4a16/candidates/native_wgs_kperm3_v9.py",
+      "sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+    },
+    "lifetime_checker": {
+      "path": "tools/audit_wgs_wait2_lifetimes.py",
+      "sha256": "8bacff9a322726f6728a1e3c45fb895eb33980fe76af75c5d5bbf3df43794833"
+    },
+    "register_limit_evidence": {
+      "path": "experiments/iterations/20261104-cuda-register-limit-critic.json",
+      "sha256": "644ee8e38780fce608c20f77000636fd738fa6b29f50c88e709f849f99b24f4f"
+    }
+  },
+  "fixed": {
+    "mma_steps_per_group": 2,
+    "commit_groups_per_stage": 8,
+    "af_words_per_group": 8,
+    "weight_ring_slots": 3,
+    "activation_ring_slots": 3,
+    "threads": 576,
+    "dynamic_shared_bytes": 231168,
+    "segment_end_wait_depth": 0,
+    "af_bank_selector": "ci % af_banks, reset at each stage",
+    "ntt1_accumulator_selector": "ci & 1",
+    "release": "after the selected group's commit and wait",
+    "preserve": ["all MMA operands and K order", "all producer and consumer barrier participants", "segment-end drain", "pending-segment FCI3 flush", "original packing, routing, epilogues and finalizer"]
+  },
+  "search_space": {
+    "wait_depth": [0, 1, 2, 3, 4, 5, 6, 7],
+    "af_banks": [1, 2, 4, 8, 16],
+    "release_ci": [0, 1, 2, 3, 4, 5, 6, 7]
+  },
+  "coverage": {
+    "start_sequences": [0, 1, 2, 3, 4, 5],
+    "ntt": [1, 2, 3, 4, 5, 6, 7, 8],
+    "segment_lengths": [[], [0], [1], [2], [3], [15], [16], [0, 1, 0], [0, 16, 0], [1, 1], [1, 16], [16, 1], [16, 16], [1, 0, 16, 0, 1]],
+    "scope": "Finite conservative event checks covering empty, full, partial and adjacent segments, all modeled ring slots/generations and NTT values. Not every possible route, length sequence or CUDA scheduling interleaving."
+  },
+  "parent_schedule": {"wait_depth": 1, "af_banks": 2, "release_ci": 0},
+  "independently_chosen_experiment": {"wait_depth": 2, "af_banks": 4, "release_ci": 1},
+  "device_gate": {
+    "max_reported_registers_per_thread": 96,
+    "min_actual_occupancy_ctas": 1,
+    "specializations": ["BIG=false", "BIG=true"],
+    "require": ["actual compiled attributes for exact source and specialization", "actual occupancy query at the fixed block and dynamic shared-memory size", "register/local/static-shared diagnostics", "numerical correctness and performance measurement"],
+    "unknown_until_compiled": ["registers", "local_bytes", "static_shared_bytes", "occupancy", "compiler_serialization"],
+    "performance": "UNKNOWN",
+    "note": "96 is a register-only admission limit established with NVIDIA's unmodified occupancy header and SM90 properties; it is not a complete device query or a predictor from logical AF word counts."
+  }
+}

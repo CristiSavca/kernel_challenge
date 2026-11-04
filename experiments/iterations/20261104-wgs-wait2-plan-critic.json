@@ -1,0 +1,58 @@
+{
+  "decision": "GO for one CPU-only standalone implementation; exact-source review required before any GPU check",
+  "plan": "tools/WGS_WAIT2_PLAN.md",
+  "reviewed_plan_sha256": "020e2391c0c560b09196abebcba15521da0fe1972a70155f9978ee006d8a59a2",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "chosen_mechanism": "GS2, four statically indexed AF banks ci&3, wait_group2, previous X release atci1; same one576-threadCTA, FT64,3joined TMA slots, all packing/traffic/math unchanged",
+  "independent_lifetime_verifier": "tools/audit_wgs_wait2_lifetimes.py",
+  "verifier_sha256": "8bacff9a322726f6728a1e3c45fb895eb33980fe76af75c5d5bbf3df43794833",
+  "independent_rerun": "experiments/iterations/20261104-wgs-wait2-lifetimes-critic-rerun.json",
+  "rerun_exit_code": 0,
+  "lifetime_cases": 13872,
+  "commit_groups": 3662208,
+  "flush_boundaries": 53856,
+  "negative_controls": 3,
+  "findings": [
+    "Four banks divide8groups per stage; bankq&3 was last used byq-4, which preceding wait2 has retired. At a stage boundary oldgroups6/7 usebanks2/3, leavingbank0 safe.",
+    "After first group of next stage, oldgroup7 may still read previousX. After second group ci1 wait2, all previous-stage groups retired. Only then may each warp return previousX credit.",
+    "All four warpgroups retain existing16 total X-release arrivals. Three X slots permit successorstageq+1 to be issued before producer needsqslot forq+3, so delayedrelease does not create ring dependency cycle.",
+    "NTT1 accumulator parity must stayci&1 independently of AFbankci&3; first mma0 guards and segment-end wait0/add are unchanged.",
+    "FCI3 flush uses preceding drained segment, not current AF/d. Withwait2 it runs withtwo live currentgroups and may increase compiler pressure; source/math correctness does not establish no serialization.",
+    "Negative models detect two-bank/wait2 overwrite, threebank reset-at-stage overwrite, and previousX release atci0.",
+    "GS4 earlier used4k16/group onlyforNTT1 and changed accumulation partition; newproposal keeps2k16/group and exactparent trace. Earlier96regs/local0 inGS4 does not prove resource fit for broadnewwideNTT paths.",
+    "No prior MAIN WGS af3/af4+wait2 implementation found in retained candidates, researchrecords and public_scout files searched; attentionrolePIPE kernels are distinct workloads.",
+    "NCU stall_wait8.11/9.58%, issue~59.4%, DRAM~75% are descriptive aggregate counters without source-PC attribution; they provide neither measured queue-depth bottleneck nor gain bound."
+  ],
+  "register_correction": {
+    "evidence": "experiments/iterations/20261104-cuda-register-limit-critic.json",
+    "actual_source_model": "Unchanged NVIDIA CUDA13.0.96 occupancy header run onCPU withSM90 properties.576threads ->18warps rounded20 forhardware admission;97regs rounds104effective ->66560 assumed registers>65536.",
+    "maximum_register_admissible_reported_count": 96,
+    "rejected_argument": "65536/576\u2248112 does not establish16 free registers overparent96.",
+    "logical_live_AF_words": 24,
+    "declared_AF_words": 32,
+    "parent_AF_words": 16,
+    "limitation": "Logical live counts do not predict physical register allocation, spills or compiler serialization."
+  },
+  "exact_source_requirements": [
+    "Only intendedWGS operand-bank/wait/release/GSassert and isolatedhost resource diagnostic/namespace changes. Allsmall/fallback preprocessed bodies and define tuples unchanged.",
+    "Extract actual candidate bank selector,wait depth,release point and GS constants into lifecycle proof; independently assert unchanged completeMMA operand/order/accumulator selection,firstwrites,FCI3,finalwait0,epilogues andfixups.",
+    "Actual compiled BIGfalse/BIGtrue occupancy>=1 at576threads/exactdynamic231168 beforelaunch; report regs/local/staticshared. Keep parentPDL/scratch/grid/producers/barrier counts.",
+    "No runtime AFarrayindex, triple-unrolled stages, geometry change, forcedfallback or automatic rescue variant.",
+    "Expose WGS compile diagnostics whereavailable; absent/truncated output must remain absence-of-evidence, not noC7512claim."
+  ],
+  "performance_gate": {
+    "affected": "M32/M128/M256",
+    "target_geomean_latency_reduction": 0.05,
+    "max_case_latency_regression": 0.03,
+    "controls": "Unchanged M1/M8/M16",
+    "publication": "Useful standalone evidence still needs exactfull-decoder integration review and privatecheck beforepublic score."
+  },
+  "primary_sources": [
+    "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-wgmma-wait-group",
+    "https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-wgmma-fence",
+    "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/linux-x86_64/cuda_cudart-linux-x86_64-13.0.96-archive.tar.xz"
+  ],
+  "editorial_note": "Requested uniform-register cap wording be corrected to per-thread register cap; uniform hardware registers are a different concept.",
+  "gpu_used": false,
+  "candidate_reviewed": false
+}

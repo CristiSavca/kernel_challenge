@@ -1,0 +1,644 @@
+import AppKit
+import SwiftUI
+import ResearchCore
+
+@MainActor final class AppStore: ObservableObject {
+    let leanServer = LeanServerController()
+    @Published var settings: ResearchCore.Settings
+    @Published var projects: [ResearchProject] = []
+    @Published var sessions: [ResearchSession] = []
+    @Published var researchSubtasks: [ResearchSubtask] = []
+    @Published var selectedProjectID: String?
+    @Published var selectedSessionID: UUID?
+    @Published var selectedSharedGroupID: UUID?
+    @Published var provider: Provider = .codex
+    @Published var search = ""
+    @Published var composer = ""
+    @Published var showingProjectDetails = true
+    @Published var error: String?
+    @Published var catalogStatus = "Loading catalog"
+    @Published var refreshing = false
+    @Published var builtinDrafts: [String: KernelResearchDraft] = [:]
+    @Published var builtinPlayPending = Set<String>()
+    var builtinPlayTasks: [String: Task<Void, Never>] = [:]
+    var builtinDraftsReadable = true
+    /// Test seam for the account probe; normal app launches use the official CLI.
+    var builtinAccountVerifier: (() async throws -> String)?
+    @Published var showSettings = false
+    @Published var showAddProject = false
+    @Published var auth: [Provider: String] = [:]
+    @Published var loginProvider: Provider?
+    @Published var loginOutput = ""
+    @Published var policy: String = ""
+    @Published var availableMCPServers: [String] = []
+    @Published var enabledMCPServers: Set<String> = []
+    @Published var keepResearching = Set<UUID>()
+    @Published var daytona: DaytonaConfiguration
+    @Published var daytonaStatus = "Not connected"
+    @Published var daytonaLoginOutput = ""
+    @Published var daytonaBusy = false
+    @Published var cloudCleanup = Set<String>()
+    let cloudRecoveryQueue = CloudRecoveryQueue()
+    var cloudDrains: [UUID:Bool] = [:]
+    var cloudRuntime: [String:String]?
+    var daytonaClient: DaytonaClient?
+    // Optional external execution coordinator. Normal app runs leave this nil.
+    // Runs after preparation, before any CLI invocation or sharing timer.
+    // The callback never changes prompts or model settings.
+    var cloudPrepared: ((String, UUID, [String]) async throws -> Void)?
+    // An external verifier may finish reading drained workers before recovery.
+    // Admission happens before creating any HTTP export request.
+    var cloudRecoveryReady: ((String) async throws -> Void)?
+    var daytonaLoginCancelled = false
+    var daytonaLoginRunner: ProcessRunner?
+    var cloudOwnedIDs = Set<String>()
+    var runners: [UUID: ProcessRunner] = [:]
+    var workerTasks: [UUID: Task<Void, Never>] = [:]
+    @Published var sharedOptions: [String: SharedContextOptions] = [:]
+    @Published var sharedRuns: [String: SharedRunStatus] = [:]
+    var sharedCycles: [String: SharedContextCycle] = [:]
+    var sharedOperations: [String: ProcessRunner] = [:]
+    var sharedDefaults: SharedContextOptions
+    var activePaths: [UUID: String] = [:]
+    var stopped = Set<UUID>()
+    var eventMessages: [UUID: [String: UUID]] = [:]
+    var failed = Set<UUID>()
+    var completed = Set<UUID>()
+    private var loginRunner: ProcessRunner?
+    private var saveTask: Task<Void, Never>?
+    private var checkingAuth = false
+    private var historyIsReadable = true
+    let resourceDirectory: URL
+    let builtinProjects: [BuiltinProject]
+    private let catalogPolicy: CatalogPolicy
+    private var settingsFile: URL
+    private var needsWorkspace = false
+    private var starting = false
+
+    init(resourceDirectory overrideResourceDirectory: URL? = nil, defaults overrideDefaults: ResearchCore.Settings? = nil) {
+        let executable = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+        let bundled = Bundle.main.resourceURL ?? executable.deletingLastPathComponent()
+        resourceDirectory = overrideResourceDirectory ?? (FileManager.default.fileExists(atPath: bundled.appendingPathComponent("Defaults.json").path)
+            ? bundled : executable.deletingLastPathComponent().appendingPathComponent("Resources"))
+        catalogPolicy = try! JSONDecoder().decode(CatalogPolicy.self, from: Data(contentsOf: resourceDirectory.appendingPathComponent("CatalogPolicy.json")))
+        sharedDefaults = try! JSONDecoder().decode(SharedContextOptions.self, from: Data(contentsOf: resourceDirectory.appendingPathComponent("SharedContextDefaults.json")))
+        // The build embeds installation defaults; the runtime settings remain user editable.
+        let bundledDefaults = overrideDefaults ?? (try! JSONDecoder().decode(ResearchCore.Settings.self, from: Data(contentsOf: resourceDirectory.appendingPathComponent("Defaults.json"))))
+        daytona = try! JSONDecoder().decode(DaytonaConfiguration.self,from:Data(contentsOf:resourceDirectory.appendingPathComponent("DaytonaDefaults.json")))
+        settings = bundledDefaults
+        settingsFile = URL(fileURLWithPath: bundledDefaults.workspaceRoot).appendingPathComponent("settings.json")
+        needsWorkspace = bundledDefaults.workspaceRoot.isEmpty
+        do { builtinProjects = try BuiltinProjects.load(resources: resourceDirectory) }
+        catch { builtinProjects = []; self.error = "Built-in projects could not be loaded. \(error.localizedDescription)" }
+        if !needsWorkspace { loadWorkspace(bundledDefaults) }
+        do { researchSubtasks = try LeanSearch.subtasks(resources: resourceDirectory) }
+        catch { self.error = "Could not load research subtasks: \(error.localizedDescription)" }
+    }
+
+    private func loadWorkspace(_ defaults: ResearchCore.Settings) {
+        settingsFile = URL(fileURLWithPath: defaults.workspaceRoot).appendingPathComponent("settings.json")
+        settings = (try? Data(contentsOf: settingsFile)).flatMap { try? JSONDecoder().decode(ResearchCore.Settings.self, from: $0) } ?? defaults
+        // Workspaces saved before OpenCode support pick up the detected CLI instead of an empty path.
+        if settings.opencodePath.isEmpty { settings.opencodePath = defaults.opencodePath }
+        if settings.antigravityPath.isEmpty { settings.antigravityPath = defaults.antigravityPath }
+        let cloudRoot = URL(fileURLWithPath:settings.workspaceRoot)
+        let selected = (try? Data(contentsOf:cloudRoot.appendingPathComponent("cloud-provider.json"))).flatMap { try? JSONDecoder().decode(SandboxProvider.self,from:$0) } ?? .daytona
+        if let data = try? Data(contentsOf:resourceDirectory.appendingPathComponent(selected.defaultsFile)),let config = try? JSONDecoder().decode(DaytonaConfiguration.self,from:data) { daytona = config }
+        if let saved = try? Data(contentsOf:cloudRoot.appendingPathComponent(selected.configurationFile)),let config = try? JSONDecoder().decode(DaytonaConfiguration.self,from:saved),config.sandboxProvider == selected { daytona = config }
+        if let ids = try? Data(contentsOf:cloudRoot.appendingPathComponent(selected.rawValue + "-owned.json")),let decoded = try? JSONDecoder().decode(Set<String>.self,from:ids) { cloudOwnedIDs = decoded }
+        policy = (try? String(contentsOf: URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("research-policy.md"), encoding: .utf8))
+            ?? (try? String(contentsOf: resourceDirectory.appendingPathComponent("ResearchPolicy.md"), encoding: .utf8)) ?? ""
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("mcp-selection.json")), let names = try? JSONDecoder().decode([String].self, from: data) { enabledMCPServers = Set(names) }
+        do {
+            _ = try Workspace.directory(settings.workspaceRoot, "sessions")
+            let stateURL = URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("state.json")
+            if FileManager.default.fileExists(atPath: stateURL.path) {
+                let saved = try JSONDecoder().decode(SavedState.self, from: Data(contentsOf: stateURL))
+                projects = saved.projects; sessions = saved.sessions
+                sharedOptions = saved.sharedOptions ?? [:]
+                selectedProjectID = saved.selectedProjectID; selectedSessionID = saved.selectedSessionID; provider = saved.provider
+                selectedSharedGroupID = saved.selectedSharedGroupID
+                for i in sessions.indices where ["Running", "Preparing", "Stopping"].contains(sessions[i].state) {
+                    let attachment = URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("cloud-method-attachments/" + sessions[i].id.uuidString + ".json")
+                    if FileManager.default.fileExists(atPath: attachment.path) { sessions[i].state = "Reconnecting"; continue }
+                    sessions[i].state = "Interrupted"
+                    sessions[i].messages.append(ChatMessage(role: "status", text: "The app closed during this run. Review its files before resuming; no work has been restarted automatically."))
+                }
+            }
+            if projects.isEmpty, let html = try? String(contentsOf: resourceDirectory.appendingPathComponent("catalog-source.html"), encoding: .utf8) {
+                if let snapshot = try? Catalog.parse(html) {
+                    projects = snapshot
+                    catalogStatus = "Saved catalog · refreshing"
+                } else { catalogStatus = "Built-in projects · catalog unavailable" }
+            }
+            projects = BuiltinProjects.merge(fetched: projects, existing: [], builtins: builtinProjects, sessionProjectIDs: [])
+            loadBuiltinDrafts()
+            selectInitialProject()
+        } catch { historyIsReadable = false; self.error = "Saved history could not be loaded. It will not be overwritten. \(error.localizedDescription)" }
+    }
+
+    var project: ResearchProject? { projects.first { $0.id == selectedProjectID } }
+    var session: ResearchSession? { sessions.first { $0.id == selectedSessionID } }
+    var visibleProjects: [ResearchProject] { projects.filter { catalogPolicy.includes($0) && (search.isEmpty || "\($0.name) \($0.repository) \($0.category) \($0.builtinID ?? "")".localizedCaseInsensitiveContains(search)) } }
+    func builtinProject(_ project: ResearchProject) -> BuiltinProject? { builtinProjects.first { $0.id == project.builtinID } }
+    func prepareBuiltinWorkspace(_ project: ResearchProject) throws -> URL {
+        guard let definition = builtinProject(project) else { throw ResearchError("This built-in project's resources are unavailable. Reinstall the app before starting it.") }
+        return try definition.prepare(workspaceRoot: settings.workspaceRoot, resources: resourceDirectory)
+    }
+    func projectURL(_ project: ResearchProject) -> URL? { builtinProject(project)?.website ?? project.githubURL }
+    private func selectInitialProject() {
+        // Keep an existing chat accessible while excluding its repository from discovery.
+        if selectedSessionID == nil, selectedSharedGroupID == nil, project.map({ !catalogPolicy.includes($0) }) ?? true {
+            selectedProjectID = projects.first(where: catalogPolicy.includes)?.id
+        }
+    }
+    var projectSessions: [ResearchSession] { sessions.filter { $0.projectID == selectedProjectID && $0.closedAt == nil }.sorted { $0.createdAt > $1.createdAt } }
+    var closedProjectSessions: [ResearchSession] { sessions.filter { $0.projectID == selectedProjectID && $0.closedAt != nil }.sorted { $0.closedAt! > $1.closedAt! } }
+    var isRunning: Bool { selectedSessionID.map { runners[$0] != nil } ?? false }
+    var hasActiveRuns: Bool { daytonaBusy || !cloudCleanup.isEmpty || !runners.isEmpty || !builtinPlayPending.isEmpty || sharedCycles.values.contains { $0.active } }
+    func running(_ project: ResearchProject) -> Bool { builtinPlayPending.contains(project.id) || sharedActive(project.id) || sessions.contains { $0.projectID == project.id && runners[$0.id] != nil } }
+
+    func start() async {
+        guard !starting else { return }; starting = true
+        if needsWorkspace {
+            let resolved = await PortableSetup.resolve(settings)
+            loadWorkspace(resolved); needsWorkspace = false
+        }
+        restoreMethodMonitoring()
+        await refreshCatalog(); await refreshAuth(); await refreshMCPServers()
+    }
+    func refreshCatalog() async {
+        guard !refreshing else { return }; refreshing = true; defer { refreshing = false }
+        do {
+            let fetched = try await Catalog.fetch(settings.catalogURL)
+            projects = BuiltinProjects.merge(fetched: fetched, existing: projects, builtins: builtinProjects, sessionProjectIDs: Set(sessions.map(\.projectID)))
+            selectInitialProject()
+            catalogStatus = "\(fetched.filter(catalogPolicy.includes).count) repositories · \(builtinProjects.count) built-in projects"
+            save()
+        } catch { catalogStatus = "Offline · saved catalog"; self.error = error.localizedDescription }
+    }
+    func select(_ project: ResearchProject) {
+        selectedProjectID = project.id
+        selectedSharedGroupID = nil
+        selectedSessionID = nil; showingProjectDetails = true
+        composer = ""; save()
+    }
+    func selectSession(_ session: ResearchSession) {
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) { sessions[index].closedAt = nil }
+        selectedSharedGroupID = nil; selectedProjectID = session.projectID; selectedSessionID = session.id; provider = session.provider; composer = ""; save()
+    }
+    func canClose(_ session: ResearchSession) -> Bool {
+        runners[session.id] == nil && !(session.sharedAgent?.groupID == sharedRuns[session.projectID]?.groupID && sharedActive(session.projectID))
+    }
+    func closeSession(_ id: UUID) {
+        guard let index = sessions.firstIndex(where: { $0.id == id }), canClose(sessions[index]) else { return }
+        sessions[index].closedAt = Date()
+        let group = sessions[index].sharedAgent?.groupID
+        if selectedSessionID == id || (group != nil && selectedSharedGroupID == group && !sessions.contains(where: { $0.sharedAgent?.groupID == group && $0.closedAt == nil })) { showProjectDetails() }
+        save()
+    }
+    func canCloseGroup(_ groupID: UUID) -> Bool {
+        sessions.filter { $0.sharedAgent?.groupID == groupID }.allSatisfy(canClose)
+    }
+    func closeSharedGroup(_ groupID: UUID) {
+        guard canCloseGroup(groupID) else { return }
+        let ids = sessions.filter { $0.sharedAgent?.groupID == groupID }.map(\.id)
+        for id in ids { closeSession(id) }
+        if selectedSharedGroupID == groupID { showProjectDetails() }
+        save()
+    }
+    func newChat() { selectedSharedGroupID = nil; selectedSessionID = nil; showingProjectDetails = false; composer = ""; save() }
+    func showProjectDetails() { selectedSharedGroupID = nil; selectedSessionID = nil; showingProjectDetails = true; save() }
+    func addRepository(_ text: String) {
+        var repo = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if repo.hasPrefix("https://github.com/") { repo = String(repo.dropFirst("https://github.com/".count)) }
+        if repo.hasSuffix(".git") { repo = String(repo.dropLast(4)) }
+        repo = repo.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard repo.range(of: "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", options: .regularExpression) != nil, !repo.split(separator: "/").contains("..") else { error = "Enter a GitHub URL or owner/repository."; return }
+        if let existing = projects.first(where: { $0.repository.lowercased() == repo.lowercased() }) { select(existing) }
+        else { let added = ResearchProject(repository: repo, isCustom: true); projects.append(added); select(added) }
+        showAddProject = false; save()
+    }
+    func addFolder() {
+        let picker = NSOpenPanel(); picker.canChooseFiles = false; picker.canChooseDirectories = true
+        picker.directoryURL = URL(fileURLWithPath: settings.workspaceRoot)
+        guard picker.runModal() == .OK, let url = picker.url else { return }
+        do {
+            let valid = try Workspace.validate(url.path)
+            let added = ResearchProject(repository: "", name: valid.lastPathComponent, category: "Local project", localPath: valid.path, isCustom: true)
+            if !projects.contains(where: { $0.id == added.id }) { projects.append(added) }
+            select(added); showAddProject = false; save()
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func save() {
+        saveTask?.cancel()
+        saveTask = Task { try? await Task.sleep(for: .milliseconds(300)); guard !Task.isCancelled else { return }; persist() }
+    }
+    @discardableResult func persist() -> Bool {
+        guard historyIsReadable, !needsWorkspace else { return false }
+        do {
+            let root = try Workspace.validate(settings.workspaceRoot)
+            var state = SavedState(projects: projects, sessions: sessions, selectedProjectID: selectedProjectID, selectedSessionID: selectedSessionID, provider: provider)
+            state.sharedOptions = sharedOptions
+            state.selectedSharedGroupID = selectedSharedGroupID
+            try Workspace.write(state, to: root.appendingPathComponent("state.json"))
+            return true
+        } catch { self.error = "Could not save chat history: \(error.localizedDescription)"; return false }
+    }
+    func saveSettings() {
+        do {
+            guard !hasActiveRuns, loginRunner == nil else { throw ResearchError("Stop active runs and login before changing connection settings.") }
+            _ = try Workspace.directory(settings.workspaceRoot, "sessions")
+            try Workspace.write(settings, to: settingsFile)
+            try Workspace.write(enabledMCPServers.sorted(), to: URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("mcp-selection.json"))
+            let policyURL = URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("research-policy.md")
+            try policy.write(to: policyURL, atomically: true, encoding: .utf8)
+            persist(); showSettings = false
+            Task { await refreshAuth() }
+        } catch { self.error = error.localizedDescription }
+    }
+    func append(_ id: UUID, role: String, text: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
+        sessions[index].messages.append(ChatMessage(role: role, text: text)); save()
+    }
+    func state(_ id: UUID, _ value: String) { if let i = sessions.firstIndex(where: { $0.id == id }) { sessions[i].state = value }; save() }
+    func play(_ project: ResearchProject) {
+        if project.builtinID != nil { playBuiltin(project); return }
+        if sharedActive(project.id) {
+            if let id = sharedRuns[project.id]?.groupID { selectSharedGroup(id, projectID: project.id) }
+            return
+        }
+        if let existing = sessions.first(where: { $0.projectID == project.id && runners[$0.id] != nil }) { selectSession(existing); return }
+        if project.builtinID == nil && (sharedConfiguration(project.id).parallelEnabled || sharedConfiguration(project.id).usesMethods) { startSharedResearch(project); return }
+        select(project)
+        let session = ResearchSession(projectID: project.id, title: "Research · \(project.name)", provider: provider)
+        sessions.append(session); selectedSessionID = session.id
+        launch(session.id, project: project, request: nil)
+    }
+
+    func subtaskSession(_ task: ResearchSubtask, project: ResearchProject) -> ResearchSession? {
+        sessions.filter { $0.projectID == project.id && $0.researchSubtaskID == task.id }
+            .max { $0.createdAt < $1.createdAt }
+    }
+
+    func playSubtask(_ task: ResearchSubtask, project: ResearchProject) {
+        guard subtaskAvailable(task, project: project) else {
+            error = "\(task.title) is unavailable because CPU search is not configured for this repository. Install its script and plan, and describe the search in .auto-research/cpu-search.json before running."
+            return
+        }
+        guard !running(project) else {
+            error = "This repository has active research. Stop it before starting a subtask in the same checkout."
+            return
+        }
+        select(project)
+        var session = ResearchSession(projectID: project.id, title: "\(task.title) · \(project.name)", provider: provider)
+        session.researchSubtaskID = task.id
+        session.scripted = task.execution == "script"
+        sessions.append(session); selectedSessionID = session.id
+        launch(session.id, project: project, request: task.request)
+    }
+    func send(to recipientID: UUID? = nil) {
+        guard !isCPUSubtask else { error = "CPU search runs a script without a model. Edit its plan and use Run script to start a new run."; return }
+        let request = composer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !request.isEmpty, let project, !isRunning else { return }
+        guard !sharedActive(project.id) else { error = "Stop the parallel group before sending a manual follow-up."; return }
+        if let group = selectedSharedGroupID {
+            guard let recipientID, SharedTranscript.latestAgents(in: sessions, projectID: project.id, groupID: group).contains(where: { $0.id == recipientID }) else {
+                error = "Choose an agent in this group before sending a follow-up."; return
+            }
+            guard !sessions.contains(where: { $0.projectID == project.id && runners[$0.id] != nil }) else {
+                error = "Stop research before sending a manual follow-up."; return
+            }
+            composer = ""
+            if let index = sessions.firstIndex(where: { $0.id == recipientID }) { sessions[index].closedAt = nil }
+            launch(recipientID, project: project, request: request)
+            return
+        }
+        if recipientID != nil { error = "Select the agent's group before sending a follow-up."; return }
+        if selectedSessionID == nil, project.builtinID == nil, sharedConfiguration(project.id).parallelEnabled || sharedConfiguration(project.id).usesMethods { composer = ""; startSharedResearch(project, request: request); return }
+        if let other = sessions.first(where: { $0.projectID == project.id && runners[$0.id] != nil }) { selectSession(other); error = "This project already has an active run. Stop it before starting another writer."; return }
+        composer = ""
+        let id: UUID
+        if let selectedSessionID { id = selectedSessionID }
+        else {
+            let session = ResearchSession(projectID: project.id, title: String(request.prefix(65)), provider: provider)
+            sessions.append(session); id = session.id; selectedSessionID = id
+        }
+        launch(id, project: project, request: request)
+    }
+    func environment() throws -> [String: String] {
+        let cache = try Workspace.directory(settings.workspaceRoot, "cache")
+        let tmp = try Workspace.directory(settings.workspaceRoot, "tmp")
+        let inherited = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
+        let paths = [URL(fileURLWithPath: settings.codexPath).deletingLastPathComponent().path, URL(fileURLWithPath: settings.claudePath).deletingLastPathComponent().path, URL(fileURLWithPath: settings.opencodePath).deletingLastPathComponent().path, URL(fileURLWithPath: settings.antigravityPath).deletingLastPathComponent().path, "/opt/homebrew/bin", "/usr/local/bin", inherited]
+        return ["PATH": paths.joined(separator: ":"), "TMPDIR": tmp.path + "/", "XDG_CACHE_HOME": cache.path, "PIP_CACHE_DIR": cache.appendingPathComponent("pip").path, "npm_config_cache": cache.appendingPathComponent("npm").path, "CLANG_MODULE_CACHE_PATH": cache.appendingPathComponent("clang").path, "SWIFT_MODULECACHE_PATH": cache.appendingPathComponent("swift").path]
+    }
+    func launch(_ id: UUID, project: ResearchProject, request: String?) {
+        if let session = sessions.first(where: { $0.id == id }),
+           let task = researchSubtasks.first(where: { $0.id == session.researchSubtaskID }),
+           !subtaskAvailable(task, project: project) {
+            append(id, role: "error", text: "\(task.title) requires an installed CPU search for this repository. Existing history is preserved.")
+            state(id, "Needs attention")
+            return
+        }
+        if let session = sessions.first(where: { $0.id == id }),
+           session.scripted == true || researchSubtasks.contains(where: { $0.id == session.researchSubtaskID && $0.execution == "script" }) {
+            launchCPUSearch(id, project: project)
+            return
+        }
+        if project.builtinID == nil, let session = sessions.first(where: { $0.id == id }), session.researchSubtaskID == nil,
+           session.usesCloud(preferCloud:daytona.enabled) { launchCloud(id, project:project, request:request);return }
+        guard runners[id] == nil else { return }
+        let targetPath = sessions.first(where: { $0.id == id })?.workingDirectory ?? project.localPath ?? URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent(project.managedWorkspaceComponent).path
+        let target = URL(fileURLWithPath: targetPath).resolvingSymlinksInPath().path
+        if activePaths.values.contains(target) { append(id, role: "error", text: "Another chat is already using this checkout. Stop that run before starting another writer."); state(id, "Needs attention"); return }
+        // Record the reserved path before the first suspension so folder aliases cannot race a clone.
+        // For managed projects the checkout itself is still prepared below.
+        activePaths[id] = target
+        let runner = ProcessRunner(); runners[id] = runner; stopped.remove(id); failed.remove(id); completed.remove(id); eventMessages[id] = [:]
+        state(id, "Preparing")
+        workerTasks[id] = Task {
+            var nextDecision: String?
+            do {
+                let env = try environment()
+                guard let current = sessions.first(where: { $0.id == id }) else { return }
+                guard FileManager.default.isExecutableFile(atPath: settings.executable(current.provider)) else { throw ResearchError("\(current.provider.title) CLI is not installed at the configured path. Open Connections to locate it or view installation instructions.") }
+                let directory: URL
+                if project.builtinID != nil {
+                    guard builtinProject(project) != nil else { throw ResearchError("This built-in project's resources are unavailable.") }
+                    if let path = current.workingDirectory { directory = try Workspace.validate(path) }
+                    else { directory = try prepareBuiltinWorkspace(project) }
+                }
+                else if let path = current.workingDirectory ?? project.localPath { directory = try Workspace.validate(path) }
+                else {
+                    let parent = try Workspace.directory(settings.workspaceRoot, "projects")
+                    directory = parent.appendingPathComponent(project.repository)
+                    if !FileManager.default.fileExists(atPath: directory.path) {
+                        _ = try Workspace.directory(settings.workspaceRoot, "projects/\(project.repository.components(separatedBy: "/")[0])")
+                        append(id, role: "status", text: "Cloning \(project.repository) into the SSD workspace…")
+                        let result = try await runner.run(Command("/usr/bin/git", ["clone", "--", "https://github.com/\(project.repository).git", directory.path]), directory: parent, environment: env, onLine: { line, _ in Task { @MainActor in self.append(id, role: "tool", text: line) } })
+                        guard result.code == 0 else { throw ResearchError("Clone failed. \(result.stderr)") }
+                    }
+                    _ = try Workspace.validate(directory.path)
+                    guard FileManager.default.fileExists(atPath: directory.appendingPathComponent(".git").path) else { throw ResearchError("An incomplete checkout already exists at \(directory.path). Inspect it before retrying; it has been preserved.") }
+                }
+                guard !stopped.contains(id) else { throw CancellationError() }
+                if let i = sessions.firstIndex(where: { $0.id == id }) { sessions[i].workingDirectory = directory.path }
+                var prompt = request ?? ""
+                if project.builtinID != nil {
+                    guard let instruction = Workspace.instructionFile(in: directory, trackedFiles: []) else { throw ResearchError("The starter's auto-research.md is missing or points outside its workspace. Restore the guide before continuing.") }
+                    let body = try String(contentsOf: instruction, encoding: .utf8)
+                    guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ResearchError("auto-research.md is empty. Add research instructions before starting.") }
+                    prompt = "\(request ?? "Start this research project using its starter guide.")\n\nProject: \(project.name) (\(project.builtinID!)). Work in \(directory.path). Read applicable AGENTS.md and the editable guide at \(instruction.path).\n\n\(body)"
+                    append(id, role: "status", text: "Loaded editable starter guide · local agent with official remote judge")
+                }
+                else if request == nil {
+                    let files = try await runner.run(Command("/usr/bin/git", ["ls-files", "-z"]), directory: directory, environment: env)
+                    let tracked = files.stdout.split(separator: "\0").map(String.init)
+                    if let instruction = Workspace.instructionFile(in: directory, trackedFiles: tracked) {
+                        let body = try String(contentsOf: instruction, encoding: .utf8)
+                        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ResearchError("\(instruction.lastPathComponent) is empty. Add research instructions before starting.") }
+                        prompt = "Start an autonomous research run in \(directory.path). Read applicable AGENTS.md and follow this repository instruction file: \(instruction.path).\n\n\(body)"
+                        append(id, role: "status", text: "Loaded \(instruction.path.replacingOccurrences(of: directory.path + "/", with: ""))")
+                    } else {
+                        prompt = "Start a research run in \(directory.path). The harness did not find a tracked auto-research.md file. Inspect the repository and its AGENTS.md, locate its actual research instructions (including README-linked guides or program.md), explain the source you choose, and carry out the documented research workflow. If there is no actionable research objective, ask me instead of inventing instructions."
+                        append(id, role: "status", text: "auto-research.md was not found. The agent will inspect the repository for its research guide.")
+                    }
+                }
+                guard !stopped.contains(id) else { throw CancellationError() }
+                let methodOptions = current.researchSubtaskID == nil && project.builtinID == nil ? sharedConfiguration(project.id).methods : nil
+                if let methods = methodOptions, methods.enabled {
+                    prompt += "\nYou are the coordinator for \(methods.branches) method branches collaborating on the same objective. Previous group indices are historical evidence, not current team assignments. Write a common plan; only the owned method runner launches branches."
+                }
+                if let shared = current.sharedAgent {
+                    let count = shared.agentCount ?? sharedConfiguration(project.id).agentCount
+                    if methodOptions?.enabled != true { prompt += shared.isIndependent
+                        ? "\n\nIndependent parallel agent \(shared.index) of \(count). Solve the same user problem independently in your assigned checkout: \(directory.path). No peer context is supplied or exchanged."
+                        : "\n\nParallel research agent \(shared.index) of \(count), generation \(shared.generation). Your assigned checkout is \(directory.path)." }
+                    if !shared.isIndependent, let path = shared.contextFile {
+                        prompt += "\nShared context copied into this fresh session from \(path):\n\n" + (try String(contentsOfFile: path, encoding: .utf8))
+                    }
+                }
+                append(id, role: "user", text: prompt)
+                let logDir = try Workspace.directory(settings.workspaceRoot, "sessions/\(id.uuidString)")
+                let logURL = logDir.appendingPathComponent("\(UUID().uuidString).jsonl")
+                FileManager.default.createFile(atPath: logURL.path, contents: nil, attributes: [.posixPermissions: 0o600])
+                let log = try FileHandle(forWritingTo: logURL); let logLock = NSLock()
+                defer { try? log.close() }
+                let sharedPolicy = current.sharedAgent == nil || methodOptions?.enabled == true ? "" : try String(contentsOf: resourceDirectory.appendingPathComponent(current.sharedAgent?.isIndependent == true ? "IndependentAgentPolicy.md" : "SharedAgentPolicy.md"), encoding: .utf8)
+                var fullPolicy = policy + "\n\n" + sharedPolicy + "\n\nConfigured workspace: \(settings.workspaceRoot). Current checkout: \(directory.path)."
+                let leanTools = directory.appendingPathComponent(".auto-research-tools/lean-search")
+                try LeanSearch.install(resources: resourceDirectory, directory: leanTools)
+                fullPolicy += "\n\n" + LeanSearch.instruction(directory: leanTools.path, connection: leanServer.connectionPath)
+                if current.researchSubtaskID != nil {
+                    let overview = LeanSearch.overviewURL(directory: directory, sessionID: id)
+                    try FileManager.default.createDirectory(at: overview.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    fullPolicy += "\n\n" + LeanSearch.overviewInstruction(at: overview)
+                }
+                var disabledMCPServers: [String] = []
+                if current.provider == .codex {
+                    let discovered = try await runner.run(CLI.mcpDiscovery(settings.codexPath), directory: directory, environment: env)
+                    guard discovered.code == 0 else { throw ResearchError("Could not inspect Codex MCP settings. No research process was started. \(discovered.stderr)") }
+                    let names = try CLI.configuredMCPServers(Data(discovered.stdout.utf8))
+                    availableMCPServers = names
+                    disabledMCPServers = names.filter { !enabledMCPServers.contains($0) }
+                }
+                var methodFolder: URL?
+                var methodFiles: [String: Data] = [:]
+                if let methods = methodOptions, methods.enabled {
+                    let files = try ResearchMethods.files(options: methods, provider: current.provider, settings: settings,
+                        policy: fullPolicy, resources: resourceDirectory, disabledMCPServers: disabledMCPServers,
+                        enabledMCPServers: availableMCPServers.filter { enabledMCPServers.contains($0) }, sharedContext: sharedConfiguration(project.id))
+                    let folder = directory.appendingPathComponent(".auto-research-methods/control/\(id.uuidString)/\(UUID().uuidString)")
+                    _ = try Workspace.validate(folder.path)
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    for (name, data) in files { try data.write(to: folder.appendingPathComponent(name), options: .atomic) }
+                    methodFolder = folder; methodFiles = files
+                    fullPolicy += "\n\n" + ResearchMethods.instruction(directory: folder.path)
+                    append(id, role: "status", text: "Optional research methods installed. Branches use the configured model; evidence and losing branches are retained in this checkout.")
+                }
+                let command = CLI.chat(provider: current.provider, settings: settings, sessionID: current.providerSessionID, prompt: prompt, policy: fullPolicy, disabledMCPServers: disabledMCPServers, enabledMCPServers: availableMCPServers.filter { enabledMCPServers.contains($0) })
+                state(id, "Running")
+                let result = try await runner.run(command, directory: directory, environment: env, onLine: { line, stderr in
+                    logLock.lock(); try? log.write(contentsOf: Data((line + "\n").utf8)); logLock.unlock()
+                    Task { @MainActor in self.consume(line, stderr: stderr, provider: current.provider, sessionID: id) }
+                })
+                // Derive terminal state from the fully drained stream, independent of UI scheduling.
+                for line in result.stdout.split(separator: "\n") {
+                    consume(String(line), stderr: false, provider: current.provider, sessionID: id)
+                    for event in EventDecoder.decode(String(line), provider: current.provider) {
+                        switch event {
+                        case .completed: completed.insert(id)
+                        case .failure: failed.insert(id)
+                        case .session(let providerID):
+                            if let i = sessions.firstIndex(where: { $0.id == id }) { sessions[i].providerSessionID = providerID }
+                        case .message(_, "assistant", let text): nextDecision = EventDecoder.continuationDecision(text)
+                        default: break
+                        }
+                    }
+                }
+                if let folder = methodFolder, !stopped.contains(id), result.code == 0, !failed.contains(id), completed.contains(id),
+                   (ResearchMethods.ready(result.stdout, provider: current.provider) || !["finished", "needs_input"].contains(nextDecision ?? "")) {
+                    guard ResearchMethods.ready(result.stdout, provider: current.provider) else {
+                        throw ResearchError("The model has not prepared a research-method plan. No branches were launched; review its response.")
+                    }
+                    // Restore trusted runtime/config bytes after the planning model wrote its plan.
+                    for (name, data) in methodFiles { try data.write(to: folder.appendingPathComponent(name), options: .atomic) }
+                    append(id, role: "status", text: "Plan ready. Running isolated research branches with the configured model.")
+                    let execution = try await runner.run(Command("/usr/bin/env", ["python3", "-B", folder.appendingPathComponent("ResearchMethods.py").path,
+                        "--config", folder.appendingPathComponent("config.json").path, "--plan", folder.appendingPathComponent("plan.json").path,
+                        "--workspace", directory.path]), directory: directory, environment: env, onLine: { line, _ in
+                            Task { @MainActor in self.append(id, role: "tool", text: line) }
+                        })
+                    guard execution.code == 0 else { throw ResearchError("Research-method execution stopped or failed. All branch work and logs are preserved. \(execution.stderr)") }
+                    append(id, role: "assistant", text: try ResearchMethods.summary(execution.stdout))
+                    // A batch boundary is not completion of the user's objective.
+                    // The next coordinator turn reviews the evidence and decides.
+                    nextDecision = keepResearching.contains(id) ? "continue" : nil
+                }
+                if stopped.contains(id) { state(id, "Stopped") }
+                else if result.code != 0 || failed.contains(id) {
+                    state(id, "Needs attention")
+                    if result.code != 0 { append(id, role: "error", text: "\(current.provider.title) exited with status \(result.code). \(result.stderr)") }
+                } else if !completed.contains(id) { state(id, "Needs attention"); append(id, role: "error", text: "The CLI exited without a completed-turn event. Review the run log before resuming.") }
+                else if nextDecision == "needs_input" { state(id, "Needs attention") }
+                else { state(id, "Completed") }
+            } catch {
+                if stopped.contains(id) || error is CancellationError { state(id, "Stopped") }
+                else { state(id, "Needs attention"); append(id, role: "error", text: error.localizedDescription) }
+            }
+            runners.removeValue(forKey: id); activePaths.removeValue(forKey: id); persist()
+            let finishedSession = sessions.first(where: { $0.id == id })
+            if let agent = finishedSession?.sharedAgent, !agent.isIndependent, finishedSession?.state == "Needs attention" {
+                sharedCycles[project.id]?.stop(failure: "An agent needs attention. Review its chat before starting another group.")
+            }
+            if keepResearching.contains(id), finishedSession?.state == "Completed", nextDecision == "continue" {
+                let next = (try? String(contentsOf: resourceDirectory.appendingPathComponent("ContinuePolicy.md"), encoding: .utf8)) ?? ""
+                if !next.isEmpty { launch(id, project: project, request: next) }
+            } else if keepResearching.contains(id) {
+                keepResearching.remove(id)
+                append(id, role: "status", text: "Continuous research paused. The agent did not request another experiment, or this run needs attention.")
+            }
+        }
+    }
+    func consume(_ line: String, stderr: Bool, provider: Provider, sessionID id: UUID) {
+        guard let i = sessions.firstIndex(where: { $0.id == id }), !line.isEmpty else { return }
+        if stderr {
+            if let messageID = eventMessages[id]?["cli-diagnostics"], let index = sessions[i].messages.firstIndex(where: { $0.id == messageID }) {
+                sessions[i].messages[index].text += "\n" + line
+            } else {
+                let message = ChatMessage(role: "tool", text: "CLI diagnostics\n" + line)
+                sessions[i].messages.append(message); eventMessages[id, default: [:]]["cli-diagnostics"] = message.id
+            }
+            save(); return
+        }
+        for event in EventDecoder.decode(line, provider: provider) {
+            switch event {
+            case .session(let value): sessions[i].providerSessionID = value
+            case .completed: completed.insert(id); failed.remove(id)
+            case .failure(let text): failed.insert(id); completed.remove(id); append(id, role: "error", text: text)
+            case let .message(key, role, text):
+                if let messageID = eventMessages[id]?[key], let index = sessions[i].messages.firstIndex(where: { $0.id == messageID }) { sessions[i].messages[index].text = text }
+                else { let message = ChatMessage(role: role, text: text); sessions[i].messages.append(message); eventMessages[id, default: [:]][key] = message.id }
+            }
+        }
+        save()
+    }
+    func stopWorker(_ id: UUID) { keepResearching.remove(id); guard let runner = runners[id] else { return }; stopped.insert(id); state(id, "Stopping"); runner.stop() }
+    func stop(_ id: UUID) {
+        if let session = sessions.first(where: { $0.id == id }), session.sharedAgent != nil, sharedActive(session.projectID) { stopSharedResearch(session.projectID) }
+        else { stopWorker(id) }
+    }
+    func shutdown() { leanServer.stop(); for task in builtinPlayTasks.values { task.cancel() }; for cycle in sharedCycles.values { cycle.stop() }; for id in Array(runners.keys) { stopWorker(id) }; loginRunner?.stop(); daytonaLoginCancelled = true;daytonaLoginRunner?.stop()
+        if let client = daytonaClient,let connection = daytona.connectionSandboxID {
+            cloudCleanup.insert(connection)
+            Task {
+                do { try await client.stop(connection,archive:false) } catch { self.error = "Cloud connection stop could not be confirmed: " + error.localizedDescription }
+                cloudCleanup.remove(connection)
+            }
+        }
+        persist() }
+
+    func refreshAuth() async {
+        guard !needsWorkspace else { return }
+        guard !checkingAuth else { return }; checkingAuth = true; defer { checkingAuth = false }
+        for provider in Provider.allCases {
+            guard FileManager.default.isExecutableFile(atPath: settings.executable(provider)) else { auth[provider] = "Not installed"; continue }
+            do {
+                let directory = try Workspace.directory(settings.workspaceRoot, "auth")
+                let result = try await ProcessRunner().run(CLI.auth(provider, settings: settings, login: false), directory: directory, environment: try environment())
+                if provider == .claude, let data = result.stdout.data(using: .utf8), let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+                    auth[provider] = object["loggedIn"] as? Bool == true ? "Connected" : "Sign in required"
+                } else if provider == .opencode {
+                    auth[provider] = result.code == 0 && CLI.opencodeSignedIn(result.stdout) ? "Connected" : "Sign in required"
+                } else { auth[provider] = result.code == 0 ? "Connected" : "Sign in required" }
+            } catch { auth[provider] = "Unavailable" }
+        }
+    }
+    func refreshMCPServers() async {
+        do {
+            let directory = try Workspace.directory(settings.workspaceRoot, "auth")
+            let result = try await ProcessRunner().run(CLI.mcpDiscovery(settings.codexPath), directory: directory, environment: try environment())
+            guard result.code == 0 else { return }
+            availableMCPServers = try CLI.configuredMCPServers(Data(result.stdout.utf8))
+        } catch { /* Connection status already reports a missing CLI. */ }
+    }
+    func login(_ provider: Provider) {
+        if provider == .antigravity { openAntigravityLogin(); return }
+        guard loginRunner == nil else { return }
+        loginProvider = provider; loginOutput = "Starting \(provider.title) login. Complete sign-in in your browser.\n"
+        let runner = ProcessRunner(); loginRunner = runner
+        Task {
+            do {
+                let directory = try Workspace.directory(settings.workspaceRoot, "auth")
+                let result = try await runner.run(CLI.auth(provider, settings: settings, login: true), directory: directory, environment: try environment(), interactive: true, onLine: { line, _ in Task { @MainActor in self.loginOutput += line + "\n" } })
+                loginOutput += result.code == 0 ? "\nLogin command finished. Checking account…" : "\nLogin exited with status \(result.code)."
+            } catch { loginOutput += "\n" + error.localizedDescription }
+            loginRunner = nil; await refreshAuth()
+        }
+    }
+    func sendLoginInput(_ input: String) { loginRunner?.sendInput(input) }
+    func cancelLogin() { loginRunner?.stop(); loginProvider = nil }
+    /// Antigravity has no login subcommand and refuses interactive sign-in in
+    /// print mode, so open its terminal UI for the official Google sign-in flow.
+    private func openAntigravityLogin() {
+        let path = settings.antigravityPath
+        guard !path.isEmpty, FileManager.default.isExecutableFile(atPath: path) else {
+            error = "Set the Antigravity CLI executable path in Connections first."
+            return
+        }
+        do {
+            let folder = try Workspace.directory(settings.workspaceRoot, "terminal")
+            let file = folder.appendingPathComponent("antigravity-login-\(UUID().uuidString).command")
+            func quote(_ text: String) -> String { "'" + text.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+            let script = "#!/bin/zsh\ncd -- \(quote(folder.path)) || exit\nexec \(quote(path))\n"
+            try script.write(to: file, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
+            NSWorkspace.shared.open(file)
+            loginProvider = .antigravity
+            loginOutput = "Antigravity signs in through its own terminal interface. Complete the Google sign-in in the Terminal window that opened (run /login there if it is not offered automatically), then return here and press Refresh connection status."
+        } catch { self.error = error.localizedDescription }
+    }
+    func revealProject() { if session?.cloud != nil { NSWorkspace.shared.open((session?.cloud?.provider ?? daytona.sandboxProvider).dashboardURL);return }; if let path = session?.workingDirectory ?? project?.localPath { NSWorkspace.shared.open(URL(fileURLWithPath: path)) } }
+    func revealLogs() {
+        guard let id = selectedSessionID else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: settings.workspaceRoot).appendingPathComponent("sessions/\(id.uuidString)"))
+    }
+    func openTerminal() {
+        guard session?.cloud == nil else { error = "This chat runs in a cloud sandbox. Open its sandbox from the project button; its CLI history stays in that private sandbox.";return }
+        guard let session, let directory = session.workingDirectory, let providerID = session.providerSessionID else { error = "Start a chat first to open its CLI session in Terminal."; return }
+        guard !sharedActive(session.projectID) else { error = "Stop the shared-context group before continuing one of its sessions in Terminal."; return }
+        do {
+            let folder = try Workspace.directory(settings.workspaceRoot, "terminal")
+            let file = folder.appendingPathComponent("\(session.id.uuidString).command")
+            func quote(_ text: String) -> String { "'" + text.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+            let args = CLI.resumeArguments(session.provider, sessionID: providerID)
+            let env = try environment().map { "export \($0.key)=\(quote($0.value))" }.joined(separator: "\n")
+            let script = "#!/bin/zsh\n\(env)\ncd -- \(quote(directory)) || exit\nexec \(quote(settings.executable(session.provider))) \(args.map(quote).joined(separator: " "))\n"
+            try script.write(to: file, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
+            NSWorkspace.shared.open(file)
+        } catch { self.error = error.localizedDescription }
+    }
+}

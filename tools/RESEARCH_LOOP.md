@@ -736,3 +736,72 @@ smaller token tiles/right-sized metadata/NS2/separate finalization can fit two
 576-thread CTAs without compact V10's stage/activation costs. Existing96regs
 would need<=56; this is an unresolved major obstacle, not a proposed speedup.
 No implementation or GPU approved for that feasibility question. Goal active.
+
+09:06 UTC: NW4 check f46b93032b5548c1 is terminal PASS but REJECT for performance.
+Exact 34ee source scored 2.258751600, below both 247888 parent intervals. All five
+tests, six benchmarks and six profiles passed without flags. All three small
+extension markers show 160 threads, 101632 dynamic bytes, occupancy 2/2,
+168 registers and 32 local bytes. Affected M1/M8/M16 baseline-relative latency
+rises 23.55/7.06/2.48% versus public, geometric 10.67%; the private comparison is
+geometric 11.16%. MAIN controls remain close.
+Root analyzer and independent critic agree: no integration, scoring or retry.
+The capacity hypothesis succeeded; higher capacity failed to improve speed.
+Local bytes alone do not establish spills or their causal contribution.
+
+The broad MAIN two-CTA feasibility is closed NO GO. FT16 adds 44–85% weight
+requests in saved M256 routes; FT32 still adds 11–27%. Dropping S.pos alone does
+not make all larger shapes fit. Existing 160 fixup slots cannot handle grid 264.
+No register evidence supports 96→56 from splitting the finalizer; no overflow claim
+is justified under reviewed bounds. Exact layouts/route counts are retained.
+
+NVIDIA's pinned CUDA 13.0.96 occupancy header supplied a useful correction:
+576-thread kernels admit at most 96 reported registers, not the 112 suggested
+by aggregate arithmetic. 160 threads at 168 registers permit two CTAs;
+200 registers permit only one.
+The CPU calculator is a register-capacity model, not an actual GPU query.
+
+One distinct WGS wait2 mechanism is now under official private check:
+a0dd88ebc8964b3f, source 97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6.
+It keeps one CTA, 576 threads, all geometry/bytes/math/KPERM, and uses four AF
+banks with wait2, preserving NTT1 parity and moving previous-X release to ci1.
+Root/author checks passed 16 unchanged non-WGS builds and 1,462,272 native MMA
+trace calls; the critic approved one private check only. The abstract lifetime
+model passed 13,872 cases and three unsafe controls. The 96-register budget has
+no established headroom; compiler spills, serialization and speed remain unknown.
+WGS build diagnostics and both specialization resource markers are enabled.
+Local submit 41584 completed with exit 0; receipt received. Poll the same job
+only. Neither active public file has changed.
+
+User supplied Rohan's November 2 workflow tweet. A fresh public repository audit
+still finds main 018b7a from October 30; it inspected 101 workflow text files and
+all 13 branch dates. Released code includes measured branch selection, dashboards
+and mathematical Lean/QRH tooling. No released CUDA genetic optimizer, trained
+GPU performance predictor or Lean GPU physics pruner was found. Do not claim
+they do not exist privately. The audit and bounded source cache preserve exact
+links and licensing. A small CPU schedule pruner is being added around our
+existing lifetime model; it must retain rejection reasons and keep actual
+registers and performance UNKNOWN. No learned prediction or formal Lean proof
+is claimed. Public incumbents remain 97af/247888; the #1 goal is active and
+unachieved. No Modal run, budget journal reset, paid service allocation or
+unrelated cleanup occurred.
+
+09:30 UTC: CPU schedule search is complete, independently reviewed and rerun by
+root. tools/search_wgs_queue_cpu.py and its pinned manifest enumerate 320 cases:
+181 unsafe lifetimes rejected, 139 pass the abstract lifetime checks, including
+67 deeper-queue schedules. Both hazards are retained for 60 overlapping failures.
+The root run matched the author's complete report SHA 5a183f932df663a466e8267c9f6b74ab548fbdf072e24b2aeba53c955abcacae:
+93,408 trace comparisons and 7,472,640 commit groups. Every new configuration
+retains UNKNOWN compiled resources and speed; none is automatically GPU-ready.
+The previously selected four-bank wait2 candidate is not claimed to be fastest.
+This is a bounded CPU filter, not a Lean proof, genetic optimizer or trained
+performance predictor. The selected private job a0dd88ebc8964b3f was queued at
+09:26 UTC; root remains its sole poller. No duplicate submission.
+
+Additional primary-code review of KernelOPT/ForgeKernel retained 25 pinned files
+and licenses (1.30 MB). No compatible faster kernel or validated latency
+surrogate was identified. The independent KernelOPT implementation's heuristic
+is not the paper's reported result; ForgeKernel's B200 FP4 path has a different
+precision/scale contract. Its H100 GEMM wait2 results are mixed and do not predict
+our RS MoE result. If the new check exposes register pressure, full-producer-
+warpgroup register redistribution is a separate feasibility question, not an
+approved implementation. Neither source framework was installed or executed.

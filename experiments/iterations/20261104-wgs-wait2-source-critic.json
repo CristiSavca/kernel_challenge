@@ -1,0 +1,64 @@
+{
+  "decision": "GO for exactly one official private standalone check; no decoder integration or public promotion authorized by this review",
+  "candidate": "muse_moe_w4a16/candidates/native_wgs_wait2_v12.py",
+  "source_sha256": "97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6",
+  "cuda_sha256": "d6c91c05cae6e5e9d4bd6455062678b4ee86f96affe6c9a4c475f2c0c3984658",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "verifier": "tools/test_wgs_wait2_cpu.py",
+  "verifier_sha256": "56b0a0b4cec85f17e0ee9e5f19d4540616e71ae536ce0ed13e68c0195ab8c6b7",
+  "author_result": "experiments/iterations/20261104-wgs-wait2-source-cpu.json",
+  "independent_rerun": {
+    "owner": "root",
+    "session": 16435,
+    "terminal_exit_code": 0,
+    "confirmed_by_root": true,
+    "non_wgs_preprocessed_controls": 16,
+    "mma_calls": 1462272,
+    "commit_groups": 731136,
+    "flushes": 10752,
+    "x_releases": 39168,
+    "parent_and_candidate_trace_hash": 16480252443066245379
+  },
+  "critic_actions": [
+    "Independently rehashed frozen candidate and verifier, read complete parent/candidate diff, actual wgs_seg control flow, host resource block and entire verifier.",
+    "Confirmed only CUDA_SRC and _ext differ at Python AST level. Full CUDA normalization restores parent after removing the exact new host diagnostic block and reversing intended bank/wait/release/assert edits.",
+    "Checked all 20 indexed AF accesses use ci&3 while NTT1 accumulator parity remains ci&1, explicit initial bank0 operands and mma0 conditions remain unchanged.",
+    "Checked GS2, eight commit groups per stage, four AF banks and three weight/X ring slots. Bank q&3 is not reused until its old group q-4 has retired under wait2.",
+    "Checked previous-X release occurs after ci1 wait2, when both previous-stage trailing groups have retired; terminal wait0 and final-X release are preserved.",
+    "Checked FCI3 deferred flush, final generic accumulator accesses, epilogues, split fixups, ring participants, producers, PDL ordering, geometry, grid and scratch remain unchanged.",
+    "Checked both exact BIG specializations are queried with the real thread count and dynamic shared memory; opt-in and occupancy errors fail before launch, and occupancy>=1 is mandatory for both.",
+    "Read the final native verifier's deferred operand-pointer retention, descriptor/AF/first-write/accumulator trace and X-slot checks; confirmed these execute extracted source rather than only a duplicated schedule model."
+  ],
+  "source_test_scope": {
+    "PB": [false, true],
+    "NTT": [1, 2, 3, 4, 5, 6, 7, 8],
+    "initial_sequence_values": [0, 1, 2, 3, 4, 5],
+    "segment_lengths": "1 through 16",
+    "representative_thread_indices": [0, 1, 31, 32, 127, 128, 511],
+    "executions_per_source": 10752,
+    "pending_state": "pd.kind=1 with a stubbed preceding drained-segment flush; u=0, s0=0, slot=-1",
+    "epilogue_scope": "Native execution ends after terminal drain/X release; unchanged remaining epilogue and fixup source is verified by exact normalization.",
+    "abstract_lifetime_support": "experiments/iterations/20261104-wgs-wait2-lifetimes-critic-rerun.json: 13,872 cases, 3,662,208 groups, 53,856 flush boundaries and three failing unsafe negative controls"
+  },
+  "limits": [
+    "CPU mocks use synthetic decode values and do not emulate tensor numerical arithmetic, CUDA/PTX compilation, actual compiler register allocation or full-grid GPU scheduling.",
+    "The native test uses seven representative threads, one s0 and one pending kind; do not describe it as exhaustive thread or pending-state coverage.",
+    "Unchanged arithmetic instruction order and operand traces are strong source evidence, not a replacement for official numerical checks on actual GPU.",
+    "The unchanged NVIDIA occupancy-header proof establishes that the 576-thread kernel's register-admission cap is 96, not 112. Additional logical AF liveness may force spills or serialization despite unchanged source geometry.",
+    "WGS verbose build output may still be truncated by the official log tail. No visible C7512/C7510 warning does not prove their absence.",
+    "Prior GS4 and aggregate NCU wait counters do not establish this mechanism's speed or resource outcome."
+  ],
+  "official_gate": {
+    "root_only_submission": true,
+    "required": "All correctness checks pass; actual both-specialization occupancy>=1; retain source hash, complete receipt and available compilation/resource/profile evidence.",
+    "affected_cases": [32, 128, 256],
+    "unchanged_controls": [1, 8, 16],
+    "target_geomean_normalized_latency_reduction": 0.05,
+    "maximum_individual_affected_latency_regression": 0.03,
+    "interpretation": "Compare affected cases and unchanged controls against both private and scored exact-parent runs. Inspect raw and normalized timings and baseline drift, not aggregate score alone.",
+    "no_automatic_retry_or_rescue_variant": true,
+    "publication": "A useful standalone result would require a separate exact decoder integration source review and official check before public scoring."
+  },
+  "critic_gpu_work": false,
+  "source_edited_by_critic": false
+}
