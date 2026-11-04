@@ -1,0 +1,55 @@
+{
+  "reviewer": "result_and_strategy_critic",
+  "recorded_at": "2026-11-04T12:14:42.394260+00:00",
+  "decision": "PASS_ACTUAL_TERMINAL_FAILURE_ANALYSIS",
+  "file_sha256": {
+    "tools/analyze_sk2_r16_result.py": "15d9642984c2fc21fa86a590792eb1f9ec178112cc3f8a5f74ee6aa8b7cc92d4",
+    "tools/test_analyze_sk2_r16_result.py": "5dc2228c75365b097595f8d6516e585216912f75e246d3cb82fb87907269875a",
+    "tools/analyze_sk2_r16_resources.py": "996de9d5eaad01bc43f72a5b2169c46b10fdc06e279c567cf10946f761e87d47",
+    "tools/test_analyze_sk2_r16_resources.py": "9b5dcaeb97238370bb24e2a60ae6a9391cf2d43174607e215f0a89ef57de9a2f",
+    "experiments/iterations/20261104-sk2-r16-resource-analysis.json": "fb5db779a16b6b3d729da8d668a8eb7343b3c331235429649595427ca33f75f6"
+  },
+  "independent_fixture_results": {
+    "performance_reader": 21,
+    "resource_reader": 18,
+    "all_passed": true
+  },
+  "independent_actual_analysis_matches_saved_report": true,
+  "actual_result": {
+    "job": "28d3c46e68504ee4",
+    "source_sha256": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
+    "resource_gate": "FAIL",
+    "decision": "REJECT_MECHANISM",
+    "failed_record_ids": [
+      2
+    ],
+    "unobserved_case_indices": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "metrics": {},
+    "activation_gate": "UNAVAILABLE_OFFICIAL_GATE_FAILED"
+  },
+  "findings": [
+    "Minimal received acknowledgement support is narrow: local job/source/problem remain pinned, present conflicting server identities reject, and later states require complete identity. Pending acknowledgements produce no metrics.",
+    "Actual resource failure is preserved despite incomplete coverage; source, receipt, local log and pinned CPU inventory bind correctly.",
+    "All pooler pmax values and all QKV pmax values are checked for consistency within complete sequences; equal pmax does not imply shared physical table storage."
+  ],
+  "scope_limits": [
+    "Review certifies the actual failed run and its rejection, not a hypothetical successful activation outcome.",
+    "Dormant successful-profile analysis deliberately leaves hidden UV and merged B32/C32 roles unknown; no promotion inference follows.",
+    "Aggregate resource conflicts prevent a pass, but raw per-record statuses are not separately quarantined. This does not affect the observed conflict-free failure."
+  ],
+  "official_calls": 0,
+  "gpu_calls": 0,
+  "automatic_promotion_allowed": false
+}

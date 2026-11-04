@@ -1,7 +1,7 @@
 # Fixed SK2 R16 family — November 4, 2026
 
-CPU-verified candidate; official private check `28d3c46e68504ee4` submitted
-November4 at11:58:46 UTC and queued at12:05 UTC. No GPU result yet. Frozen source:
+Rejected during official preparation. Private check `28d3c46e68504ee4`, submitted
+November4 at11:58:46 UTC, returned a setup failure at12:09 UTC. Frozen source:
 `464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8`.
 Parent is exact scored decoder
 `97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2`.
@@ -84,7 +84,18 @@ The combined report's router evidence pins the final464115 source. The standalon
 router-native report preserves an earlier094ddc92 source review; do not treat
 that standalone artifact as the final-source proof.
 
-The one private whole-decoder check is now submitted. Require all13 tests/12 timed cases/12 profiles,
+The one private whole-decoder check failed its resource gate before correctness
+tests or timing. The first two ordinary pooler16 PK variants had78 registers,
+zero local allocation and capacity2 (minimum1). Fused pooler8 compiled with74
+registers, zero local allocation,384 static shared bytes and104160 dynamic shared
+bytes at actualpmax32. Its416-thread block admitted only1 block/SM, below the
+required2 and consistent with the independently derived72-register ceiling.
+All six API calls succeeded. The outer gate correctly prevented backend fallback.
+Only3 of14 resource cases were reached; the remaining11 are unknown. There are
+no numerical correctness results, timings, profiles or speedup measurements.
+Root's audit is `20261104-sk2-r16-root-result.json`; the fixed attempt is closed.
+
+The original decision contract required all13 tests/12 timed cases/12 profiles,
 complete clean resource evidence and intended geometry/fusion selection. No
 nearby-parameter rescue or duplicate retry follows a failed fixed attempt.
 Provisional promotion requires at least2% aggregate over both exact97af baselines,

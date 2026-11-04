@@ -1083,3 +1083,51 @@ previously dead generic QKV UV epilogue branch remain experimental risks.
 Public97af/247888 are unchanged. The11:56 decoder board is392/1265 at2.1812,
 leader2.5510; no new overall rank was fetched. Modal guard and permanent journal
 are unchanged, with no new allocation. Current goal remains active/unachieved.
+
+
+### Fixed R16 resource rejection — November4 12:09 UTC
+
+Private28d3c46e68504ee4 exact464115 completed with passed=false,returncode112,
+one failed setup event and no correctness tests/timings/profiles. The first
+fusedpooler8 PK1 pointer compiled to74 registers at416threads, zero local bytes,
+384static/104160dynamic shared bytes, actualpmax32, and capacity1 vsminimum2.
+All six CUDA APIs succeeded. This exceeds the previously established72-register
+two-block ceiling. Ordinarypooler16 PK1/PK0 records before it had78 registers,
+zero local,90768dynamic,capacity2 vsminimum1. Only3of14 resource cases reached;
+remaining11 unknown. No performance estimate follows from this resource failure.
+
+The backend catch reported the resource rejection and the outer preparation
+sentinel failed the official setup as designed; no silent alternate backend was
+timed. Root preserved the complete terminal receipt and identity-checked raw
+audit20261104-sk2-r16-root-result.json. Performance analyzer returns
+OFFICIAL_GATE_FAILED with no comparisons. Independent raw/result/parser review
+is in progress. Exact fixed R16 attempt is closed without quota rescue, nearby
+sweep, duplicate retry or automatic diagnostic. Public sources remain97af/247888.
+A separate read-only next-strategy review is considering a materially different
+mechanism from actual incumbent profiles; no replacement candidate approved yet.
+
+
+Independent terminal/result critique3d115aa867cb0f662ae310c3d5e78a01ef50d2ddb63e50e7eac989debf8d1ecb
+and parser critique8f3169a04a159ff0d4e1274774f67f78a19c9f227c4052b7e42e96c16a1ac12a
+confirm the rejection and unchanged public identities. Root independently ran18
+resource-parser fixtures and exactly regenerated reportfb5db779a16b6b3d729da8d668a8eb7343b3c331235429649595427ca33f75f6.
+Performance-reader21 fixtures also pass. Dormant successful-activation helpers
+remain conservative: UV modes and sharedB32/QKV32symbols can be ambiguous. Their
+completeness is not established by this failed job and no extra probe is justified.
+
+A distinct centralized timed MoE route/job metadata scheme was assessed and
+deprioritized, not declared impossible. Preserved standalone DBG0-toDBG1 windows
+include initialization/PDL/route; they are small and notisolatedremovablelatency.
+Source-feasible last-arriver metadata publication adds dependencies/copy/earlyweight
+delay. Exact97af profile-share deletion scenarios yield0.564% for3uslessMAIN or
+3.292% for5uslessallcases, optimistic scope checks rather than predictions. See
+NEXT_COORDINATION_FEASIBILITY_20261104.md anditscompactJSON. Noimplementation.
+
+Next bounded read-only checks: materiallydifferentMoE compute/operand schedule,
+and whether savedfailedaggregatecandidates containrepeatableintendedshape wins
+that canbelegitimatelycombinedwithoutcherry-pickingunchangedcontrolnoise. Exact
+parent247888/ef7compilerserialization remainsUNKNOWN; only WAIT2/REG112 have
+positiveC7511evidence. A freshNVIDIAforumC7514loopdependencyissue is adifferent
+diagnostic and supplies no causal evidence for ourparent. NoGpu/checkapproved
+bythesequestions; actualsourcefeasibility and independentcriticstillrequired.
+Primary source: [NVIDIA compiler engineering reply on C7514 loop analysis](https://forums.developer.nvidia.com/t/ptxas-mysterious-warning-for-wgmma-mma-async-instruction-serialization/340610/8).

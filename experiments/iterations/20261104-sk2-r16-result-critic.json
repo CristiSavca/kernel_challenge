@@ -1,0 +1,222 @@
+{
+  "reviewer": "result_and_strategy_critic",
+  "recorded_at": "2026-11-04T12:13:27.010409+00:00",
+  "job": "28d3c46e68504ee4",
+  "source_sha256": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
+  "receipt_sha256": "94bba8a18cd7583b2e7ae9c9bb24bea8bde7a424ebe3f497520a58263f0f1318",
+  "decision": "REJECT_FIXED_R16_ATTEMPT_RESOURCE_ADMISSION_FAILURE",
+  "official_terminal": {
+    "status": "done",
+    "passed": false,
+    "returncode": 112,
+    "checks": {
+      "flagged": [],
+      "ok": true,
+      "rejected": []
+    },
+    "flags": [],
+    "record_counts": {
+      "setup": 1
+    },
+    "setup_status": "fail",
+    "gpu": "H200",
+    "node": "n-jm6ivorpl4s77pryw35ktai2hy",
+    "evaluator_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd"
+  },
+  "independent_verifications": {
+    "frozen_source_matches_receipt": true,
+    "saved_log_identical_to_receipt_tail": true,
+    "log_bytes": 1372,
+    "log_sha256": "8b1fc78284cef142e7b54180804c612bbe9de3b828407a9364de4c54bfa9d41a",
+    "resource_records_retained": 3,
+    "all_retained_API_statuses_zero": true,
+    "no_log_STOP_observed": true,
+    "author_and_root_matching_full_cpu_report_sha256": "f5d75febd9e083563bd42e4edbd73cd93657ffe282e0bc7cc95bda32fbd54c57"
+  },
+  "resource_records": [
+    {
+      "t": [
+        1,
+        16,
+        2,
+        1,
+        8,
+        1,
+        3,
+        1,
+        0,
+        2,
+        1,
+        2,
+        1,
+        0,
+        0
+      ],
+      "x": [
+        1,
+        4096,
+        8192,
+        32,
+        384,
+        256,
+        90768
+      ],
+      "a": [
+        78,
+        0,
+        0,
+        232448,
+        384
+      ],
+      "occ": [
+        2
+      ],
+      "min": [
+        1
+      ],
+      "err": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "t": [
+        1,
+        16,
+        2,
+        1,
+        8,
+        1,
+        3,
+        1,
+        0,
+        2,
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      "x": [
+        16,
+        4096,
+        8192,
+        32,
+        384,
+        256,
+        90768
+      ],
+      "a": [
+        78,
+        0,
+        0,
+        232448,
+        384
+      ],
+      "occ": [
+        2
+      ],
+      "min": [
+        1
+      ],
+      "err": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "t": [
+        1,
+        8,
+        2,
+        1,
+        8,
+        1,
+        4,
+        1,
+        0,
+        2,
+        1,
+        2,
+        1,
+        1,
+        0
+      ],
+      "x": [
+        1,
+        4096,
+        8192,
+        32,
+        416,
+        256,
+        104160
+      ],
+      "a": [
+        74,
+        0,
+        384,
+        232064,
+        416
+      ],
+      "occ": [
+        1
+      ],
+      "min": [
+        2
+      ],
+      "err": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "failure": {
+    "family": "A8 fused pooler/router",
+    "physical_preflight_M": 1,
+    "PK": true,
+    "threads": 416,
+    "registers_per_thread": 74,
+    "reported_local_bytes": 0,
+    "static_shared_bytes": 384,
+    "dynamic_shared_bytes": 104160,
+    "pmax": 32,
+    "actual_blocks_per_SM": 1,
+    "required_blocks_per_SM": 2,
+    "first_failing_preflight_record_index": 2
+  },
+  "interpretation": [
+    "CUDA compiled the measured kernel, but the fixed two-block admission requirement failed before any numerical tests or timing.",
+    "The measured74-register allocation is above the independently reproduced72-register two-block ceiling for416 threads. This is consistent with the actual occupancy query returning1.",
+    "The earlier ordinary pooler16 PK0/PK1 records each admit2 blocks at78 registers. Their success does not establish fused pooler16 or the unqueried B/C configurations.",
+    "The outer prepare guard correctly rejected the caught backend failure; no fallback success masked the failed resource hypothesis.",
+    "No performance ratio, confidence interval, numerical correctness pass, achieved occupancy or full-family resource result can be inferred.",
+    "Reported localSizeBytes=0 applies to these three retained kernels; no full ptxas/SASS report or claim of absent compiler warnings is made."
+  ],
+  "unobserved": [
+    "Remaining11 planned resource cases",
+    "All13 numerical correctness tests",
+    "All12 benchmarks",
+    "All12 profiles",
+    "Fused pooler16/32 and QKV/separate-pooler resources and activation"
+  ],
+  "next_action": "Close this fixed attempt; no quota tweak, nearby-parameter retry, automatic diagnostic, integration or scored submission.",
+  "active_source_hashes": {
+    "muse_decode_layer/submission.py": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "muse_moe_w4a16/submission.py": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
+  },
+  "automatic_promotion_allowed": false,
+  "official_calls_by_reviewer": 0,
+  "gpu_allocations_by_reviewer": 0
+}

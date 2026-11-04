@@ -1,0 +1,15 @@
+R16R_SCHEMA phase=prepare_preflight t=MT,TOKR,NT,NWR,WSK,UPW,NS,COMP,HL,NACC,CL,OutBytes,PK,FUSE,BND x=M,N,K,pmax,threads,grid,dyn a=regs,local,static,maxdyn,maxthreads occ=blocks_per_SM err=device,optin,attrs_before,set,attrs_after,occ
+R16R t=1,16,2,1,8,1,3,1,0,2,1,2,1,0,0 x=1,4096,8192,32,384,256,90768 a=78,0,0,232448,384 occ=2 min=1 err=0,0,0,0,0,0
+R16R t=1,16,2,1,8,1,3,1,0,2,1,2,0,0,0 x=16,4096,8192,32,384,256,90768 a=78,0,0,232448,384 occ=2 min=1 err=0,0,0,0,0,0
+R16R t=1,8,2,1,8,1,4,1,0,2,1,2,1,1,0 x=1,4096,8192,32,416,256,104160 a=74,0,384,232064,416 occ=1 min=2 err=0,0,0,0,0,0
+bfp disabled: RuntimeError('R16 resource admission failure: t=1,8,2,1,8,1,4,1,0,2,1,2,1,1,0 x=1,4096,8192,32,416,256,104160 blocks=1 minimum=2 local=0')
+Traceback (most recent call last):
+  File "/tmp/muse_decode_layer-z5roxc1h/run/worker.py", line 423, in child_main
+    send(_setup_op(msg, module, state, sync, perf))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/muse_decode_layer-z5roxc1h/run/worker.py", line 322, in _setup_op
+    state["prep"] = prepare(weights)
+                    ^^^^^^^^^^^^^^^^
+  File "/tmp/muse_decode_layer-z5roxc1h/run/submission.py", line 14778, in prepare
+    raise RuntimeError("R16 resource preflight failed; fixed candidate cannot use fallback")
+RuntimeError: R16 resource preflight failed; fixed candidate cannot use fallback

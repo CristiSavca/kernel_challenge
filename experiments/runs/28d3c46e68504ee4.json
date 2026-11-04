@@ -5,7 +5,7 @@
   "source_sha256": "464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8",
   "source": "experiments/candidates/muse_decode_layer/464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8.py",
   "recorded_at": "2026-11-04T11:58:46.529439+00:00",
-  "last_checked_at": "2026-11-04T12:07:43.570077+00:00",
+  "last_checked_at": "2026-11-04T12:09:56.702600+00:00",
   "response": {
     "board": "muse_decode_layer",
     "call_id": "nyc3b:kc-28d3c46e68504ee4",
@@ -14,12 +14,84 @@
     "created_at": 1793793526.0226858,
     "dedicated": false,
     "duplicate_of": null,
+    "finished_at": 1793794168.2069666,
     "id": "28d3c46e68504ee4",
     "mode": "check",
+    "output": {
+      "log": "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/candidates/muse_decode_layer/profiles/464115b2c871338f8d0f51768b82f6bd9090139aea13588ec668a9de587e44f8.28d3c46e68504ee4.log"
+    },
     "payload_ref": "muse_decode_layer/490c91577c5b2c83689498b4006dc1c158b85aba856f414ed81397bb1bbcd650.py",
-    "result": null,
+    "result": {
+      "checks": {
+        "flagged": [],
+        "ok": true,
+        "rejected": []
+      },
+      "error": null,
+      "evaluator": {
+        "code_sha256": "1ba270d841be831b06a5862f4094cd0d5072edfbd0f6e84b95f79248296367dd",
+        "files": {
+          "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+          "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+          "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+          "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+          "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+          "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+          "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+          "problems/muse_decode_layer/baseline.py": "87d95a0c4b78f0fd6c772436b959330ca45652b10e82dfc8add9acf0549227d4",
+          "problems/muse_decode_layer/reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+          "problems/muse_decode_layer/task.yml": "6a73de4094ff00d7453fb94bd3aa40f5fae79ac7fbea149660eae2125dc5a0c7"
+        },
+        "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+      },
+      "flags": [],
+      "gpu": "H200",
+      "log_tail": "R16R_SCHEMA phase=prepare_preflight t=MT,TOKR,NT,NWR,WSK,UPW,NS,COMP,HL,NACC,CL,OutBytes,PK,FUSE,BND x=M,N,K,pmax,threads,grid,dyn a=regs,local,static,maxdyn,maxthreads occ=blocks_per_SM err=device,optin,attrs_before,set,attrs_after,occ\nR16R t=1,16,2,1,8,1,3,1,0,2,1,2,1,0,0 x=1,4096,8192,32,384,256,90768 a=78,0,0,232448,384 occ=2 min=1 err=0,0,0,0,0,0\nR16R t=1,16,2,1,8,1,3,1,0,2,1,2,0,0,0 x=16,4096,8192,32,384,256,90768 a=78,0,0,232448,384 occ=2 min=1 err=0,0,0,0,0,0\nR16R t=1,8,2,1,8,1,4,1,0,2,1,2,1,1,0 x=1,4096,8192,32,416,256,104160 a=74,0,384,232064,416 occ=1 min=2 err=0,0,0,0,0,0\nbfp disabled: RuntimeError('R16 resource admission failure: t=1,8,2,1,8,1,4,1,0,2,1,2,1,1,0 x=1,4096,8192,32,416,256,104160 blocks=1 minimum=2 local=0')\nTraceback (most recent call last):\n  File \"/tmp/muse_decode_layer-z5roxc1h/run/worker.py\", line 423, in child_main\n    send(_setup_op(msg, module, state, sync, perf))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_decode_layer-z5roxc1h/run/worker.py\", line 322, in _setup_op\n    state[\"prep\"] = prepare(weights)\n                    ^^^^^^^^^^^^^^^^\n  File \"/tmp/muse_decode_layer-z5roxc1h/run/submission.py\", line 14778, in prepare\n    raise RuntimeError(\"R16 resource preflight failed; fixed candidate cannot use fallback\")\nRuntimeError: R16 resource preflight failed; fixed candidate cannot use fallback\n",
+      "machine": {
+        "gpu_after": {
+          "clocks.max.sm": 1980,
+          "clocks.mem": 3201,
+          "clocks.sm": 1980,
+          "driver_version": "580.159.03",
+          "name": "NVIDIA H200",
+          "power.draw": 123.31,
+          "power.limit": 700,
+          "temperature.gpu": 35
+        },
+        "gpu_before": {
+          "clocks.max.sm": 1980,
+          "clocks.mem": 3201,
+          "clocks.sm": 405,
+          "driver_version": "580.159.03",
+          "name": "NVIDIA H200",
+          "power.draw": 121.86,
+          "power.limit": 700,
+          "temperature.gpu": 34
+        },
+        "node": "n-jm6ivorpl4s77pryw35ktai2hy"
+      },
+      "passed": false,
+      "records": [
+        {
+          "baseline_copies": 2,
+          "baseline_prepare_pad": 184832,
+          "copies": null,
+          "error": "RuntimeError: R16 resource preflight failed; fixed candidate cannot use fallback",
+          "event": "setup",
+          "first": "baseline",
+          "prepare_pad": null,
+          "prepare_s": null,
+          "status": "fail"
+        }
+      ],
+      "returncode": 112,
+      "score_us": null,
+      "speedup": null,
+      "speedup_ci": null,
+      "status": "ok"
+    },
     "started_at": 1793794044.0371404,
-    "status": "running",
+    "status": "done",
     "team": "CristiSavca"
   }
 }
