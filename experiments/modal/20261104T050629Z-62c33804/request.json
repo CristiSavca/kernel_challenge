@@ -1,0 +1,105 @@
+{
+  "problem": "muse_decode_layer",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "source_sha256": "3d5b34620a05faa628c30077728328a28e362b4c9dfc54dbb9ee6d5f6dd4d58c",
+  "file_sha256": {
+    "candidate.py": "3d5b34620a05faa628c30077728328a28e362b4c9dfc54dbb9ee6d5f6dd4d58c",
+    "decoder_policy_metadata.py": "edd2fdc82d11422d04c31722c5c7aa7682334040d0b62941785684267aed213a",
+    "baseline.py": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+    "reference.py": "23e177b87aee70c0d4990515989b95bff2972270cdac8ab967445b21fa2f5163",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+    "nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf"
+  },
+  "cases": [
+    {
+      "batch": 16,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "soft"
+    },
+    {
+      "batch": 16,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "soft"
+    },
+    {
+      "batch": 1,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "dist": "soft"
+    },
+    {
+      "batch": 32,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "soft"
+    },
+    {
+      "batch": 32,
+      "ctx": 2048,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "soft"
+    },
+    {
+      "batch": 16,
+      "ctx": 8192,
+      "layer": "full",
+      "q_len": 8,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "soft"
+    },
+    {
+      "batch": 3,
+      "ctx": 3000,
+      "layer": "full",
+      "q_len": 8,
+      "page": 64,
+      "dist": "outliers"
+    },
+    {
+      "batch": 33,
+      "ctx": 2048,
+      "layer": "full",
+      "q_len": 1,
+      "page": 1,
+      "spread": "mixed",
+      "dist": "soft"
+    },
+    {
+      "batch": 4,
+      "ctx": 4096,
+      "layer": "sliding",
+      "q_len": 8,
+      "page": 1,
+      "spread": "mixed",
+      "dist": "soft",
+      "kv_scale": 0.015625
+    }
+  ],
+  "repeats": 6,
+  "seed": 91021,
+  "weight_seed": 92011,
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "experiments/candidates/muse_decode_layer/80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c.py",
+    "sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c"
+  },
+  "profile": true,
+  "resources": false
+}

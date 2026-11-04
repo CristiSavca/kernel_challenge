@@ -26,6 +26,18 @@ def save(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
+def moe_route_summary(ids: list[int], local_start: int, local_count: int) -> dict:
+    """Describe actual standalone routes outside timing, including partial 64-row jobs."""
+    counts = [0] * local_count
+    for expert in ids:
+        if local_start <= expert < local_start + local_count:
+            counts[expert - local_start] += 1
+    rows = [min(64, count - start) for count in counts for start in range(0, count, 64)]
+    return {"local_start": local_start, "local_count": local_count, "local_counts": counts,
+            "U": sum(count > 0 for count in counts), "J": len(rows), "local_routes": sum(counts),
+            "job_rows": rows, "NTT1_jobs": sum(0 < count <= 8 for count in rows)}
+
+
 def default_cases(problem: str) -> list[dict]:
     """A small debugging subset, explicitly NOT the complete official test suite."""
     if problem == "muse_bf16_proj":
@@ -62,7 +74,8 @@ def run_worker(payload_path: str) -> None:
     folder = Path("/tmp/okc-input")
     folder.mkdir(exist_ok=True)
     for name, source in payload["files"].items():
-        if name not in {"candidate.py", "baseline.py", "reference.py", "checks.py", "nvfp4.py"}:
+        if name not in {"candidate.py", "baseline.py", "reference.py", "checks.py", "nvfp4.py",
+                        "decoder_policy_metadata.py"}:
             raise ValueError(f"Unexpected input file: {name}")
         (folder / name).write_text(source)
     sys.path.insert(0, str(folder))
@@ -107,6 +120,7 @@ def run_worker(payload_path: str) -> None:
         "comparison_baseline": payload["comparison_baseline"],
         "incumbent": payload.get("incumbent"),
         "profile_requested": payload.get("profile", False),
+        "resources_requested": payload.get("resources", False),
         "python": platform.python_version(), "torch": torch.__version__,
         "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
         "gpu_memory_bytes": torch.cuda.get_device_properties(0).total_memory,
@@ -126,7 +140,51 @@ def run_worker(payload_path: str) -> None:
         weighted = hasattr(reference, "generate_weights")
         weights = reference.generate_weights(payload["weight_seed"]) if weighted else None
         # Independent copies protect the reference and the other implementation from prepare mutation.
-        states = [module.prepare(clone(weights)) if weighted else None for module in (baseline, candidate)]
+        states = []
+        report["prepare_wall_seconds_including_weight_clone"] = {}
+        for name, module in zip(("baseline", "candidate"), (baseline, candidate)):
+            prepare_started = time.monotonic()
+            states.append(module.prepare(clone(weights)) if weighted else None)
+            torch.cuda.synchronize()
+            report["prepare_wall_seconds_including_weight_clone"][name] = time.monotonic() - prepare_started
+            if payload["problem"] == "muse_decode_layer":
+                from decoder_policy_metadata import collect_decoder_policy
+                try:
+                    policy = collect_decoder_policy(module, states[-1], max_nodes=12000,
+                                                    max_items=128, max_depth=10)
+                except Exception as exc:
+                    policy = {"status": "unavailable", "error_type": type(exc).__name__}
+                report.setdefault("prepared_policy", {})[name] = policy
+        if payload.get("resources", False):
+            # Read resource metadata from this module's own compiled extensions.
+            # REG/STACK/LOCAL are compiler resources, not measured spill traffic.
+            import shutil
+            dumper = shutil.which("cuobjdump")
+            report["extension_resources"] = {}
+            for name, module in zip(("baseline", "candidate"), (baseline, candidate)):
+                owned = {}
+                for defines, ext in getattr(module, "_EXTS", {}).items():
+                    if getattr(ext, "__file__", None):
+                        owned.setdefault(str(Path(ext.__file__).resolve()), []).append(list(defines))
+                paths = sorted(owned)
+                entries = []
+                report["extension_resources"][name] = entries
+                for path in paths:
+                    entry = {"extension": Path(path).name, "defines": owned[path], "status": "unavailable"}
+                    entries.append(entry)
+                    if dumper is None or not Path(path).is_file() or Path(path).suffix != ".so":
+                        entry["error"] = "cuobjdump or owned shared object unavailable"
+                        continue
+                    try:
+                        resource = subprocess.run([dumper, "--dump-resource-usage", path],
+                                                  capture_output=True, text=True, timeout=30)
+                        entry.update(returncode=resource.returncode, output=resource.stdout[:40000],
+                                     stderr=resource.stderr[:4000], truncated=len(resource.stdout) > 40000)
+                        entry["status"] = "captured" if resource.returncode == 0 else "unavailable"
+                    except (OSError, subprocess.TimeoutExpired) as exc:
+                        entry["error"] = str(exc)
+                if not paths:
+                    entries.append({"status": "unavailable", "error": "no module-owned _EXTS shared objects"})
         # Read through L2 instead of relying on writes to allocate cache lines.
         # Every loaded element contributes to an observable per-block sum. This
         # is cache preconditioning, not a measurement of candidate HBM traffic.
@@ -199,6 +257,12 @@ def run_worker(payload_path: str) -> None:
                 captures.append((data, graph, output))
             for repeat in range(payload["repeats"]):
                 fresh = generate(case, payload["seed"] + 1000 * index + 100 + repeat)
+                if payload["problem"] == "muse_moe_w4a16":
+                    cfg = fresh["config"]
+                    routing = moe_route_summary(fresh["topk_ids"].detach().cpu().reshape(-1).tolist(),
+                                                int(cfg["local_start"]), int(cfg["local_count"]))
+                    routing["input_seed"] = payload["seed"] + 1000 * index + 100 + repeat
+                    row.setdefault("routing_replays", []).append(routing)
                 order = (0, 1) if repeat % 2 == 0 else (1, 0)
                 for side in order:
                     name = ("baseline", "candidate")[side]
@@ -270,6 +334,7 @@ def main() -> None:
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
     parser.add_argument("--profile", action="store_true", help="Record CUDA kernel names from separate diagnostic graph replays")
+    parser.add_argument("--resources", action="store_true", help="Record cuobjdump resources from module-owned _EXTS shared objects")
     parser.add_argument("--cases", type=Path, help="JSON list of explicit reference.generate_input kwargs")
     parser.add_argument("--repeats", type=int, default=6)
     parser.add_argument("--seed", type=int, default=7301)
@@ -287,6 +352,8 @@ def main() -> None:
         parser.error("--incumbent requires benchmark mode")
     if args.profile and args.mode != "benchmark":
         parser.error("--profile requires benchmark mode")
+    if args.resources and args.mode != "benchmark":
+        parser.error("--resources requires benchmark mode")
     payload = None
     if args.mode == "benchmark":
         if not args.problem or not args.candidate:
@@ -299,6 +366,8 @@ def main() -> None:
             parser.error("candidate header does not match --problem")
         compile(source, str(source_path), "exec")
         files = {"candidate.py": source}
+        if args.problem == "muse_decode_layer":
+            files["decoder_policy_metadata.py"] = (ROOT / "tools/decoder_policy_metadata.py").read_text()
         for name in ("baseline.py", "reference.py", "checks.py", "nvfp4.py"):
             path = ROOT / args.problem / name
             if path.exists():
@@ -323,7 +392,7 @@ def main() -> None:
                    "source_sha256": sha(source), "file_sha256": {k: sha(v) for k, v in files.items()},
                    "cases": cases, "repeats": args.repeats, "seed": args.seed, "weight_seed": args.weight_seed,
                    "comparison_baseline": "incumbent" if incumbent else "official_public_baseline",
-                   "incumbent": incumbent, "profile": args.profile}
+                   "incumbent": incumbent, "profile": args.profile, "resources": args.resources}
     worker_source = Path(__file__).read_text()
     manifest = {"mode": args.mode, "gpu": "H200:1", "timeout_seconds": 120 if args.mode == "smoke" else args.timeout,
                 "official": False, "status": "prepared", "worker_sha256": sha(worker_source)}

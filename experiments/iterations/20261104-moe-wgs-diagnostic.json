@@ -4,7 +4,7 @@
   "result_path": "experiments/modal/20261104T043758Z-24108d21/result.json",
   "result_sha256": "6337501753ec31196380807668a96229b53784b5c0a9f4b6195bbdc0a0444df4",
   "status": "diagnostic_complete",
-  "decision": "no_new_expert_candidate_justified_by_this_evidence",
+  "decision": "no_scheduler_or_weight_reuse_candidate_justified; bounded_NTT1_issue_pipeline_probe_authorized",
   "official": false,
   "gpu_launched_by_analysis_agent": false,
   "numerical_checks_passed": 72,
@@ -843,13 +843,38 @@
     }
   ],
   "conclusions": [
-    "All72 output checks passed. Eight cases have 0.09\u20133.39% median probe overhead; M32 seed7301 has12.25% and is unsuitable for tight trace conclusions.",
+    "All 72 output checks passed. Eight cases have 0.09\u20133.39% median probe overhead; M32 seed 7301 has 12.25% and is unsuitable for tight trace conclusions.",
     "A consumes approximately twice B time, consistent with twice the W13 packed weight volume; this correlation is not a bandwidth diagnosis.",
     "No positive causal evidence supports a \u226515% readiness scheduling gain. This does not prove such a gain impossible.",
-    "J exceeds U only for hot experts. Maximum duplicate share is11.54% of nominal requests; these reads may already hit L2, so a larger hot-expert-reuse gain is unsupported.",
-    "Conditional unique-weight headroom spans26.3\u201341.7%; this is unverified under the write flush and cannot be used as a measured or certifying margin.",
+    "J exceeds U only for hot experts. Maximum duplicate share is 11.54% of nominal requests; these reads may already hit L2, so a larger hot-expert-reuse gain is unsupported.",
+    "Conditional unique-weight headroom spans 26.3\u201341.7%; this is unverified under the write flush and cannot be used as a measured or certifying margin.",
     "Do not implement FT_T32, dynamic whole-unit queue, or new hot-expert reuse solely from these data. Root owns next dense-dispatch work.",
     "Correction: rq_deep_tma_pooler in prior V8 traces is an unpooler dispatch, not evidence of a changed pooler backend; _route indicates combined pooler/router torch.mm."
   ],
-  "next_if_expert_work_resumes": "First gather actual decoder route histograms with official-like read flushing, then correlated doneAs/BW_F/split-fixup intervals; otherwise retain exact passing expert source."
+  "next_if_expert_work_resumes": "First gather actual decoder route histograms with official-like read flushing, then correlated doneAs/BW_F/split-fixup intervals; otherwise retain exact passing expert source.",
+  "next_non_scheduler_hypothesis": {
+    "name": "NTT1_four_MMA_issue_groups",
+    "mechanism": "Use GS4 only for NTT1 jobs with low accumulator footprint; wider variants retain GS2. Preserve sixteen MMAs per stage and the deferred-epilogue K-step boundary.",
+    "NTT1_job_fraction_ranges": {
+      "M32": [
+        0.8889,
+        1.0
+      ],
+      "M128": [
+        0.7083,
+        0.8077
+      ],
+      "M256": [
+        0.4483,
+        0.5926
+      ]
+    },
+    "status": "isolated candidates created; common runner dry-run passed; GPU untested",
+    "stop_rule": "Require material gain on all-NTT1 M32 seed7302 plus no useful-load regression; inspect C7512 and spills.",
+    "candidates": {
+      "muse_decode_layer/candidates/native_wgs_ntt1_gs4_v9.py": "acfbdc2e5aead53ee4a9f8bf52a289f0942dd20a5e793de2fb39593f8cafd3f5",
+      "muse_moe_w4a16/candidates/native_wgs_ntt1_gs4_v7.py": "7f24e2857e1b419fb528e8031c7c7cbb1cb6233e9fbae46b7efdcad88c390847"
+    },
+    "cpu_validation": "AST isolation, complete16-k16-stage coverage, dual accumulator initialization, async operand-buffer reuse, activation-slot retirement, and preserved8-issued-k16 deferred epilogue boundary passed."
+  }
 }

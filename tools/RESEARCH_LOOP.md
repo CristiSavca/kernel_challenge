@@ -27,7 +27,7 @@ A 2.60× result would roughly separate scores with their minimum ±1.5%
 intervals; this is a target, not a prediction. The live top-50 decoder cutoff
 was 2.3442×, requiring about 8.28% less latency.
 
-The November 4 04:30 UTC snapshot ranked us 393/1,947 overall. Overall positions 1–549 matched decoder
+The November 4 04:56 UTC snapshot ranked us 394/1,947 overall. Overall positions 1–549 matched decoder
 ordering, and an entrant ranked 21 had only a decoder submission. Official
 wording describes the speedup of the best runs together, but a precise combining
 formula was not exposed. Do not claim overall always equals decoder. A better
@@ -205,17 +205,16 @@ must not be presented as verified cold-memory bounds. Future general-runner
 comparisons use an explicit read sweep with observable sums, before timing.
 Neither protocol measures actual candidate DRAM traffic.
 
-### Pending official attention check
+### Attention V5 official check resolved
 
-Private job `998dcd09fb9249a9`, submitted November 4 04:40 UTC, is queued as
-of 04:44 UTC. Its exact frozen SHA is
-`2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd`, from
-`muse_attention_decode/candidates/native_q1_fp8_qk_v5.py`. Resume this receipt;
-do not upload it again. V5 changes only the full-attention q1 path to native
-FP8 QK instructions, with BF16/FP8 query-rounding risk still requiring the
-official numerical tests. It preserves every key and FP16 PV. Instruction
-counts do not prove speed. The active attention source remains `87a9bddc...`;
-the active decoder remains `80a4eaa3...`. No pending Modal allocation remains.
+Private job `998dcd09fb9249a9`, submitted November 4 04:40 UTC, passed all
+16 tests and 12 benchmarks, with no flags or rejections. Its exact frozen SHA is
+`2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd`.
+V5 uses native FP8 QK instructions only on full-attention q1, retaining every
+key and FP16 PV. Its 2.593476× speedup (95% interval 2.554573–2.642907×)
+supplies no useful gain over the parent's 2.642539× private / 2.611970× scored
+results. Do not upload it again, score it, or integrate it into decoder.
+The active attention remains `87a9bddc...`; active decoder remains `80a4eaa3...`.
 
 A fresh public-source check found both original pinned upstreams unchanged.
 Lee's Apache-licensed v56 at `c565e373d34575c5f7df862b05f8be7619078b0f`
@@ -229,3 +228,64 @@ whole-decoder dense-path selection and attention improvements.
 Sources: [H200 hardware specification](https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html),
 [Lee pinned expert source](https://github.com/lee101/openkernels/blob/c565e373d34575c5f7df862b05f8be7619078b0f/muse_moe_w4a16/submission.py),
 [Lee license](https://github.com/lee101/openkernels/blob/c565e373d34575c5f7df862b05f8be7619078b0f/LICENSE).
+
+## Attention V5 local decision
+
+Run `experiments/modal/20261104T044835Z-19b98c8c` completed in 136.43 seconds,
+passed 60/60 checks and the new read-sweep sum check, and terminated its sandbox.
+The independent critic agrees to reject promotion: target B16/B32 q1 paired
+ratios were 1.010804/1.001858; the unchanged q8 control was 1.045744, with
+individual ratios 0.862–1.228. Small apparent target gains are not established.
+Numerical error increased under FP8 rounding despite passing oracle bounds.
+The official full check also passed without a useful gain, as recorded above.
+No further V5 timing, scored attempt or decoder integration is justified.
+Decision: `experiments/iterations/20261104-attention-v5.json`.
+
+## Current experiment and next candidate
+
+GS4 for WGS NTT1 (at most eight rows per job), preserving wider GS2, has static
+GO from the independent critic. All 16 k16 MMAs and asynchronous operand
+lifetimes are preserved; extra operand registers and arithmetic reassociation
+still need GPU validation. Standalone candidate SHA is
+`7f24e2857e1b419fb528e8031c7c7cbb1cb6233e9fbae46b7efdcad88c390847`;
+decoder counterpart SHA is
+`acfbdc2e5aead53ee4a9f8bf52a289f0942dd20a5e793de2fb39593f8cafd3f5`.
+
+Its paired Modal run completed (started 04:56 UTC):
+`experiments/modal/20261104T045617Z-6354a177`, sandbox
+`sb-imlv0EDEgZloQCHtfD1Vzy`, local session `25524` is terminal; do not resume or duplicate it.
+It runs M32 → M128 → M256 → M16 → M32, six fresh timing pairs, profiles,
+actual routing/job counts and compiler resource metadata. First timed M32 seed
+7302 was all NTT1 in the earlier diagnostic; check the actual saved histogram.
+The 900-second allocation uses the common credit guard. Require useful expert
+gain with mixed-width controls, no numerical failures or added resource costs
+that erase the mechanism. A 15% gain is a test threshold, not a prediction.
+
+Dense V9 has static GO for a later bounded comparison. Its SHA is
+`3d5b34620a05faa628c30077728328a28e362b4c9dfc54dbb9ee6d5f6dd4d58c`,
+file `muse_decode_layer/candidates/native_dense_chain_select_v9.py`.
+It chooses existing dense backends in a synthetic post-attention decoder chain
+at prepare time, preserving all runtime code. The selector budgets are soft:
+require actual prepare time below 300 seconds, a logged changed dispatch, and
+at least 3% held-out whole-decoder gain. Do not mistake a budget skip or no
+accepted choice for an exercised optimization. Root owns GPU scheduling.
+
+The GS4 comparison passed 80/80 checks but is rejected for promotion. Paired
+ratios at M32/M128/M256/M16/M32-return were 0.981728, 0.967743, 0.952977,
+1.002119 and 0.991159. Actual seed 7302 had 16/16 NTT1 jobs; its single pair
+was only 156.960 versus 153.632 microseconds, not the required material gain.
+Both main binaries report REG96/STACK0/LOCAL0; this does not establish a
+particular cause for the slowdown or absence of WGMMA serialization. Runtime
+was 379.77 seconds; prepare took 187.12/185.19 seconds including weight clones.
+The sandbox terminated and the app is stopped. No official attempt is warranted.
+
+Dense V9 started at 05:06 UTC in
+`experiments/modal/20261104T050629Z-62c33804`, sandbox
+`sb-CIaIZOy169rvKZqFdQvkGt`, local session `11768`. Resume it; do not allocate
+a duplicate. The nine-case combined file includes six held-out timing cases
+and three nearby/scale/outlier checks, six fresh replays per case (144 planned
+checks), profiles, and bounded prepare-policy metadata. Weight seed is 92011;
+input seed base is 91021. The exact candidate remains `3d5b3462...`.
+Only one H200 is allocated, at most 900 seconds. Latest billing before this run
+was $2.02 metered, all covered by credits, and $0 billed. The credit guard
+reserved the next run conservatively before allocation.

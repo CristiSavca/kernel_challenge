@@ -104,3 +104,49 @@ ledger. It requests one H200, four CPU cores, 32 GiB RAM, blocked network and
 900 leaves headroom for two cold native compiles. Every executed native source,
 helper, worker and credit-guard source/hash is frozen under `experiments/modal/`.
 No reference or submission file is edited. Dry-run mode makes no Modal call.
+
+## November 4 result and decision
+
+Run `20261104T043758Z-24108d21` completed in 142.5 seconds with all 72 output
+checks passing. Exit code was zero and sandbox termination was confirmed.
+Detailed routing histograms and phase distributions are preserved in
+`experiments/iterations/20261104-moe-wgs-diagnostic.json`.
+
+| M | Actual U/J across three seeds | Control median range | Probe median change |
+|---|---|---:|---:|
+| 32 | 16/16, 16/16, 18/18 | 138.0–154.1 us | +1.0–1.3%; first seed +12.25% |
+| 128 | 25/26, 26/26, 23/24 | 197.7–210.6 us | +0.09–1.05% |
+| 256 | 26/29, 27/27, 23/26 | 223.3–240.1 us | +0.9–3.4% |
+
+The first M32 input is unsuitable for tight instrumentation conclusions.
+Across the other inputs, per-warpgroup A completion spread was approximately
+7–18 us and B spread 5–13 us. Median A/B durations were approximately 83–92 /
+39–44 us at M32, 119–127 / 57–60 us at M128, and 134–144 / 64–70 us at M256.
+The roughly 2:1 ratio matches the packed W13/W2 volume ratio, but does not
+establish a bandwidth bottleneck. Finalizer maxima were approximately 4–8 us.
+
+The phase-window heuristic was 0.13–1.52%, with its previously documented
+non-certifying limitation. These observations provide no positive causal
+evidence for a >=15% readiness scheduling gain. They do not prove one impossible.
+Hot-expert duplicate jobs account for at most 11.54% of nominal weight
+requests, and those requests may already hit L2. Do not implement a large
+dynamic queue or hot-expert reuse rewrite on this evidence alone.
+
+The unique-weight 4.8-TB/s calculation gives 94–159 us and apparent headroom
+of 26.3–41.7%, **conditional on cold DRAM traffic**. This local runner flushes
+with `zero_` writes, whereas the official evaluator uses a read sweep.
+Cold DRAM was not verified. These figures are not observed bandwidth or a
+certified remaining speedup margin. Any follow-up should use a read flush.
+
+One useful follow-up is a narrowly controlled issue-pipeline experiment:
+NTT=1 jobs make up 89–100% of M32 jobs, 71–81% at M128 and 45–59% at M256.
+The existing WGS code commits every two k16 MMAs for all job widths because
+four-MMA groups caused register serialization in wider variants. NTT=1 has
+only two four-element accumulator arrays. Testing four-MMA groups for this
+job class alone can distinguish an issue/register bottleneck without changing
+weight volume or scheduling. This remains an unmeasured hypothesis.
+
+Correction to an earlier verbal attribution: the generic
+`rq_deep_tma_pooler` name in the V8 comparison traces denoted an unpooler
+dispatch. The traces' `_route` kernels indicate a combined pooler/router
+projection. Dense-dispatch work belongs to the separate dense researcher.

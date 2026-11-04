@@ -1,8 +1,19 @@
 # Native FP8 QK for full decode, V5
 
-Status: isolated, CPU layout checks passed; CUDA compilation, numerical
-correctness and timing are **unverified**. No GPU allocation, official check,
-submission or active-source change was made for this experiment.
+Status: **reject the performance hypothesis; do not integrate.** Root's bounded
+H200 comparison completed 60 local checks successfully, but B16/B32 full
+decode paired speedups were only 1.010804x / 1.001858x. The unchanged q_len=8
+control measured 1.045744x, so these small target differences do not establish
+a useful gain. Neither the 15% target nor the 3% smaller-gain gate passed.
+No additional local retiming is justified. The official private check
+`998dcd09fb9249a9` was still running when this conclusion was recorded; root
+owns its polling. Its numerical result remains useful, but promotion needs
+new useful performance evidence.
+
+Evidence: `experiments/modal/20261104T044835Z-19b98c8c/result.json` and the
+neighboring manifest. Root owns the experiment decision JSON. The initial
+offline research below preceded the authorized root-owned GPU run. Active
+attention and decoder source were not changed.
 
 Candidate: `native_q1_fp8_qk_v5.py`, SHA-256
 `2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd`.
@@ -135,3 +146,11 @@ for the critical tail, and preserve the exact production path.
 
 Storage: one ~250 KB candidate, one small verifier and this note; physical
 free space was 39 GiB before work. No removal was necessary or performed.
+
+## Official private check resolved
+
+Job `998dcd09fb9249a9` passed all 16 correctness tests and 12 benchmark cases,
+with no flags or rejections. Exact source `2eb08ca4...` scored 2.593476×
+(95% interval 2.554573–2.642907×), versus the parent's 2.642539× private and
+2.611970× scored results. This reinforces the rejection for promotion. No
+additional V5 run, scored attempt or decoder integration is justified.

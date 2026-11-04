@@ -1,0 +1,73 @@
+{
+  "problem": "muse_attention_decode",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "source_sha256": "2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd",
+  "file_sha256": {
+    "candidate.py": "2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd",
+    "baseline.py": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+    "reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055"
+  },
+  "cases": [
+    {
+      "batch": 16,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    },
+    {
+      "batch": 32,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    },
+    {
+      "batch": 4,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 64,
+      "spread": "mixed",
+      "dist": "coherent",
+      "kv_scale": 0.015625
+    },
+    {
+      "batch": 8,
+      "ctx": 8192,
+      "heads": "dp",
+      "layer": "full",
+      "q_len": 1,
+      "page": 64,
+      "spread": "mixed",
+      "dist": "edges"
+    },
+    {
+      "batch": 16,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 8,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    }
+  ],
+  "repeats": 4,
+  "seed": 7301,
+  "weight_seed": 7311,
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "muse_attention_decode/submission.py",
+    "sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c"
+  },
+  "profile": false
+}

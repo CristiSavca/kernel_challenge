@@ -1,0 +1,225 @@
+{
+  "recorded_at": "2026-11-04T04:54:52.049511+00:00",
+  "hypothesis": "Native FP8 QK improves full-attention decode by at least 15%; a smaller promotion needs repeatable 3% affected-case gains.",
+  "candidate_sha256": "2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd",
+  "incumbent": {
+    "path": "muse_attention_decode/submission.py",
+    "sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c"
+  },
+  "run": "experiments/modal/20261104T044835Z-19b98c8c",
+  "result_sha256": "41967b32493748fc4959c092a9b911f6b51d68e79cae4dcc5694f8758a826dd6",
+  "official": false,
+  "decision": "reject_for_promotion",
+  "critic": "Independent leaderboard_critic confirmed no useful gain; unchanged q8 control varied more than target-path improvements.",
+  "numerical_checks_passed": 60,
+  "elapsed_seconds": 136.433880262,
+  "sandbox_terminated": true,
+  "cache_preconditioning": {
+    "method": "128 MiB Triton read sweep, .ca loads, observable block sums",
+    "outside_timing": true,
+    "dram_traffic_measured": false,
+    "sum_check_passed": true
+  },
+  "rows": [
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "heads": "tp8",
+        "layer": "full",
+        "q_len": 1,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "coherent"
+      },
+      "paired_speedup": 1.0108041086071209,
+      "median_us": {
+        "baseline": 92.17600151896477,
+        "candidate": 91.5520004928112
+      },
+      "timings_us": {
+        "baseline": [
+          97.56799787282944,
+          92.28800237178802,
+          90.62399715185165,
+          92.06400066614151
+        ],
+        "candidate": [
+          93.44000369310379,
+          90.33600240945816,
+          91.0400003194809,
+          92.06400066614151
+        ]
+      }
+    },
+    {
+      "case": {
+        "batch": 32,
+        "ctx": 80000,
+        "heads": "tp8",
+        "layer": "full",
+        "q_len": 1,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "coherent"
+      },
+      "paired_speedup": 1.0018583637790934,
+      "median_us": {
+        "baseline": 172.5119948387146,
+        "candidate": 172.43199795484543
+      },
+      "timings_us": {
+        "baseline": [
+          175.4239946603775,
+          169.40799355506897,
+          172.70399630069733,
+          172.31999337673187
+        ],
+        "candidate": [
+          172.89599776268005,
+          172.4800020456314,
+          172.38399386405945,
+          172.0000058412552
+        ]
+      }
+    },
+    {
+      "case": {
+        "batch": 4,
+        "ctx": 80000,
+        "heads": "tp8",
+        "layer": "full",
+        "q_len": 1,
+        "page": 64,
+        "spread": "mixed",
+        "dist": "coherent",
+        "kv_scale": 0.015625
+      },
+      "paired_speedup": 1.0031690771925759,
+      "median_us": {
+        "baseline": 26.2079993262887,
+        "candidate": 26.87999978661537
+      },
+      "timings_us": {
+        "baseline": [
+          24.480000138282776,
+          28.384000062942505,
+          26.847999542951584,
+          25.567999109625816
+        ],
+        "candidate": [
+          23.19999970495701,
+          28.031999245285988,
+          38.2080003619194,
+          25.728000327944756
+        ]
+      }
+    },
+    {
+      "case": {
+        "batch": 8,
+        "ctx": 8192,
+        "heads": "dp",
+        "layer": "full",
+        "q_len": 1,
+        "page": 64,
+        "spread": "mixed",
+        "dist": "edges"
+      },
+      "paired_speedup": 1.005992327731103,
+      "median_us": {
+        "baseline": 33.18400029093027,
+        "candidate": 32.52800088375807
+      },
+      "timings_us": {
+        "baseline": [
+          37.696000188589096,
+          25.119999423623085,
+          38.43199834227562,
+          28.672000393271446
+        ],
+        "candidate": [
+          36.320000886917114,
+          24.768000468611717,
+          40.511999279260635,
+          28.736000880599022
+        ]
+      }
+    },
+    {
+      "case": {
+        "batch": 16,
+        "ctx": 80000,
+        "heads": "tp8",
+        "layer": "full",
+        "q_len": 8,
+        "page": 1,
+        "spread": "agentic",
+        "dist": "coherent"
+      },
+      "paired_speedup": 1.0457439904868218,
+      "median_us": {
+        "baseline": 118.8960000872612,
+        "candidate": 113.61599713563919
+      },
+      "timings_us": {
+        "baseline": [
+          102.49599814414978,
+          135.29600203037262,
+          100.8640006184578,
+          137.63199746608734
+        ],
+        "candidate": [
+          100.99200159311295,
+          110.20799726247787,
+          117.0239970088005,
+          127.83999741077423
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "Four fresh timing pairs per case, not an official confidence interval",
+    "Standalone full-attention uses coherent inputs; decoder full soft transfer is untested",
+    "Unchanged q8 control showed substantial variation; cause is not established",
+    "FP8 query rounding increases reference error despite passing oracle bounds",
+    "Read sweep intends L2 eviction; no measured DRAM traffic"
+  ],
+  "official_private_check": "998dcd09fb9249a9",
+  "next_action": "Official full check passed without useful speedup. Reject promotion and integration; no further V5 runs. Continue GS4 narrow expert jobs and full-chain dense selection.",
+  "official_private_result": {
+    "passed": true,
+    "returncode": 0,
+    "speedup": 2.5934755666695235,
+    "speedup_ci": [
+      2.5545734331694807,
+      2.6429072983940527
+    ],
+    "score_us": 1452.2211230378348,
+    "checks": {
+      "flagged": [],
+      "ok": true,
+      "rejected": []
+    },
+    "flags": [],
+    "evaluator": {
+      "code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+      "files": {
+        "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+        "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+        "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+        "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+        "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+        "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+        "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+        "problems/muse_attention_decode/baseline.py": "37f51207283f85a65eb393b1dfb1344759d7df0bdec5450e34d24e7139f56ecc",
+        "problems/muse_attention_decode/reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+        "problems/muse_attention_decode/task.yml": "645f889fbbd52d1d731bf5eb53356aa7ef6eea8fab3073f0a2a3dd582fe6e4bb"
+      },
+      "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+    },
+    "tests": 16,
+    "benchmarks": 12,
+    "frozen_source_verified": true
+  }
+}

@@ -1,0 +1,307 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-04T05:04:25.312332+00:00",
+  "experiment": "moe_ntt1_gs4",
+  "hypothesis": "Four-k16 WGMMA commit groups for NTT1 jobs expose useful issue/wait savings; material gain, preferably at least 15%, on all-NTT1 M32 and no meaningful M128/M256 regression.",
+  "decision": "reject_for_promotion_and_decoder_integration",
+  "critic": "leaderboard_critic",
+  "run": "experiments/modal/20261104T045617Z-6354a177",
+  "result_sha256": "af277c1d5a96af9830f223f222c52b84d09311893f31f7b2bdd5d1ac83e6ef36",
+  "candidate_sha256": "7f24e2857e1b419fb528e8031c7c7cbb1cb6233e9fbae46b7efdcad88c390847",
+  "incumbent": {
+    "path": "experiments/candidates/muse_moe_w4a16/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.py",
+    "sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a"
+  },
+  "decoder_candidate_sha256": "acfbdc2e5aead53ee4a9f8bf52a289f0942dd20a5e793de2fb39593f8cafd3f5",
+  "official": false,
+  "checks_passed": 80,
+  "elapsed_seconds": 379.77064677600004,
+  "prepare_wall_seconds_including_weight_clone": {
+    "baseline": 187.118403162,
+    "candidate": 185.193798088
+  },
+  "sandbox_terminated": true,
+  "exit_code": 0,
+  "cache_preconditioning": {
+    "method": "128 MiB Triton read sweep, .ca loads, observable block sums",
+    "outside_timing": true,
+    "dram_traffic_measured": false,
+    "sum_check_passed": true
+  },
+  "rows": [
+    {
+      "case_index": 0,
+      "M": 32,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9817277625838796,
+      "paired_ratios": [
+        1.02166212,
+        0.96169109,
+        1.00771379,
+        0.98460728,
+        0.97884825,
+        0.97542627
+      ],
+      "candidate_faster_pairs": 2,
+      "median_us": {
+        "baseline": 152.76800096035004,
+        "candidate": 153.21599692106247
+      },
+      "input_seeds": [
+        7302,
+        7303,
+        7304,
+        7305,
+        7306,
+        7307
+      ],
+      "NTT1_jobs": [
+        16,
+        16,
+        16,
+        21,
+        18,
+        14
+      ],
+      "total_jobs": [
+        16,
+        18,
+        17,
+        22,
+        18,
+        14
+      ],
+      "single_profile_us": {
+        "baseline": 113.76099999999997,
+        "candidate": 113.79099999999994
+      }
+    },
+    {
+      "case_index": 1,
+      "M": 128,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9677429869065277,
+      "paired_ratios": [
+        1.00170389,
+        0.96426301,
+        0.95916894,
+        0.97122296,
+        0.88477537,
+        0.97945729
+      ],
+      "candidate_faster_pairs": 1,
+      "median_us": {
+        "baseline": 204.3199986219406,
+        "candidate": 207.66399800777435
+      },
+      "input_seeds": [
+        8302,
+        8303,
+        8304,
+        8305,
+        8306,
+        8307
+      ],
+      "NTT1_jobs": [
+        12,
+        14,
+        21,
+        17,
+        20,
+        19
+      ],
+      "total_jobs": [
+        22,
+        22,
+        27,
+        20,
+        25,
+        22
+      ],
+      "single_profile_us": {
+        "baseline": 183.35900000000004,
+        "candidate": 193.8309999999999
+      }
+    },
+    {
+      "case_index": 2,
+      "M": 256,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9529766601361607,
+      "paired_ratios": [
+        0.95772235,
+        0.95143639,
+        0.95188512,
+        0.9540682,
+        0.95631239,
+        0.94700854
+      ],
+      "candidate_faster_pairs": 0,
+      "median_us": {
+        "baseline": 255.19999861717224,
+        "candidate": 267.7920013666153
+      },
+      "input_seeds": [
+        9302,
+        9303,
+        9304,
+        9305,
+        9306,
+        9307
+      ],
+      "NTT1_jobs": [
+        16,
+        15,
+        14,
+        18,
+        17,
+        13
+      ],
+      "total_jobs": [
+        27,
+        30,
+        28,
+        29,
+        29,
+        23
+      ],
+      "single_profile_us": {
+        "baseline": 224.05000000000007,
+        "candidate": 238.18399999999997
+      }
+    },
+    {
+      "case_index": 3,
+      "M": 16,
+      "unchanged_path_control": true,
+      "paired_speedup": 1.0021186232324832,
+      "paired_ratios": [
+        1.0819226,
+        1.00259574,
+        0.99664017,
+        0.97988617,
+        1.00164151,
+        1.01121077
+      ],
+      "candidate_faster_pairs": 4,
+      "median_us": {
+        "baseline": 99.95200112462044,
+        "candidate": 99.2639996111393
+      },
+      "input_seeds": [
+        10302,
+        10303,
+        10304,
+        10305,
+        10306,
+        10307
+      ],
+      "NTT1_jobs": [
+        9,
+        10,
+        11,
+        8,
+        8,
+        8
+      ],
+      "total_jobs": [
+        10,
+        10,
+        11,
+        8,
+        9,
+        9
+      ],
+      "single_profile_us": {
+        "baseline": 106.61500000000001,
+        "candidate": 105.92099999999982
+      }
+    },
+    {
+      "case_index": 4,
+      "M": 32,
+      "unchanged_path_control": false,
+      "paired_speedup": 0.9911585051096254,
+      "paired_ratios": [
+        1.0347175,
+        1.02566356,
+        0.989925,
+        0.99037824,
+        0.99193877,
+        0.96522088
+      ],
+      "candidate_faster_pairs": 2,
+      "median_us": {
+        "baseline": 147.77600020170212,
+        "candidate": 144.44799721240997
+      },
+      "input_seeds": [
+        11302,
+        11303,
+        11304,
+        11305,
+        11306,
+        11307
+      ],
+      "NTT1_jobs": [
+        15,
+        15,
+        12,
+        13,
+        17,
+        16
+      ],
+      "total_jobs": [
+        15,
+        16,
+        14,
+        15,
+        18,
+        18
+      ],
+      "single_profile_us": {
+        "baseline": 106.77800000000002,
+        "candidate": 108.894
+      }
+    }
+  ],
+  "known_all_NTT1_case": {
+    "input_seed": 7302,
+    "U": 16,
+    "J": 16,
+    "NTT1_jobs": 16,
+    "local_routes": 39,
+    "baseline_us": 156.95999562740326,
+    "candidate_us": 153.6320000886917,
+    "single_pair_speedup": 1.0216621246666728
+  },
+  "compiler_resources": {
+    "identical_between_implementations": true,
+    "main": {
+      "registers": 96,
+      "stack_bytes": 0,
+      "local_bytes": 0
+    },
+    "other_variant_registers": [
+      144,
+      148,
+      149
+    ],
+    "all_variants_stack_and_local_zero": true,
+    "limitation": "Static resource metadata does not establish dynamic spill traffic, absence of WGMMA serialization, or the cause of timing differences."
+  },
+  "conclusions": [
+    "Known all-NTT1 seed 7302 reproduces 16/16 NTT1 jobs but has only a 1.02166x single-pair gain; first and return M32 paired medians regress.",
+    "M128 loses five of six timing pairs; M256 loses all six. The unchanged M16 control has a near-neutral 1.00212x paired median.",
+    "Separate single profiles support the rejection direction at M128/M256 (183.359 to 193.831 us; 224.050 to 238.184 us), but are not causal measurements.",
+    "Same REG96 and zero STACK/LOCAL for both main kernels provide no evidence for a spill-based explanation. The failed performance hypothesis is sufficient to stop."
+  ],
+  "limitations": [
+    "One prepared weight seed and six fresh input pairs per case; no official confidence interval.",
+    "Single profiles use a separate fresh input and do not enter timing medians.",
+    "Standalone MoE routing is not decoder routing; the decoder counterpart has not been run.",
+    "Read-sweep selfcheck verifies observable loads, not measured cold DRAM traffic.",
+    "Ratios of separate latency medians can differ from the median of paired ratios; decisions use paired ratios."
+  ],
+  "next_action": "Retain frozen expert/decoder incumbents. Do not launch another GS4 GPU run or official check. Continue the independently reviewed dense-chain selector comparison."
+}

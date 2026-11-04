@@ -81,6 +81,23 @@ Those ratios compare two candidates, not a candidate against SGLang.
 Add `--profile` for one extra graph replay per implementation after timing.
 It records actual CUDA kernel names, counts and durations separately from
 benchmark medians, or an explicit profiling error; no full trace is written.
+`--resources` records `cuobjdump --dump-resource-usage` for each module-owned
+`_EXTS` shared object, with the compile defines, bounded subprocess time and
+bounded output. REG/STACK/LOCAL describe compiler resources, not dynamic spill
+traffic; successful compilation cannot prove that WGMMA was not serialized.
+The standalone MoE module exposes `_EXTS`; the decoder's `_MA_EXTS` is not
+covered by this optional collector.
+
+Every weighted run records each prepare's wall time including its weight clone.
+Decoder runs additionally freeze and upload `decoder_policy_metadata.py`, which
+records a bounded whitelist of scalar dispatch policies immediately after each
+prepare. It never invokes builders or reads tensor values. This distinguishes
+an accepted backend change from unrelated autotuner differences; unsupported
+objects and truncated fields are explicit in the result.
+Standalone MoE replays also record actual local route counts, U, J, and jobs
+with at most eight rows before timing. Partial 64-row jobs count separately:
+65 routes to one expert produce jobs of 64 and one row. These observations
+describe the generated standalone inputs, not the decoder's routing.
 
 The smoke requests one H200 for at most 120 seconds and verifies `nvidia-smi`.
 The benchmark requests one H200, four CPU cores and 32 GiB RAM, with CPU/memory
@@ -104,7 +121,7 @@ The image provenance is retained in the imported benchmark manifest. The private
 judge has its own image and can change independently.
 
 Only the selected source, the problem's official public baseline/reference/
-checks/NVFP4 helper, and the worker are uploaded. The whole project, account
+checks/NVFP4 helper, the worker, and the decoder-only policy collector are uploaded. The whole project, account
 files and credentials are not mounted. Every uploaded file is frozen and hashed
 under `experiments/modal/<run>/`; results, logs and termination status stay there.
 All weights/inputs are synthetic. No model download is required.

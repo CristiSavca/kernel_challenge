@@ -1,0 +1,117 @@
+{
+  "mode": "benchmark",
+  "gpu": "H200:1",
+  "timeout_seconds": 900,
+  "official": false,
+  "status": "passed_subset",
+  "worker_sha256": "c184ef578f8f26aa801992f0a2b4c988c3b394d928b91e14336c3280e856ca97",
+  "problem": "muse_attention_decode",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "source_sha256": "2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd",
+  "file_sha256": {
+    "candidate.py": "2eb08ca476d2f86cb43d2b8b1d2d630e3aa7489359acaf41cdf646ec49cd00fd",
+    "baseline.py": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+    "reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055"
+  },
+  "cases": [
+    {
+      "batch": 16,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    },
+    {
+      "batch": 32,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    },
+    {
+      "batch": 4,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 1,
+      "page": 64,
+      "spread": "mixed",
+      "dist": "coherent",
+      "kv_scale": 0.015625
+    },
+    {
+      "batch": 8,
+      "ctx": 8192,
+      "heads": "dp",
+      "layer": "full",
+      "q_len": 1,
+      "page": 64,
+      "spread": "mixed",
+      "dist": "edges"
+    },
+    {
+      "batch": 16,
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "q_len": 8,
+      "page": 1,
+      "spread": "agentic",
+      "dist": "coherent"
+    }
+  ],
+  "repeats": 4,
+  "seed": 7301,
+  "weight_seed": 7311,
+  "comparison_baseline": "incumbent",
+  "incumbent": {
+    "path": "muse_attention_decode/submission.py",
+    "sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c"
+  },
+  "profile": false,
+  "modal_client": "1.6.3",
+  "credit_guard": {
+    "run_id": "20261104T044835Z-19b98c8c",
+    "checked_at": "2026-11-04T04:48:35.923052+00:00",
+    "cycle": "2026-11",
+    "workspace": "cristisavca44",
+    "environment": "main",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "grant_usd": "30.00",
+    "headroom_usd": "5.00",
+    "provider_observed_usd": "1.06266903",
+    "prior_reservations_usd": "4.84",
+    "reservation_usd": "2.42",
+    "working_budget_remaining_usd": "16.67733097",
+    "estimate_is_provider_cap": false,
+    "billing_summary": {
+      "metered_cost": "1.06000000",
+      "billed_cost": "0E-8",
+      "adjustments": {
+        "plan_cost": "0E-8",
+        "reservation_adjustment": "-0E-8",
+        "network_egress_allowance": "0E-8",
+        "credits": "-1.06000000",
+        "free_storage": "-0E-8"
+      },
+      "metered_cost_breakdown": {
+        "ephemeral_apps": "1.06266903",
+        "volumes": "0E-8",
+        "llm_tokens": "0E-8",
+        "network_egress": "0E-8"
+      }
+    }
+  },
+  "credit_guard_sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+  "sandbox_id": "sb-bf7lDOyjz60GNXo660skzn",
+  "dashboard": "https://modal.com/id/sb-bf7lDOyjz60GNXo660skzn",
+  "exit_code": 0,
+  "sandbox_terminated": true
+}
