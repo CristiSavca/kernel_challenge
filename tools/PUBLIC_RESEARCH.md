@@ -102,3 +102,26 @@ from modifying checkpoint bias on failure. It also applies the full-attention
 64-request guard. All eight routes and weight precision were reviewed. The
 prepared state assumes serial calls; serving requires a separate concurrency
 review. CUDA synchronization, UV reassociation accuracy and timing are pending.
+
+## Upstream freshness and attention comparison
+
+GitHub's live main refs checked at 2026-11-04 00:29 UTC still match both pinned
+commits above. There was no newer source to import. A separate read-only
+comparison against upstream
+[muse_attention_decode.py](https://github.com/vjeux/okc-2026/blob/f35a41ee1c13e316dabbf772830d47b23b453393/muse_attention_decode.py)
+(SHA-256 `5811d22bb985092ba5a29a8f4c8e266de189399ee708d7b14efcb9c9bf5a510e`)
+found no substantive active H200 math difference from the queued native
+adaptation. Planning matched across 98,304 H200 shape combinations, tuning
+tables matched, and 17 active math/packing helpers matched after selecting
+the SM90 preprocessing branches. The smaller upstream source mainly removes
+dead experiments, old-architecture paths and unused ABI fields. This is not
+evidence for another performance check. Our adaptation already fixes the
+reusable output alias and full-attention batch bound; scratch ownership still
+needs separate review before concurrent serving use.
+
+Scratch cleanup ledger: the sole temporary upstream comparison file was
+removed after hash, Git and open-handle inspection. Removed 154,604 logical
+bytes / 155,648 allocated bytes. Observed physical free space increased
+139,264 bytes, from 41,892,605,952 to 41,892,745,216 bytes; concurrent filesystem
+activity can make that differ from the allocation. No retained source or
+candidate was deleted.
