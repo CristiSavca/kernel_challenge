@@ -1,7 +1,8 @@
 # New-K/V packed FP8 conversion, fixed v18
 
-2026-11-04. Isolated candidate; independent review and root CPU proof passed.
-Official private job `0d27c30b716843d8` is running as of14:18 UTC. No result yet.
+2026-11-04. Official private job `0d27c30b716843d8` passed correctness but failed
+the fixed performance screen. This attempt is closed, with no decoder port,
+repeat or public promotion. The scored parent remains unchanged.
 
 Source `native_new_kv_pack_v18.py`, SHA
 `41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663`,
@@ -57,3 +58,19 @@ Sliding/full subgroup figures are descriptive. This is an operational screen,
 not significance. A failed fixed attempt closes without a policy sweep or
 repeat; a standalone gain would still need a separately authorized decoder
 port and official whole-layer proof before any decoder promotion.
+
+## Terminal evidence
+
+Result observed14:28 UTC:16 tests,12 benchmarks and12 profiles passed cleanly.
+Score2.5736755358, CI[2.5350704028,2.6122806689]. Official aggregate speed ratios
+are0.9853388144 vs public87a9 and0.9739404588 vs private87a9, missing1.005.
+Zero of six weighted loads improve against both. All six lose against public;
+the individual2% latency cap fails five public and four private comparisons.
+
+Root analysis1d937f8b and independent critic58057ba2 verify exact source,
+receipt/profile equality, full evaluator/image identity and the six-load
+scoring formula. Intervals overlap both parents; the public node matches but
+seeds differ. No SASS or compiler-resource evidence was retained, so this does
+not establish conversion-count savings, compiler causality or a universal cost
+of paired conversion. The fixed candidate simply lacks useful measured evidence.
+Full artifacts are under experiments/iterations/20261104-attention-kv-pack-*.

@@ -1481,3 +1481,23 @@ matching full evaluator inventory/image and exact six-load score reproduction.
 Saved parents have different nodes and decode32 load speed differs about11%;
 retain the fixed both-parent screen but do not attribute cross-run drift to the
 candidate. Root alone follows running0d27c30b716843d8; no duplicate submission.
+
+## Attention packing closed after official result — November 4, 14:31 UTC
+
+Job0d27c30b716843d8/source41809 passed16 tests/12 benchmarks/12 profiles with
+clean checks, score2.5736755358 and CI[2.5350704028,2.6122806689]. Exact source,
+full evaluator inventory/image, profile records and six weighted-load scorer
+were independently verified by root and critic58057ba2. Aggregate speed ratios
+are0.9853388144 public/0.9739404588 private, and zero loads improve against both.
+All six weighted loads lose to public. Individual2% latency cap also fails.
+Close fixed attempt: no repeat, conversion-policy sweep, decoder port or public
+promotion. Active87a9 attention,97af decoder and247888 MoE remain exact.
+
+Intervals overlap both parents; candidate shares public node but uses fresh
+seeds. No retained SASS/resource diagnostics establish changed conversion count
+or causal compiler behavior. Source/CPU equivalence is not a speedup guarantee.
+No official job remains live. Root's previous goal turn was progress (v17 closed,
+v18 implemented/reviewed/submitted, serving patch audited), and this turn adds
+terminal evidence. #1 goal remains active and unachieved. Separate bounded
+source reviews now seek actual duplicate work/intermediate traffic removal in
+the whole decoder and MoE, not variants of the closed fixed experiments.

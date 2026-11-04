@@ -1,0 +1,548 @@
+{
+  "kind": "independent_attention_kv_pack_terminal_result_critic",
+  "recorded_at_utc": "2026-11-04T14:29:52.266887+00:00",
+  "verdict": "REJECT_AND_CLOSE_FIXED_V18; no public promotion, decoder port, policy sweep or measurement-seeking repeat",
+  "candidate_job": "0d27c30b716843d8",
+  "source_sha256": "41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663",
+  "clean_counts": {
+    "test": 16,
+    "benchmark": 12,
+    "profile": 12,
+    "setup": 0
+  },
+  "bindings": "All local source, receipt IDs/modes/problem/status, complete clean result records, archived benchmark/profile records and summaries independently checked. Full evaluator inventory/image and nonseed case identities match both exact parents.",
+  "full_evaluator": {
+    "code_sha256": "c64ec50d4fca1ac0ae80eae2883ad7e8acee7938f0032bc0470126fcfe8d9a58",
+    "files": {
+      "challenge/checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055",
+      "challenge/nvfp4.py": "cfdf37c7bc14b10f7353aba7d4632f4767401b92b4b073941a8030d9a961aaaf",
+      "configs/muse-spark-open.yaml": "60e242544d5f5a5fc143870461f7373b85accb677a536cb337581ded938c4a48",
+      "harness/eval.py": "0051a1bfac67a9f1fad06086b306653c6643b2bb253e15a794aa672312f070a9",
+      "harness/runner.py": "c905e5c80264c6d27620b6fc7d55b162dccdb8ed7282f8a513a4d2e6f2f226f2",
+      "harness/static_checks.py": "c5588b69e9e86229459a525c61b30096f6f13ff2add6cadf98f272c4ac8ca0c2",
+      "harness/worker.py": "950437610f57ddffbc1176b65d9c2ae909c47bf67b1e3fe0716a81946986f568",
+      "problems/muse_attention_decode/baseline.py": "37f51207283f85a65eb393b1dfb1344759d7df0bdec5450e34d24e7139f56ecc",
+      "problems/muse_attention_decode/reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+      "problems/muse_attention_decode/task.yml": "645f889fbbd52d1d731bf5eb53356aa7ef6eea8fab3073f0a2a3dd582fe6e4bb"
+    },
+    "image": "localhost:30500/kc/judge@sha256:8c102d00529abd8b80898116ac64a9c8f66bbd256d56142be4b96fb626e89452"
+  },
+  "runs": [
+    {
+      "job": "0d27c30b716843d8",
+      "receipt_sha256": "41639ab68c12232db617d8a30369ce9faa6acb4c8a0df64b1a7aeba16720574d",
+      "profile_sha256": "cd66372037823ade71f90b968e47f45cca6c884465bb8485d590d51c8a27c596",
+      "source_sha256": "41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663",
+      "node": "n-ylawlh2urn5puf2qv62d6ccela",
+      "gpu": "H200",
+      "score": 2.573675535836239,
+      "score_recomputed": 2.573675535836239,
+      "speedup_ci": [
+        2.5350704027986954,
+        2.6122806688737823
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "speedup": 3.45702618661417
+        },
+        {
+          "load": "decode 16",
+          "speedup": 2.524876180016412
+        },
+        {
+          "load": "decode 32",
+          "speedup": 2.423576471020176
+        },
+        {
+          "load": "verify 1",
+          "speedup": 2.9710347767361984
+        },
+        {
+          "load": "verify 16",
+          "speedup": 2.1628778733402205
+        },
+        {
+          "load": "verify 32",
+          "speedup": 2.1378811155900346
+        }
+      ]
+    },
+    {
+      "job": "8f9e5971f95841a0",
+      "receipt_sha256": "17d4eebbf1fdd64625161acd63fc7cc56dd865329c59c13d099524cefaf1bf48",
+      "profile_sha256": "e413c4eab93d07f7e2745d43271cbd8ca0f8ea0ba5282b115bf545bd7f419e19",
+      "source_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+      "node": "n-ylawlh2urn5puf2qv62d6ccela",
+      "gpu": "H200",
+      "score": 2.6119701144979857,
+      "score_recomputed": 2.6119701144979857,
+      "speedup_ci": [
+        2.572790562780516,
+        2.651149666215455
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "speedup": 3.58341409039096
+        },
+        {
+          "load": "decode 16",
+          "speedup": 2.5453645010566994
+        },
+        {
+          "load": "decode 32",
+          "speedup": 2.435728411506713
+        },
+        {
+          "load": "verify 1",
+          "speedup": 3.0349652724129315
+        },
+        {
+          "load": "verify 16",
+          "speedup": 2.175015395297101
+        },
+        {
+          "load": "verify 32",
+          "speedup": 2.1652962210020603
+        }
+      ]
+    },
+    {
+      "job": "c21d391dbf604bb5",
+      "receipt_sha256": "d23740d6928c52c8d5c35130935c620ab3e464c0d18a86625deab28db7acf3c1",
+      "profile_sha256": "7a33067ab2561c36f6137e117405dc0417ff37656cb5dae28a4a87eb3ac57f0c",
+      "source_sha256": "87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c",
+      "node": "n-5imphluruu3bb3ci5c2w24thxw",
+      "gpu": "H200",
+      "score": 2.6425388867913835,
+      "score_recomputed": 2.6425388867913835,
+      "speedup_ci": [
+        2.5934854226506414,
+        2.682176970093254
+      ],
+      "loads": [
+        {
+          "load": "decode 1",
+          "speedup": 3.580890746584794
+        },
+        {
+          "load": "decode 16",
+          "speedup": 2.519890106943684
+        },
+        {
+          "load": "decode 32",
+          "speedup": 2.70423245192326
+        },
+        {
+          "load": "verify 1",
+          "speedup": 3.0260322214524322
+        },
+        {
+          "load": "verify 16",
+          "speedup": 2.1567653388963866
+        },
+        {
+          "load": "verify 32",
+          "speedup": 2.138135310324684
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "parent_job": "8f9e5971f95841a0",
+      "aggregate_speedup_ratio": 0.9853388143879638,
+      "normalized_aggregate_latency_ratio": 1.0148793342939026,
+      "load_ratios": [
+        {
+          "load": "decode 1",
+          "speedup_ratio": 0.9647297519659525
+        },
+        {
+          "load": "decode 16",
+          "speedup_ratio": 0.9919507319946586
+        },
+        {
+          "load": "decode 32",
+          "speedup_ratio": 0.9950109624582406
+        },
+        {
+          "load": "verify 1",
+          "speedup_ratio": 0.9789353452384298
+        },
+        {
+          "load": "verify 16",
+          "speedup_ratio": 0.994419569634714
+        },
+        {
+          "load": "verify 32",
+          "speedup_ratio": 0.9873388660885676
+        }
+      ],
+      "case_ratios": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "speedup_ratio": 0.9592672957971897,
+          "normalized_latency_ratio": 1.0424623088697709,
+          "harness_median_latency_ratio": 1.0721762093506333,
+          "candidate_seed": 4877021920588133962,
+          "parent_seed": 3060972778131176873
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "speedup_ratio": 0.9683618739962818,
+          "normalized_latency_ratio": 1.0326718005461661,
+          "harness_median_latency_ratio": 1.04113627983491,
+          "candidate_seed": 4877237237551378125,
+          "parent_seed": 3061224672889238325
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "speedup_ratio": 0.9679266483420251,
+          "normalized_latency_ratio": 1.0331361386866595,
+          "harness_median_latency_ratio": 1.0482459772399229,
+          "candidate_seed": 4877452554514622289,
+          "parent_seed": 3061476567647299778
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "speedup_ratio": 0.9971519624338637,
+          "normalized_latency_ratio": 1.0028561720514342,
+          "harness_median_latency_ratio": 1.0054132609965556,
+          "candidate_seed": 4877667871477866454,
+          "parent_seed": 3061728462405361232
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "speedup_ratio": 0.9737356332406988,
+          "normalized_latency_ratio": 1.026972790008609,
+          "harness_median_latency_ratio": 1.0328018236237357,
+          "candidate_seed": 4877883188441110620,
+          "parent_seed": 3061980357163422687
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "speedup_ratio": 0.9985615601013739,
+          "normalized_latency_ratio": 1.001440511988545,
+          "harness_median_latency_ratio": 1.0034411477886869,
+          "candidate_seed": 4878098505404354787,
+          "parent_seed": 3062232251921484143
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "speedup_ratio": 0.9552492784952094,
+          "normalized_latency_ratio": 1.0468471659829839,
+          "harness_median_latency_ratio": 1.0797715605673035,
+          "candidate_seed": 4878313822367598955,
+          "parent_seed": 3062484146679545600
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "speedup_ratio": 1.009045433924216,
+          "normalized_latency_ratio": 0.9910356524888695,
+          "harness_median_latency_ratio": 1.001184268992348,
+          "candidate_seed": 4878529139330843124,
+          "parent_seed": 3062736041437607058
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "speedup_ratio": 0.9935922768529659,
+          "normalized_latency_ratio": 1.0064490468538356,
+          "harness_median_latency_ratio": 1.0169791238345922,
+          "candidate_seed": 4878744456294087294,
+          "parent_seed": 3062987936195668517
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "speedup_ratio": 0.9939889960879924,
+          "normalized_latency_ratio": 1.0060473545840698,
+          "harness_median_latency_ratio": 1.0050274830943289,
+          "candidate_seed": 4878959773257331465,
+          "parent_seed": 3063239830953729977
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "speedup_ratio": 0.9823690170034918,
+          "normalized_latency_ratio": 1.0179474135394537,
+          "harness_median_latency_ratio": 1.0255227694585143,
+          "candidate_seed": 4879175090220575637,
+          "parent_seed": 3063491725711791438
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "speedup_ratio": 0.9884036212167399,
+          "normalized_latency_ratio": 1.0117324325147503,
+          "harness_median_latency_ratio": 1.0136448807620513,
+          "candidate_seed": 4879390407183819810,
+          "parent_seed": 3063743620469852900
+        }
+      ],
+      "aggregate_min_1_005_pass": false,
+      "every_case_latency_max_1_02_pass": false,
+      "regressing_case_indices_over_1_02": [
+        0,
+        1,
+        2,
+        4,
+        6
+      ],
+      "same_node": true,
+      "aggregate_ci_overlap": true
+    },
+    {
+      "parent_job": "c21d391dbf604bb5",
+      "aggregate_speedup_ratio": 0.9739404588143036,
+      "normalized_aggregate_latency_ratio": 1.0267568114147572,
+      "load_ratios": [
+        {
+          "load": "decode 1",
+          "speedup_ratio": 0.9654095674131478
+        },
+        {
+          "load": "decode 16",
+          "speedup_ratio": 1.0019786867129596
+        },
+        {
+          "load": "decode 32",
+          "speedup_ratio": 0.8962160295415875
+        },
+        {
+          "load": "verify 1",
+          "speedup_ratio": 0.9818252283216482
+        },
+        {
+          "load": "verify 16",
+          "speedup_ratio": 1.0028341212340521
+        },
+        {
+          "load": "verify 32",
+          "speedup_ratio": 0.9998811138222068
+        }
+      ],
+      "case_ratios": [
+        {
+          "index": 0,
+          "load": "decode 1",
+          "layer": "sliding",
+          "speedup_ratio": 0.9628582051909632,
+          "normalized_latency_ratio": 1.0385745217819176,
+          "harness_median_latency_ratio": 1.059786565426082,
+          "candidate_seed": 4877021920588133962,
+          "parent_seed": 2647605274371432514
+        },
+        {
+          "index": 1,
+          "load": "decode 1",
+          "layer": "full",
+          "speedup_ratio": 0.966722196377445,
+          "normalized_latency_ratio": 1.0344233366599582,
+          "harness_median_latency_ratio": 1.0434367398443198,
+          "candidate_seed": 4877237237551378125,
+          "parent_seed": 2647634378695700905
+        },
+        {
+          "index": 2,
+          "load": "decode 16",
+          "layer": "sliding",
+          "speedup_ratio": 1.0104157719372133,
+          "normalized_latency_ratio": 0.9896915980267768,
+          "harness_median_latency_ratio": 0.9826097238223186,
+          "candidate_seed": 4877452554514622289,
+          "parent_seed": 2647663483019969297
+        },
+        {
+          "index": 3,
+          "load": "decode 16",
+          "layer": "full",
+          "speedup_ratio": 1.0009079377925993,
+          "normalized_latency_ratio": 0.9990928858106555,
+          "harness_median_latency_ratio": 1.005405660286891,
+          "candidate_seed": 4877667871477866454,
+          "parent_seed": 2647692587344237690
+        },
+        {
+          "index": 4,
+          "load": "decode 32",
+          "layer": "sliding",
+          "speedup_ratio": 0.9923155146559911,
+          "normalized_latency_ratio": 1.0077439939520374,
+          "harness_median_latency_ratio": 1.0113764666500782,
+          "candidate_seed": 4877883188441110620,
+          "parent_seed": 2647721691668506084
+        },
+        {
+          "index": 5,
+          "load": "decode 32",
+          "layer": "full",
+          "speedup_ratio": 0.8793626842959459,
+          "normalized_latency_ratio": 1.137187212805876,
+          "harness_median_latency_ratio": 1.1417399647343367,
+          "candidate_seed": 4878098505404354787,
+          "parent_seed": 2647750795992774479
+        },
+        {
+          "index": 6,
+          "load": "verify 1",
+          "layer": "sliding",
+          "speedup_ratio": 0.9732343715652446,
+          "normalized_latency_ratio": 1.027501729508082,
+          "harness_median_latency_ratio": 1.0485749740281933,
+          "candidate_seed": 4878313822367598955,
+          "parent_seed": 2647779900317042875
+        },
+        {
+          "index": 7,
+          "load": "verify 1",
+          "layer": "full",
+          "speedup_ratio": 0.9921004436925455,
+          "normalized_latency_ratio": 1.0079624561783813,
+          "harness_median_latency_ratio": 1.0155713628061749,
+          "candidate_seed": 4878529139330843124,
+          "parent_seed": 2647809004641311272
+        },
+        {
+          "index": 8,
+          "load": "verify 16",
+          "layer": "sliding",
+          "speedup_ratio": 1.001250296981682,
+          "normalized_latency_ratio": 0.9987512643087836,
+          "harness_median_latency_ratio": 1.0003868023851052,
+          "candidate_seed": 4878744456294087294,
+          "parent_seed": 2647838108965579670
+        },
+        {
+          "index": 9,
+          "load": "verify 16",
+          "layer": "full",
+          "speedup_ratio": 1.0031738229730398,
+          "normalized_latency_ratio": 0.9968362183099696,
+          "harness_median_latency_ratio": 0.9956704077807691,
+          "candidate_seed": 4878959773257331465,
+          "parent_seed": 2647867213289848069
+        },
+        {
+          "index": 10,
+          "load": "verify 32",
+          "layer": "sliding",
+          "speedup_ratio": 0.9868468504814756,
+          "normalized_latency_ratio": 1.0133284607556958,
+          "harness_median_latency_ratio": 1.0208694710136024,
+          "candidate_seed": 4879175090220575637,
+          "parent_seed": 2647896317614116469
+        },
+        {
+          "index": 11,
+          "load": "verify 32",
+          "layer": "full",
+          "speedup_ratio": 1.002837810255671,
+          "normalized_latency_ratio": 0.9971702201226863,
+          "harness_median_latency_ratio": 0.9998357485304268,
+          "candidate_seed": 4879390407183819810,
+          "parent_seed": 2647925421938384870
+        }
+      ],
+      "aggregate_min_1_005_pass": false,
+      "every_case_latency_max_1_02_pass": false,
+      "regressing_case_indices_over_1_02": [
+        0,
+        1,
+        5,
+        6
+      ],
+      "same_node": false,
+      "aggregate_ci_overlap": true
+    }
+  ],
+  "screen": {
+    "aggregate_ratio_min_both": 1.005,
+    "joint_positive_loads_min": 3,
+    "joint_positive_loads": [],
+    "joint_positive_load_count": 0,
+    "every_case_normalized_latency_max_both": 1.02,
+    "passed": false,
+    "no_unchanged_controls": true,
+    "operational_not_statistical": true
+  },
+  "interpretation": [
+    "Correctness passed; fixed performance screen failed. No evidence justifies promoting this source.",
+    "All12 cases may execute the changed new-token prologue. Per-case changes cannot be interpreted as untreated control drift.",
+    "The prologue scope is small and the compiler may already pair scalar conversions. This check does not measure SASS or isolate the reason for the observed outcome.",
+    "Candidate and public parent share a saved node ID but use different fresh seeds and times; private parent uses another node. Aggregate confidence intervals overlap both parents.",
+    "Profiles identify the normal attention kernels, not individual conversion instructions or exact in-kernel has_new activation counts. No compiler warning absence or instruction reduction is inferred from the short retained log."
+  ],
+  "profile_kernel_reports": [
+    {
+      "index": 0,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, false, 13>((an...       4.4 \u00b5s 100.0%      1\ntotal                                                              4.4 \u00b5s"
+    },
+    {
+      "index": 1,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, false, 11>((an...       9.9 \u00b5s 100.0%      1\ntotal                                                              9.9 \u00b5s"
+    },
+    {
+      "index": 2,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, false, 1>((ano...       6.9 \u00b5s 100.0%      1\ntotal                                                              6.9 \u00b5s"
+    },
+    {
+      "index": 3,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, true, 0>((anon...      85.8 \u00b5s 100.0%      1\ntotal                                                             85.8 \u00b5s"
+    },
+    {
+      "index": 4,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, false, 1>((ano...       8.7 \u00b5s 100.0%      1\ntotal                                                              8.7 \u00b5s"
+    },
+    {
+      "index": 5,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<1, true, 0>((anon...     164.9 \u00b5s 100.0%      1\ntotal                                                            164.9 \u00b5s"
+    },
+    {
+      "index": 6,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, false, 15>((an...       6.1 \u00b5s 100.0%      1\ntotal                                                              6.1 \u00b5s"
+    },
+    {
+      "index": 7,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, false, 11>((an...      13.4 \u00b5s 100.0%      1\ntotal                                                             13.4 \u00b5s"
+    },
+    {
+      "index": 8,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, false, 3>((ano...      10.7 \u00b5s 100.0%      1\ntotal                                                             10.7 \u00b5s"
+    },
+    {
+      "index": 9,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, true, 0>((anon...      98.1 \u00b5s 100.0%      1\ntotal                                                             98.1 \u00b5s"
+    },
+    {
+      "index": 10,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, false, 3>((ano...      14.0 \u00b5s 100.0%      1\ntotal                                                             14.0 \u00b5s"
+    },
+    {
+      "index": 11,
+      "report": "kernel                                                           GPU time  share  calls\nvoid (anonymous namespace)::attn_kernel<8, true, 0>((anon...     184.7 \u00b5s 100.0%      1\ntotal                                                            184.7 \u00b5s"
+    }
+  ]
+}
