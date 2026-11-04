@@ -159,3 +159,11 @@ does not establish safety under overlapping serving graphs.
 The compact alignment, own-attention and combined controls remain in flight.
 Do not score them merely because they pass; compare them with this much faster
 native incumbent first.
+
+## Own attention-only V5 control resolved
+
+Check `8e13cd6e80194b4f` passed at **1.1060129400×**, CI
+[1.0894227459, 1.1226031341], with no flags or errors. The isolated attention
+integration is numerically valid and improves modestly over V2's 1.0812×
+private result. It is substantially slower than native V4's 2.1541×, so it
+will not be scored or promoted. Preserve it as measured integration evidence.

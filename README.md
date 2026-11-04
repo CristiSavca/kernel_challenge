@@ -65,7 +65,7 @@ for serving priority, so it is lower priority during this pass.
 | Whole decoder | `83d9b48acd01462e` pending | Same decoder integration with full upstream MIT notice embedded; identical executable AST |
 | Projections | `8c992affff0e45b8` passed 1.4774× | Reviewed native CUDA with lossless BF16 weight compression |
 | Whole decoder | `f8e991f1a2c2469e` passed 2.1541× | Reviewed public CUDA decoder with bias restoration and batch-bound fixes |
-| Whole decoder | `8e13cd6e80194b4f` pending | Passing decoder V2 with our validated grouped window attention for decode and small verify batches |
+| Whole decoder | `8e13cd6e80194b4f` passed 1.1060×; not scored | Passing decoder V2 with grouped window attention; slower than native V4 |
 | Whole decoder | `b255f6b17f1b4758` pending | Validated compact expert integration plus grouped window attention, with full attribution |
 
 **Active submission.py files hold passing candidates:** native attention V4,
