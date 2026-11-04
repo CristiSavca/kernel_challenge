@@ -79,3 +79,17 @@ submission has been made by this result-analysis subtask.
 The exact passing V3 snapshot was scored as `b5538a0dd25d46be` and passed at
 **1.1303169997×**, CI [1.1133622447, 1.1472717547], score 4273.8453 µs.
 The corresponding private check was `ce713efc5e9b44d8` (1.1320×).
+
+## Goal continuation: readable lossless-compression candidate
+
+`candidates/public_compressed_v4.py` is based on vjeux/okc-2026 commit
+`f35a41ee1c13e316dabbf772830d47b23b453393`, with full Apache/CUTLASS notices.
+All 14 native source strings match upstream; only an unused environment flag
+hook was removed. Private check `8c992affff0e45b8` is pending.
+
+CPU review covered all codec base/code/low-byte combinations, finite escape
+reconstruction, fragment/split ownership and router hi/lo representation. No
+active packing defect was found. Keep compressed SK2 routes at CL=1: an unused
+CL>1 compressed epilogue drops peer escape buffers. Native barriers, numerical
+accuracy, performance and the 300-second preparation limit need the official
+GPU check. The existing scored hybrid remains active.

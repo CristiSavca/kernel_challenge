@@ -42,6 +42,12 @@ Use `okc check <file> --json` for experiments, retain its profile and job ID, th
 
 Updates verified November 3: source must be readable, with no embedded/prebuilt GPU binaries or compressed, encoded or obfuscated code (November 2 clarification). The latest kernel guidance permits approximate math accurate to BF16, BF16/FP16 split partial sums, and FP16 attention accumulation, while preserving the required computation and checking bounds. Consult the live restrictions before using any newly allowed precision behavior. Our two submitted candidates retain their originally validated precision behavior.
 
+The live llms.txt kernel restrictions also explicitly permit BF16 **or FP32**
+activations wherever SGLang keeps BF16. This permits the reviewed CUDA experts'
+fused FP32 epilogues. The serving restriction separately still says BF16; do not
+assume a kernel-track permission applies to serving. Recheck the live serving
+API before export because its published patch size and prose have differed.
+
 - Preserve original BF16/NVFP4 weights or use a lossless representation; do not pre-dequantize experts into persistent higher-precision weights. The router alone permits FP32 weights represented as BF16 hi + lo with FP32 accumulation.
 - Keep the computation CUDA-graph compatible. Branch on dimensions/configuration, never on host-read input values. Compute each call from its fresh inputs.
 - Keep BF16 activations and FP8 E4M3 KV cache. Attention queries may use E4M3 as stock FA3 does. Attend to every required key and value.

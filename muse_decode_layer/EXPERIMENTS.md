@@ -60,3 +60,25 @@ No scoring or additional private uploads were performed by this analysis.
 The exact V2 snapshot `010c881e46e411735adef5aff33713d060106c9a4abef3cc5a4986043c221197`
 passed private check `a28df47ba0584bed` at 1.0812× and was submitted for scoring
 as `846bf3fd98c54703`. The scored job is pending.
+
+## Goal continuation: public expert alignment integration
+
+V2 scored run `846bf3fd98c54703` passed at 1.0813030544×, CI
+[1.0650835086, 1.0975226002]. V2 remains the active submission.
+
+`candidates/public_alignment_v3.py` replaces only `_experts` with alignment and
+finalization from the standalone MoE V4 that passed at 1.3348×. Existing expert
+ID rotation, stream synchronization and all other decoder functions remain
+AST-identical. Private check `41920b5cf4bf423f` is pending.
+
+## Public native decoder reviewed and queued
+
+Native V4 check `f8e991f1a2c2469e` tests
+`candidates/public_cuda_v4.py`, SHA-256
+`80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c`.
+Native source strings remain identical to the imported decoder. The adaptation
+owns the routing bias, restores it after synthetic tuning even on failure, and
+uses complete fallback attention for full batches above the native 64-segment
+bound. Full original licenses are embedded. Routing, weight packing and serial
+stream ordering were reviewed; numerical UV reassociation, synchronization,
+compilation and timing still require the official GPU check.

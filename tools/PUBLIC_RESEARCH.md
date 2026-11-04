@@ -14,8 +14,10 @@ reports approximately 1.4243×. That measurement is not an official leaderboard
 result and does not establish our correctness or performance.
 
 `muse_moe_w4a16/candidates/public_local_align_v4.py` preserves its kernel behavior
-and adds provenance comments. It is in our own private check `7d7d9292e9054337`.
-The raw original, evaluation and license are retained. It is not scored yet.
+and adds provenance comments. Our private check `7d7d9292e9054337` passed all
+five numerical tests and six timed shapes at 1.3348× (CI 1.3148–1.3548).
+The exact snapshot was submitted for scoring as `d674d6a1ada44d16`, pending.
+The raw original, evaluation and license are retained.
 
 The larger Gemini cohort reports approximately 2.65× attention, 2.38× MoE and
 2.17× decoder speedups in that repository's local protocol. These are research
@@ -23,6 +25,29 @@ leads only. The MoE and decoder headers identify Apache-2.0-derived code; the
 decoder attributes team vjeux. Preserve both the benchmark license and upstream
 Apache attribution in any adaptation. Readable inline CUDA still needs review
 of preparation, cache handling, precision and all required keys/experts.
+
+Further inspection found the published attention evaluation repeats identical
+paired timings and the same speedup ratio across distinct cases (for example,
+all five first-case baseline times are exactly 100 microseconds). We have not
+established why. Treat these files as unverified reports, not independent timing
+evidence. Our actual official measurements govern all promotion decisions.
+
+Reviewed adaptations now in official private checks:
+
+- Attention `public_cuda_v4.py`, `c21d391dbf604bb5`: original CUDA/CPP strings
+  unchanged, full MIT/Apache notices embedded, fresh output per invocation,
+  and full-attention batches above 64 use the complete fallback because the
+  native flat traversal has a 64-segment array. Cache ownership/window coverage
+  were independently reviewed. Global scratch needs separate ownership before
+  overlapping-stream serving integration.
+- Experts `public_cuda_v6.py`, `143f8587286e4384`: production CUDA/CPP strings
+  and dispatch constants unchanged, unused diagnostics/timers removed, licenses
+  embedded. CPU packing/decode checks covered 10,129 words per packed layout
+  and all 119 positive-normal scale codes. GPU behavior remains unverified.
+- Decoder `public_alignment_v3.py`, `41920b5cf4bf423f`: integrates only the
+  validated compact expert route alignment and finalizer into our passing
+  decoder. All previous decoder functions except `_experts` are AST-identical;
+  its existing expert-ID rotation remains intact.
 
 The Gemini dense projection contains compressed/encoded source and `exec`, so
 we did not import or submit it. The current challenge forbids encoded or
@@ -53,3 +78,18 @@ this task; we did not establish who borrowed it from whom.
 `tools/experiments.py` tracks official runs; `tools/modal_h200.py` tracks bounded
 Modal runs. This is a reproducible experiment workflow, not an unattended
 model-calling daemon or a promise of background work after the chat stops.
+
+Dense projection adaptation `public_compressed_v4.py` is now in private check
+`8c992affff0e45b8`. It retains all 14 upstream native source strings and embeds
+Apache-2.0/CUTLASS notices. CPU codec review covered 495,616 decode cases and
+7,403,520 finite escape/base cases. Current compressed SK2 routes must retain
+CL=1; a dormant CL>1 compressed branch drops peer escape corrections. Actual
+CUDA correctness, timing and prepare-time budget remain unverified.
+
+Native decoder adaptation `public_cuda_v4.py` is in private check
+`f8e991f1a2c2469e`. It embeds the original licenses and retains native source
+strings. Bias cloning and unconditional restoration prevent synthetic tuning
+from modifying checkpoint bias on failure. It also applies the full-attention
+64-request guard. All eight routes and weight precision were reviewed. The
+prepared state assumes serial calls; serving requires a separate concurrency
+review. CUDA synchronization, UV reassociation accuracy and timing are pending.

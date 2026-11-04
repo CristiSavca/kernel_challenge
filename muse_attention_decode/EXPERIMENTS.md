@@ -46,3 +46,20 @@ The repaired source is `candidates/window_splitkv_v3_fp8_fill.py`, also active i
 
 The scored V1 remains the validated attention incumbent. Do not interpret the
 outer result `status: ok` as correctness; inspect `passed` and the test records.
+
+## Goal continuation: native CUDA candidate
+
+Active `submission.py` was restored to passing/scored fused-QKV V1 while the
+Triton V3 experiment runs from its immutable snapshot. The independently
+reviewed native CUDA adaptation `candidates/public_cuda_v4.py` is in private
+check `c21d391dbf604bb5`. Its CUDA/CPP strings match the imported source; Python
+changes give each call fresh output and route full-attention batches above 64
+to the complete fallback. The published timing report repeats identical pairs
+and is not treated as performance evidence. Our private check is pending.
+
+## V3 passed and submitted
+
+Check `05f77382a0c84254` passed all 16 numerical tests and 12 timed shapes at
+1.2050178708×, CI [1.1869426027, 1.2230931388]. The exact immutable source
+`103624d509012ab92fd2f3a2237827bc739a542a0eae5a333802d3cf3712aa60` is now active
+and was submitted for scoring as `52117bcc7137435e` (pending).

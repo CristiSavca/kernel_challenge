@@ -130,3 +130,15 @@ compact published GPT-6.1 Sol MoE kernel from Auto-research-agent commit
 uses local Triton route alignment plus Marlin, and preserves its MIT license and
 original source under `third_party/`. Our private check `7d7d9292e9054337` is
 pending. Published local measurements do not establish our score.
+
+## Goal continuation: compact public candidate validated
+
+Private check `7d7d9292e9054337` passed all five numerical tests and six timed
+shapes at 1.3348268492×, CI [1.3148044465, 1.3548492519]. The exact frozen V4
+source was submitted as `d674d6a1ada44d16` (pending) and promoted to active
+`submission.py`. Fused-finalize V2 scored job `777df2bfda8b4a57` is now done
+and passed at 1.2100468954×. Packed-GEMV V5 remains a separate pending check.
+
+The reviewed native CUDA V6 source, with full licenses and diagnostics removed,
+is in private check `143f8587286e4384`. Its production CUDA/CPP and dispatch
+constants match the imported source. Do not score it until our check passes.
