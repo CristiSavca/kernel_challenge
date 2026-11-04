@@ -1,10 +1,25 @@
 # WAIT2 with one full producer warpgroup and32/112 register quotas
 
-Status: independent exact-source review and the root's CPU rerun passed.
-Root submitted one official private check, `42527fa2c64d4b42`, at10:05 UTC.
-The service received it; compilation, correctness and timing remain pending.
-Resume that receipt without another upload. The implementation agent made no
-GPU allocation or submission, and both public incumbents remain unchanged.
+Status: **terminal PASS, rejected for performance and mechanism failure**.
+Root's single private check `42527fa2c64d4b42` scored2.312113768 versus the
+published incumbent's2.373691044. All five tests and six timed cases passed
+without flags. Both public incumbents remain unchanged.
+
+Both compiled specializations still report C7511: WGMMA serialization caused
+by insufficient pipeline registers. Actual admission passed at640 threads,
+231168 dynamic bytes,96 initial registers, local0/static0 and occupancy1/1;
+ptxas reports zero stack/spill bytes. Thus the proposed redistribution did not
+remove the observed compiler restriction. No retained SASS establishes whether
+the quota instructions were honored; do not claim they were ignored.
+
+Affected M32/M128/M256 speedup ratios decline geometrically6.07% against the
+public247888 incumbent and6.93% against its private check. Direct harness medians
+rise5.99%/6.57%, and raw medians6.48%/6.94%. Against rejected WAIT2, affected
+speedup falls another1.61%. Fresh runs are not paired against one another;
+these comparisons do not isolate the causal effect of any single instruction.
+The predeclared C7511 gate already rejects this attempt independently of timing.
+No scoring, decoder integration, quota rescue or identical retry.
+See `experiments/iterations/20261104-wgs-reg112-root-result.json`.
 
 Frozen source SHA256:
 `31127a37ce35616b555e2ea5a5df673719aa03c422f9edc1a2be75320b3b9f65`.

@@ -1,0 +1,63 @@
+{
+  "decision": "NO_MODAL_ALLOCATION_FITS_EXISTING_GUARD",
+  "method": "Read-only saved files and pure Decimal arithmetic; no guard entry, lock acquisition, provider call, allocation or ledger change.",
+  "files": {
+    "guard": {
+      "path": "tools/modal_credit_budget.py",
+      "sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912"
+    },
+    "documentation": {
+      "path": "tools/MODAL.md",
+      "sha256": "737e811157da2c4a875bec40306c62c98fb815eb4cda9965dab276820284df46"
+    },
+    "grant": {
+      "path": "tools/modal_credit_grant.json",
+      "sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71"
+    },
+    "journal": {
+      "path": "experiments/modal/credit-reservations-2026-11.jsonl",
+      "sha256": "bbdc16eeb961b2e016113ed1caa47f464c50f30f5cfe102acac32dcecd859ed5"
+    },
+    "latest_saved_billing": {
+      "path": "experiments/modal/20261104T062254Z-94807c25/billing-after.json",
+      "sha256": "00091c0a73f0e20272b4ac64937684455c206a331e7a69d68f91123b75e1cd95"
+    }
+  },
+  "grant_usd": "30.00",
+  "preserved_headroom_usd": "5.00",
+  "reservation_count": 9,
+  "reservation_total_usd": "21.14",
+  "max_journal_provider_observed_usd": "3.73252457",
+  "maximum_working_allowance_even_if_new_billing_falls_usd": "0.12747543",
+  "latest_saved_provider_spend_usd": "3.90423640",
+  "latest_saved_billing_at": "2026-11-04T06:30:34.940886+00:00",
+  "working_allowance_using_latest_saved_billing_usd": "-0.04423640",
+  "nominal_grant_minus_saved_provider_spend_usd": "26.09576360",
+  "minimum_timeout_seconds": 60,
+  "minimum_reservation_usd": "0.63",
+  "reservations_by_timeout_seconds": {
+    "60": "0.63",
+    "120": "0.76",
+    "300": "1.14",
+    "600": "1.78",
+    "900": "2.42"
+  },
+  "ledger_integrity": {
+    "all_nine_grant_hashes_match": true,
+    "all_nine_manifests_terminated": true,
+    "missing_matching_manifest_reservations_found": false
+  },
+  "supported_reconciliation": "No settlement/refund command or journal record type exists. Every reservation remains a nonnegative permanent debit for the cycle, added to observed spend. Manual review is named for malformed or missing evidence, changed grants and unresolved cleanup; it does not implement credit restoration for completed runs. A different accounting policy would require an explicit separately reviewed policy/code change and is outside this read-only task.",
+  "concrete_options": [
+    "Continue the existing official evaluation and offline work; no Modal spend is needed.",
+    "Prepare and review a bounded SK2 diagnostic without allocating; dry-run does not prove it fits current credits or compiles.",
+    "Use an authorized official private diagnostic only if its source and quota have independent review; it does not recover Modal allowance."
+  ],
+  "sk2_diagnostic_fit": "No legal60..900-second timeout fits unchanged guard; compilation or profiling duration cannot change that result.",
+  "limitations": [
+    "Latest billing is a saved06:30UTC snapshot, not a fresh provider balance.",
+    "No claim that actual Modal free credits are depleted: the local working allowance is exhausted by intentional double-counting.",
+    "No current provider application-state check or lock acquisition was performed.",
+    "All original grant, journal, manifests and lock were preserved."
+  ]
+}

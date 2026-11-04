@@ -871,3 +871,30 @@ The canonical WAIT2 analyzer now preserves direct harness/raw timings separately
 from inverse relative speed, and checks the saved compile log against the receipt.
 Current turn made concrete source/verification/submission progress. Goal remains
 active and unachieved; this is not a blocked turn or a claim of a rank improvement.
+
+10:18 UTC: REG112 check42527fa2c64d4b42 is terminal PASS but REJECT.
+Score2.312113768, CI[2.277432062,2.346795475],5 tests/6 benchmarks/6 profiles,
+no flags. BOTH BIG entries retain explicit C7511 insufficient-register WGMMA
+serialization. Actual640-thread/231168-dynamic admission passes at96 initial
+registers, local0/static0, occupancy1/1; ptxas reports zero stack/spill bytes.
+This independently fails the mechanism gate. No SASS was retained, so do not
+claim setmaxnreg was ignored or quantify its causal contribution.
+
+Root's exact-result audit: changed M32/M128/M256 geometric relative speedup is
+0.939252 against public247888 and0.930704 against private247888; controls are
+1.010155/1.005705. Direct harness medians rise5.99%/6.57%, raw medians6.48%/6.94%.
+Versus rejected WAIT2, affected relative speedup is0.983931. Keep these separate
+from inverse-relative-speed latency ratios. No scoring, integration, rescue,
+quota sweep or identical retry. No official job remains pending.
+
+The broader critic reassessment found no overlooked broad integration shortcut.
+Latest97af profile scenarios imply25% less small-MoE time would cut whole-decoder
+latency only5.37%; closing the observed14.13% gap through all MoE alone would
+require about31.03%. These are profile-share scenarios, not forecasts or bounds.
+Small-MoE WGMMA and lossless dense layout feasibility reviews are still in progress;
+no new implementation is approved. Saved standalone M16 histograms allow only
+0–10% J8→J16 packed-request savings, and are not decoder route histograms.
+M1 standalone REG149 resources do not transfer to decoder's different flags.
+No new Modal allocation or budget change. Disk36GiB free at turn start.
+Previous turn was progress; this turn adds terminal measurement and closes an
+unsuccessful mechanism. Goal remains active and unachieved, with no blocker audit.
