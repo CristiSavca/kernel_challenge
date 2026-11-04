@@ -30,5 +30,14 @@ The user authorized Modal setup and bounded single-H200 experiments funded by
 free credits. The client is in .venv-modal. Check tools/MODAL.md, the actual credit
 balance and account activation before running. Keep jobs within available credits.
 
+The user authorized the ongoing #1 research loop and major rewrites on November 3.
+Read tools/RESEARCH_LOOP.md and use an independent critic for substantive iterations.
+Modal is verified with $30 included credit and a passing H200 smoke. All local
+allocations must go through tools/modal_h200.py and its credit/overlap guard.
+Never delete or recreate experiments/modal/.allocation.lock while work may run,
+or delete/reset the credit reservation journal to bypass the working budget.
+Preserve failed experiments and use official GPU checks if the free-credit guard
+blocks. No out-of-pocket GPU charges are authorized by adding a payment method.
+
 Keep generated scratch bounded. The setup had about 145 GiB free; the serving
 source is about 192 MiB. Preserve useful results and exact tested candidates.

@@ -23,9 +23,13 @@ earn serving-queue priority for the overall top 50.
   This is a live snapshot; top-50 serving-queue priority has not been earned.
 - The direct packed-GEMV expert experiment passed correctness but regressed
   to **0.7385×**. It was rejected as an optimization and was not scored.
-- Modal 1.6.3 is installed and authenticated. H200 access awaits the user's
-  payment verification, which Modal says unlocks the $30 free monthly allowance.
-  No GPU started, no usage was charged, and the failed app is stopped.
+- Modal payment verification is complete and the $30 allowance is active.
+  A single-H200 smoke passed, then terminated its sandbox and stopped the app.
+  Its metered compute was about $0.00277, covered by credits.
+- A 15-minute research heartbeat with an independent critic is active. The
+  first-place push targets the decoder's dominant expert work; see
+  [tools/RESEARCH_LOOP.md](tools/RESEARCH_LOOP.md) for the hypothesis queue,
+  acceptance criteria, spending guard and handoff.
 - Selected public sources are pinned with licenses/hashes under `third_party/`.
   The fully attributed compact expert integration passed at **1.1612×** and
   its combined-attention control passed at **1.1750×**. Both are retained as
@@ -34,7 +38,7 @@ earn serving-queue priority for the overall top 50.
 - SGLang is checked out at the official revision
   `a55ab7d5ae1bba59ac351e55026fe7f7644ecc5f` in `serving/sglang`.
 - `serving/patch.diff` is an unvalidated draft of the expert routing changes.
-  The serving track opens November 5. The checkout contains source, not weights.
+  The serving track now opens November 10. The checkout contains source, not weights.
 
 | Problem | Private H200 check | Measured speedup | Scored submission |
 | --- | --- | --- | --- |
@@ -88,7 +92,7 @@ entry, which does not require a qualifying kernel rank.
 The bounded Modal runner is documented in [tools/MODAL.md](tools/MODAL.md).
 It freezes exact inputs and checks public-reference correctness plus paired
 CUDA-graph timing; results are explicitly unofficial. Its lifecycle tests pass,
-but actual GPU execution remains blocked by Modal account verification.
+and the H200 smoke has now passed. Kernel benchmark validation follows separately.
 [tools/PUBLIC_RESEARCH.md](tools/PUBLIC_RESEARCH.md) records reusable sources,
 licenses, the encoded-source exclusion, and the experiment workflow.
 
@@ -131,12 +135,12 @@ Gains inside the reported confidence interval may be noise.
    execution. Kernel success does not establish full-service correctness.
 3. Transfer validated improvements into the pinned serving source. Export a
    legal patch with `okc serve diff serving`.
-4. From November 5, validate the full 8×H200 service on the hidden conversation
+4. From November 10, validate the full 8×H200 service on the hidden conversation
    workload, including output agreement and time to first token. Optimize the
    throughput/interactivity curve at 1, 4, 16 and 32 concurrent users.
 
 Kernel submissions close **November 5 at 2:59 am Eastern** (November 4 at
-11:59 pm Pacific). Serving opens **November 5 at 3 pm Eastern**. The live site
+11:59 pm Pacific). Serving now opens **November 10 at noon Eastern**. The live site
 says serving closes November 19 Pacific, while the legal terms say November 18;
 target a finished entry by **November 18** until the organizer resolves this.
 

@@ -4,7 +4,18 @@ Setup checked November 3, 2026. Modal 1.6.3 is installed in `.venv-modal` with
 Python 3.13. The CLI is authenticated to workspace `cristisavca44`; credentials
 remain in the user's normal Modal configuration, outside this repository.
 
-## Current access blocker
+## Access verified
+
+The user completed payment verification on November 3 evening. A fresh billing
+page showed the full $30 monthly Starter allowance. Smoke
+`experiments/modal/20261104T035741Z-c81d970d` passed on one NVIDIA H200
+(143771 MiB, driver 610.57.04), exited zero and terminated its sandbox.
+The app is stopped with zero tasks. CLI billing showed about $0.00276863 of
+ephemeral compute; aggregate billing can lag its resource breakdown.
+
+The initial pre-verification state below is retained as history.
+
+## Initial access blocker (resolved)
 
 The first smoke request was rejected before GPU allocation: `Please add a
 payment method to use H200 GPU sandboxes.` The account showed $1 in included
@@ -14,10 +25,9 @@ compute and $0 usage. Its Add payment method dialog explicitly says:
 - Modal charges a one-time $0.50 verification fee, which it says is refunded.
 - The card must not already be used on another Modal account.
 
-The user must complete payment verification. No paid plan upgrade is needed.
-After verification, inspect the actual balance and the workspace spending limit
-before launching work. Authorization covers free-credit experiments, not charges
-beyond credits. The failed request's receipt is in
+No paid plan upgrade was needed. Inspect the actual balance and workspace
+spending limit before launching work. Authorization covers free-credit
+experiments, not charges beyond credits. The failed request's receipt is in
 `experiments/modal/20261103T233733Z-177140a4/manifest.json`.
 
 Sources: [GPU access](https://modal.com/docs/guide/gpu),
@@ -34,6 +44,21 @@ payment-verification requirement; an undisclosed private promo is unverified.
 
 ## Run one experiment
 
+Every allocation now uses `tools/modal_credit_budget.py`. It checks the
+reviewed monthly grant, active profile, fresh billing and running apps, holds
+an exclusive local lock, and reserves conservative compute/build costs before
+allocation. At least $5 is kept outside the working budget. Reservations never
+refund automatically and are additional to observed provider usage, so the
+budget intentionally errs on the conservative side. At current settings a
+900-second benchmark reserves $2.42. This is an estimate and local guard, not
+a provider-enforced spending cap; unrelated clients/hosts are outside its lock.
+
+Preserve `experiments/modal/.allocation.lock` (never unlink its inode), the
+monthly credit reservation journal and referenced manifests. Unconfirmed
+cleanup or missing budget evidence blocks future allocations until reviewed.
+The observed grant is pinned in `tools/modal_credit_grant.json` and expires
+at the month boundary; do not raise it or recycle reservations automatically.
+
 From the project root, no activation or global Python changes are needed:
 
 ```bash
@@ -47,6 +72,15 @@ From the project root, no activation or global Python changes are needed:
 Add `--dry-run` to validate the inputs and inspect the exact manifest without
 creating any cloud resources. `--cases cases.json` accepts 1–64 explicit input
 configurations; seeds are set with `--seed` and `--weight-seed`.
+
+Use `--incumbent <exact-passing-source.py>` for a paired comparison against
+our incumbent on the same GPU. The uploaded comparison slot named `baseline`
+then contains that incumbent; it is explicitly identified and hashed in the
+request, manifest and result. The official baseline file remains unchanged.
+Those ratios compare two candidates, not a candidate against SGLang.
+Add `--profile` for one extra graph replay per implementation after timing.
+It records actual CUDA kernel names, counts and durations separately from
+benchmark medians, or an explicit profiling error; no full trace is written.
 
 The smoke requests one H200 for at most 120 seconds and verifies `nvidia-smi`.
 The benchmark requests one H200, four CPU cores and 32 GiB RAM, with CPU/memory
@@ -94,5 +128,6 @@ Local lifecycle tests pass:
 ```
 
 These check resource bounds, cleanup after failure, explicit upload boundaries
-and dry runs. They do not establish CUDA compilation or numerical correctness;
-the live GPU smoke remains blocked by account verification.
+and dry runs. They do not establish candidate CUDA compilation or numerical
+correctness. The smoke now verifies H200 allocation and cleanup; each candidate
+still needs its own benchmark and official check.

@@ -15,7 +15,7 @@ The entrant must be one individual, at least 18, with one account. The terms exc
 The live API reports:
 
 - Kernel submissions close 2026-11-04 at 11:59 pm Pacific, or 2026-11-05 at 2:59 am Eastern.
-- Serving opens 2026-11-05 at noon Pacific, or 3 pm Eastern.
+- Serving now opens 2026-11-10 at 9 am Pacific, or noon Eastern (November 3 update).
 - Serving submissions close 2026-11-19 at 11:59 pm Pacific, or 2026-11-20 at 2:59 am Eastern.
 
 However, `terms.pdf` section 3 says the contest ends **2026-11-18 at 11:59 pm Pacific**, and section 5 says those official terms control discrepancies. The sponsor can modify dates. Until the organizer clarifies this mismatch, target a finished serving entry by **November 18**, not the live API's last day.
@@ -141,3 +141,16 @@ All 32 experiment source snapshots match their recorded hashes, all recorded
 jobs are terminal, and the owned result watcher exited successfully. Exact
 results and profiles remain under `experiments/`; the compact final audit is
 `experiments/native-scored-audit.json`. No paid Modal GPU was used.
+
+## First-place continuation (November 3 late evening)
+
+The user added a payment method and authorized a recurring research loop with
+an independent critic, including large rewrites and alternate methods. Modal
+now shows $30 credits; H200 smoke `20261104T035741Z-c81d970d` passed and cleaned
+up, with about $0.00277 metered compute covered by credits. The 15-minute
+heartbeat and first experiment queue are documented in `tools/RESEARCH_LOOP.md`.
+
+The official November 3 update postpones serving opening to **November 10 at
+noon Eastern**. Its board will be private until completion, and maintainability
+and SGLang maintainers' judgment affect winners. Kernel cutoff is unchanged.
+Earlier November 5 serving-opening statements in dated notes are superseded.

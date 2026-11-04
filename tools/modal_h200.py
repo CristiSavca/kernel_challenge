@@ -102,6 +102,9 @@ def run_worker(payload_path: str) -> None:
         "protocol": "public-reference subset; paired cold-L2 CUDA graphs; replay overhead retained",
         "image": payload["image"], "problem": payload["problem"],
         "source_sha256": payload["source_sha256"], "file_sha256": payload["file_sha256"],
+        "comparison_baseline": payload["comparison_baseline"],
+        "incumbent": payload.get("incumbent"),
+        "profile_requested": payload.get("profile", False),
         "python": platform.python_version(), "torch": torch.__version__,
         "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
         "gpu_memory_bytes": torch.cuda.get_device_properties(0).total_memory,
@@ -194,6 +197,31 @@ def run_worker(payload_path: str) -> None:
             ratios = [a / b for a, b in zip(row["timings_us"]["baseline"], row["timings_us"]["candidate"])]
             row["median_paired_speedup"] = statistics.median(ratios)
             row["median_us"] = {k: statistics.median(v) for k, v in row["timings_us"].items()}
+            if payload.get("profile", False):
+                # Diagnostic replays happen after timing; none of these durations enter medians.
+                row["profiles"] = {}
+                profile_fresh = generate(case, payload["seed"] + 1000 * index + 100 + payload["repeats"])
+                for name, (data, graph, output) in zip(("baseline", "candidate"), captures):
+                    try:
+                        copy_into(data, profile_fresh)
+                        flush.zero_()
+                        torch.cuda.synchronize()
+                        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CUDA]) as profile:
+                            graph.replay()
+                            torch.cuda.synchronize()
+                        kernels = {}
+                        for event in profile.events():
+                            if event.device_type == torch.autograd.DeviceType.CUDA:
+                                kernel = kernels.setdefault(event.name, {"name": event.name, "count": 0, "total_us": 0.0})
+                                kernel["count"] += 1
+                                kernel["total_us"] += float(event.device_time_total)
+                        if not kernels:
+                            raise RuntimeError("Profiler returned no CUDA events; kernel execution is unverified")
+                        row["profiles"][name] = {"status": "captured", "replays": 1,
+                                                 "kernels": sorted(kernels.values(), key=lambda event: -event["total_us"])}
+                    except Exception as exc:
+                        row["profiles"][name] = {"status": "unavailable", "error": f"{type(exc).__name__}: {exc}"}
+                del profile_fresh
             print(json.dumps({"case": case, "median_us": row["median_us"],
                               "unofficial_speedup": row["median_paired_speedup"]}), flush=True)
             del captures, fixed, data, graph, output
@@ -217,6 +245,8 @@ def main() -> None:
     parser.add_argument("mode", choices=("smoke", "benchmark", "worker"))
     parser.add_argument("--problem", choices=PROBLEMS)
     parser.add_argument("--candidate", type=Path)
+    parser.add_argument("--incumbent", type=Path, help="Optional paired comparison against this same-problem source")
+    parser.add_argument("--profile", action="store_true", help="Record CUDA kernel names from separate diagnostic graph replays")
     parser.add_argument("--cases", type=Path, help="JSON list of explicit reference.generate_input kwargs")
     parser.add_argument("--repeats", type=int, default=6)
     parser.add_argument("--seed", type=int, default=7301)
@@ -230,6 +260,10 @@ def main() -> None:
         return
     if not 2 <= args.repeats <= 30 or not 60 <= args.timeout <= 900:
         parser.error("repeats must be 2..30 and timeout 60..900")
+    if args.incumbent and args.mode != "benchmark":
+        parser.error("--incumbent requires benchmark mode")
+    if args.profile and args.mode != "benchmark":
+        parser.error("--profile requires benchmark mode")
     payload = None
     if args.mode == "benchmark":
         if not args.problem or not args.candidate:
@@ -238,7 +272,7 @@ def main() -> None:
         if not source_path.is_relative_to(ROOT) or source_path.suffix != ".py":
             parser.error("candidate must be a .py file inside this repository")
         source = source_path.read_text()
-        if source.splitlines()[0] != f"# okc: problem={args.problem}":
+        if not source.splitlines() or source.splitlines()[0] != f"# okc: problem={args.problem}":
             parser.error("candidate header does not match --problem")
         compile(source, str(source_path), "exec")
         files = {"candidate.py": source}
@@ -246,6 +280,17 @@ def main() -> None:
             path = ROOT / args.problem / name
             if path.exists():
                 files[name] = path.read_text()
+        incumbent = None
+        if args.incumbent:
+            incumbent_path = args.incumbent.resolve(strict=True)
+            if not incumbent_path.is_relative_to(ROOT) or incumbent_path.suffix != ".py":
+                parser.error("incumbent must be a .py file inside this repository")
+            incumbent_source = incumbent_path.read_text()
+            if not incumbent_source.splitlines() or incumbent_source.splitlines()[0] != f"# okc: problem={args.problem}":
+                parser.error("incumbent header does not match --problem")
+            compile(incumbent_source, str(incumbent_path), "exec")
+            files["baseline.py"] = incumbent_source
+            incumbent = {"path": str(incumbent_path.relative_to(ROOT)), "sha256": sha(incumbent_source)}
         cases = json.loads(args.cases.read_text()) if args.cases else default_cases(args.problem)
         if not isinstance(cases, list) or not 1 <= len(cases) <= 64 or not all(isinstance(c, dict) for c in cases):
             parser.error("cases must be a JSON list of 1..64 objects")
@@ -253,9 +298,12 @@ def main() -> None:
             parser.error("set seed with --seed; device is always CUDA")
         payload = {"problem": args.problem, "files": files, "image": IMAGE,
                    "source_sha256": sha(source), "file_sha256": {k: sha(v) for k, v in files.items()},
-                   "cases": cases, "repeats": args.repeats, "seed": args.seed, "weight_seed": args.weight_seed}
+                   "cases": cases, "repeats": args.repeats, "seed": args.seed, "weight_seed": args.weight_seed,
+                   "comparison_baseline": "incumbent" if incumbent else "official_public_baseline",
+                   "incumbent": incumbent, "profile": args.profile}
+    worker_source = Path(__file__).read_text()
     manifest = {"mode": args.mode, "gpu": "H200:1", "timeout_seconds": 120 if args.mode == "smoke" else args.timeout,
-                "official": False, "status": "prepared", "worker_sha256": sha(Path(__file__).read_text())}
+                "official": False, "status": "prepared", "worker_sha256": sha(worker_source)}
     if payload:
         manifest.update({k: v for k, v in payload.items() if k != "files"})
     if args.dry_run:
@@ -267,66 +315,77 @@ def main() -> None:
     destination.mkdir(parents=True)
     manifest["modal_client"] = modal.__version__
     save(destination / "manifest.json", manifest)
-    if payload:
-        # Freeze every uploaded source locally for this experiment's provenance.
-        for name, source in payload["files"].items():
-            (destination / name).write_text(source)
-        save(destination / "request.json", {k: v for k, v in payload.items() if k != "files"})
-        (destination / "worker.py").write_text(Path(__file__).read_text())
-    image = modal.Image.debian_slim(python_version="3.12") if args.mode == "smoke" else modal.Image.from_registry(IMAGE)
-    app = modal.App("okc-h200-bounded")
-    sandbox = None
-    try:
-        with modal.enable_output(), app.run():
-            sandbox = modal.Sandbox.create("sleep", str(manifest["timeout_seconds"]), app=app, image=image,
-                                          gpu="H200", cpu=(4, 4), memory=(32768, 32768), block_network=True,
-                                          timeout=manifest["timeout_seconds"], idle_timeout=manifest["timeout_seconds"])
-            manifest.update(status="running", sandbox_id=sandbox.object_id, dashboard=sandbox.get_dashboard_url())
-            save(destination / "manifest.json", manifest)
-            print(f"Sandbox: {sandbox.object_id}\nEvidence: {destination}", flush=True)
-            if args.mode == "smoke":
-                command = sandbox.exec("nvidia-smi", "--query-gpu=name,uuid,driver_version,memory.total", "--format=csv,noheader", timeout=60)
-            else:
-                sandbox.filesystem.write_text(Path(__file__).read_text(), "/tmp/okc-worker.py")
-                sandbox.filesystem.write_text(json.dumps(payload), "/tmp/okc-payload.json")
-                command = sandbox.exec("python3", "/tmp/okc-worker.py", "worker", "--payload", "/tmp/okc-payload.json",
-                                       timeout=max(30, args.timeout - 20))
-            # Persist output continuously; stdout contains only compact case results.
-            with (destination / "stdout.log").open("w") as log:
-                for line in command.stdout:
-                    log.write(line)
-                    log.flush()
-                    print(line, end="", flush=True)
-            stderr = command.stderr.read()
-            (destination / "stderr.log").write_text(stderr)
-            command.wait()
-            manifest["exit_code"] = command.returncode
-            if payload:
-                result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
-                save(destination / "result.json", result)
-                manifest["status"] = result["status"]
-            else:
-                gpu_lines = (destination / "stdout.log").read_text().strip().splitlines()
-                if command.returncode == 0 and (len(gpu_lines) != 1 or "H200" not in gpu_lines[0]):
-                    raise RuntimeError(f"Smoke did not report exactly one H200: {gpu_lines}")
-                manifest["status"] = "smoke_passed" if command.returncode == 0 else "failed"
-            if command.returncode:
-                print(stderr[-6000:], file=sys.stderr)
-                raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
-    except BaseException as exc:
-        manifest.update(status="failed", error=str(exc))
-        if sandbox is None:
-            manifest["sandbox_created"] = False
-        raise
-    finally:
-        if sandbox is not None:
-            try:
-                sandbox.terminate()
-                manifest["sandbox_terminated"] = True
-            except Exception as exc:
-                manifest["termination_error"] = str(exc)
+    from modal_credit_budget import allocation_guard
+    with allocation_guard(ROOT, stamp, manifest["timeout_seconds"]) as credit:
+        manifest["credit_guard"] = credit
+        guard_source = Path(__file__).with_name("modal_credit_budget.py").read_text()
+        manifest["credit_guard_sha256"] = sha(guard_source)
+        (destination / "credit_guard.py").write_text(guard_source)
+        (destination / "credit_grant.json").write_bytes((ROOT / "tools" / "modal_credit_grant.json").read_bytes())
         save(destination / "manifest.json", manifest)
-        print(f"Saved: {destination}", flush=True)
+        if payload:
+            # Freeze every uploaded source locally for this experiment's provenance.
+            for name, source in payload["files"].items():
+                (destination / name).write_text(source)
+            save(destination / "request.json", {k: v for k, v in payload.items() if k != "files"})
+            (destination / "worker.py").write_text(worker_source)
+        image = modal.Image.debian_slim(python_version="3.12") if args.mode == "smoke" else modal.Image.from_registry(IMAGE)
+        app = modal.App("okc-h200-bounded")
+        sandbox = None
+        try:
+            with modal.enable_output(), app.run(environment_name=credit["environment"]):
+                sandbox = modal.Sandbox.create("sleep", str(manifest["timeout_seconds"]), app=app, image=image,
+                                              gpu="H200", cpu=(4, 4), memory=(32768, 32768), block_network=True,
+                                              timeout=manifest["timeout_seconds"], idle_timeout=manifest["timeout_seconds"])
+                manifest.update(status="running", sandbox_id=sandbox.object_id, dashboard=sandbox.get_dashboard_url())
+                save(destination / "manifest.json", manifest)
+                print(f"Sandbox: {sandbox.object_id}\nEvidence: {destination}", flush=True)
+                if args.mode == "smoke":
+                    command = sandbox.exec("nvidia-smi", "--query-gpu=name,uuid,driver_version,memory.total", "--format=csv,noheader", timeout=60)
+                else:
+                    sandbox.filesystem.write_text(worker_source, "/tmp/okc-worker.py")
+                    sandbox.filesystem.write_text(json.dumps(payload), "/tmp/okc-payload.json")
+                    command = sandbox.exec("python3", "/tmp/okc-worker.py", "worker", "--payload", "/tmp/okc-payload.json",
+                                           timeout=max(30, args.timeout - 20))
+                # Persist output continuously; stdout contains only compact case results.
+                with (destination / "stdout.log").open("w") as log:
+                    for line in command.stdout:
+                        log.write(line)
+                        log.flush()
+                        print(line, end="", flush=True)
+                stderr = command.stderr.read()
+                (destination / "stderr.log").write_text(stderr)
+                command.wait()
+                manifest["exit_code"] = command.returncode
+                if payload:
+                    result = json.loads(sandbox.filesystem.read_text("/tmp/okc-result.json"))
+                    save(destination / "result.json", result)
+                    manifest["status"] = result["status"]
+                else:
+                    gpu_lines = (destination / "stdout.log").read_text().strip().splitlines()
+                    if command.returncode == 0 and (len(gpu_lines) != 1 or "H200" not in gpu_lines[0]):
+                        raise RuntimeError(f"Smoke did not report exactly one H200: {gpu_lines}")
+                    manifest["status"] = "smoke_passed" if command.returncode == 0 else "failed"
+                if command.returncode:
+                    print(stderr[-6000:], file=sys.stderr)
+                    raise RuntimeError(f"Remote process exited {command.returncode}; see {destination}")
+        except BaseException as exc:
+            manifest.update(status="failed", error=str(exc))
+            if sandbox is None:
+                manifest["sandbox_created"] = False
+            raise
+        finally:
+            if sandbox is not None:
+                try:
+                    sandbox.terminate()
+                    manifest["sandbox_terminated"] = True
+                except Exception as exc:
+                    manifest["termination_error"] = str(exc)
+                    manifest["status"] = "failed"
+            save(destination / "manifest.json", manifest)
+            print(f"Saved: {destination}", flush=True)
+            if "termination_error" in manifest:
+                raise RuntimeError(f"Sandbox termination could not be confirmed; see {destination}")
 
 
 if __name__ == "__main__":
