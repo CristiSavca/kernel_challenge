@@ -594,3 +594,35 @@ No Modalallocation; conservativebudget remains exhausted, no budgetreset.
 Previousgoalturnwasprogress: latestresearch, completedKPERMresult and exact
 newdecoderintegration/test. BroadcompactWGS twoCTA architectureplan is in
 independentreview, and smalltoken dense research continues. No#1claim.
+
+07:29UTC: isolateddecoderKPERM b2a773e2d7194de8 DONE/PASS13tests+12benchmarks,
+12profiles,no flags; prepare114.52s, score2.17665445x CI2.14400463–2.20930427.
+Public80a4score2.15018610 remainsunchanged. Wholegain~1.23%overlapsintervals;
+M1unchangedcontrolalsoimproves~2.6%load, changedM32/M128loads~2.65/2.20%,
+M256~0.11% againstpublicparent. Criticconductingpercaseaudit; no scoreyet.
+Newresearchderiveddensecandidateb0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b
+passedroot+critic CPUaddress/order/ringmodels andexactsourceaudit. It retainsall
+escape warps/FP32planes/geometry anddecouplestheirinputreadsfromTMA ring.
+RootsubmittedONEprivate decoderjobd4c26ebb65e94a84, local60776terminalexit0;
+receivedatsubmission. Resumeexactreceipt, no duplicate. Publicsourceunchanged.
+CompactWGSauthorisstillimplementing/provingnew320thread128row/K128source,
+notyetfrozenoruploaded. Rootcorrectedcritic'sPDLadmissionhazardagainstNVIDIA
+primarydocs: launch_dependents already requiresallparentCTAs tosignal/finish.
+Initialfindingwithdrawnwithrecord; preserveparenttriggerplacement. Confirmed
+64bitpartitionoverflowfixremainsneeded. NoGPU/Modal allocationauthorizedtoagents.
+
+07:37 UTC: compact MoE cf09ba584cc1537802636bb905ac08cda2095f83a163358e1c9bb716490130b8
+has final independent GO and was submitted as private job94e63981c631474e.
+Submission session9612 is terminal exit0; receipt says received. Root alone
+polls this job and dense jobd4c26ebb65e94a84 (latest queued). No duplicate uploads.
+Root, author and critic independently passed the complete compact CPU suite:
+100663296 codes,6291456 scale bytes,1179648 activation coordinates,64296960
+actual extracted C++ stages,16 exact fallback builds. A second reviewer found
+no targeted source blocker and quantified changed FP32 norm association.
+Final cf09 differs from tested d27 only in corrected provenance comments;
+root and critic reconstructed the prior SHA and verified complete AST identity.
+Actual GPU occupancy>=2 is enforced before the enlarged-grid spin barrier;
+compiler spills/serialization, numerical accuracy and timings remain unverified.
+Do not score/integrate until the official result is reviewed. Decoder KPERM
+b2a773e2d7194de8 result critique is saved; HOLD score pending broader tests.
+No Modal allocation or budget reset. Public entries unchanged; #1 not achieved.

@@ -1,0 +1,90 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "date": "2026-11-04",
+  "candidate": "muse_moe_w4a16/candidates/native_wgs_compact_v10.py",
+  "source_sha256": "cf09ba584cc1537802636bb905ac08cda2095f83a163358e1c9bb716490130b8",
+  "parent_sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+  "decision": "GO for one official private standalone MoE check of this exact frozen source; no score or decoder integration yet.",
+  "basis": "Complete focused source diff and affected CUDA/host lifecycle read, independently rerun actual-source CPU suite, separate adversarial schedule model, hash rechecked after completion. No concrete static correctness defect remains identified. This is permission to test, not GPU correctness or performance validation.",
+  "independent_cpu_run": {
+    "command": "/tmp/okc-kperm-cpu-20261104/bin/python tools/test_compact_wgs_cpu.py",
+    "session": 90456,
+    "exit_code": 0,
+    "reported_source_sha256": "d27b60fde2c89cc3090d92c79d2ae1f41b8b0b4ab281588bf34202ce90619bab",
+    "fallback_preprocessed_builds": 16,
+    "actual_ast_packing": {
+      "fp4_codes": 100663296,
+      "scale_bytes": 6291456,
+      "stored_encodings": 2,
+      "coverage": "Full W13 and W2 layouts; native fragment K mapping q*8+t*2+e; checks actual extracted AST packing functions against logical FP4/scale coordinates. Encodings 0..11 and non-WGS fallback code are unchanged."
+    },
+    "activation_coordinates": 1179648,
+    "activation_coverage": "All K=4096 coordinates for NTT1..8, gather and epilogue addresses against descriptor layout, padded positions, and exactly four phase-A warpgroup writers for each of 32 phase-B stages.",
+    "actual_extracted_cpp_schedule": {
+      "histograms": 146,
+      "ranges": 209656,
+      "stages": 64296960,
+      "split_units": 187584,
+      "grids": [
+        1,
+        2,
+        132,
+        264,
+        319
+      ],
+      "coverage": "Executes extracted candidate wgs_cost/prefix/stage_at/range/cta_of/split functions via native clang against independent flat cost intervals, including zero jobs, concentration, ragged jobs, random valid routes through M384 and a conservative 88-job capacity stress."
+    },
+    "native_smem_size": 21216,
+    "rounded_metadata_bytes": 21248,
+    "dynamic_smem_bytes": 98048,
+    "two_cta_smem_including_driver_bytes": 198144,
+    "author_same_hash_record": "experiments/iterations/20261104-moe-compact-cpu.json"
+  },
+  "additional_independent_schedule_model": {
+    "record": "experiments/iterations/20261104-compact-wgs-independent-schedule.json",
+    "valid_histograms": 408,
+    "phase_audits": 816,
+    "max_observed_valid_cost_times_264": 7197966336,
+    "conservative_88_job_cost_times_264": 9848881152,
+    "max_split_contributors": 9,
+    "max_unique_fixup_slots": 262,
+    "scope": "Abstract model, not a substitute for actual-source or GPU proof. Includes zero jobs and an adversarial valid 79-job M384 histogram. Supports need for 64-bit products and phase-B wait DAG."
+  },
+  "source_audit": {
+    "dispatch": "Only MAIN WGS M>16 changes. FT_T remains64. Tiny/MID/non-PRMT fallback preprocessed source matches parent in all sixteen tested define combinations, after equivalent constant launch-bounds normalization.",
+    "packing_and_math": "128 output rows and K128 stages; two compute warpgroups plus two producer warps, 320 launched threads. Packed weights remain lossless. Every expert route and output column remains represented. Register dequantization remains BF16 and MMA accumulation FP32. No timed work moves into prepare except allowed immutable weight packing.",
+    "ring_and_operand_lifetime": "Three joined full slots each require two producer arrivals and both transaction byte counts. Empty arrivals are exactly eight consumer warps. Weight slots release after all codes/scales reach registers; activation slots release only after the last WGMMA group retires. GS2/FCI3 is statically required, fourth-group deferred flush remains reachable, NTT1 odd/even accumulator initialization preserved.",
+    "gather": "256 consumer threads copy two 16-byte chunks each in sequential chunk planes. Both planes complete before CTA synchronization and release increment of xready. Padded rows count toward readiness but are not output. No new per-thread live 2xGB gather array.",
+    "phase_readiness": "64 phase-A units per job each write64 hidden columns using two warpgroup epilogues. Two units/four releases cover each K128 phase-B stage. doneAs uses32 stages, reset covers JMAX*32, release/acquire ordering and CTA/warpgroup barriers preserved.",
+    "stream_k": "All cost-times-CTA divisions now use64-bit products. Zero jobs return empty ranges before accessing job costs.32-stage split accounting, inverse owner corrections and two-warpgroup fixup indexing are consistent. Phase-A default nonwaiting last-contributor completion avoids a dependency cycle; phase-B stage-zero finisher waits only on contributors with larger CTA IDs. All slots reset after final readback; full grid barrier orders launch reuse.",
+    "grid_residency": "Host doubles only WGS grid to264 on132-SM H200 and checks grid+1<=320. Both actual compiled BIG specializations must report occupancy>=2 with their exact320 threads and98048 dynamic bytes before launch, or fail explicitly. Native size arithmetic is not substituted for the CUDA query.",
+    "final_norm": "Two-pass streaming reads all4096 FP32 values per routed expert, computes full sum of squares and route weight times rsqrt, then FP32 weighted sum and BF16 output.16 columns per consumer cover4096 exactly. Zero-local-expert rows write zero; qv branch is warp-uniform. Shared reduction storage is reused only after the grid barrier and CTA synchronizations. FP32 association differs and must pass official numerical checks.",
+    "scratch_lifetime": "Two phase fixup regions, counts and32-stage doneAs remain nonoverlapping and aligned. Scratch allocation and pointer formulas agree. Consumer phase waits retire all asynchronous MMA/TMA use before shared ring memory becomes final-reduction scratch. Double-buffered generations, reset ordering, stream semantics and graph calls remain inherited.",
+    "pdl": "Parent griddepcontrol.wait and launch_dependents placement retained. The earlier admission-cycle claim is explicitly withdrawn: programmatic stream serialization admits a successor only after all primary CTAs trigger or finish. See corrected plan record and primary CUDA documentation."
+  },
+  "unverified_and_kill_gates": [
+    "No CUDA compilation, actual occupancy/register/local-memory values, WGMMA serialization diagnostics, numerical accuracy or GPU timing established by this review.",
+    "Require official terminal PASS, all case records, flags and checks, actual resource log and profile evidence before integration. Occupancy assertion failure is a failed architecture screen, not grounds to remove the guard.",
+    "A two-CTA design retains four compute warpgroups per SM, doubles producer warps, halves per-SM weight-ring capacity from110592 to55296 bytes, doubles logical activation stage requests, adds stage/fixup events, and rereads final Y. Therefore no speedup follows merely from two resident CTAs.",
+    "FP32 reduction association and split ownership change. GPU nearby-shape and scratch-transition correctness remain required; CPU address proof alone is insufficient.",
+    "Judge affected M32/128/256 against unchanged M1/8/16 controls and parent receipts; overlapping score intervals or fresh routing variation do not establish a precise win. Do not score a regressing or noisy architecture simply because it passes."
+  ],
+  "git_diff_check": "PASS",
+  "no_gpu_or_submission_by_reviewer": true,
+  "final_comment_only_verification": {
+    "prior_reviewed_source_sha256": "d27b60fde2c89cc3090d92c79d2ae1f41b8b0b4ab281588bf34202ce90619bab",
+    "final_sha256": "cf09ba584cc1537802636bb905ac08cda2095f83a163358e1c9bb716490130b8",
+    "complete_python_ast_sha256": "5acdb8263dbc6e7142f114471cbcc15ab70481622e51dee52aee2d10eaa7d9ec",
+    "embedded_cuda_sha256": "789c1a25dbf93483acc0715748110b2cb90560ed7156f4969d813a4b02e0bf82",
+    "method": "Independently compared full final Python AST and embedded CUDA literal to hashes captured from d27 before author edit; reconstruct exact old bytes with the two saved header strings and verify d27 SHA. Only provenance comments changed, so the full independent CPU proof applies to identical executable content."
+  },
+  "secondary_targeted_audit": {
+    "reviewer": "/root/attention_paper_reset",
+    "scope": "Independent zero jobs, barrier participants, K128 readiness, gather/descriptor/epilogue coverage, shared lifetime, actual occupancy query and streaming norm review. No blocker reported.",
+    "cpu_norm_stress_rows": 209,
+    "max_fp32_sum_relative_error_vs_float64": 1.5207574914977634e-07,
+    "limits": "CPU arithmetic; not GPU FMA/rsqrt validation.",
+    "max_parent_compact_sum_difference_relative_to_float64_sum": 2.196377919689493e-07,
+    "norm_stress_scope": "Zero, ones, seven one-hot rows, 200 random signed FP32 rows scaled elementwise by powers of two with exponents -20..20 and25% zeros. Sequential FP32 scalar sum-of-squares model; this is not normalized-output error, CUDA FMA, rsqrt or BF16 output validation."
+  }
+}

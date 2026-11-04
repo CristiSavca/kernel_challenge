@@ -1,0 +1,33 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "proposal": "tools/MOE_COMPACT_RESIDENCY_PROPOSAL.md",
+  "parent_sha256": "ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a",
+  "decision": "GO for isolated implementation, with the corrections and exact-source gates below. This is not approval to launch or submit.",
+  "hypothesis": "Two independently advancing 320-thread CTAs per SM may hide producer/consumer latency better than one 576-thread CTA, preserving logical weight bytes and token-job partition.",
+  "withdrawn_pdl_finding": {
+    "status": "WITHDRAWN after root checked the CUDA specification and critic independently verified it.",
+    "initial_claim_retained_for_audit": "The parent calls griddepcontrol.launch_dependents before its grid barrier. The critic initially claimed that, under compact two-CTA residency, a successor CTA could occupy space before all parent CTAs had entered and cause an admission cycle.",
+    "why_incorrect": "CUDA Programming Guide 4.5.2 states that a secondary kernel under cudaLaunchAttributeProgrammaticStreamSerialization can launch only after all primary blocks have launched and executed the trigger. Thus the claimed successor-before-unadmitted-parent cycle is not possible under this launch contract.",
+    "corrected_action": "Restore and retain the parent's launch_dependents placement. No additional PDL relocation is justified by the withdrawn finding. Retain the initial griddepcontrol.wait and all required release/acquire ordering.",
+    "source": "https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/programmatic-dependent-launch.html#api-description"
+  },
+  "required_static_gates": [
+    "Actual packed-byte bijection and all scale bytes recovered for full W13/W2 experts; unchanged non-WGS encodings and fallback AST.",
+    "Both gather branches cover every row's two chunks per thread before the xready release.",
+    "All NTT1..8 WGMMA descriptor addresses remain within K128 by padded-token storage.",
+    "Joined full barriers receive two producer arrivals and all expected bytes; empty barriers use the actual eight consumer warps.",
+    "All doneAs allocations, accesses, waits and resets use 32 counters per job and readiness count four; per-warpgroup publication occurs after stores and the required barrier.",
+    "Stream-K fixups use 32-stage completion counts, two warpgroup slots per boundary, capacity at least actual grid plus one, and disjoint correctly aligned buffers.",
+    "Exact overflow-safe range partition and inverse ownership across nearby route counts, maximum chunks and repeated jobs.",
+    "Zero-local-job execution must set empty ranges without binary-searching an absent job or dividing by zero.",
+    "Actual compiled specialization occupancy must allow at least two blocks per SM before launching the full resident grid; unsupported resources fail rather than silently validating a different one-CTA experiment."
+  ],
+  "performance_counterarguments": [
+    "Two compact CTAs still have four compute warpgroups per SM in total, the same as the parent.",
+    "Producer warps double; per-SM packed weight-ring capacity halves from 110592 to 55296 bytes, while activation-ring capacity stays 98304 bytes.",
+    "Output units double, so logical activation requests increase even though logical packed-weight bytes stay unchanged. Actual DRAM traffic is unknown.",
+    "Streaming final normalization rereads ybuf and changes FP32 reduction order; it may lose the latency benefit and requires numerical validation.",
+    "More stage events, fixups and uncalibrated relative cost estimates can offset independent CTA progress."
+  ],
+  "next_gate": "Independent exact-source and CPU proof review before root considers one official private check. Do not score on resource fit, fewer instructions, or theoretical occupancy alone."
+}

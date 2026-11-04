@@ -48,10 +48,29 @@ Decoder candidate `97af3994` contains precisely that checked MoE mechanism.
 Root and critic independently recovered 50,331,648 code nibbles and 3,145,728
 scale bytes from actual decoder packing helpers. Other decoder AST nodes match
 the incumbent except the new packing helpers, MoE source and namespace.
-Private job `b2a773e2d7194de8` owns the one official experiment. Resume its
-receipt; never duplicate it while pending. All public submissions remain intact.
+Private job `b2a773e2d7194de8` completed successfully: all 13 tests and 12
+benchmarks passed without flags. Its score is 2.176654x, with a 95% interval of
+2.144005–2.209304x, versus the public parent's 2.150186x. The changed loads
+improve by a 1.71% geometric mean against the public parent; unchanged loads
+also improve by 0.75%. This supports retaining a modest candidate, not claiming
+a confirmed 1.23% whole-decoder gain. The critic recommends holding promotion
+while the broader dense and compact-MoE experiments finish. Do not repeat the
+same check merely to seek a better sample. Public submissions remain intact.
 
-The larger compact-WGS rewrite is being designed separately from KPERM. Keep
-its resource, scheduling, numerical and performance hypotheses independently
-reviewable. Dense research targets the existing small-token compressed paths;
-the previously rejected backend-selector sweep is not repeated.
+The compact-WGS rewrite is implemented separately from KPERM: 128-row/K128
+tiles, two compute warpgroups and two producer warps per CTA, with a target of
+two resident CTAs per SM. Static shared storage falls from 231168 to 98048
+bytes per CTA. Actual compiled occupancy is a mandatory runtime gate. Root,
+author and critic have passed actual-source CPU packing and schedule proofs;
+an additional independent review checked synchronization and the changed FP32
+normalization. No GPU performance claim follows from these checks. The design
+also doubles activation requests and halves weight lookahead per SM, so its
+resource change has a real cost. See `MOE_COMPACT_RESIDENCY_PROPOSAL.md`.
+
+Dense candidate `b0387be3` preserves all correction warps and FP32 accumulation
+order while allowing exact compressed-weight corrections to read their input
+directly instead of waiting on the main TMA ring. Independent checks covered
+19,673,088 addresses, 2,561,346 patch ownership/order decisions, and 448 ring
+interleavings. Official private job `d4c26ebb65e94a84` is queued as of 07:33 UTC.
+Resume that job, never duplicate it while pending. The new global reads can
+also cost more than the removed waits; see `DENSE_ESCAPE_DECOUPLING_PLAN.md`.

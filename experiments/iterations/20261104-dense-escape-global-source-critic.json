@@ -1,0 +1,35 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "candidate": "muse_decode_layer/candidates/native_dense_escape_global_v10.py",
+  "source_sha256": "b0387be327a480c84227985566bf086c70d894394f95ad9b0589144c902e260b",
+  "parent_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+  "earlier_review_hash": "c3901335fef974333accf2261de611949c23ae8b8a2cb3ca234042cf45f3ddc5",
+  "hash_change_explanation": "Root requested a correction to the inherited misleading comment that embedded CUDA remained unchanged. The final hash changes only that provenance comment from the earlier reviewed hash. The critic re-ran the complete CPU suite with the final hash verified before and after execution.",
+  "decision": "GO for one official private whole-decoder check of these exact bytes. No scored promotion or GPU correctness/performance certification.",
+  "independent_validation": {
+    "command": "/tmp/okc-kperm-cpu-20261104/bin/python tools/test_dense_escape_global_cpu.py",
+    "exit_code": 0,
+    "patch_entry_ownership_and_order_comparisons": 2561346,
+    "tma_global_address_comparisons": 19673088,
+    "active_geometries": 14,
+    "randomized_ring_interleavings": 448,
+    "negative_controls": 2,
+    "scope_limit": "CPU models cover address equivalence, entry order/ownership and abstract producer/consumer ring events. They do not test actual CUDA instruction ordering, register allocation, GPU races, numerical output or latency."
+  },
+  "source_audit": [
+    "Read the complete focused diff against the frozen parent and confirmed the only changed Python AST nodes are bfp_SK2_SRC and the extension builder.",
+    "Independently normalized the extension namespace and established AST equality of the full builder to the parent.",
+    "New correction branch is compile-time COMP && CL == 1. Cluster and uncompressed branches remain logically unchanged.",
+    "All original escape warps, correction planes, plane-zeroing, FP32 multiply/add expression, per-plane entry order and final plane reduction order are retained.",
+    "Four empty-barrier initializers exclude escape arrivals only in the new branch. Actual regular consumers still release every weight and fused-router stage; final cbar remains 32*NESC arrivals.",
+    "All escape lanes arrive at cbar, including padded token lanes. Consumers wait before reading corrections or reusing ring storage. No new CTA-wide barrier was introduced after early returns.",
+    "The global input pointer and 3D BF16 TMA map use the same x.data_ptr(), M and K; checked dimensions64,M,K/64 and strides2*K,128.",
+    "Existing all-thread griddepcontrol.wait precedes the new global input reads. UV uses the actual contiguous BF16 xuv rows at physical M=2T; normalizations and BND/FUSE transformations remain in the existing epilogues.",
+    "Launch dimensions, dynamic shared-memory formula and actual-specialization occupancy query remain unchanged; the query and launches reference the renamed kernel."
+  ],
+  "runtime_requirements": [
+    "All 13 official numerical tests and 12 timed cases must pass without flags or rejections.",
+    "Confirm modified sk2_global_escape_kernel appears in the profile for affected small-T projections; large-T paths are controls.",
+    "Inspect compiler/resource changes and benchmark cases before any score decision. Extra strided scalar global reads or a late correction tail may outweigh removed ring waits."
+  ]
+}

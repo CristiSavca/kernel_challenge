@@ -1,0 +1,45 @@
+{
+  "script_sha256": "af2fa26c093c0af56766090036290c14dfea735495d9924b9fc435eb67f54612",
+  "model": "K128, 128 output rows, 32 stages/unit, two compute WGs, FT_T64, 264 resident CTAs, parent cost tables.",
+  "status": "pass",
+  "histogram_cases": 408,
+  "phase_audits": 816,
+  "maxima_over_physically_valid_cases": {
+    "max_product": 7197966336,
+    "max_shares": 9,
+    "max_fixup_slot": 262,
+    "jobs": 79
+  },
+  "conservative_88job_bound": [
+    {
+      "jobs": 88,
+      "stages": 180224,
+      "split_units": 176,
+      "max_shares": 2,
+      "max_product": 9848881152,
+      "max_fixup_slot": 262
+    },
+    {
+      "jobs": 88,
+      "stages": 90112,
+      "split_units": 176,
+      "max_shares": 2,
+      "max_product": 4139384832,
+      "max_fixup_slot": 262
+    }
+  ],
+  "invariants": [
+    "Every logical stage assigned exactly once; empty partitions are valid.",
+    "Each split unit's partial counts sum to 32.",
+    "Inverse fixup owner is the CTA actually containing stage zero, even with rounded/empty partitions.",
+    "Distinct split units do not alias one CTA boundary slot within a phase.",
+    "Phase-B designated-finisher waits point only to strictly later CTA owners, hence have no cycle.",
+    "Phase A uses nonwaiting last-contributor completion; all phase-B input dependencies therefore eventually become available if all producers can progress."
+  ],
+  "limits": [
+    "Abstract schedule proof, not a test of the candidate's actual CUDA source.",
+    "Assumes every grid CTA can become resident; actual occupancy and PDL admission still require separate verification.",
+    "Does not establish mbarrier byte counts, asynchronous shared-memory lifetimes, numerical correctness or speed.",
+    "GPU ordering and progress depend on the exact release/acquire and deferred-publication implementation."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "reviewer": "/root/result_and_strategy_critic",
+  "decision": "GO for isolated implementation of the revised ring-decoupling plan; no GPU or exact-source approval yet.",
+  "parent_sha256": "80a4eaa3d863881e8159bb16469a9e51b96352c134b1ae43a232afe412a88e7c",
+  "scope": "Only COMP && CL == 1 SK2 templates. Keep all original escape warps, correction planes, launch geometry, shared allocation, and occupancy queries. Replace the escape warps' reads from staged x with the identical BF16 global x and remove only their full/empty ring participation. Empty barriers count regular NW consumer arrivals; final cbar still counts 32*NESC escape threads.",
+  "verified_design_facts": [
+    "Source inspection confirms launch_sk2's tensor map and x pointer refer to the same contiguous BF16 input.",
+    "UV pooler input is the actual timed xuv buffer with M=2T; the prior output projection writes it, and the existing all-thread griddepcontrol.wait precedes correction work.",
+    "BND and FUSE transformations occur in epilogues; escape corrections use the original supplied input rows without applying those transformations themselves.",
+    "Assigning each sorted patch to its original stage-mod-NESC correction plane preserves per-plane addition order; retain the parent's final plane summation order."
+  ],
+  "required_exact_source_gates": [
+    "All patch rows/columns must stay in their original valid input range and correction ownership, including empty and dense patch lists and padded token lanes.",
+    "Each escape warp zeros its existing plane and every lane arrives at cbar after completion, even if its token lane is padding.",
+    "The escape-table and correction buffers remain disjoint from ring storage reused by producers and epilogues.",
+    "Only escape ring arrivals are removed. Every regular consumer must still release every full or FUSE router stage with the existing count and lifetime.",
+    "Cluster variants and non-compressed/router precision paths remain unchanged.",
+    "No new CTA-wide barrier may be placed after producer or escape early returns.",
+    "CPU simulation covers sorted patch assignment, identical per-plane arithmetic sequence, address mapping, and barrier participation across active template geometries and M=1..32 including UV doubled rows."
+  ],
+  "performance_hazards": [
+    "Global scalar input reads are strided across token lanes; two useful bytes can require a 32-byte cache sector. Extra L2 traffic and issue instructions may outweigh removed ring waits.",
+    "Independent escape work may finish late and move the bottleneck to the final correction barrier.",
+    "Unchanged source-level launch geometry does not prove identical compiled registers or scheduling.",
+    "This plan establishes a distinct testable mechanism, not evidence of a speedup."
+  ],
+  "discarded_plan": "The earlier one-escape-warp / density-threshold / reduced-planes variant is not approved or implemented by this review. Root narrowed the experiment to ring decoupling only."
+}

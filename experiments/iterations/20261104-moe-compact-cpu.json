@@ -1,0 +1,63 @@
+{
+  "source_sha256": "cf09ba584cc1537802636bb905ac08cda2095f83a163358e1c9bb716490130b8",
+  "fallback_preprocessed_builds": 16,
+  "packing": {
+    "fp4_codes": 100663296,
+    "scale_bytes": 6291456,
+    "encodings": 2
+  },
+  "activation_readiness": {
+    "activation_coordinates": 1179648,
+    "doneAs_stages": 32,
+    "writers_per_stage": 4
+  },
+  "schedule": {
+    "histograms": 146,
+    "ranges": 209656,
+    "stages": 64296960,
+    "split_units": 187584
+  },
+  "resources_scratch": {
+    "native_smem_size": 21216,
+    "rounded_metadata": 21248,
+    "dynamic_smem": 98048,
+    "two_cta_smem_including_driver": 198144,
+    "float_regions": [
+      {
+        "name": "fixA",
+        "first_float": 12585984,
+        "end_float": 15207424
+      },
+      {
+        "name": "fixB",
+        "first_float": 15207424,
+        "end_float": 17828864
+      },
+      {
+        "name": "countA",
+        "first_float": 17828864,
+        "end_float": 17829504
+      },
+      {
+        "name": "countB",
+        "first_float": 17829504,
+        "end_float": 17830144
+      },
+      {
+        "name": "doneAs",
+        "first_float": 17830144,
+        "end_float": 17834496
+      }
+    ],
+    "cuda_occupancy": "unverified; candidate requires actual occupancy>=2 before launching"
+  },
+  "executed_source_sha256": "d27b60fde2c89cc3090d92c79d2ae1f41b8b0b4ab281588bf34202ce90619bab",
+  "comment_only_refresh": {
+    "previous_source_sha256": "d27b60fde2c89cc3090d92c79d2ae1f41b8b0b4ab281588bf34202ce90619bab",
+    "python_ast_equal": true,
+    "cuda_source_unchanged": true,
+    "old_header": "# Local changes: preserve original CUDA/CPP source and dispatch parameters; remove unused\n# Python diagnostics, the unused bandwidth benchmark source, and unused output preallocation.",
+    "new_header": "# Inherited ef7 cleanup removed unused Python diagnostics, bandwidth benchmark source, and output preallocation.\n# This compact revision changes the MAIN CUDA tile/schedule, FP32 streaming norm, resource checks,\n# WGS weight packing and scratch extents. Tiny/MID and non-PRMT fallback computation stay unchanged.",
+    "reason": "Correct inherited provenance comment to describe the compact revision; no executable change."
+  }
+}

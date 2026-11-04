@@ -86,6 +86,67 @@ def audit_kperm():
     (OUT / "20261104-moe-kperm3-official-critic.json").write_text(json.dumps(report, indent=2) + "\n")
 
 
+def audit_decoder_kperm():
+    candidate, profile, provenance = load("b2a773e2d7194de8")
+    result = candidate["response"]["result"]
+    counts = Counter(row["event"] for row in result["records"])
+    assert counts == {"setup": 1, "test": 13, "benchmark": 12, "profile": 12}
+    assert not result["flags"]
+    comparisons = []
+    for job in ("f8e991f1a2c2469e", "4b216098993e4112"):
+        _, parent_profile, parent_provenance = load(job)
+        rows, loads = [], {}
+        for new, old in zip(profile["benchmarks"], parent_profile["benchmarks"]):
+            nc, oc = new["case"], old["case"]
+            assert {k: v for k, v in nc.items() if k != "seed"} == {k: v for k, v in oc.items() if k != "seed"}
+            tokens = nc["batch"] * nc.get("q_len", 1)
+            rows.append({
+                "index": new["index"], "load": nc["load"], "layer": nc["layer"],
+                "tokens": tokens, "changed_path": tokens > 16,
+                "candidate_seed": nc["seed"], "parent_seed": oc["seed"],
+                "speedup_ratio": new["speedup"] / old["speedup"],
+                "candidate_normalized_us": new["median_ns"] / 1000,
+                "parent_normalized_us": old["median_ns"] / 1000,
+                "candidate_raw_us": new["median_raw_ns"] / 1000,
+                "parent_raw_us": old["median_raw_ns"] / 1000,
+                "baseline_time_ratio": new["baseline_ns"] / old["baseline_ns"],
+            })
+            entry = loads.setdefault(nc["load"], {
+                "changed_path": tokens > 16, "candidate_weighted_baseline_ns": 0.,
+                "parent_weighted_baseline_ns": 0., "candidate_weighted_time_ns": 0.,
+                "parent_weighted_time_ns": 0.,
+            })
+            assert entry["changed_path"] == (tokens > 16)
+            for label, bench in (("candidate", new), ("parent", old)):
+                entry[f"{label}_weighted_baseline_ns"] += bench["baseline_ns"] * nc["weight"]
+                entry[f"{label}_weighted_time_ns"] += bench["median_ns"] * nc["weight"]
+        for entry in loads.values():
+            entry["candidate_speedup"] = entry["candidate_weighted_baseline_ns"] / entry["candidate_weighted_time_ns"]
+            entry["parent_speedup"] = entry["parent_weighted_baseline_ns"] / entry["parent_weighted_time_ns"]
+            entry["speedup_ratio"] = entry["candidate_speedup"] / entry["parent_speedup"]
+        assert math.isclose(geomean([v["candidate_speedup"] for v in loads.values()]), provenance["speedup"], rel_tol=1e-9)
+        assert math.isclose(geomean([v["parent_speedup"] for v in loads.values()]), parent_provenance["speedup"], rel_tol=1e-9)
+        comparisons.append({
+            "parent": parent_provenance, "cases": rows, "loads": loads,
+            "all_loads_speedup_ratio_geomean": geomean([v["speedup_ratio"] for v in loads.values()]),
+            "changed_loads_speedup_ratio_geomean": geomean([v["speedup_ratio"] for v in loads.values() if v["changed_path"]]),
+            "unchanged_control_loads_speedup_ratio_geomean": geomean([v["speedup_ratio"] for v in loads.values() if not v["changed_path"]]),
+        })
+    report = {
+        "candidate": provenance, "record_counts": dict(counts), "flags": result["flags"],
+        "checks": result["checks"], "comparisons": comparisons,
+        "method": "Sliding/full cases use their official weights46/16; each load's reference weighted time divided by candidate weighted time is its speedup. Geometric mean of six loads reproduces each official aggregate exactly. Compare changed tokens>16 against unchanged control loads, retaining raw timings, baseline shifts and distinct seeds.",
+        "critic_verdict": {
+            "score_now": "HOLD: no new score while broader dense/compact experiments resolve. The 1.05% private-parent /1.23% public-parent gain overlaps both reported aggregate intervals and unchanged controls vary materially.",
+            "repeat_identical_check": "NO_GO: retain terminal receipt and exact source; no duplicate retry.",
+            "integration_status": "Official whole-decoder correctness passed. Retain as a modest candidate option, separate from the broader mechanisms.",
+            "interpretation": "All three changed load groups and all six changed raw-case timings improve against both parents. Changed-load geometric ratio is about+2.21% against private and+1.71% against scored parent. Controls average about-0.10%/+0.75%; unchanged decode1 alone gains about2.10%/2.62%. Together with standalone direction this supports a plausible modest benefit but not a precise causal gain or a route to #1 by itself.",
+            "limits": "Different fresh router/input seeds, evaluator nodes and reference-baseline shifts prevent pairing these separate runs. PDL profile rows contain waits and overlap; their durations do not isolate KPERM computation. No independence-based significance calculation is justified from aggregate intervals alone.",
+        },
+    }
+    (OUT / "20261104-decoder-kperm3-official-critic.json").write_text(json.dumps(report, indent=2) + "\n")
+
+
 def decoder_scenarios():
     _, profile, provenance = load("4b216098993e4112")
     cases = []
@@ -138,5 +199,6 @@ def decoder_scenarios():
 
 if __name__ == "__main__":
     audit_kperm()
+    audit_decoder_kperm()
     decoder_scenarios()
-    print("Saved KPERM critic audit and explicitly hypothetical decoder ROI scenarios.")
+    print("Saved standalone/decoder KPERM critic audits and explicitly hypothetical decoder ROI scenarios.")
