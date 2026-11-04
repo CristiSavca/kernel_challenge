@@ -1,6 +1,6 @@
 # Research loop: current handoff
 
-Updated November 4, 2026 at 22:41 UTC after V31 resolved the selection failure.
+Updated November 4, 2026 at 22:43 UTC with V32 official check accepted.
 The #1 goal remains active and unachieved. Prizes belong to the separate serving
 track. Component correctness, component speed, public kernel rank and full
 serving throughput are distinct outcomes.
@@ -52,12 +52,15 @@ are unknown. This is prepare-time execution/resource evidence, not timed COMP
 performance, nor proof that array storage alone explains the slowdown. Raw logs,
 receipt, profile, root and independent critic are preserved in V31 records.
 
-**V32 is the next concrete candidate, not yet uploaded.** Author
-`attention_paper_reset` owns `muse_decode_layer/candidates/decoder_scalar_patch_v32/`.
+**V32 accepted as official check `6a938fff9d5d417c`; inspect it, never duplicate.**
+Exact source ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35
+in `muse_decode_layer/candidates/decoder_scalar_patch_v32/`. Source, critic, root
+proof and fixed plan were committed c77f86b before upload. Root/author/critic
+CPU reports match8a13b2b4; all5 analyzer fixtures pass.
 It replaces address-taken COMP weight arrays with value-return decode and scalar
 repair positions; exact packing, MMA association/order, geometry and routing stay.
-V31 observations remain with V32 labels. Source critic `result_and_strategy_critic`
-reviews it; root owns analyzer, independent CPU proof and official GPU call.
+V31 observations remain with V32 labels. Source critic `result_and_strategy_critic` completed its review and is available
+for terminal result review. Root alone owns official polling/results.
 Fixed gates stay whole>=1.025/affectedGM>=1.04 against both97af parents, allcase
 latency<=1.03, controlsGM[.97,1.03], clean full coverage/exact COMP activation.
 New compiler gate requires all observed COMP local_bytes=0, successfulAPI/capacity,
@@ -68,7 +71,7 @@ The unique-expert traffic audit is closed read-only, no new implementation:
 retained job duplicates offer at most a conditional+1.465% decoder scenario,
 FT128+1.093%; no actual decoder routing census exists. Evidence in
 `experiments/iterations/20261104-moe-unique-expert-traffic-audit.json`.
-Root owns all GPU calls. No job is currently in flight; no Modal allocation.
+Root owns all GPU calls. V32 is the only job in flight; no Modal allocation.
 Serving work remains backlog under the current public #1 priority.
 
 
