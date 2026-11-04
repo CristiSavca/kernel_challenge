@@ -1,0 +1,100 @@
+[
+  {
+    "old": "bfp_SELFTEST_M = (1, 8, 16, 32, 33, 128, 200, 256)",
+    "new": "# V31: prepare-only eligibility records; no input tensors or tuning decisions changed.\n_v31_diag_bytes = {\"self\": 0, \"inner\": 0, \"outer\": 0}\n_v31_diag_stopped = set()\n\n\ndef _v31_diag_emit(kind, **fields):\n    import json\n    group = \"outer\" if kind == \"outer\" else \"inner\" if kind == \"choice\" else \"self\"\n    budget = {\"self\": 4096, \"inner\": 2048, \"outer\": 3072}[group]\n    if group in _v31_diag_stopped:\n        return\n    def clean(value):\n        if isinstance(value, float) and not -float(\"inf\") < value < float(\"inf\"):\n            return None\n        if isinstance(value, (tuple, list)):\n            return [clean(v) for v in value]\n        if isinstance(value, dict):\n            return {k: clean(v) for k, v in value.items()}\n        return value\n    row = \"V31P \" + json.dumps(clean(dict(kind=kind, **fields)), separators=(\",\", \":\"), allow_nan=False)\n    n = len(row.encode()) + 1\n    if _v31_diag_bytes[group] + n > budget - 80:\n        print(\"V31P_STOP group=\" + group + \" coverage=incomplete reason=log_capacity\", flush=True)\n        _v31_diag_stopped.add(group)\n        return\n    print(row, flush=True)\n    _v31_diag_bytes[group] += n\n\n\nbfp_SELFTEST_M = (1, 8, 16, 32, 33, 128, 200, 256)"
+  },
+  {
+    "old": "                try:\n                    out = bfp__run(ch, x, layer, m, nn, k, state).double()",
+    "new": "                v31_exception = None\n                try:\n                    out = bfp__run(ch, x, layer, m, nn, k, state).double()"
+  },
+  {
+    "old": "                except RuntimeError as e:  # launch failure -> fall back\n                    err = float(\"inf\")",
+    "new": "                except RuntimeError as e:  # launch failure -> fall back\n                    v31_exception = type(e).__name__ + \": \" + str(e)[:240]\n                    err = float(\"inf\")"
+  },
+  {
+    "old": "                    if False: print(f\"[okc] selftest {layer} m={m} {ch[0]}: rel err {err:.3e} -> disabled\", file=sys.stderr)",
+    "new": "                    if False: print(f\"[okc] selftest {layer} m={m} {ch[0]}: rel err {err:.3e} -> disabled\", file=sys.stderr)\n                if ch[0] == \"sk2\":\n                    _v31_diag_emit(\"selftest\", layer=layer, m=m, key=key,\n                                   error=err if -float(\"inf\") < err < float(\"inf\") else None,\n                                   tolerance=tol, passed=bool(err < tol), exception=v31_exception)\n    _v31_diag_emit(\"disabled\", keys=sorted(k for k in state[\"disabled\"] if len(k) > 1 and k[1] == \"sk2\"))"
+  },
+  {
+    "old": "        pick = ch[0] + (\"/\" + \"x\".join(map(str, ch[1])) if ch[0] == \"skinny\" else \"\")",
+    "new": "        pick = ch[0] + (\"/\" + \"x\".join(map(str, ch[1])) if ch[0] == \"skinny\" else \"\")\n        if m <= 32:\n            _v31_diag_emit(\"choice\", layer=layer, m=m, candidates=tl, pick=pick)"
+  },
+  {
+    "old": "            xd = (torch.randn(T, K, generator=g, device=dev) * 0.1).to(torch.bfloat16)",
+    "new": "            v31_outer_errors = {}\n            xd = (torch.randn(T, K, generator=g, device=dev) * 0.1).to(torch.bfloat16)"
+  },
+  {
+    "old": "                except Exception:  # noqa: BLE001\n                    t_bfp = 1e30",
+    "new": "                except Exception as v31_error:  # noqa: BLE001\n                    v31_outer_errors[\"bfp\"] = type(v31_error).__name__ + \": \" + str(v31_error)[:120]\n                    t_bfp = 1e30"
+  },
+  {
+    "old": "                except Exception:  # noqa: BLE001  (sm_80 or an older bf16_proj file: not offered)\n                    t_bfpf = 1e30",
+    "new": "                except Exception as v31_error:  # noqa: BLE001  (sm_80 or an older bf16_proj file: not offered)\n                    v31_outer_errors[\"bfpf\"] = type(v31_error).__name__ + \": \" + str(v31_error)[:120]\n                    t_bfpf = 1e30"
+  },
+  {
+    "old": "            st[\"mm_pick\"][(T, name)] = bestp",
+    "new": "            st[\"mm_pick\"][(T, name)] = bestp\n            if T <= 32:\n                _v31_diag_emit(\"outer\", m=T, layer=name,\n                               us=[round(v, 2) if v < 1e29 else None for v in (t_tri, t_mm, t_bfp, t_bfpf)],\n                               pick={False: \"triton\", True: \"torch\", \"bfp\": \"bfp\", \"bfpf\": \"bfpf\"}[bestp],\n                               **({\"ex\": v31_outer_errors} if v31_outer_errors else {}))"
+  },
+  {
+    "old": "template <int MT, int TOKR, int NT, int NWR, int WSK, int UPW, int NSTAGE, bool COMP, bool HL, int NACC, int CL, typename OutT,\n          bool FUSE = false, bool BND = false>\nstatic void launch_sk2",
+    "new": "\n// V31: attributes of actual compiled pointers; observations only, no admission changes.\n#include <cstdio>\n#include <mutex>\n#include <atomic>\nstatic std::mutex v31_resource_mutex;\nstatic size_t v31_resource_bytes = 0;\nstatic bool v31_resource_stopped = false;\nstatic void v31_resource(const char* identity, const void* fn, int nt, size_t sm) {\n  std::lock_guard<std::mutex> lock(v31_resource_mutex);\n  if (v31_resource_stopped) return;\n  if (v31_resource_bytes + 512 > 4096 - 80) {\n    fprintf(stderr, \"V31R_STOP coverage=incomplete reason=log_capacity\\n\");\n    v31_resource_stopped = true;\n    return;\n  }\n  cudaFuncAttributes a{};\n  const cudaError_t attr = cudaFuncGetAttributes(&a, fn);\n  int occ = -1;\n  const cudaError_t cap = cudaOccupancyMaxActiveBlocksPerMultiprocessor(&occ, fn, nt, sm);\n  char row[512];\n  const int n = snprintf(row, sizeof(row),\n      \"V31R %s nt=%d dyn=%zu attr=%d,%zu,%zu,%d occ=%d api=%d,%d\\n\",\n      identity, nt, sm, a.numRegs, a.localSizeBytes, a.sharedSizeBytes,\n      a.maxDynamicSharedSizeBytes, occ, (int)attr, (int)cap);\n  if (n < 0 || (size_t)n >= sizeof(row)) {\n    fprintf(stderr, \"V31R_STOP coverage=incomplete reason=row_capacity\\n\");\n    v31_resource_stopped = true;\n    return;\n  }\n  fputs(row, stderr);\n  v31_resource_bytes += n;\n}\n\ntemplate <int MT, int TOKR, int NT, int NWR, int WSK, int UPW, int NSTAGE, bool COMP, bool HL, int NACC, int CL, typename OutT,\n          bool FUSE = false, bool BND = false>\nstatic void launch_sk2"
+  },
+  {
+    "old": "    CUtensorMap xm = make_map_x3d(x.data_ptr(), (uint64_t)M, (uint64_t)K, PK ? (uint32_t)M : (uint32_t)TOKR, UPS);",
+    "new": "    // First normal launch of this exact template/PK pointer; cap-only calls do not consume the record.\n    static std::atomic<bool> v31_reported{false};\n    if (!v31_reported.exchange(true, std::memory_order_relaxed)) {\n      char identity[224];\n      snprintf(identity, sizeof(identity),\n          \"t=%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d x=%d,%d,%d,%lld\",\n          MT, TOKR, NT, NWR, WSK, UPW, NSTAGE, (int)COMP, (int)HL, NACC, CL,\n          (int)PK, (int)FUSE, (int)BND, (int)sizeof(OutT), M, N, K, (long long)pmax);\n      v31_resource(identity, (const void*)kern, (NW + 1 + NESC) * 32, smem);\n    }\n    CUtensorMap xm = make_map_x3d(x.data_ptr(), (uint64_t)M, (uint64_t)K, PK ? (uint32_t)M : (uint32_t)TOKR, UPS);"
+  },
+  {
+    "old": "dl_okc_bf16proj_exactpatch_v29_",
+    "new": "dl_okc_bf16proj_exactpatch_v31_diagnostic_"
+  },
+  {
+    "old": "// V29: exact BF16 bit repair; every b index is a compile-time unrolled literal.\n__device__ __forceinline__ void sk2_patch_v29(uint32_t d, int lane, uint32_t (&b)[8]) {\n  if ((d >> 30) == 1u && lane == (int)((d >> 20) & 31u)) {\n    const unsigned v = (d >> 16) & 15u;\n    const unsigned shift = (v & 1u) * 16u;\n    const uint32_t mask = 0xffffu << shift;\n    const uint32_t bits = (d & 0xffffu) << shift;\n#pragma unroll\n    for (int j = 0; j < 8; ++j)\n      if ((v >> 1) == (unsigned)j) b[j] = (b[j] & ~mask) | bits;\n  }\n}",
+    "new": "// V32: COMP weight words stay in value objects; no decoded-array address escapes.\n__device__ __forceinline__ uint4 sk2_decode_value_v32(uint32_t lw0, uint32_t lw1, uint32_t nw, uint32_t base4) {\n  const uint32_t ha = lop3_sel(nw & 0x07070707u, nw << 4, 0x80808080u) + base4;\n  const uint32_t hb = lop3_sel((nw >> 4) & 0x07070707u, nw, 0x80808080u) + base4;\n  return make_uint4(prmt(lw0, ha, 0x5140), prmt(lw0, ha, 0x7362),\n                    prmt(lw1, hb, 0x5140), prmt(lw1, hb, 0x7362));\n}\n\ntemplate <unsigned WORD>\n__device__ __forceinline__ uint32_t sk2_patch_word_v32(uint32_t old, uint32_t d, int lane) {\n  static_assert(WORD < 8, \"BF16x2 word index\");\n  const unsigned v = (d >> 16) & 15u;\n  if ((d >> 30) == 1u && lane == (int)((d >> 20) & 31u) && (v >> 1) == WORD) {\n    const unsigned shift = (v & 1u) * 16u;\n    const uint32_t mask = 0xffffu << shift;\n    return (old & ~mask) | ((d & 0xffffu) << shift);\n  }\n  return old;\n}\n\ntemplate <unsigned HALF>\n__device__ __forceinline__ uint4 sk2_decode_patch_v32(uint32_t lw0, uint32_t lw1, uint32_t nw,\n                                                    uint32_t base4, uint32_t d, int lane) {\n  static_assert(HALF < 2, \"eight-weight half\");\n  const uint4 q = sk2_decode_value_v32(lw0, lw1, nw, base4);\n  return make_uint4(sk2_patch_word_v32<4 * HALF + 0>(q.x, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 1>(q.y, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 2>(q.z, d, lane),\n                    sk2_patch_word_v32<4 * HALF + 3>(q.w, d, lane));\n}",
+    "count": 1
+  },
+  {
+    "old": "      uint32_t b[NT][8];\n      uint32_t bl[HL ? NT : 1][8];",
+    "new": "      uint32_t b[COMP ? 1 : NT][8];  // unchanged non-COMP path only\n      uint4 bv0[COMP ? NT : 1], bv1[COMP ? NT : 1];\n      uint32_t bl[HL ? NT : 1][8];",
+    "count": 1
+  },
+  {
+    "old": "            b[nt][0] = r0.x; b[nt][1] = r0.y; b[nt][2] = r0.z; b[nt][3] = r0.w;\n            b[nt][4] = r1.x; b[nt][5] = r1.y; b[nt][6] = r1.z; b[nt][7] = r1.w;",
+    "new": "            bv0[nt] = r0; bv1[nt] = r1;",
+    "count": 1
+  },
+  {
+    "old": "            decode8(lw[nt].x, lw[nt].y, cw[nt].x, base4, &b[nt][0]);\n            decode8(lw[nt].z, lw[nt].w, cw[nt].y, base4, &b[nt][4]);\n            sk2_patch_v29(repair[nt], lane, b[nt]);",
+    "new": "            bv0[nt] = sk2_decode_patch_v32<0>(lw[nt].x, lw[nt].y, cw[nt].x, base4, repair[nt], lane);\n            bv1[nt] = sk2_decode_patch_v32<1>(lw[nt].z, lw[nt].w, cw[nt].y, base4, repair[nt], lane);",
+    "count": 1
+  },
+  {
+    "old": "            if (j < nh) mma_bf16(acc[j % NACC][0][nt], a[j][0][0], a[j][0][1], a[j][0][2], a[j][0][3], b[nt][2 * j], b[nt][2 * j + 1]);\n            else acc[j % NACC][0][nt][0] += __uint_as_float((b[nt][2 * j] ^ b[nt][2 * j + 1]) & a[j][0][0] & 0x007fffffu);",
+    "new": "            if constexpr (COMP) {\n              const uint4 qv = j < 2 ? bv0[nt] : bv1[nt];\n              const uint32_t b0 = (j & 1) ? qv.z : qv.x, b1 = (j & 1) ? qv.w : qv.y;\n              if (j < nh) mma_bf16(acc[j % NACC][0][nt], a[j][0][0], a[j][0][1], a[j][0][2], a[j][0][3], b0, b1);\n              else acc[j % NACC][0][nt][0] += __uint_as_float((b0 ^ b1) & a[j][0][0] & 0x007fffffu);\n            } else {\n              if (j < nh) mma_bf16(acc[j % NACC][0][nt], a[j][0][0], a[j][0][1], a[j][0][2], a[j][0][3], b[nt][2 * j], b[nt][2 * j + 1]);\n              else acc[j % NACC][0][nt][0] += __uint_as_float((b[nt][2 * j] ^ b[nt][2 * j + 1]) & a[j][0][0] & 0x007fffffu);\n            }",
+    "count": 1
+  },
+  {
+    "old": "            mma_bf16(acc[((uu * 4 + j) * HM) % NACC][mt][nt], a[j][mt][0], a[j][mt][1], a[j][mt][2], a[j][mt][3], b[nt][2 * j], b[nt][2 * j + 1]);",
+    "new": "            if constexpr (COMP) {\n              const uint4 qv = j < 2 ? bv0[nt] : bv1[nt];\n              mma_bf16(acc[((uu * 4 + j) * HM) % NACC][mt][nt], a[j][mt][0], a[j][mt][1], a[j][mt][2], a[j][mt][3],\n                       (j & 1) ? qv.z : qv.x, (j & 1) ? qv.w : qv.y);\n            } else {\n              mma_bf16(acc[((uu * 4 + j) * HM) % NACC][mt][nt], a[j][mt][0], a[j][mt][1], a[j][mt][2], a[j][mt][3], b[nt][2 * j], b[nt][2 * j + 1]);\n            }",
+    "count": 1
+  },
+  {
+    "old": "sk2_exact_patch_v29",
+    "new": "sk2_exact_patch_v32",
+    "count": 2
+  },
+  {
+    "old": "dl_okc_bf16proj_exactpatch_v31_diagnostic_",
+    "new": "dl_okc_bf16proj_scalarpatch_v32_",
+    "count": 1
+  },
+  {
+    "old": "V31P",
+    "new": "V32P",
+    "count": 2
+  },
+  {
+    "old": "V31R",
+    "new": "V32R",
+    "count": 3
+  }
+]

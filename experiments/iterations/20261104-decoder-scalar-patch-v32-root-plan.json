@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "iteration": "decoder-scalar-patch-v32",
+  "created_at": "2026-11-04T22:43:10.290171+00:00",
+  "source_review_status": "GO_FOR_OFFICIAL_CHECK",
+  "candidate_sha256": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+  "candidate_path": "muse_decode_layer/candidates/decoder_scalar_patch_v32/submission.py",
+  "parent_sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+  "parents": [
+    {
+      "job": "7a8c4941741645ee",
+      "mode": "run"
+    },
+    {
+      "job": "b2a773e2d7194de8",
+      "mode": "check"
+    }
+  ],
+  "code_lineage": {
+    "V29": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "observed_V31": "0d552bf386fdbcae6837d97371ae74aa778709b234d993b4e341e655fe9216f7"
+  },
+  "hypothesis": "Replacing address-taken COMP decoded arrays with scalar/uint4 values removes observed NT*32 local storage, making exact repair worthwhile without changing packing, geometry, MMA association or selection rules.",
+  "falsifiable_predictions": [
+    "Every observed compressed pointer has local_bytes0 and successful capacity; no resourceSTOP",
+    "All8 affected profiles restore exact parent COMP template coverage with V32 marker",
+    "Whole score>=1.025 and affected4-loadGM>=1.04 against both exact97af parents, with all original case/control caps"
+  ],
+  "fixed_gate": {
+    "affected_load_GM_min": 1.04,
+    "each_affected_latency_max": 1.03,
+    "control_load_GM_latency_min": 0.97,
+    "control_load_GM_latency_max": 1.03,
+    "each_control_latency_max": 1.03,
+    "whole_score_ratio_min": 1.025
+  },
+  "compiler_gate": "All observed COMP local_bytes=0; no resource STOP; active signatures covered",
+  "strongest_failure_reason": "NVCC may still materialize value arrays or spill other state; if local storage disappears, descriptor/repair branches and raw loads can still exceed removed correction cost. V31 proves selection loss and array-sized storage, not their exclusive causal relationship.",
+  "upper_bound_estimate": {
+    "type": "Inherited conditional profile scenario, not forecast or physical bound",
+    "20pct_SK2_time_reduction_whole_ratio": 1.04973972,
+    "delete_all_SK2_whole_ratio": 1.336958,
+    "limit": "Separately profiled shares do not establish exclusive critical-path fractions; this rewrite alone does not justify100% whole-score gain."
+  },
+  "kill_criteria": [
+    "Any official numerical/flags/compiler/activation failure",
+    "Any fixed zero-local/resource coverage/performance failure; no threshold relaxation or identical retry"
+  ],
+  "resources": {
+    "official_private_checks_planned": 1,
+    "Modal_allocations_planned": 0,
+    "out_of_pocket_authorized_usd": 0,
+    "automatic_scored_submission": false
+  },
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/parent.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/submission.py": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/build.py": "343165bfe69c8e2f66f8c4c92ed3737d6bb8363ff7544e3e92e6f93a011535d7",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/test_cpu.py": "fe5b29339d52a91eef7fe1c89553a4a7f98cc1ebc0488e01616023d77f5815fc",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/edits.json": "50854e189605d9cf81be0cd9434b71030161ec9ec9da2af138da3887bb06835a",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/observations.json": "87cfa4100bc8d7df17d1e12a434cc5a34edaf10474aca5487640f4493490f089",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/manifest.json": "cbd493fb898058fdef9fecd9a9c16b38200b44d5cfc8aeba67667bd3e79275f9",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/cpu_result.json": "8a13b2b4935d57137fb331fcf8a2a2278da480b2d08f5b8de6b3df060620841a",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/README.md": "435d6c89b2f9dfddb3f6c5bf662dfe01286b45f09115afa079db8c13d8ca5ef6",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-source-critic.json": "f14a855ba0566020f3a99fde07b0a8ffea712090844f31d1c2b447f9cf41adf4",
+    "tools/DECODER_SCALAR_PATCH_V32_SOURCE_CRITIC_20261104.md": "9893fac536eb10c739bf7fc6ac56112c8f14d5867895eff61551af3795ef6872",
+    "tools/DECODER_SCALAR_PATCH_V32_HYPOTHESIS_20261104.md": "aeeac383b053bb11d375f7f694c20c5a1da28d8de7781122f63221b87f9ffec5",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-hypothesis.json": "6dc654ec8837978ca8831211de1f113502e949c6c5e44de2750df6ebf9307875",
+    "experiments/iterations/20261104-decoder-scalar-patch-v32-root-cpu.json": "8a13b2b4935d57137fb331fcf8a2a2278da480b2d08f5b8de6b3df060620841a",
+    "tools/analyze_decoder_v32.py": "3e47ec4801d5b1d73a35c40b003d76bb8a977d9ea668aea25211197ea121584e",
+    "tools/test_analyze_decoder_v32.py": "a295ed3406e4aa7f934a12ce8a36332afd87ed3623816196bdeed4cff499e6ed",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434"
+  }
+}

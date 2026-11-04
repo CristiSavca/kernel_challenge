@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "verdict": "GO_FOR_ONE_FIXED_PRIVATE_OFFICIAL_CHECK",
+  "candidate_sha256": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+  "evidence_sha256": {
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/submission.py": "ea4470fc16989b9d66cbab40fdae588fb30b2ffe5446f86c14e8b13854813e35",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/parent.py": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/observations.json": "87cfa4100bc8d7df17d1e12a434cc5a34edaf10474aca5487640f4493490f089",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/build.py": "343165bfe69c8e2f66f8c4c92ed3737d6bb8363ff7544e3e92e6f93a011535d7",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/edits.json": "50854e189605d9cf81be0cd9434b71030161ec9ec9da2af138da3887bb06835a",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/manifest.json": "cbd493fb898058fdef9fecd9a9c16b38200b44d5cfc8aeba67667bd3e79275f9",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/test_cpu.py": "fe5b29339d52a91eef7fe1c89553a4a7f98cc1ebc0488e01616023d77f5815fc",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/cpu_result.json": "8a13b2b4935d57137fb331fcf8a2a2278da480b2d08f5b8de6b3df060620841a",
+    "muse_decode_layer/candidates/decoder_scalar_patch_v32/README.md": "435d6c89b2f9dfddb3f6c5bf662dfe01286b45f09115afa079db8c13d8ca5ef6",
+    "tools/DECODER_SCALAR_PATCH_V32_HYPOTHESIS_20261104.md": "aeeac383b053bb11d375f7f694c20c5a1da28d8de7781122f63221b87f9ffec5",
+    "tools/analyze_decoder_v32.py": "3e47ec4801d5b1d73a35c40b003d76bb8a977d9ea668aea25211197ea121584e",
+    "tools/test_analyze_decoder_v32.py": "a295ed3406e4aa7f934a12ce8a36332afd87ed3623816196bdeed4cff499e6ed",
+    "tools/analyze_decoder_v29.py": "460738d14c6777cc8515b23c29324df901c073f0194ab5c8403c883cad5bbf38",
+    "tools/analyze_decoder_v28.py": "d2510acc646786a192782c3b2cfc6e3be96b68acd1bc863da4357786f0b2c434",
+    "experiments/iterations/20261104-decoder-exact-patch-v31-diagnostic-result-critic.json": "4859ffecd8900dc1692e144ca7c2ea52fd8ff4a54608b52712a4910c1f678a6d"
+  },
+  "parent_computation": "bbbc37f80aa3a5263dd0a66611bae62b2376c8b77ed67c14ba8ffd8db78e8a2c",
+  "observation_parent": "0d552bf386fdbcae6837d97371ae74aa778709b234d993b4e341e655fe9216f7",
+  "independent_execution": {
+    "source_cpu": "run() executed read-only; serialized output byte-equal to frozen report",
+    "native": {
+      "weight_word_comparisons": 18350080,
+      "raw_word_comparisons": 33024,
+      "actual_mma_operand_pairs": 4800,
+      "native_source_sha256": "8bb154d3d15f8c5185f35ce7b3ac78c1526db24444025f1574dc58e96ec8a5d2",
+      "negative_controls": [
+        "wrong_owner",
+        "wrong_value_half",
+        "wrong_static_word",
+        "wrong_raw_stride",
+        "wrong_mma_pair"
+      ],
+      "actual_source_helpers_and_consumer_blocks": true
+    },
+    "analyzer_tests": 5,
+    "analyzer_test_command": "PYTHONPATH=tools python3 -m unittest test_analyze_decoder_v32 -v"
+  },
+  "source_review": {
+    "full_diff_from_V31_read": true,
+    "full_reversal_to_V29": true,
+    "other_CUDA_literals_identical": true,
+    "geometry_flags_dispatch_weights_unchanged": true,
+    "COMP_raw_load_addresses_and_ring_handoffs_unchanged": true,
+    "MMA_operand_pairs_and_order_preserved": true,
+    "nonCOMP_high_low_paths_preserved": true,
+    "diagnostic_ALU_branch_word_selection_preserved": true,
+    "new_namespace_and_same_length_marker": true,
+    "no_new_source_blocker": true
+  },
+  "compiler_hypothesis": {
+    "anchor": "V31 all15 capturedCOMP records local=32*NT; all4 routers local0",
+    "change": "Two uint4 values per NT; returned decode values and eight statically instantiated scalar repair positions. No decoded COMP array passed by pointer/reference.",
+    "prediction": "Captured COMP local allocation becomes zero.",
+    "not_proven": [
+      "CUDA compilation/register allocation",
+      "Actual zero local allocation",
+      "Memory traffic saved or sole-cause latency attribution",
+      "Whole decoder speed gain"
+    ]
+  },
+  "compiler_gate": {
+    "all_captured_COMP_local_bytes": 0,
+    "all_captured_COMP_API_success": true,
+    "all_captured_COMP_capacity_min": 1,
+    "resource_STOP_allowed": false,
+    "active_first7_template_signatures_require_recorded_match": true,
+    "identity_limit": "Shortened profiles expose only first7 geometry fields and COMP; matching does not prove exact hidden PK/FUSE/BND or runtime identity. All captured full-template COMP observations must pass regardless."
+  },
+  "performance_gate": {
+    "parents": [
+      "7a8c4941741645ee",
+      "b2a773e2d7194de8"
+    ],
+    "parent_source": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "whole_score_ratio_min": 1.025,
+    "affected_four_weighted_load_speed_GM_min": 1.04,
+    "every_case_normalized_latency_max": 1.03,
+    "control_two_weighted_load_latency_GM": [
+      0.97,
+      1.03
+    ],
+    "per_load_weighting": [
+      46,
+      16
+    ],
+    "required_records": {
+      "setup": 1,
+      "test": 13,
+      "benchmark": 12,
+      "profile": 12
+    },
+    "expected_COMP_profile_instance_counts": [
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      3,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "all_checks_flags_clean": true,
+    "source_evaluator_image_profile_binding": true
+  },
+  "kill_and_pivot": "A correctness/compiler/resource/activation/performance failure closes this fixed attempt. Nonzero local rejects the compiler prediction; zero-local with failed timing rejects its sufficiency. Do not force selection, change tolerance/gates, or repeat unchanged code seeking a favorable score.",
+  "limits": [
+    "Native CPU integer shims verify word/address/operand equivalence, not GPU execution or exhaustive all-input Cartesian product",
+    "Packing and ring proof inherited by exact source preservation",
+    "Runtime array indexing may still compile to local storage despite source rewrite",
+    "Positive one-check screen is operational, not statistical significance or automatic promotion",
+    "No supported speed forecast; no claim this alone reaches #1 or doubles the score"
+  ],
+  "provider_or_official_calls": 0,
+  "source_edits": false
+}
