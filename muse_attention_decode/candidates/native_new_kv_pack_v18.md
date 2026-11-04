@@ -1,6 +1,7 @@
 # New-K/V packed FP8 conversion, fixed v18
 
-2026-11-04. Isolated candidate only; no official result yet.
+2026-11-04. Isolated candidate; independent review and root CPU proof passed.
+Official private job `0d27c30b716843d8` is running as of14:18 UTC. No result yet.
 
 Source `native_new_kv_pack_v18.py`, SHA
 `41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663`,

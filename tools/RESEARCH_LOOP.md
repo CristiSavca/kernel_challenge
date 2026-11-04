@@ -1433,3 +1433,36 @@ Rank changed as other entries moved; our public scores did not decrease.
 No official job is live and no Modal allocation was made. Distinct attention
 instruction/traffic removal is now under bounded read-only review; no candidate
 or GPU call is authorized by that review alone. #1 remains active and unachieved.
+
+## Attention packed new-K/V conversion submitted — November 4, 14:18 UTC
+
+Source `41809d0c47f9469bd3095e50939fc5a742b97e07294dcd75aea62616d07aa663`
+derives from scored87a9. It replaces only the new-token cache-write scalar FP8
+packing loop with two existing packed-helper calls, plus a unique extension
+namespace and provenance comment. All FP32 products, norm/RoPE, stores, flags,
+dispatch and synchronization restore exactly to parent. This only affects the
+has_new prologue; no long-loop traffic or math is removed. Ptxas may already
+combine the scalar conversions, and no runtime gain is forecast.
+
+Primary NVIDIA12.8.90 header shows the scalar intrinsic uses the same paired
+RN/satfinite PTX conversion with a dummy upper input. Actual evaluator header
+version is unverified. Root read that source and independently reproduced CPU
+report`d1f56341`: full restoration/rebuild,262144 opaque byte-pair layouts and
+three rejected source mutations. This tests layout, not GPU conversion. Source
+critic`f08e5bab` approved one private check; all source/review evidence committed
+in3148e67 before upload. Job `0d27c30b716843d8` was accepted and is running.
+
+Fixed final gate (before GPU): official score ratio>=1.005 against BOTH public
+8f9e5971f95841a0/privatec21d391dbf604bb5, at least3/6 weighted loads jointly
+faster, every12 case normalized latency<=1.02 against both. Official score is
+GM of SIX baseline/candidate weighted load latencies (sliding46/full16), not a
+weighted12-case speedup GM. Root reproduced both parent scores. This scorer-
+aligned gate superseded an initial8/12/subgroup draft before any GPU/results.
+All12 cases may execute the change; no unchanged controls or significance claim.
+Require16 tests/12 benchmarks/12 profiles, exact source and evaluator identity.
+
+The current serving API confirms openNovember10 noonET, closeNovember20 02:59ET,
+400KB patch cap and a hidden board. Top50 is queue priority, not eligibility;
+the $100k prize pool awards $50k plusH200 to first. Existing pinned serving
+checkout and1549-byte patch are preserved for a separate read-only audit.
+No serving job, Modal allocation or public kernel source change was made.
