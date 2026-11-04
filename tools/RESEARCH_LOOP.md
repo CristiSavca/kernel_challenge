@@ -494,3 +494,49 @@ Do notraisebudgetsblindly orrelaxgates. Currentguardwillnotfit900seconds;
 Decoderagent falsified11bitdensecodec aslargeranklever (already12bit) and
 is nowreading a newApache-licensed publicsourcelead keell0renz pinned890809c,
 reportedfair2.2532—notitsdisclaimedjudge-max#1. Noexecution/integrationyet.
+
+V11 compiled-role revision frozen core7b57f0f8/wrapper6724284b, independently
+reviewed; rootfullCPUverifier and85runner testexecutions pass. Runner60cbfa93
+adds only fixedrevisionselector/CLI/metadata; sharedgates/timing/checks/lifecycle
+unchanged. Commitce4f3e5. Screenstarted06:22UTC with600secondlimit:
+experiments/modal/20261104T062254Z-94807c25, session24197(rootonlypoll),
+sandboxsb-FiVd9sx1Enyms0uWAdezk2, appap-tSHquo88CT3QHir7H28Tci.
+RUNNING, resumesamehandle, neverduplicate. Guardfreshspend3.73252457,prior
+reservations19.36,new1.78,workingbudgetremaining0.12747543. Do notreset
+reservations/relaxguard; laterGPUwork shoulduseofficialprivatechecks when
+localguardblocks. Expected128checks/noresultsatlaunch.
+
+V11terminal: session24197exit1, sandboxterminatedtrue/allappsstopped. Exact
+changedtemplate noC7512/serialization in completecompilerlogs; local/stack88B
+andstaticspillstores132B/loads192B remain. Originalzero-localgate correctly
+rejectsV11. Parentzero, both2CTA/80initialregs/114688dynamicshared. Elapsed
+117.411934s; compile55.896/58.050s. Onebaselinecheckonly,0candidatechecks/0timings.
+ResultSHAb21649ba1457c72f7dd65c9c42088ff472c0d1732256c17693097a44c3dc4bed.
+Freshbilling$3.90/resources$3.90423640,$0billed. Conservativejournalreserved
+21.14USDnowexhaustsworkingbudget; donotreset/refund/recycleorrelaxguard.
+
+Independentcritic approved ONESEPARATEofficialprivatecheck of exactuninstrumented
+V11wrapper6724284b. Rationale: zero-local wasperformanceheuristic, notcorrectness
+invariant; forcedWGMMAserializationnowremoved, occupancyretained, staticspills
+alonedonotdecidenetruntime. No localgatechangeorretroactivepass; preservefailure.
+Officialjob88f84f79fb11462d submitted06:30UTC, authoritativequeued/checkat06:32.
+Rootpollswithtools/experiments.py status88f84f79fb11462d; no duplicateupload.
+Compareq8cases separately anddiscloseparentexactdecoderattentionvsactive87a9
+standaloneflags. No candidatecorrectness/speedresult, nopromotionyet.
+
+Newlicensedpublicsource scout is archived underthird_party/public_scout/
+keell0renz-890809c withApacheLICENSE/NOTICE and1005920verifiedbytes. Fair
+2.2532scoreis authorreported,no rawreceipt; doNOTcallit#1code. Sourcehasunsafe
+MFINtimeoutfallthrough andmanyconfounds; no wholefilecopy/execution.
+MFIN-only tailpotential ismodest~1%aggregate underconditional fixed-completion
+accounting, plus64Jnewatomics. SC6only saves2.78%weightbytes butdonorSC6also
+usesKPERM3, soisolatedSC6cannotinheritpublishedgain.
+KPERM3 isnewactionablelead: proved256elementKbijection,256fragmentterms,
+pairedgate/uprowpermutationwithin4096, preserved256-columnreadinessstages;
+scale-blockindexindependentofloadgroup permitsreuse. Fewerload/decodeinstructions
+not4xlessuniquesharedtraffic. AddedgatherinstructionswithequalcoalescedHBMbytes.
+Rootauthorizeddecoder_research toimplementnewstandaloneef7KPERM-onlycandidate
+AFTERsavingproofandcriticplanreview. PreserveSC6off/FP32ybuf/FCI3/joinedpipeline/
+jobcosts/allterms; provecorrectnaturalpackedweights fornonWGStiny/MIDfallbacks,
+activationspermutedinsidetimedkernels only. NoGPU/officialsubmitbyauthor.
+Officialprivatequotasremainavailable; #1goalactive andnotachieved.

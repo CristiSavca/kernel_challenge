@@ -1,0 +1,159 @@
+{
+  "recorded_at": "2026-11-04T06:33:30.474702+00:00",
+  "decision": "original_resource_screen_rejected; one separately reviewed official private runtime test queued",
+  "run": "experiments/modal/20261104T062254Z-94807c25",
+  "result_sha256": "b21649ba1457c72f7dd65c9c42088ff472c0d1732256c17693097a44c3dc4bed",
+  "candidate_revision": "v11",
+  "source_sha256": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+  "original_decoder_candidate_sha256": "7b57f0f8a1936a818ac6a399c047d9a1739e3c865070621a57afdd9e420cc5ed",
+  "resources": {
+    "baseline": {
+      "num_regs": 80,
+      "static_shared_bytes": 0,
+      "constant_bytes": 0,
+      "local_bytes": 0,
+      "max_threads_per_block": 384,
+      "max_dynamic_shared_bytes": 114688,
+      "binary_version": 90,
+      "ptx_version": 90,
+      "active_blocks_per_sm": 2,
+      "threads_per_block": 384,
+      "requested_dynamic_shared_bytes": 114688,
+      "sm_count": 132,
+      "compute_major": 9,
+      "compute_minor": 0,
+      "smem_struct_bytes": 113664,
+      "default_consumer_regs": 104,
+      "producer_threads": 128,
+      "producer_regs": 32,
+      "initial_regs_per_thread": 80,
+      "status": "ok",
+      "template": "attn_kernel<8,true,0>",
+      "two_cta_resource_gate": true
+    },
+    "candidate": {
+      "num_regs": 80,
+      "static_shared_bytes": 0,
+      "constant_bytes": 0,
+      "local_bytes": 88,
+      "max_threads_per_block": 384,
+      "max_dynamic_shared_bytes": 114688,
+      "binary_version": 90,
+      "ptx_version": 90,
+      "active_blocks_per_sm": 2,
+      "threads_per_block": 384,
+      "requested_dynamic_shared_bytes": 114688,
+      "sm_count": 132,
+      "compute_major": 9,
+      "compute_minor": 0,
+      "smem_struct_bytes": 113664,
+      "default_consumer_regs": 104,
+      "producer_threads": 128,
+      "producer_regs": 32,
+      "initial_regs_per_thread": 80,
+      "status": "ok",
+      "template": "attn_kernel<8,true,0>",
+      "two_cta_resource_gate": false
+    }
+  },
+  "compiler": {
+    "complete": true,
+    "target_serialization_warning": false,
+    "baseline": {
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "candidate": {
+      "stack_bytes": 88,
+      "spill_store_bytes": 132,
+      "spill_load_bytes": 192
+    },
+    "interpretation": "static compiler summaries, not dynamictraffic orspeed"
+  },
+  "validation": {
+    "baseline_checks_passed": 1,
+    "candidate_checks": 0,
+    "timing_samples": 0,
+    "first_case_activation": {
+      "baseline": {
+        "native_call_count": 1,
+        "target": true,
+        "activation_gate": true,
+        "batch": 16,
+        "q_len": 8,
+        "q_heads": 16,
+        "kv_heads": 2,
+        "page_size": 1,
+        "window": 0,
+        "rope": 0,
+        "n_splits": 264,
+        "flat": 1,
+        "nc": 1,
+        "cs": 0,
+        "ncl": 1,
+        "tma_flags": 4542,
+        "grid": [
+          264,
+          1,
+          1
+        ],
+        "pairs": 1,
+        "cooperative_requested": true,
+        "cooperative_after_host_guard": true,
+        "resident_after_host_guard": true,
+        "selected_template": "attn_kernel<8,true,0>",
+        "role_path_eligible": true,
+        "evidence": "observed untimed native arguments + exact frozen host guard + runtime occupancy"
+      },
+      "candidate": {
+        "native_call_count": 1,
+        "target": true,
+        "activation_gate": true,
+        "batch": 16,
+        "q_len": 8,
+        "q_heads": 16,
+        "kv_heads": 2,
+        "page_size": 1,
+        "window": 0,
+        "rope": 0,
+        "n_splits": 264,
+        "flat": 1,
+        "nc": 1,
+        "cs": 0,
+        "ncl": 1,
+        "tma_flags": 4542,
+        "grid": [
+          264,
+          1,
+          1
+        ],
+        "pairs": 1,
+        "cooperative_requested": true,
+        "cooperative_after_host_guard": true,
+        "resident_after_host_guard": true,
+        "selected_template": "attn_kernel<8,true,0>",
+        "role_path_eligible": true,
+        "evidence": "observed untimed native arguments + exact frozen host guard + runtime occupancy"
+      }
+    }
+  },
+  "elapsed_seconds": 117.41193378599999,
+  "exit_code": 1,
+  "sandbox_terminated": true,
+  "billing_after": {
+    "metered_cost": "3.90",
+    "resource_cost": "3.90423640",
+    "billed_cost": "0",
+    "all_apps_stopped": true
+  },
+  "independent_critic": "/root/leaderboard_critic verified rawlogs/hash/gates/termination and separately approvedoneofficialprivatecheck",
+  "separate_official_private_test": {
+    "job": "88f84f79fb11462d",
+    "status_as_of": "queued at2026-11-04T06:32:32Z",
+    "source_sha256": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+    "rationale": "zero-local is a performance screening heuristic, not a correctness invariant. Exactrole separation removed forcedWGMMA serialization andpreservedoccupancy. Directcorrectness/performance evaluation canresolvewhetherremaining88Bspills erasebenefit. Thisdoesnotretroactivelypasslocalresourcegate.",
+    "comparison_limit": "exactdecoder attentionwrapper differsfromactive standalone87a9 flags; affectedq8cases separatelyinspected, noattributionsolelyfromaggregatescore.",
+    "promotion": "none; requiresactualresultandusefulmeasuredgain"
+  }
+}

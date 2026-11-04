@@ -1,0 +1,186 @@
+{
+  "mode": "attention-v11-screen",
+  "gpu": "H200:1",
+  "timeout_seconds": 600,
+  "official": false,
+  "status": "failed",
+  "worker_sha256": "60cbfa932ba6904f2a82265d1019eff500a8d9020601d3dc3cd5e2be6e0d51c0",
+  "problem": "muse_attention_decode",
+  "image": "lmsysorg/sglang@sha256:a0ae9cefecc0fb68e74a6f3b7f338eb80a53e3e6df4637ec2f024abc5fec07af",
+  "attention_v10_screen": true,
+  "attention_v10_tag": "ab956e36142e4928",
+  "attention_v10_cases_sha256": "8ed2eccb574fb8eb5255f9c4dc6ab52c3f0e11c5cfa97bf346119ab11122d8ad",
+  "source_sha256": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+  "file_sha256": {
+    "baseline.py": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9",
+    "candidate.py": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+    "attention_resource_probe.py": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+    "reference.py": "386f7f67a1d788501e8fb9005d340423d098a0946e23810ba10878228c11a37b",
+    "checks.py": "9a046c3c38db28b325dcd1557baecdf6bc9ef941d2175f9a900ba4c230bb8055"
+  },
+  "cases": [
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "coherent"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 1,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "coherent"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 32,
+      "dist": "soft"
+    },
+    {
+      "ctx": 80000,
+      "heads": "tp8",
+      "layer": "sliding",
+      "page": 1,
+      "q_len": 8,
+      "spread": "agentic",
+      "batch": 16,
+      "dist": "soft"
+    },
+    {
+      "batch": 3,
+      "ctx": 3003,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 64,
+      "q_len": 8,
+      "dist": "edges"
+    },
+    {
+      "batch": 4,
+      "ctx": 4093,
+      "heads": "tp8",
+      "layer": "full",
+      "page": 64,
+      "q_len": 8,
+      "dist": "soft",
+      "kv_scale": 0.015625
+    }
+  ],
+  "repeats": 6,
+  "seed": 121021,
+  "weight_seed": 7311,
+  "comparison_baseline": "exact_decoder_attention_parent",
+  "incumbent": {
+    "path": "muse_attention_decode/candidates/decoder_parent_v10.py",
+    "sha256": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9"
+  },
+  "profile": true,
+  "resources": false,
+  "attention_variant": "v11",
+  "attention_v10_instrumentation": {
+    "baseline": {
+      "schema": 1,
+      "input_sha256": "dc6d0c4884dba218674421dfc6b6a237c2f5eb437069cb088bf1aef7439039f9",
+      "output_sha256": "0fa91237e5bbf8e2d38a38a2916f3a6a8a2a84f60ac5b4e1ac5b2ef9d2676f23",
+      "helper_sha256": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+      "exact_reverse_proof": true,
+      "template": "attn_kernel<8,true,0>",
+      "changes": [
+        "host-only CUDA export",
+        "host pybind declaration/export",
+        "unique extension namespace",
+        "verbose compiler output",
+        "-Xptxas=-v"
+      ]
+    },
+    "candidate": {
+      "schema": 1,
+      "input_sha256": "6724284b1e8aef03a3af38d1d9d008c1df680b241a37b2d688464b8eeb60633f",
+      "output_sha256": "1ae49589c05f08c3ad894367b646a76a3d9b894d874001b2a8c0882e84202b8e",
+      "helper_sha256": "cda695f43127acb14827c1cfb235d06167284eb2f9ee213fb2856a26764d7756",
+      "exact_reverse_proof": true,
+      "template": "attn_kernel<8,true,0>",
+      "changes": [
+        "host-only CUDA export",
+        "host pybind declaration/export",
+        "unique extension namespace",
+        "verbose compiler output",
+        "-Xptxas=-v"
+      ]
+    }
+  },
+  "modal_client": "1.6.3",
+  "credit_guard": {
+    "run_id": "20261104T062254Z-94807c25",
+    "checked_at": "2026-11-04T06:22:54.283415+00:00",
+    "cycle": "2026-11",
+    "workspace": "cristisavca44",
+    "environment": "main",
+    "grant_sha256": "5e9686da2254972356c46f889fecb96fc1fa1123a8ac59667d59add640badf71",
+    "grant_usd": "30.00",
+    "headroom_usd": "5.00",
+    "provider_observed_usd": "3.73252457",
+    "prior_reservations_usd": "19.36",
+    "reservation_usd": "1.78",
+    "working_budget_remaining_usd": "0.12747543",
+    "estimate_is_provider_cap": false,
+    "billing_summary": {
+      "metered_cost": "3.73000000",
+      "billed_cost": "0E-8",
+      "adjustments": {
+        "free_storage": "-0E-8",
+        "credits": "-3.73000000",
+        "network_egress_allowance": "0E-8",
+        "reservation_adjustment": "-0E-8",
+        "plan_cost": "0E-8"
+      },
+      "metered_cost_breakdown": {
+        "llm_tokens": "0E-8",
+        "ephemeral_apps": "3.73252457",
+        "volumes": "0E-8",
+        "network_egress": "0E-8"
+      }
+    }
+  },
+  "credit_guard_sha256": "13426b250bb071a5ff46151b21e6cd13e5747ccad1f8a4bc8a719949d6075912",
+  "sandbox_id": "sb-FiVd9sx1Enyms0uWAdezk2",
+  "dashboard": "https://modal.com/id/sb-FiVd9sx1Enyms0uWAdezk2",
+  "exit_code": 1,
+  "error": "Remote process exited 1; see /Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/experiments/modal/20261104T062254Z-94807c25",
+  "attention_v10_checkpoint_recovered": false,
+  "attention_v10_retrieval_error_type": "NotFoundError",
+  "sandbox_terminated": true
+}

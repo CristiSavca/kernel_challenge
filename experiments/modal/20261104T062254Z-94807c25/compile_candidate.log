@@ -1,0 +1,256 @@
+[1/3] ccache c++ -MMD -MF main.o.d -DTORCH_EXTENSION_NAME=diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -fPIC -std=c++20 -c /root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/main.cpp -o main.o 
+[2/3] ccache /usr/local/cuda/bin/nvcc -MD -MF cuda.cuda.o.d -DTORCH_EXTENSION_NAME=diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a -DTORCH_API_INCLUDE_EXTENSION_H -isystem /opt/sglang/lib/python3.12/site-packages/torch/include -isystem /opt/sglang/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -gencode=arch=compute_90a,code=sm_90a --compiler-options '-fPIC' -DOKC_QDIRECT=0 -DOKC_PK2=0 -DOKC_W0ENABLE=1 -O3 -Xptxas=-v -DOKC_SM90=1 --expt-relaxed-constexpr -std=c++20 -c /root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu -o cuda.cuda.o 
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(4361): warning #177-D: variable "IDX_SLOTS" was declared but never referenced
+    constexpr int IDX_SLOTS = 2 * STAGES;
+                  ^
+          detected during instantiation of "void launch<L>(const <unnamed>::Params &, dim3, cudaStream_t, int, __nv_bool, __nv_bool) [with L=1]" at line 5195
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(1473): warning #177-D: variable "IDX_SLOTS" was declared but never referenced
+    constexpr int IDX_SLOTS = 2 * STAGES;
+                  ^
+          detected during:
+            instantiation of "void <unnamed>::attn_kernel<L,FLAT,MODE>(<unnamed>::Params) [with L=1, FLAT=false, MODE=2]" at line 4969
+            instantiation of "void launch<L>(const <unnamed>::Params &, dim3, cudaStream_t, int, __nv_bool, __nv_bool) [with L=1]" at line 5195
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(1279): warning #177-D: variable "IDX_SLOTS" was declared but never referenced
+    constexpr int IDX_SLOTS = 2 * STAGES;
+                  ^
+          detected during:
+            instantiation of "void <unnamed>::attn_kernel<L,FLAT,MODE>(<unnamed>::Params) [with L=1, FLAT=false, MODE=2]" at line 4969
+            instantiation of "void launch<L>(const <unnamed>::Params &, dim3, cudaStream_t, int, __nv_bool, __nv_bool) [with L=1]" at line 5195
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(3099): warning #177-D: variable "kdesc0" was declared but never referenced
+    const uint64_t kdesc0 = ((uint64_t)((1024 >> 4) | (1u << 30)) << 32) | klo0;
+                   ^
+          detected during:
+            instantiation of "void <unnamed>::attn_kernel<L,FLAT,MODE>(<unnamed>::Params) [with L=1, FLAT=false, MODE=2]" at line 4969
+            instantiation of "void launch<L>(const <unnamed>::Params &, dim3, cudaStream_t, int, __nv_bool, __nv_bool) [with L=1]" at line 5195
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(2089): warning #549-D: variable "pg" is used before its value is set
+          asm volatile("" :: "r"(pg[0]), "r"(pg[PK - 1]));
+                                 ^
+          detected during:
+            instantiation of "__nv_bool <unnamed>::segment<L,FLAT,ROLE,MODE>(const <unnamed>::Params &, <unnamed>::Smem<L, FLAT> &, int, int, __nv_bool, int, int, int, int, int, int, int, int, __nv_bool) [with L=1, FLAT=true, ROLE=1, MODE=0]" at line 4909
+            instantiation of "void <unnamed>::attn_kernel<L,FLAT,MODE>(<unnamed>::Params) [with L=1, FLAT=true, MODE=0]" at line 4990
+            instantiation of "void launch<L>(const <unnamed>::Params &, dim3, cudaStream_t, int, __nv_bool, __nv_bool) [with L=1]" at line 5195
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(5095): warning #177-D: function "pt_map" was declared but never referenced
+  static CUtensorMap pt_map(void* base, long long n) {
+                     ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(481): warning #177-D: member "<unnamed>::Cfg<L, F>::BASEREGS [with L=8, F=false]" was declared but never referenced
+    static constexpr int BASEREGS = (65536 / (MINB * NTX)) / 8 * 8 > 255 ? 248 : (65536 / (MINB * NTX)) / 8 * 8;
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(482): warning #177-D: member "<unnamed>::Cfg<L, F>::PREGS [with L=8, F=false]" was declared but never referenced
+    static constexpr int PREGS = 0 > 0 ? 0 : ((L == 1 && NP <= 128) ? 56 : 32);
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(483): warning #177-D: member "<unnamed>::Cfg<L, F>::CREGS [with L=8, F=false]" was declared but never referenced
+    static constexpr int CREGS = ((BASEREGS * NTX - PREGS * NP) / (NT > 0 ? NT : 1)) / 8 * 8 > 248
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(481): warning #177-D: member "<unnamed>::Cfg<L, F>::BASEREGS [with L=1, F=false]" was declared but never referenced
+    static constexpr int BASEREGS = (65536 / (MINB * NTX)) / 8 * 8 > 255 ? 248 : (65536 / (MINB * NTX)) / 8 * 8;
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(482): warning #177-D: member "<unnamed>::Cfg<L, F>::PREGS [with L=1, F=false]" was declared but never referenced
+    static constexpr int PREGS = 0 > 0 ? 0 : ((L == 1 && NP <= 128) ? 56 : 32);
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(483): warning #177-D: member "<unnamed>::Cfg<L, F>::CREGS [with L=1, F=false]" was declared but never referenced
+    static constexpr int CREGS = ((BASEREGS * NTX - PREGS * NP) / (NT > 0 ? NT : 1)) / 8 * 8 > 248
+                         ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(497): warning #177-D: variable "<unnamed>::IDX_SLOTS" was declared but never referenced
+  constexpr int IDX_SLOTS = 2 * STAGES;
+                ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(550): warning #177-D: function "<unnamed>::cp_async4z" was declared but never referenced
+                            void cp_async4z(uint32_t dst, const void* src, int src_bytes) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(561): warning #177-D: function "<unnamed>::mbar_init" was declared but never referenced
+                            void mbar_init(uint64_t* bar) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(576): warning #177-D: function "<unnamed>::mbar_wait" was declared but never referenced
+                            void mbar_wait(uint64_t* bar, int parity) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(617): warning #177-D: function "<unnamed>::tma_load_1d" was declared but never referenced
+                            void tma_load_1d(void* dst, const CUtensorMap* map, int c0, uint64_t* bar) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(639): warning #177-D: function "<unnamed>::tma_row" was declared but never referenced
+                            void tma_row(void* dst, const CUtensorMap* map, int x, int y, uint64_t* bar) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(724): warning #177-D: function "<unnamed>::mma_fp8" was declared but never referenced
+                            void mma_fp8(float* c, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(790): warning #177-D: function "<unnamed>::ldsm_x4" was declared but never referenced
+                            void ldsm_x4(uint32_t addr, uint32_t& r0, uint32_t& r1, uint32_t& r2, uint32_t& r3) {
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(937): warning #177-D: function "<unnamed>::ex2_e4m3x4_h" was declared but never referenced
+                            uint32_t ex2_e4m3x4_h(float x0, float x1, float x2, float x3) {
+                                     ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(962): warning #177-D: function "<unnamed>::ex2_poly" was declared but never referenced
+                            float ex2_poly(float x) {
+                                  ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(1028): warning #177-D: function "<unnamed>::wgmma_m64n64k16_f16_tb" was declared but never referenced
+                            void wgmma_m64n64k16_f16_tb(float* d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
+                                 ^
+
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu(1089): warning #177-D: function "<unnamed>::cl_gid" was declared but never referenced
+                            int cl_gid(const Params& p) {
+                                ^
+
+ptxas info    : 28 bytes gmem
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi15EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi15EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 16 barriers
+ptxas info    : Compile time = 134.172 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi13EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi13EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 16 barriers
+ptxas info    : Compile time = 127.315 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi11EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi11EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 111 registers, used 16 barriers
+ptxas info    : Compile time = 165.012 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi9EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi9EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 110 registers, used 16 barriers
+ptxas info    : Compile time = 163.891 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi7EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi7EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 16 barriers
+ptxas info    : Compile time = 125.068 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi5EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi5EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 106 registers, used 16 barriers
+ptxas info    : Compile time = 127.062 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi3EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi3EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 115 registers, used 16 barriers
+ptxas info    : Compile time = 159.268 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi1EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi1EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 125 registers, used 16 barriers
+ptxas info    : Compile time = 160.252 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi2EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb0ELi2EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 111 registers, used 16 barriers
+ptxas info    : Compile time = 203.647 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b513cluster_multiILi8ENS0_4SmemILi8ELb0EEEEEbRKNS0_6ParamsERT0_iiiiiPfS9_
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb1ELi0EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb1ELi0EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 128 registers, used 3 barriers
+ptxas info    : Compile time = 212.584 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi15EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi15EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 107 registers, used 1 barriers
+ptxas info    : Compile time = 102.731 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi13EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi13EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 102 registers, used 1 barriers
+ptxas info    : Compile time = 100.971 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi11EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi11EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 126 registers, used 1 barriers
+ptxas info    : Compile time = 139.543 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi9EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi9EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 116 registers, used 1 barriers
+ptxas info    : Compile time = 132.468 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi7EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi7EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 1 barriers
+ptxas info    : Compile time = 97.397 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi5EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi5EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 1 barriers
+ptxas info    : Compile time = 92.043 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi3EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi3EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 124 registers, used 1 barriers
+ptxas info    : Compile time = 140.388 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi1EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi1EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 123 registers, used 1 barriers
+ptxas info    : Compile time = 130.597 ms
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi2EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi1ELb0ELi2EEEvNS_6ParamsE
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 104 registers, used 1 barriers
+ptxas info    : Compile time = 203.966 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b513cluster_multiILi1ENS0_4SmemILi1ELb0EEEEEbRKNS0_6ParamsERT0_iiiiiPfS9_
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function '_ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb1ELi0EEEvNS_6ParamsE' for 'sm_90a'
+ptxas info    : Function properties for _ZN39_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511attn_kernelILi8ELb1ELi0EEEvNS_6ParamsE
+    88 bytes stack frame, 132 bytes spill stores, 192 bytes spill loads
+ptxas info    : Used 80 registers, used 16 barriers, 88 bytes cumulative stack size
+ptxas info    : Compile time = 1071.289 ms
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b511ws_patch_niILi8ELi256ELb0ENS0_4SmemILi8ELb1EEEEEbPT2_iiiiii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for _ZN37_INTERNAL_320f60cf_7_cuda_cu_8cf030b539_GLOBAL__N__320f60cf_7_cuda_cu_8cf030b59spin_failEv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu: In function ‘CUresult (* get_encode())(CUtensorMap*, CUtensorMapDataType, cuuint32_t, void*, const cuuint64_t*, const cuuint64_t*, const cuuint32_t*, const cuuint32_t*, CUtensorMapInterleave, CUtensorMapSwizzle, CUtensorMapL2promotion, CUtensorMapFloatOOBfill)’:
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu:5088:24: warning: ‘cudaError_t cudaGetDriverEntryPoint(const char*, void**, long long unsigned int, cudaDriverEntryPointQueryResult*)’ is deprecated [-Wdeprecated-declarations]
+ 5088 |     cudaGetDriverEntryPoint("cuTensorMapEncodeTiled", &fn, cudaEnableDefault, &q);
+      |     ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/cuda/include/cuda_runtime_api.h:13101:46: note: declared here
+13101 | extern __CUDA_DEPRECATED __host__ cudaError_t CUDARTAPI cudaGetDriverEntryPoint(const char *symbol, void **funcPtr, unsigned long long flags, enum cudaDriverEntryPointQueryResult *driverStatus = NULL);
+      |                                              ^~~~~~~~~~~~~~~~~~~~~~~
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu: In function ‘CUtensorMap row_map(void*, long long int, long long int)’:
+/root/.cache/torch_extensions/py312_cu130/diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a/cuda.cu:5113:24: warning: ‘cudaError_t cudaGetDriverEntryPoint(const char*, void**, long long unsigned int, cudaDriverEntryPointQueryResult*)’ is deprecated [-Wdeprecated-declarations]
+ 5113 |     cudaGetDriverEntryPoint("cuTensorMapEncodeTiled", &fn, cudaEnableDefault, &q);
+      |     ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/cuda/include/cuda_runtime_api.h:13101:46: note: declared here
+13101 | extern __CUDA_DEPRECATED __host__ cudaError_t CUDARTAPI cudaGetDriverEntryPoint(const char *symbol, void **funcPtr, unsigned long long flags, enum cudaDriverEntryPointQueryResult *driverStatus = NULL);
+      |                                              ^~~~~~~~~~~~~~~~~~~~~~~
+[3/3] ccache c++ main.o cuda.cuda.o -shared -L/opt/sglang/lib/python3.12/site-packages/torch/lib -lc10 -lc10_cuda -ltorch_cpu -ltorch_cuda -ltorch -ltorch_python -L/usr/local/cuda/lib64 -lcudart -o diag_ab956e36142e4928_candidate_screen_decoder_q8_role_v11_muse_att_q8role_v11_90a.so
