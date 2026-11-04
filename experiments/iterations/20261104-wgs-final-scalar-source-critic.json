@@ -1,0 +1,80 @@
+{
+  "date_utc": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "GO_FOR_ONE_PRIVATE_CHECK_AFTER_ROOT_CPU_PASS",
+  "candidate_path": "muse_moe_w4a16/candidates/native_wgs_final_scalar_v19.py",
+  "candidate_sha256": "e849120b4f93b8eac82ce05f127dc405bb90312fa9d516bcc3a13e43754b9863",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "plan_sha256": "04dcd7fb1c4e3e128049332212179faf63991a49ccde6f9205a139de8f47bb33",
+  "builder_sha256": "3708d59417e5fb7a0cfb07ad8de1cd2a98befd683129f409a07ce4b788eb96f4",
+  "verifier_sha256": "0d0cc7ed0adfd4a27a3ba82b086ae6ec59a8f48b8b6d56e1fa0dd3095494a31d",
+  "author_cpu_sha256": "040c7cc7292f35bc9aca7ac754c2ed2cb8fea0dce2369e2daf3b71ad1ca73526",
+  "root_cpu_observed_sha256": "040c7cc7292f35bc9aca7ac754c2ed2cb8fea0dce2369e2daf3b71ad1ca73526",
+  "independent_actions": [
+    "Read the complete parent-to-candidate diff, complete builder and targeted verifier, actual parent routing/finalizer and resource/launch helpers.",
+    "Independently executed conformance on frozen e849: full parent byte restoration, deterministic build, 16 non-WGS preprocessed build equalities and unchanged three finalizer barriers.",
+    "Read both saved CPU reports; author and root output hashes are identical and both PASS. Did not duplicate the native full suite.",
+    "Checked final plan update04dcd7fb only corrects M128/grid132 iteration wording; mechanism and fixed gate remain unchanged."
+  ],
+  "source_verdict": {
+    "blocking_defects": [],
+    "owner_consumer_mask": "Owner S.pos[tk*8+tid]>=0 agrees with immutable per-thread qv[sl]>=0; invalid owners store0 without a topk-weight access.",
+    "precision": "The same ordered16 partial additions feed the same FP32 scale+epsilon, rsqrtf and route-weight product. Cached-y accumulation order and BF16 output casts are byte-identical source.",
+    "shared_lifetime": "red[0..127] partials and128..135 results are disjoint. Existing512-consumer publication and token-tail barriers remain exact; no producer participation or new shared allocation.",
+    "scope": "Only WGSFINSS owner/consumer arithmetic changes. All MMA/weights/packing/route/input/gather/PDL/scheduling paths are restored unchanged. Other deltas are approved provenance, namespace, WGS-only verbosity and reviewed resource helper.",
+    "launch_resources": "FSR queries exact BIG0/BIG1 pointers with unchanged actual sm and576 threads, reports API/resource fields and requires API success+occupancy>=1 before attr caches success. Registers/local bytes are reported without arbitrary performance rejection."
+  },
+  "proof_scope": {
+    "route_masks": 256,
+    "token_cases": 1024,
+    "consumer_thread_pairs": 524288,
+    "coefficient_bit_comparisons_under_CPU_shim": 2097152,
+    "owner_route_evaluations": 4096,
+    "parent_route_evaluations": 2097152,
+    "negative_controls": [
+      "missing owner live guard",
+      "wrong owner result slot",
+      "reversed FP32 partial sum order",
+      "old consumer recomputes coefficient",
+      "missing finalizer barrier"
+    ],
+    "token_assignment": "M0/1/8/16/32/128/132/133/256/257/384/385/769, grid132, outer384 chunks; 2501 rows once and4096 columns once.",
+    "host_mock": "10 API/occupancy/local modes; exact first-call error propagation, failed admission retries, successful attributes cache."
+  },
+  "limitations": [
+    "Native fixtures substitute CPU1/sqrt and BF16 shims. They establish same coefficient/output bits under those shims, not CUDA rsqrt/FMA/BF16 equivalence.",
+    "Earlier y squares and warp shuffles are preserved by source identity; no full-MMA or kernel simulator was run.",
+    "Barrier publication is modeled with sequential phases; actual GPU visibility/progress depends on unchanged validated barriers and requires official evaluation.",
+    "No new global-zero-job support, compiler instruction-count claim, actual resource allocation or performance gain is established.",
+    "Arithmetic moves ahead of the existing owner publication barrier; its critical-path and common-register effects remain measured questions."
+  ],
+  "fixed_gate": {
+    "affected_MAIN_M": [
+      32,
+      128,
+      256
+    ],
+    "minimum_speed_GM_each_parent": 1.005,
+    "minimum_joint_positive_cases": 2,
+    "maximum_affected_normalized_latency_each_parent": 1.02,
+    "control_M": [
+      1,
+      8,
+      16
+    ],
+    "control_latency_GM_each_parent": [
+      0.98,
+      1.02
+    ],
+    "official_records": {
+      "tests": 5,
+      "benchmarks": 6,
+      "profiles": 6
+    },
+    "parents": [
+      "d24dd50196cb4158",
+      "bcb761dfca264db0"
+    ],
+    "restriction": "One fixed private attempt; no failed-result sweep/retry. Separately reviewed decoder port only after useful standalone evidence. Public promotion additionally requires actual aggregate improvement."
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "source_sha256": "e849120b4f93b8eac82ce05f127dc405bb90312fa9d516bcc3a13e43754b9863",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "cuda_sha256": "533d53d6811198ec7b295554ccf42e3332eb63c643cea28279338868513539b1",
+  "conformance": {
+    "complete_parent_byte_restoration": true,
+    "restored_parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+    "non_wgs_preprocessed_builds": 16,
+    "finalizer_barriers_unchanged": 3,
+    "row_square_warp_sum_and_output_FMA_cast_source_identical": true
+  },
+  "native_finalizer": {
+    "token_cases": 1024,
+    "consumer_thread_pairs": 524288,
+    "live_route_cases": 4096,
+    "parent_scalar_evaluations": 2097152,
+    "candidate_scalar_evaluations": 4096,
+    "owner_slot_stores_both_versions": 16384,
+    "FP32_coefficient_bit_comparisons": 2097152
+  },
+  "token_assignment": {
+    "physical_M": [
+      0,
+      1,
+      8,
+      16,
+      32,
+      128,
+      132,
+      133,
+      256,
+      257,
+      384,
+      385,
+      769
+    ],
+    "rows_once": 2501,
+    "columns_once": 4096,
+    "grid": 132,
+    "max_chunk": 384,
+    "inherited_zero_job_support_not_claimed": true
+  },
+  "host_resources": {
+    "modes": 10,
+    "records": 20,
+    "max_record_bytes": 99,
+    "local_allocation_does_not_reject": true,
+    "actual_first_call_failure_propagates": true,
+    "failed_call_does_not_cache_success": true,
+    "successful_attributes_cached": true
+  },
+  "negative_controls": [
+    "missing_owner_live_guard",
+    "wrong_owner_slot",
+    "reversed_FP32_sum_order",
+    "old_consumer_recomputes_coefficient",
+    "missing_finalizer_barrier"
+  ],
+  "limits": "Actual owner and consumer source executes natively with FP32 partial fixtures, a 1/sqrt CPU shim and BF16 conversion shim; this is not CUDA rsqrt/FMA/BF16 proof. Earlier y-square and warp-shuffle reduction source is unchanged, not emulated. All256 route masks execute three CTA0 token iterations and a rotated-mask chunk remainder; other token/column assignments are separately enumerated. Barriers are modeled phase boundaries, not a GPU memory-order/progress simulation. No GPU correctness, resources or speed established."
+}

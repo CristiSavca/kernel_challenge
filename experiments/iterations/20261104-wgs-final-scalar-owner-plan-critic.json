@@ -1,0 +1,70 @@
+{
+  "date_utc": "2026-11-04",
+  "reviewer": "attention_paper_reset",
+  "verdict": "GO_FOR_BOUNDED_CPU_IMPLEMENTATION_ONLY",
+  "plan_path": "tools/WGS_FINAL_SCALAR_OWNER_FEASIBILITY_20261104.md",
+  "plan_sha256": "8ecccef497c5b26eafa1bb26430d089884c85a48c2510ab7b6d13134ee002c7b",
+  "parent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "scope": "Only OKC_WGS && OKC_WGSFINSS: eight existing cross-warp sum owners store the exact route coefficient in their existing shared slots; consumers replace the duplicate expression with a shared load.",
+  "independent_source_findings": [
+    "S.pos is a signed-short route-position table, assigned a nonnegative local row or -1 for every input entry and published by the existing routing CTA barrier. It is not mutated during finalization.",
+    "All 512 consumer threads own the same token and load identical qv[0..7]; owner S.pos[tk*8+tid]>=0 is exactly the consumer live-route predicate for tid=sl.",
+    "red[0..127] contains 16-warps by 8-route partials. Owners read all of those before writing distinct red[128..135]; these regions do not alias.",
+    "Preserve the exact 16-add tsum reduction order, identical float constants, rsqrtf and topk-weight multiplication. The FP32 shared store/reload of tsum is replaced by a FP32 store/reload of the coefficient; no precision or algebraic reassociation is requested.",
+    "The existing named CTA_SYNC barrier has 512 participants and a compiler memory clobber. It publishes all eight coefficient stores before any consumer reads; the existing token-tail barrier prevents next-token shared reuse while consumers remain.",
+    "The two producer warps return through their inherited paths and do not participate in these consumer-only barriers. No new barrier or ring lifetime is introduced.",
+    "Invalid or remote owners write zero without reading their topk weight. Consumers retain qv guards, all route FMA order, cached y values, output columns and BF16 conversions.",
+    "HD==NT*8 fixes exactly4096 columns and512 consumer threads. The same finalizer applies to both BIG templates and all MAIN NTT/job distributions; non-WGS/WGSFINSS0 branches remain unchanged.",
+    "Token iteration and MMAX384 outer chunking remain exact. At actual grid132, M128 uses at most one token per CTA; M256/384 can reuse a CTA for more tokens. The plan's M128 wording is not an algorithm defect.",
+    "A token with no local routes retains zero output if inherited earlier phases reach the finalizer. This does not establish arbitrary global-zero-job support."
+  ],
+  "removal_and_costs": {
+    "logical_scalar_evaluations_per_token": "512*R -> R, where0<=R<=8 is local route count",
+    "direct_simt_model": "16*R warp expression executions -> one masked owner-warp expression whenR>0; not measured SASS",
+    "unchanged": "Eight shared stores, per-consumer coefficient loads, all ybuf reads, cached values, route sums and output stores",
+    "added": "Eight owner S.pos shared reads and owner-path scalar latency before existing publication barrier",
+    "unknown": "Actual compiler allocation, instruction sequence, register impact and exposed performance; no HBM savings claim"
+  },
+  "proof_requirements": [
+    "Deterministic build and complete source restoration of the scoped owner/consumer delta plus namespace, approved resource helper and verbosity.",
+    "Non-WGS preprocessing/control paths unchanged, both BIG pointers resource-checked with unchanged576 threads and231168 dynamic bytes.",
+    "Actual-snippet small mask/owner/slot test: all256 route masks, one/eight/no-local routes, valid row indices, repeated token iterations and short chunks; preserve reduction/consumer order and barrier placement.",
+    "Do not introduce a full MMA/lifetime simulator or claim host rsqrt is a GPU oracle.",
+    "Resource API failures must propagate; register/local data is evidence, not an arbitrary rejection threshold.",
+    "Freeze candidate and require independent source review plus root CPU rerun before one official check."
+  ],
+  "fixed_pre_result_gate": {
+    "affected_MAIN_M": [
+      32,
+      128,
+      256
+    ],
+    "minimum_affected_speed_GM_each_parent": 1.005,
+    "minimum_joint_positive_cases": 2,
+    "maximum_each_affected_normalized_latency": 1.02,
+    "control_M": [
+      1,
+      8,
+      16
+    ],
+    "control_normalized_latency_GM_each_parent": [
+      0.98,
+      1.02
+    ],
+    "required_official_records": {
+      "tests": 5,
+      "benchmarks": 6,
+      "profiles": 6
+    },
+    "parents": [
+      "d24dd50196cb4158",
+      "bcb761dfca264db0"
+    ],
+    "promotion": "A passing screen permits separately reviewed decoder port only; public promotion also requires actual aggregate improvement."
+  },
+  "limitations": [
+    "This is plan/source feasibility, not CUDA compilation, numerical GPU proof or performance evidence.",
+    "Both paths retain parent --use_fast_math flags. Actual contraction/rsqrt lowering still requires official correctness; no host mathematical implementation substitutes for it.",
+    "No existing-tail latency is claimed to be entirely removable; no prior compiler-serialization claim is used."
+  ]
+}
