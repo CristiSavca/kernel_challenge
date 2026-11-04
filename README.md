@@ -1,17 +1,26 @@
 # Open Kernel Challenge
 
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
-Status updated November 4, 2026, 19:22 UTC (board), with the 19:41 experiment below.
+Status updated November 4, 2026, 20:30 UTC (board), with the completed V25 experiment below.
 The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
 ## Latest measured state
 
-CristiSavca is 404th overall. Public scores are dense projections 1.4868×,
+CristiSavca is 405th overall. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader
 is 2.5762×. Passing public sources remain preserved; private experimental
 regressions have not replaced them.
+
+Serving expert prototype V25 passed official private job `033a2d2eca374d82`
+with all five tests, six benchmarks and clean checks. Its same-run stock score
+is **1.2538x**, but M1 latency increased **13.63%**, failing the fixed all-case
+screen. It is closed without a scored submission or serving promotion. Other
+loads improved 7.03%–46.08%. The one-bank source with the required BF16 boundaries remains useful
+architectural evidence. A new private-partial reduction algorithm is the next
+hypothesis; full serving memory, concurrency and throughput are still unverified.
+See [the result and next experiment](experiments/iterations/20261104-native-serving-v25-closeout.json).
 
 Serving-finalizer v22 passed official private job `cffa322caeff4aa2`, with all
 five correctness tests, six timed cases and clean checks. Compared with the
@@ -45,10 +54,6 @@ three. The candidate used one launch at T16. Stream/graph checks and paired
 timings were not reached, so validation is incomplete and no speed gain is
 claimed. The fixed attempt is closed without retry or promotion; see
 [the result](experiments/iterations/20261104-router-local-ids-root-result.json).
-A larger native-to-serving port now needs a bounded weight layout and the
-required BF16 intermediate roundings before implementation; the
-[feasibility record](experiments/iterations/20261104-native-serving-port-feasibility.json)
-explains why a direct transplant is unsuitable.
 Unchanged-finalizer diagnostics are closed; full serving compatibility remains
 unverified. Separately, exact-one
 attention rescale candidate V23 passed official private correctness check

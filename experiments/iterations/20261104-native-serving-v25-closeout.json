@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "at": "2026-11-04T20:32:21.601653+00:00",
+  "iteration": "native-serving-v25",
+  "status": "CLOSED_FIXED_ATTEMPT_PER_SHAPE_SPEED_FAILURE",
+  "hypothesis": "A single WGS weight bank and cooperative fused expert core with stock numerical boundaries can accelerate the complete stock MoE component across all six loads.",
+  "source_commit": "d54ee9f",
+  "source_sha256": "3a8c973b737dd074bcf5115f7418f5f0b34139fd4f9f637410ad1765ccbe050d",
+  "official_job": "033a2d2eca374d82",
+  "official_mode": "check",
+  "official_result": "PASS, exact evaluator and source, clean1setup/5tests/6benchmarks/6profiles",
+  "score": 1.2537949061679123,
+  "score_ci": [
+    1.2349879825753936,
+    1.272601829760431
+  ],
+  "fixed_gate_result": {
+    "all_six_GM_speed_at_least_1p15": true,
+    "every_case_normalized_latency_at_most_1p02": false,
+    "all_six_intended_core_profiles": true,
+    "all_six_stock_finalizer_profiles": false
+  },
+  "decisive_failure": "M1 candidate/stock latency1.1363354821 exceeds1.02; this closes the candidate independently of profile-marker observability.",
+  "per_shape_latency_change_pct": {
+    "1": 13.633548205890467,
+    "16": -11.156570108833009,
+    "32": -15.805869754458934,
+    "8": -7.026594077094828,
+    "128": -39.5906049830492,
+    "256": -46.07823901792444
+  },
+  "native_incumbent_relative_score": 0.5282047590555673,
+  "public_action": "No scored submission; incumbents247888/97af/87a9 preserved.",
+  "profile_observability": "Small-token report names end in ellipses before where/MeanOps/sum markers. ATen reduction/elementwise families are consistent with the source; exact semantic markers remain unobservable. Do not infer missing finalization or relax the frozen screen. Large-token original finalizer and all six new cores are visible.",
+  "compiler_resource_facts": {
+    "both_specializations": {
+      "threads": 576,
+      "dynamic_shared_bytes": 231168,
+      "registers": 96,
+      "local_bytes": 24,
+      "occupancy_blocks_per_SM": 1,
+      "grid_blocks": 132,
+      "cooperative": true
+    },
+    "causal_limit": "No complete compiler diagnostics or SASS retained; local bytes do not establish spill cost or serialization."
+  },
+  "critic": {
+    "verdict": "CLOSE_FIXED_ATTEMPT",
+    "material_findings_resolved_before_upload": [
+      "Marlin operand LUT and two BF16 roundings",
+      "global FP32 reduction FTZ replaced with integer CAS",
+      "activation product FTZ applied locally",
+      "cooperative admission and empty-job handling",
+      "explicit serial workspace and unchanged finalizer"
+    ],
+    "post_run_response": "Accepted independent close verdict; no threshold change, fallback rescue, retry or public promotion."
+  },
+  "resources": {
+    "official_private_checks": 1,
+    "scored_submissions": 0,
+    "Modal_allocations": 0,
+    "out_of_pocket_usd": 0,
+    "saved_provider_floor_usd": "4.25390221",
+    "conservative_working_usd": "1.25609779",
+    "separate_headroom_usd": "5.00",
+    "journal_rows": 17,
+    "full_reservations_usd": "32.74",
+    "guard_journal_and_corrections_unchanged": true
+  },
+  "retained_memory": {
+    "one_bank_bytes": 905969664,
+    "explicit_serial_workspace_bytes": 108033568,
+    "whole_model_fit_established": false
+  },
+  "next_experiment": {
+    "proposal": "New algorithm: immutable private boundary partials plus one ordered non-FTZ FP32 owner reduction, replacing scalar CAS accumulation for every shape.",
+    "same_contract": [
+      "one packed bank",
+      "WGS geometry and stage ranges",
+      "MMA accumulation order within each partial",
+      "BF16 boundaries and original finalizer",
+      "all ranks and zero-job semantics"
+    ],
+    "expected_storage_estimate": {
+      "partial_buffer_MiB": 40,
+      "total_workspace_MiB": 123.02883911132812
+    },
+    "conditional_schedule_example": {
+      "assumptions": "One job, NTT1,132CTAs; not a recovered run routing histogram.",
+      "A_partial_contributions": 152,
+      "B_partial_contributions": 136,
+      "scalar_CAS_instructions_lower_bound_before_retries": 1179648,
+      "replacement_logical_stores_and_loads_MiB": 4.5,
+      "FP32_additions": 589824
+    },
+    "gain_forecast": "Unknown; source operation counts and profiler shares are not measured speedups or a defensible full-serving upper bound.",
+    "falsifiable_hurdle": "M1 needs at least about10.24% normalized-latency reduction versus V25 to reach same-run stock+2%; preserve GM>=1.15 and no-case>1.02 stock latency.",
+    "correctness_kills": [
+      "partial-slot reuse before all reads",
+      "missing publication/acquire ordering",
+      "zero-job/counter-reset regressions",
+      "GPU numerical failure due to changed partial-add order"
+    ],
+    "status": "Hypothesis only; no implementation or allocation this iteration.",
+    "profile_contract_preflight": "Before any new run, test its activation reader on the actual abbreviated official profile format. Small-token full-chain evidence must use the exact common stock-helper source/import binding plus observable reduction/elementwise families, not hidden template-name tokens. Do not reopen V25 or change its fixed performance verdict."
+  },
+  "next_official_constraints": {
+    "kernel_cutoff_UTC": "2026-11-05T08:00:00Z",
+    "serving_opens_UTC": "2026-11-10T17:00:00Z",
+    "serving_cutoff_UTC": "2026-11-20T08:00:00Z",
+    "MoE_private_left": 26,
+    "MoE_scored_left": 17
+  },
+  "in_flight_jobs": [],
+  "goal": "Active and unachieved; latest overall405, MoE309, decoder405, public scores unchanged.",
+  "evidence_sha256": {
+    "experiments/iterations/20261104-native-serving-v25-root-result.json": "e9da8f2d984d139f3ca090a8b73f60ed1974c02056c3bd4beb2db1684b0fd38e",
+    "experiments/runs/033a2d2eca374d82.json": "c47ccb0f3149b35ce487ced1011c4d03862ec758003f9b3472ba179d420884d2",
+    "experiments/iterations/20261104-native-serving-v25-root-plan.json": "814763d2bbcc01bfff06d36799c7d41d1a057c9079b8db87e786af20cd401800",
+    "experiments/iterations/20261104-native-serving-v25-result-critic.json": "f017d2a61bdb81f51c53972c2ba3399cc8a5a3454d5ecf652e9ce22deccc4c23",
+    "tools/SERVING_NATIVE_MOE_V25_RESULT_CRITIC_20261104.md": "022037e2d95a76de16775f255046ed9e4afae6a93f75736dc34827f5b8bdee12",
+    "serving/candidates/native_serving_v25/cpu_result.json": "aa266717bfb13490f2e4db2bf3f717e8c9b752b23f7dd6763f8f9cc3c7ef94e3",
+    "experiments/leaderboards/20261104T203019Z-native-serving-v25.json": "91e879f782a56adde919aa223f7f8edd626e95de0d4176fabbadf3bf26cd1425"
+  }
+}
