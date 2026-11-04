@@ -1377,3 +1377,28 @@ rings/barriers andrealcopyorder. PrimaryPTX support verified, but hints may be
 ignored or addcachepollution/duplicateDRAM traffic; no performanceclaim or source
 implementationGO yet. Authorandcritic areindependentlyreviewingsequencebounds
 andcost. #1goalactive/unachieved; thisturn isprogress fromactualterminal evidence.
+
+## Fixed L2 weight prefetch submitted — November 4, 13:53 UTC
+
+Root accepted the fixed distance3 plan before implementation. Source
+`85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759` derives
+directly from scored247888, with no SC6. A plain bulk L2 hint follows each real
+weight TMA only when the third future item exists within the same rotated phase.
+Real copies, barriers, packing, math, shared rings, dispatch and PDL are unchanged.
+The hint adds requests and address work; speed is unproven.
+
+Root reproduced author and critic CPU report `79ba61d2` byte for byte. Actual
+producer traces preserved1,314,672 real copies and1,286,460 waits;1,261,152 hints
+matched future addresses. Six mutation controls and16 non-WGS source comparisons
+passed. Extended integer fixtures are explicitly distinguished from the legal
+88-job routing domain. Independent source critic `35755ba4` approved one check.
+All evidence was committed in4c8bbde before submission.
+
+Official job `ea811fae5f6648bf` was received at13:52:18 UTC and queued by13:53.
+The immutable snapshot and receipt are retained; root alone polls this handle.
+Fixed performance screen: affected M32/128/256 geometric speed ratio>=1.01
+against both247888 receipts, at least2 cases positive against both, each affected
+normalized latency<=1.02, and control M1/8/16 latency GM within[0.98,1.02].
+Clean official correctness, provenance and launch admission are required. Failure
+closes this fixed attempt without a distance/policy sweep. No public entry or
+Modal reservation changed. The #1 goal remains active and unachieved.

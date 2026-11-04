@@ -3,8 +3,10 @@
 2026-11-04. Isolated candidate from exact scored KPERM parent247888; no SC6,
 encoding, geometry, arithmetic or pipeline changes. Root accepted fixed plan
 `tools/WGS_BULK_L2_PREFETCH_FEASIBILITY_20261104.md` (57bad98b) after critic review.
-Independent frozen-source review and root CPU reproduction precede one private
-GPU check. Active submissions remain unchanged.
+Independent frozen-source review and root CPU reproduction passed. Official
+private check `ea811fae5f6648bf` was submitted at13:52 UTC and is queued;
+CUDA correctness, resource admission and timing remain pending. Active submissions
+remain unchanged.
 
 Source SHA256: `85da23922def6696b206a227af944c13cb0f439c90bf4fa4570c39ca92afe759`.
 Parent: `247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0`;
