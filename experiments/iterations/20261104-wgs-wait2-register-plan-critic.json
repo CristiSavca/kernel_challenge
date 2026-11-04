@@ -1,0 +1,46 @@
+{
+  "decision": "GO for one isolated CPU implementation of this exact plan; final frozen-source review required before any official GPU check",
+  "plan": "tools/WGS_WAIT2_REGISTER_PLAN.md",
+  "plan_sha256": "760ae02597cbbb32a9a18c3993c731ab8dc59562972d316febc224cde7e56d31",
+  "base_source_sha256": "97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6",
+  "scored_incumbent_sha256": "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0",
+  "observed_trigger": "Official f685c2533ebc4214 reports C7511 insufficient-register WGMMA serialization in both BIG specializations at96 registers despite zero stack/spill/local bytes. WAIT2 itself is rejected for promotion.",
+  "trigger_audit": "experiments/iterations/20261104-wgs-wait2-official-critic.json",
+  "chosen_mechanism": "640 launched threads:512 consumers in four full warpgroups inc112; one128-thread producer warpgroup dec32 before splitting into unchanged32-thread weight and32-thread activation producers plus64 idle threads that join barrier2 once. Preserve the entire WAIT2 arithmetic and traffic.",
+  "critic_review": [
+    "Read full plan, source role/producers/routing/finalizer context, final role-model source and author output. Independently validated CTA-pool arithmetic using the unchanged NVIDIA occupancy header in the separate critic budget proof.",
+    "Confirmed common initial PDL wait precedes the role split. Full producer donation precedes every producer-specific wait or return, so blocked consumer acquisitions cannot trap the donor behind a consumer-dependent barrier.",
+    "Confirmed selected participant counts: barrier2 becomes640 including both idle warps; barrier7 remains544; compute barrier1 stays512; per-compute-WG barriers remain128; existing ring-credit counts stay unchanged.",
+    "Confirmed consumer inc112 dominates an explicit else containing the whole original consumer body through finalizer. No new outlined helper or producer/consumer reconvergence into shared math is proposed.",
+    "Confirmed initial96 pool61440 exactly equals512*112+128*32. SM-total65536 arithmetic and register-padding assumptions are excluded; actual initial96/local0/positive occupancy guards precede both launch paths.",
+    "Confirmed byte-identical WAIT2 wgs_seg and inherited producers, math, routing, scratch and tile/ring geometry are requirements, alongside non-WGS preprocessing equality and actual-role execution over all640 thread IDs.",
+    "Requested and verified two corrections: distinguish inverse relative-speed ratio from direct harness/raw medians, and do not claim the occupancy-header proof establishes actual role placement in register partitions."
+  ],
+  "role_model": {
+    "tool": "tools/audit_wgs_register_roles.py",
+    "tool_sha256": "f73a9925158ad2d17c5eb082ecb44e5867fa2325f2e249d2213fcd7d96768ff4",
+    "author_result": "experiments/iterations/20261104-wgs-register-roles-plan.json",
+    "request_orders": 120,
+    "negative_controls": ["partial64-thread producer warpgroup", "initial88 register allocation", "missing idle-warp barrier2 joins"],
+    "review_scope": "Static independent review, not a duplicate full run. The model assumes eventual execution of the ready donor and treats a warpgroup action atomically; it does not simulate hardware register partitions or every CUDA interleaving."
+  },
+  "compiler_requirements": [
+    "Both exact specializations must compile with actual initial96 registers, zero local storage and positive occupancy at640threads and231168 dynamic shared bytes. Fail closed; no alternate quota or fallback.",
+    "Retain the one-block launch bound and WGS-only verbose diagnostics. Source quota dominance does not establish honored instructions or asynchronous pipeline scheduling.",
+    "Observed persistent C7511/C7512 or equivalent WGMMA serialization, dropped setmaxnreg hints, or visible spill growth kills the selected mechanism. Retained SASS USETMAXREG/quotas are stronger mechanism evidence if externally available; do not spawn artifact inspection from submission code.",
+    "The96-register birth-budget compiler limitation remains. Existing MMA instructions compile at96, but that does not prove additional live AF/deferred-flush state can use112 or avoid serialization.",
+    "Noinline wgs_ranges under producer32 and FCI3 under consumer112 remain actual compilation risks. Do not fold producer rewrites or helper changes into this experiment to rescue it.",
+    "A truncated or absent diagnostic is not proof of warning absence. Preserve actual log scope and qualify mechanism claims if binary evidence is unavailable."
+  ],
+  "performance_gate": {
+    "affected_tokens": [32,128,256],
+    "control_tokens": [1,8,16],
+    "reference": "Exact scored247888, with private247888 and failed WAIT2 retained as comparisons",
+    "target": "Geometric mean of incumbent_speedup/candidate_speedup <=0.95 across affected cases; no affected case ratio>1.03; stable unchanged controls.",
+    "report_separately": ["direct harness median_ns ratios", "raw median ratios", "SGLang-relative speedup ratios", "baseline drift", "GPU node and seed differences", "reported confidence intervals"],
+    "caveat": "These are screening thresholds, not gain forecasts or a proof of causality. Useful standalone evidence still requires separate exact decoder integration and verification."
+  },
+  "no_gpu_approval": true,
+  "no_quota_or_schedule_sweep": true,
+  "candidate_created_by_critic": false
+}

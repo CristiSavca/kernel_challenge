@@ -59,8 +59,10 @@ header provenance; the reproducible tool is `tools/critic_wgs_setmaxnreg_budget.
 | Producer donation96→32 | 8,192 |
 | Consumer acquisition96→112 | 8,192 |
 
-With four register partitions, each has four consumer warps and one producer
-warp. The same arithmetic balances per partition:4×32×112+32×32 =15,360.
+If the role warps are distributed as four consumer warps and one producer warp
+per register partition, the arithmetic also balances there:4×32×112+32×32 =15,360.
+The native-header audit establishes total allocation/admission, not that actual
+role placement; the CTA-local pool is the supported conservation argument.
 This budget is not borrowing the unused4,096 registers of the SM. Producer24 /
 consumer120 requires64,512: it fits the SM total but exceeds this CTA allocation
 by3,072. Producer40 / consumer112 also exceeds the pool, by1,024. Initial88 or80

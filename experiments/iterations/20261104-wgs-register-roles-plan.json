@@ -1,0 +1,34 @@
+{
+  "verifier_sha256": "f73a9925158ad2d17c5eb082ecb44e5867fa2325f2e249d2213fcd7d96768ff4",
+  "result": {
+    "initial_registers": 96,
+    "pool": 61440,
+    "final_registers": 61440,
+    "donation": 8192,
+    "acquisition": 8192,
+    "request_orders": 120,
+    "role_thread_counts": {
+      "consumer": 512,
+      "weight": 32,
+      "activation": 32,
+      "idle": 64
+    },
+    "barrier2": 640,
+    "barrier7": 544,
+    "consumer_barrier": 512
+  },
+  "rejected_controls": {
+    "partial_producer_wg": "setmaxnreg producer role needs a full WG",
+    "initial88_pool": "CTA-local register pool is insufficient",
+    "missing_idle_join": "barrier2 participant mismatch"
+  },
+  "gpu_used": false,
+  "candidate_source_tested": false,
+  "assumptions": [
+    "Actual initial96 allocation and retained setmaxnreg instructions must be established separately.",
+    "Whole-WG role assignment is uniform; donation precedes every producer role split and wait.",
+    "A ready producer can eventually execute; the model is not a CUDA fairness/timing simulator.",
+    "The separate pinned NVIDIA-header proof establishes total allocation/admission, not actual role-to-register-partition mapping.",
+    "Inherited routing/gather/TMA lifetimes are unchanged; this model proves only the new role/join dependencies."
+  ]
+}

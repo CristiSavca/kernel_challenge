@@ -1,0 +1,59 @@
+{
+  "reviewer": "result_and_strategy_critic",
+  "decision": "GO_ONE_OFFICIAL_PRIVATE_CHECK_AFTER_ROOT_FROZEN_CPU_RERUN_PASS",
+  "candidate": "muse_moe_w4a16/candidates/native_wgs_wait2_reg112_v13.py",
+  "source_sha256": "31127a37ce35616b555e2ea5a5df673719aa03c422f9edc1a2be75320b3b9f65",
+  "parent_sha256": "97ffccc30a90ce8400cddef800d932889822eaf876fbdedaec18b1013e8f66b6",
+  "cuda_sha256": "492145aa8318592ba6cddabe72d69f1f1269e26a7900ffbba32c9caf651f7001",
+  "verifier": "tools/test_wgs_reg112_cpu.py",
+  "verifier_sha256": "ed17310e32d656722f4c8aac3c672e30d5fc17acbcb6e2658233464a87fa4f18",
+  "independent_review": {
+    "full_source_diff_read": true,
+    "source_and_verifier_hashes_rechecked": true,
+    "python_ast_nodes_compared_in_order": 51,
+    "only_changed_python_ast_nodes": ["CUDA_SRC", "_ext"],
+    "wgs_seg_byte_identical_to_wait2": true,
+    "wgs_seg_sha256": "e1c35eb1499104dcb6c0ee139a45951a56768b92c04bd5dcdef8c0961cd09006",
+    "verifier_read_in_full": true,
+    "native_full_suite_repeated_by_critic": false,
+    "rerun_owner": "root",
+    "blocking_source_findings": []
+  },
+  "source_findings": [
+    "WGS-only NTL640 contains512 unchanged compute threads and128 producer threads. Non-WGS NTL expression is retained.",
+    "All128 producer threads execute the same dec32 before any role split, wait or return. Warp16 calls the unchanged weight producer; warp17 calls the unchanged activation producer; warps18/19 join once and return.",
+    "All512 consumers execute inc112 before the unchanged body. The explicit else encloses routing, gather, both phases, PDL trigger, grid barrier, scratch cleanup and finalizer through kernel exit.",
+    "The actual WGS producer functions each join before their lane0-only continuation. Barrier2 therefore has512+32+32+64=640 participants once. Barrier7 remains512+32=544; idle warps never enter it. Compute barrier1 remains512 and per-WG barriers remain128.",
+    "No added consumer helper, new outlining, maxrregcount clamp, changed MMA instruction, tile, ring, grid, packing, scratch, route partition or numerical operation was found. Existing wgs_ranges remains noinline in the low-quota producer path and may be a compiler risk.",
+    "Both actual BIG attributes and occupancy are queried before both launch paths. numRegs96, localSizeBytes0 and occupancy>=1 are hard checks. Query errors and shared-memory opt-in failures also fail. The same231168 dynamic shared bytes and one-block launch bound are retained.",
+    "Full CUDA restoration in the reviewed verifier removes only approved NTL, role wrapper, host guard/marker and two outside-segment comment edits, then requires exact parent equality. The independent full AST comparison additionally covers imports and other nodes omitted by the verifier's named-node dictionary."
+  ],
+  "cpu_evidence_reviewed": {
+    "author_report": "experiments/iterations/20261104-wgs-reg112-source-cpu.json",
+    "non_wgs_preprocessed_equal_controls": 16,
+    "actual_role_prefix_distinct_thread_ids": 640,
+    "actual_role_prefix_total_executions": 3840,
+    "role_label_limit": "Six labels repeat the same role dispatch with no job input. They add no actual workload, zero-job or range-dependent coverage. Zero-job safety is supported by unchanged producer/consumer bodies and manual control-flow inspection, not these labels.",
+    "actual_host_predicate_cases": 3969,
+    "host_admitted_combinations": 4,
+    "inherited_actual_segment_native": {
+      "trace_hash": 16480252443066245379,
+      "mma_calls": 1462272,
+      "commit_groups": 731136,
+      "flushes": 10752,
+      "x_releases": 39168
+    },
+    "limits": "Native role stubs execute extracted branch/quota-call order but model producer/consumer joins; they do not execute CUDA synchronization or real producer bodies. The unchanged segment harness conservatively retains AF pointers and compares MMA-call order, not GPU arithmetic. No CPU result proves compiler allocation, retained hints, scheduler progress, numerical tolerance or speed."
+  },
+  "remaining_gpu_gates": [
+    "Root's independent frozen verifier rerun must pass before the one private check.",
+    "Both BIG kernels must compile and exercise actual initial96/local0/positive-occupancy host admission. Initial96 gives61440 total CTA registers, exactly512*112+128*32; no SM-pool borrowing is assumed.",
+    "Retained C7511/C7512 or equivalent WGMMA serialization, dropped setmax hints, spills or resource failure reject this chosen mechanism. Missing diagnostics in truncated logs do not establish absence. Actual retained instructions are stronger evidence if official artifacts expose them.",
+    "Official correctness must pass. For changedM32/128/256, require GM(incumbent247888_speedup/candidate_speedup)<=0.95 with no individual ratio>1.03 and stable unchangedM1/8/16 controls. Separately report harness medians, raw medians and baseline drift.",
+    "Compare failed WAIT2 as a mechanism contrast, not the scored incumbent. Parent serialization remains unknown because its complete compiler stream was not retained.",
+    "No automatic quota sweep, source rescue, timing retry, public score submission or decoder integration follows from this source GO."
+  ],
+  "gpu_used": false,
+  "official_polled": false,
+  "candidate_edited": false
+}

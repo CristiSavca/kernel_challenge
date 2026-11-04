@@ -21,6 +21,9 @@ def main():
     assert all(r.get("status", "pass") == "pass" for r in result["records"])
     log_path = Path(receipt["response"]["output"]["log"])
     log = log_path.read_text()
+    assert result["log_tail"].startswith(log)
+    extra_log_lines = result["log_tail"][len(log):].splitlines()
+    assert len(extra_log_lines) == 12 and all(line.startswith("USDT:") for line in extra_log_lines)
     marker = re.search(r"OKC_WGS_WAIT2 resources threads=(\d+) dynamic=(\d+) occupancy=(\d+)/(\d+) regs=(\d+)/(\d+) local=(\d+)/(\d+) static=(\d+)/(\d+)", log)
     assert marker
     assert tuple(map(int, marker.groups())) == (576,231168,1,1,96,96,0,0,0,0)
@@ -42,7 +45,10 @@ def main():
         assert old_provenance["source_sha256"] == "247888acca10f50d8c5db283676ffd93334869467f4632e4a320b34cb20c9ef0"
         assert provenance["evaluator_sha256"] == old_provenance["evaluator_sha256"]
         cases = []
+        assert len(profile["benchmarks"]) == len(old_profile["benchmarks"]) == 6
+        assert len(profile["profiles"]) == len(old_profile["profiles"]) == 6
         for new,old,np,op in zip(profile["benchmarks"],old_profile["benchmarks"],profile["profiles"],old_profile["profiles"]):
+            assert new["index"] == old["index"] == np["index"] == op["index"]
             assert {k:v for k,v in new["case"].items() if k != "seed"} == {k:v for k,v in old["case"].items() if k != "seed"}
             cases.append(dict(tokens=new["case"]["bs"],changed_path=new["case"]["bs"]>16,
                 candidate_seed=new["case"]["seed"],parent_seed=old["case"]["seed"],
@@ -69,9 +75,10 @@ def main():
     report = dict(candidate=provenance,record_counts=dict(counts),checks=result["checks"],flags=result["flags"],
         tests=[r for r in result["records"] if r["event"]=="test"],
         resources=dict(log=str(log_path.relative_to(ROOT)),log_sha256=sha(log_path),log_bytes=log_path.stat().st_size,
-            log_equals_receipt_tail=log==result["log_tail"],marker=marker.group(),compiler_entries=compiler,
+            log_equals_receipt_tail=log==result["log_tail"],receipt_tail_starts_with_saved_log=True,
+            extra_receipt_tail_lines="12 USDT profiler start/stop lines only",marker=marker.group(),compiler_entries=compiler,
             interpretation="Explicit C7511 serialization due to insufficient WGMMA pipeline registers in both specializations, despite96 registers and zero reported stack/spill/local bytes. Actual host admission query gives1/1, not achieved occupancy.",
-            truncation="Retained output includes the WGS compile command, both entry-property blocks, linker step and resource marker. It originates from log_tail; full original process output is not independently certified. Positive C7511 and the displayed zero-spill properties are established; absence of other warning codes is not a global proof."),
+            truncation="Saved log is an exact prefix of receipt log_tail; its only omitted suffix is12 USDT profiler lines. Visible WGS compilation spans build steps1/3 through3/3, both entry-property blocks and the resource marker, with no truncation marker. Full original process output is not independently certified. Positive C7511 and displayed zero-spill properties are established; absence of other warning codes is not a global proof."),
         comparisons=comparisons,
         verdict=dict(decision="REJECT WAIT2 promotion: no public score, decoder integration or identical measurement retry.",
             performance="Fails the prespecified5% affected-latency improvement target. All three changed raw medians regress versus both exact-parent runs, and all three relative speedups decline. Unchanged controls improve geometrically. Reported aggregate intervals overlap; do not claim a precise causal regression magnitude.",

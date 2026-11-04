@@ -843,3 +843,31 @@ Known donor source pins remainunchanged. Broader bounded public search inspected
 Only8MIT source/licensefiles362773B retained, withscope/caveats documented.
 No framework execution, Modalallocation, creditjournalchange or unrelatedcleanup.
 Owned publicinspectionbrowser tabwasclosed. Disk34GiBfree. Goalactive/unachieved.
+
+10:05 UTC: root submitted one private REG112 check,42527fa2c64d4b42, now received.
+Exact source31127a37ce35616b555e2ea5a5df673719aa03c422f9edc1a2be75320b3b9f65
+is frozen in experiments/candidates/muse_moe_w4a16. Source is based on rejected
+WAIT2, with only full128 producer WG, dec32/inc112 disjoint roles,640-thread join,
+strict initial96/local0/positive-occupancy guards and a unique namespace. It
+attempts to address the observed C7511 mechanism; it has no measured gain yet.
+All math, traffic, packing, rings, finalizer and wgs_seg remain unchanged.
+
+Independent exact-source review approved one private check after root verification.
+Root reran tools/test_wgs_reg112_cpu.py (ed17310e…) successfully:16 unchanged
+non-WGS builds,640 distinct actual dispatch paths repeated6 times,3969 actual
+host predicate combinations, and the inherited1,462,272-call native MMA trace.
+Repeated job labels do not add routing coverage. CUDA allocations, hint retention,
+numerics and speed remain unproved. Local PTYs14313/91304 both ended with exit0.
+Only42527fa2c64d4b42 is live; root owns polling. No duplicate submission or Modal
+allocation. Retained C7511, dropped hints, visible spills, failed resource gates
+or absent useful speed improvement reject this fixed32/112 attempt without a
+quota sweep. Compare against247888 public/private and failedWAIT2 separately.
+
+The10:00 UTC board snapshot is20261104T100006Z-register-plan-refresh.json:
+overall/decoder387 at unchanged2.1812, leader2.5401; MoE290 at unchanged2.3737.
+Public active sources remain97af/247888. Root and critic result audits agree;
+parent serialization stays UNKNOWN because its official compiler logs are empty.
+The canonical WAIT2 analyzer now preserves direct harness/raw timings separately
+from inverse relative speed, and checks the saved compile log against the receipt.
+Current turn made concrete source/verification/submission progress. Goal remains
+active and unachieved; this is not a blocked turn or a claim of a rank improvement.
