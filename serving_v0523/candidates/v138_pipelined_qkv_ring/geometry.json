@@ -1,0 +1,73 @@
+{
+  "unit": "MiB = 2^20 bytes, per rank per eligible QKV layer, excluding shared inputs, parameters, allocator, and vendor workspace",
+  "cases": [
+    {
+      "local_rows": 128,
+      "hidden": 8192,
+      "qkv_channels": 2304,
+      "tp": 8,
+      "gate": false,
+      "activation_gather_mib": 16.0,
+      "two_receive_buffers_mib": 4.0,
+      "output_mib": 4.5,
+      "one_shard_result_mib": 0.5625,
+      "baseline_named_allocations_mib": 20.5,
+      "candidate_named_allocations_mib": 9.0625,
+      "ring_wire_send_mib": 14.0,
+      "dense_flops": 38654705664,
+      "gemm_calls": 8,
+      "extra_logical_weight_reads_mib": 252.0
+    },
+    {
+      "local_rows": 512,
+      "hidden": 8192,
+      "qkv_channels": 2304,
+      "tp": 8,
+      "gate": false,
+      "activation_gather_mib": 64.0,
+      "two_receive_buffers_mib": 16.0,
+      "output_mib": 18.0,
+      "one_shard_result_mib": 2.25,
+      "baseline_named_allocations_mib": 82.0,
+      "candidate_named_allocations_mib": 36.25,
+      "ring_wire_send_mib": 56.0,
+      "dense_flops": 154618822656,
+      "gemm_calls": 8,
+      "extra_logical_weight_reads_mib": 252.0
+    },
+    {
+      "local_rows": 1024,
+      "hidden": 8192,
+      "qkv_channels": 2304,
+      "tp": 8,
+      "gate": true,
+      "activation_gather_mib": 128.0,
+      "two_receive_buffers_mib": 32.0,
+      "output_mib": 36.0,
+      "one_shard_result_mib": 4.5,
+      "baseline_named_allocations_mib": 164.0,
+      "candidate_named_allocations_mib": 72.5,
+      "ring_wire_send_mib": 112.0,
+      "dense_flops": 309237645312,
+      "gemm_calls": 8,
+      "extra_logical_weight_reads_mib": 252.0
+    },
+    {
+      "local_rows": 2048,
+      "hidden": 8192,
+      "qkv_channels": 2304,
+      "tp": 8,
+      "gate": true,
+      "activation_gather_mib": 256.0,
+      "two_receive_buffers_mib": 64.0,
+      "output_mib": 72.0,
+      "one_shard_result_mib": 9.0,
+      "baseline_named_allocations_mib": 328.0,
+      "candidate_named_allocations_mib": 145.0,
+      "ring_wire_send_mib": 224.0,
+      "dense_flops": 618475290624,
+      "gemm_calls": 8,
+      "extra_logical_weight_reads_mib": 252.0
+    }
+  ]
+}

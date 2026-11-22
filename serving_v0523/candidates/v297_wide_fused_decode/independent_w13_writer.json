@@ -1,0 +1,68 @@
+{
+  "mode": "combined",
+  "inputs": {
+    "decode_gate_up.cuh": "81f474d60ffbd939b3fa77c01b48333a901b0b23adb3ae2e6550f88defbc0e9b",
+    "independent_epilogue.py": "7a809233a7b6082f01dcbd1d00b2950fcb03c0d86874fe6349d76cf23feff5ee",
+    "independent_scatter.py": "5062bc465a9d46881bcc3efe7da83ba02212acf627df48b282f9ba69deafe524",
+    "independent_w13_writer.cpp": "16026f276c297c4928d57388c1d5e4222dd80b103294a5b868636e26a73093d0"
+  },
+  "cases": [
+    {
+      "tile_rows": 8,
+      "block_channels": 256,
+      "warp_channels": 32,
+      "shared_swizzle": 1,
+      "checked_outputs": 491520,
+      "checked_guard_words": 2089920,
+      "gate_patterns": 32768,
+      "up_patterns": 32768,
+      "shifted_up_channel_errors": 203571
+    },
+    {
+      "tile_rows": 16,
+      "block_channels": 256,
+      "warp_channels": 32,
+      "shared_swizzle": 6,
+      "checked_outputs": 983040,
+      "checked_guard_words": 2581440,
+      "gate_patterns": 65536,
+      "up_patterns": 65536,
+      "shifted_up_channel_errors": 407341
+    },
+    {
+      "tile_rows": 24,
+      "block_channels": 256,
+      "warp_channels": 32,
+      "shared_swizzle": 3,
+      "checked_outputs": 1474560,
+      "checked_guard_words": 3072960,
+      "gate_patterns": 65536,
+      "up_patterns": 65536,
+      "shifted_up_channel_errors": 611003
+    },
+    {
+      "tile_rows": 16,
+      "block_channels": 512,
+      "warp_channels": 64,
+      "shared_swizzle": 7,
+      "checked_outputs": 983040,
+      "checked_guard_words": 2581440,
+      "gate_patterns": 65536,
+      "up_patterns": 65536,
+      "shifted_up_channel_errors": 481921
+    },
+    {
+      "tile_rows": 24,
+      "block_channels": 512,
+      "warp_channels": 64,
+      "shared_swizzle": 1,
+      "checked_outputs": 1474560,
+      "checked_guard_words": 3072960,
+      "gate_patterns": 65536,
+      "up_patterns": 65536,
+      "shifted_up_channel_errors": 722822
+    }
+  ],
+  "physical_gpu": false,
+  "scope": "Production compact CUDA writer compiled as host C++. Native WGMMA register labels pass through the pinned swizzled shared-memory mapping. CUDA expf and round-to-nearest BF16 arithmetic are modeled on the host."
+}

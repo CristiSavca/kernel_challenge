@@ -1,0 +1,7 @@
+# Shared verification plan lifetime
+
+The frozen V248 patch passed 519 layer dispatches on a CPU harness that ran the native eager metadata initializer, graph bucket capture/bind/update methods, attention backend and paged-verification launcher. The launcher selected a shared plan on 375 calls, selected its original in-kernel planning on 135, and selected native FA3 on nine. Instrumented CUDA launch boundaries checked the per-request tile offsets, widths, owners and pointer identity. [Regression suite](independent_graph.py) · [Frozen receipt](independent_graph.json)
+
+Each /1, /3, /15 and /32 graph saw two different length vectors at the same addresses. One request allocated no plan. The two full/sliding plan buffers occupied 856, 1,048 and 1,320 bytes for the other three buckets. Independent metadata objects retained distinct buffers. A same-size ragged capture variant reused the original graph addresses and refreshed them from its padded query offsets. Changing the head count and sliding window kept the older captured plans current while excluding them from the new layer dispatch. Replacing a length or query-offset tensor selected the original kernel's planning path. [Per-bucket evidence](independent_graph.json)
+
+An injected error on the second window exercised a partial build. A subsequent successful update refilled the device addresses retained from the original capture. The native CUDA execution, GPU timing and scheduling overlap remain hardware measurements. [Failure and recovery checks](independent_graph.json)

@@ -1,0 +1,125 @@
+{
+  "status": "no production patch",
+  "source": {
+    "V235": "24042d5c31aa592580bb675c1c221cc3150b6e5da753ec90b1e9b1fc1dc60453",
+    "V213": "6223b3cf65a3ac64ef46c45adb574621a8568e358b02c21d0815aa869f6c233f",
+    "identical": {
+      "grouped_decode_mma_pair.cuh": "530d49e8fbcc1a4127eae767e1ef5e4dc3f8d8711a89c1a384b422b8667a2f7b",
+      "live_decode_reduce.cuh": "50677213e69497591b437d72fa485b4bbab77c5885b729cb7fdf66e4d2b35e27",
+      "decode_gate_up.cuh": "a0e57cb3996dca3e25d15a362940849b09e9e01acb50ad33a28f54b541ba7128",
+      "decode_gate_up_launch.cuh": "49ee3e8badd9742d3dd030fb4a0a7d50caa25395d2d3ae630ab2e46e6c8c02ac",
+      "decode_mma_pair.py": "86bd95c908e4a4879150db0e43dd5a157cda5b92219fa126999a8f84ff746c4f",
+      "decode_gate_up.py": "791bf1d8217f262d7e7b9a82b1236858bf54a868cc5cc9886a4aa7552365c7d0",
+      "live_decode_reduce.py": "f3648ee26427a206bcbb0f729f9111dc5fdf21697ac049f45f88ee0c03af142d",
+      "humming_grouped_decode_outputs": "9b80aaf6ca32cb163a303c734a0ba35c32fcafeb6df21745667d15e22c8a04e7",
+      "humming_decode_eligible": "19bef89b7b7bcf3300e3fbd49da46947e4ed6fd612fbf33f6c958bd8726e36e7",
+      "_plan_grouped_decode": "f58786ab6aebce74284cecd61ce015133d3d7dadcc00df9712b4a15bb2b91a19",
+      "_gather_grouped_decode": "083874707eb3dec3ddd7f016fcb2b43d190de059a2c1b6ae0d1040d831e89ded"
+    }
+  },
+  "model": "62 independent layers, 256 experts, EP8, 8 distinct routes/token. Full-K BF16 inputs, group-16 E4M3 scaling; previous-step prediction, byte allocation and execution overhead idealized.",
+  "cache_capacity_MiB": 50,
+  "resident_cap_in_whole_expert_equivalents": 1.8518518518518519,
+  "minimum_node_first_touch_MiB": 13392,
+  "node_capacity_MiB": 400,
+  "worst_routing_node_first_touch_save_fraction": 0.02986857825567503,
+  "exhaustive_tiny_epoch_cases": 1024,
+  "physical_histograms": [
+    {
+      "rows": 32,
+      "actual_active_experts": 16,
+      "distinct_weight_MiB_one_layer": 432,
+      "tiled_requested_MiB_one_layer": 432,
+      "if_repeated_across_layers_first_touch_GiB": 26.15625,
+      "carryover_ratio_if_repeated": 0.0018667861409796893,
+      "same_layer_repeats_MiB": 0,
+      "observed_different_kernel_bandwidth_percent": 74.43,
+      "observed_kernel": "void okc::moe_fused<(bool)1>(okc::Params)"
+    },
+    {
+      "rows": 256,
+      "actual_active_experts": 26,
+      "distinct_weight_MiB_one_layer": 702,
+      "tiled_requested_MiB_one_layer": 891,
+      "if_repeated_across_layers_first_touch_GiB": 42.50390625,
+      "carryover_ratio_if_repeated": 0.0011487914713721166,
+      "same_layer_repeats_MiB": 189,
+      "observed_different_kernel_bandwidth_percent": 75.06,
+      "observed_kernel": "void okc::moe_fused<(bool)1>(okc::Params)"
+    }
+  ],
+  "physical_input_sha256": "9a86c7d0273fcd93bb71d92aa0afa90edb5ecfba82d52fc1157005c6e6478a5e",
+  "V64_scored_rungs": [
+    {
+      "concurrency": 1,
+      "tok_s_per_gpu": 6979.2,
+      "tok_s_per_user_p50": 203.2,
+      "acceptance": 4,
+      "ttft_first_p90_s": 5.419,
+      "rows": 8,
+      "expected_distinct_experts_local": 7.177603848249419,
+      "expected_first_touch_MiB_per_layer_rank": 193.7953039027343,
+      "expected_first_touch_GiB_per_epoch_rank": 11.733700040985866,
+      "optimistic_ratio_of_expected_first_touch_bytes_saved": 0.004161357869166857,
+      "proportional_byte_work_ratio": 1.0041787471314254,
+      "proxy_verify_period_ms": 19.68503937007874,
+      "time_fraction_on_proxy_at_3_6TBs_rank": 0.0007398286222222222,
+      "serial_sum_of_eight_rank_fractions_at_3_6TBs": 0.005918628977777778
+    },
+    {
+      "concurrency": 4,
+      "tok_s_per_gpu": 12531.4,
+      "tok_s_per_user_p50": 112.4,
+      "acceptance": 4,
+      "ttft_first_p90_s": 12.952,
+      "rows": 32,
+      "expected_distinct_experts_local": 20.41423074379787,
+      "expected_first_touch_MiB_per_layer_rank": 551.1842300825425,
+      "expected_first_touch_GiB_per_epoch_rank": 33.372482680778944,
+      "optimistic_ratio_of_expected_first_touch_bytes_saved": 0.0014631253379336628,
+      "proportional_byte_work_ratio": 1.0014652692104424,
+      "proxy_verify_period_ms": 35.587188612099645,
+      "time_fraction_on_proxy_at_3_6TBs_rank": 0.0004092359111111111,
+      "serial_sum_of_eight_rank_fractions_at_3_6TBs": 0.003273887288888889
+    },
+    {
+      "concurrency": 16,
+      "tok_s_per_gpu": 17347.5,
+      "tok_s_per_user_p50": 50.1,
+      "acceptance": 4,
+      "ttft_first_p90_s": 50.063,
+      "rows": 128,
+      "expected_distinct_experts_local": 31.450143245733827,
+      "expected_first_touch_MiB_per_layer_rank": 849.1538676348133,
+      "expected_first_touch_GiB_per_epoch_rank": 51.413613079451586,
+      "optimistic_ratio_of_expected_first_touch_bytes_saved": 0.0009497119940694282,
+      "proportional_byte_work_ratio": 1.0009506148043508,
+      "proxy_verify_period_ms": 79.84031936127744,
+      "time_fraction_on_proxy_at_3_6TBs_rank": 0.00018240853333333337,
+      "serial_sum_of_eight_rank_fractions_at_3_6TBs": 0.001459268266666667
+    },
+    {
+      "concurrency": 32,
+      "tok_s_per_gpu": 20547.4,
+      "tok_s_per_user_p50": 43.3,
+      "acceptance": 4.2,
+      "ttft_first_p90_s": 110,
+      "rows": 256,
+      "expected_distinct_experts_local": 31.99055179843087,
+      "expected_first_touch_MiB_per_layer_rank": 863.7448985576335,
+      "expected_first_touch_GiB_per_epoch_rank": 52.297054404856716,
+      "optimistic_ratio_of_expected_first_touch_bytes_saved": 0.0009336687420671523,
+      "proportional_byte_work_ratio": 1.0009345412940616,
+      "proxy_verify_period_ms": 96.99769053117784,
+      "time_fraction_on_proxy_at_3_6TBs_rank": 0.00015014332275132275,
+      "serial_sum_of_eight_rank_fractions_at_3_6TBs": 0.001201146582010582
+    }
+  ],
+  "V68_private_16_tok_s_per_gpu": 17512.9,
+  "transfer_us_per_rank_if_fully_critical": {
+    "2.4": 21.845333333333333,
+    "3.6": 14.563555555555554,
+    "4.8": 10.922666666666666
+  },
+  "limitations": "First-touch bytes only; repeated row tiles in the same step, expert-group scheduling, indirect latency, caches, per-layer overlaps and complete serving times are separate. Actual H200 histograms are from a different standalone kernel; scaled-up 62-layer values are illustrations, not measured service traffic."
+}

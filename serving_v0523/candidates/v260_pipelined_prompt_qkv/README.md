@@ -1,0 +1,23 @@
+# V260 overlaps prompt QKV projection with the second half of a tensor-parallel gather
+
+For a 16,384-token prompt the V256 sequence-parallel attention path gathers 224 MiB per GPU before starting its dense QKV and output-gate projection. V260 gathers each four-rank half first, then each GPU runs the projection for those rows while receiving the other half from its partner. A single NCCL communicator carries both stages. Both products reduce across all 8,192 channels. The result has all 2,304 output channels per rank in the original token order. This path targets first-token latency, a substantial part of the 32-user serving workload. [Implementation](delta.diff) · [Parent](../v256_window_backed_mixed_serving/README.md) · [Cold-wave measurement](../v251_hicache_residency/trace.json)
+
+| Per GPU, per layer, at 16,384 tokens and TP8 | V256 | V260 |
+| --- | ---: | ---: |
+| Logical peer send volume | 224 MiB | 96 MiB within the half, 128 MiB to the partner |
+| Dense products | 1 × 16,384 rows | 2 × 8,192 rows |
+| Dense floating-point operations | 618.48 billion | 618.48 billion |
+| Gather buffers and result in the ordinary dense path | 328 MiB | 328 MiB |
+
+The side stream can overlap at most the faster of the partner transfer and the first GEMM, measured in elapsed time. On the archived V41 schedule, using 450 GB/s directional throughput and 989 TFLOP/s dense BF16, perfect overlap at those rates would remove **1.39 of 164.83 seconds at 16 users** and **2.78 of 304.43 seconds at 32**. At 225 GB/s and 400 TFLOP/s those estimates rise to 2.77 and 5.57 seconds. These are sensitivities to assumed rates. A second launch, an additional logical read of the 36 MiB weight, or competition between GEMM and communication could erase a gain. V138 used eight smaller GEMMs and seven ring transfers. V260 uses larger GEMMs and more temporary memory than V138. [Trace replay, formulas and scenarios](work.json) · [Archived ring design](../v138_pipelined_qkv_ring/README.md) · [H200 specifications](https://www.nvidia.com/en-us/data-center/h200/)
+
+The target model enables the operation after a group-wide compatibility vote and warms the peer connections before capture. Each call joins the transfer stream before consuming the remote rows or releasing the buffers. The dispatch follows the model's loaded weights, tensor geometry, precision, topology and execution mode. It uses the active request's tensor rows and every original model weight. The specialized projection backend may materialize a further 36 MiB temporary for a full chunk. CUDA graph residency, peak process memory and the kernel selected for each GEMM require physical testing. [Source](delta.diff) · [Serving rules](../../RULES.md)
+
+## Verification
+
+- The registered operation ran through the normal column-parallel entry on four and eight Gloo ranks. Across 108 rank cases, 104,387,776 BF16 outputs matched. Tests exercised 48 eligible rank cases, 60 one-rank startup vetoes, native fallbacks, padded tails, strided input, both projection dispatches and 12 injected GEMM failures with the transfer still outstanding. The transport was real Gloo. The CUDA stream dependencies were modeled. [Exchange replay](exchange.json) · [Driver](check_exchange.py)
+- At full checkpoint width on CPU, the production dense projector matched PyTorch linear bit-for-bit across 41,319,936 BF16 outputs, including one complete 16,384 × 8,192 prompt projected to 2,304 channels. Alternative CUDA tiling can change rounding. H200 token agreement is open. [Full-width comparison](full_width.json)
+- An independent replay of the pinned PyNCCL calls, stream resolver and breakable-graph tracking matched 324 directional peer transfers across TP4, TP6, TP8 and TP10. It traced ordinary and mixed prompt dispatch and confirmed that pure decode and target verification bypass this SP operation. The device NCCL implementation remains untested. [Transport and capture review](independent_transport.md) · [ABI replay](independent_transport.json)
+- The official export is **408,225 bytes**, SHA-256 `d1c5afd143cdce14640a52598a9bdf68ead7f8c1c49f4d093a3ebf9d8ff37638`. Both the full patch and the V256 delta apply and reverse cleanly. All source paths, modes, extensions, sizes and eight inherited launch flags passed the published static restrictions. The lexical check found no new unbound global names. [Official export](patch.diff) · [Rule verification](validation.json) · [Python globals](global_names.json)
+
+V64 remains the measured four-load incumbent at **1.4119×**. V260 needs a private H200 result for throughput, time to first token, peak memory and generated-token agreement. [Official score](../../runs/abd217baf0ed49fd.json)

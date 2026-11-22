@@ -1,0 +1,285 @@
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 353aec1..dd2fa00 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -87,6 +87,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Shard the unquantized DFLASH target-context projection across the draft TP group.",
+     ] = False
++    speculative_dflash_sp_prefill_context: A[
++        bool,
++        "Project long DFLASH prefill contexts on their owning sequence-parallel ranks.",
++    ] = False
+     speculative_dflash_compact_context: A[
+         bool,
+         "Project committed tree features directly into draft-context order on supported GPUs.",
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index be516cf..276be4b 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -1,7 +1,12 @@
+ """Output-sharded BF16/FP16 linear projections for tensor-parallel DFLASH."""
+ 
++from contextlib import contextmanager
++from contextvars import ContextVar
++
++import torch
+ from torch import nn
+ from torch.nn import functional as F
++from torch.nn.modules import module as module_hooks
+ 
+ from sglang.srt.model_loader.weight_utils import sharded_weight_loader
+ from sglang.srt.utils import set_weight_attrs
+@@ -30,3 +35,52 @@ class DFlashGatheredLinear(nn.Linear):
+         if projected.shape[0] == 0:
+             return inputs.new_empty((0, self.full_output_size))
+         return self.tp_group.all_gather(projected, -1)
++
++
++_prefill_fc = ContextVar("dflash_sp_prefill_fc", default=None)
++
++
++@contextmanager
++def dflash_sp_prefill_fc_scope(fc):
++    # Graph initialization and other target forwards use their usual tap format.
++    token = _prefill_fc.set(fc)
++    try:
++        yield
++    finally:
++        _prefill_fc.reset(token)
++
++
++def project_dflash_prefill_shard(inputs, num_tokens, group):
++    """Project owned token rows before the SP exit gather when it saves traffic."""
++    fc = _prefill_fc.get()
++    if fc is None or num_tokens <= fc.full_output_size:
++        return None
++    # Module hooks may be installed after warmup, independently on each TP
++    # rank. Coordinate on the host before choosing the next device collective.
++    compatible = (
++        fc.tp_group is group
++        and type(fc) is DFlashGatheredLinear
++        and "forward" not in vars(fc)
++        and not fc._forward_hooks
++        and not fc._forward_pre_hooks
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and getattr(fc, "_compiled_call_impl", None) is None
++        and not torch.are_deterministic_algorithms_enabled()
++        and inputs.ndim == 2
++        and inputs.shape[0] * group.world_size >= num_tokens
++        and inputs.shape[1] == fc.in_features
++        and inputs.device == fc.weight.device
++        and inputs.dtype == fc.weight.dtype
++    )
++    ready = torch.tensor(int(compatible), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(
++        ready, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++    )
++    if not ready.item():
++        return None
++    # Each rank needs all output channels for its own token rows. The gathered
++    # weight is temporary, and its dimensions do not depend on the prompt.
++    weight = fc.weight.new_empty((fc.full_output_size, fc.in_features))
++    group.all_gather_into_tensor(weight, fc.weight)
++    return F.linear(inputs, weight)
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index d5f80c3..1c13b26 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -295,6 +295,9 @@ class LogitsProcessorOutput:
+     # Scheduler-local output copied alongside the ordinary generation result.
+     auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None
+ 
++    # For the DFLASH worker consuming the native prefill capture on this rank.
++    dflash_prefill_fc_done: bool = False
++
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+             return
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..5d324f0 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2314,6 +2314,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # Bounded SWA replay returns the late layers' tail rows plus the
+             # extend indices they came from; the DSpark injector needs both.
+             hidden_states_token_indices=output.hidden_states_token_indices,
++            dflash_prefill_fc_done=output.dflash_prefill_fc_done,
+         )
+ 
+     def _finalize_execute_output(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 93ac436..c53d777 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -51,6 +51,7 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.layers.attention.trtllm_mha_backend import TRTLLMHAAttnBackend
+ from sglang.srt.layers.aux_hidden_states import pack_aux_hidden_states
++from sglang.srt.layers.dflash_context_projection import project_dflash_prefill_shard
+ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+@@ -1466,6 +1467,7 @@ class MuseSparkTextForCausalLM(nn.Module):
+             input_ids, positions, forward_batch, input_embeds=input_embeds
+         )
+         aux_hidden_states = None
++        prefill_fc_done = False
+         if self.capture_aux_hidden_states:
+             hidden_states, aux_hidden_states = hidden_states
+         if aux_hidden_states is not None and layernorm_sp.runs_sp(
+@@ -1481,6 +1483,16 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+             aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
++            if (
++                forward_batch.capture_hidden_mode.is_full()
++                and not self.logits_processor.keep_last_hidden_states
++            ):
++                projected = project_dflash_prefill_shard(
++                    aux_hidden_states, num_tokens, get_parallel().tp_group
++                )
++                if projected is not None:
++                    aux_hidden_states = projected
++                    prefill_fc_done = True
+             aux_hidden_states = layernorm_sp.sp_exit_gather(
+                 aux_hidden_states, num_tokens=num_tokens
+             )
+@@ -1497,9 +1509,12 @@ class MuseSparkTextForCausalLM(nn.Module):
+                 hidden_states, num_tokens=input_embeds.shape[0]
+             )
+             get_forward().set("sp_active", False)
+-        return self.logits_processor(
++        output = self.logits_processor(
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
++        if prefill_fc_done:
++            output.dflash_prefill_fc_done = True
++        return output
+ 
+     def set_dflash_layers_to_capture(self, layer_ids: List[int]) -> None:
+         """Capture the residual stream after each listed decoder layer.
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 1548f67..ad3e1c7 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from contextlib import nullcontext
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -25,6 +26,10 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ )
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
++from sglang.srt.layers.dflash_context_projection import (
++    DFlashGatheredLinear,
++    dflash_sp_prefill_fc_scope,
++)
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+     LogitsProcessor,
+@@ -636,6 +641,43 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
+         group = get_parallel().tp_group
++        self._sp_prefill_fc = None
++        if (
++            get_spec().speculative_dflash_sp_prefill_context
++            and is_cuda()
++            and group.world_size > 1
++            and get_parallel().pp_size == 1
++            and get_parallel().attn_cp_size == 1
++            and not get_parallel().attn_dp_enabled
++            and not get_exec().deterministic.enable_deterministic_inference
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and torch.distributed.get_backend(group.cpu_group) == "gloo"
++        ):
++            from sglang.srt.models.dflash import DFlashDraftModel
++
++            fc = getattr(self.draft_model, "fc", None)
++            compatible = (
++                getattr(type(self.draft_model), "project_target_hidden", None)
++                is DFlashDraftModel.project_target_hidden
++                and "project_target_hidden" not in vars(self.draft_model)
++                and type(fc) is DFlashGatheredLinear
++                and fc.tp_group is group
++                and fc.weight.is_cuda
++                and fc.weight.dtype == torch.bfloat16
++                and fc.weight.is_contiguous()
++                and fc.full_output_size % group.world_size == 0
++                and fc.weight.shape
++                == (fc.full_output_size // group.world_size, fc.in_features)
++                and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++            )
++            # A custom model or placement on any member keeps ordinary dispatch
++            # throughout the TP group.
++            ready = torch.tensor(int(compatible), dtype=torch.int32, device="cpu")
++            torch.distributed.all_reduce(
++                ready, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++            )
++            if ready.item():
++                self._sp_prefill_fc = fc
+         self._reduced_argmax_group = (
+             group
+             if get_spec().speculative_dflash_reduced_target_argmax
+@@ -1903,6 +1945,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
+         tree_order: Optional[torch.Tensor] = None,
++        prefill_fc_done: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -2002,7 +2045,9 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = None
++            ctx_hidden = (
++                self.draft_model.hidden_norm(target_hidden) if prefill_fc_done else None
++            )
+             if tree_order is not None:
+                 compact = getattr(self.draft_model, "project_committed_tree", None)
+                 if (
+@@ -2439,12 +2484,22 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if batch.forward_mode.is_extend() or batch.is_extend_in_batch:
+             self._wait_for_fused_hicache_load(batch)
+             # Target prefill: capture DFlash aux hidden states for prompt tokens.
+-            batch_output = self.target_worker.forward_batch_generation(
+-                batch,
+-                pp_proxy_tensors=pp_proxy_tensors,
+-                capture_hidden_mode=CaptureHiddenMode.FULL,
+-                return_kv_loc_plan=True,
+-            )
++            scope = nullcontext()
++            if (
++                self._sp_prefill_fc is not None
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.return_logprob
++                and not batch.return_hidden_states_mode.need_capture()
++                and not torch.cuda.is_current_stream_capturing()
++            ):
++                scope = dflash_sp_prefill_fc_scope(self._sp_prefill_fc)
++            with scope:
++                batch_output = self.target_worker.forward_batch_generation(
++                    batch,
++                    pp_proxy_tensors=pp_proxy_tensors,
++                    capture_hidden_mode=CaptureHiddenMode.FULL,
++                    return_kv_loc_plan=True,
++                )
+             kv_loc_plan, batch_output.kv_loc_plan = batch_output.kv_loc_plan, None
+ 
+             logits_output, next_token_ids = (
+@@ -2504,6 +2559,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc=self._draft_write_ids(kv_loc_plan),
+                 positions=positions,
+                 extend_lens=ctx_lens,
++                prefill_fc_done=logits_output.dflash_prefill_fc_done,
+             )
+ 
+             # Avoid copying large hidden-state buffers to CPU in overlap scheduling.

@@ -1,0 +1,52 @@
+{
+  "iteration": "V36 MoE A/B sweep",
+  "decision": "no source change; nothing scored; V35 remains the public decoder",
+  "method": "tools/moe_ab_v36.py appends a paired prepare-time A/B to exact V35 on synthetic layer-like routing (read-flush, graph replay). Private checks only.",
+  "jobs": {
+    "e1_build_crossing": "7fbc0f2541ce45e3",
+    "e2_e3_failed_harness_capture": [
+      "9539e9131e4746ec",
+      "3babbc1812be499f"
+    ],
+    "e2_wgs_knobs": "aa2e0b493360435b",
+    "e3_small_build_knobs": "3f3291d2d3d34a34"
+  },
+  "results_ratio_vs_prod": {
+    "build_crossing": "no cross build beats prod beyond noise at T=1,8,16,32; mid at T=32 x1.017 was measured on the pre-calibration routing; T=128/256 not measured because B4 is limited to T<=32",
+    "T128": {
+      "u80": 1.014,
+      "u240": 0.9989,
+      "fci3": 0.9972,
+      "fci6": 0.9852,
+      "gath16": 0.9398,
+      "dfin3": 0.9614,
+      "dfin0": 1.0017
+    },
+    "T256": {
+      "u80": 1.0069,
+      "u240": 0.9951,
+      "fci3": 0.9973,
+      "fci6": 0.9913,
+      "gath16": 0.9465,
+      "dfin3": 0.9756,
+      "dfin0": 1.0003
+    },
+    "T16_mid": {
+      "ns4": 0.9831,
+      "dynk8": 1.0021,
+      "fc60": 1.0049,
+      "wsnr8": 0.9961
+    },
+    "T8_tiny2": {
+      "ns4": 0.9642,
+      "dynk8": 1.0048
+    },
+    "T1_tiny": {
+      "ns4": 0.9403
+    }
+  },
+  "capture_failures": "nx4 and nsf4 failed graph capture at every T tested; not measured.",
+  "fixed_gate": "about 1% across seeds; only u80 at T=128 reached it on the median, with one of three seeds below 1.0, and its aggregate value is about +0.16% of score, so it was not shipped.",
+  "interpretation": "Tested knobs sit at or near a local optimum. Byte estimates (not counters): T=128/256 about 4.1-4.4 TB/s against an observed ceiling of about 4.4; T<=16 about 2.6-3.5 TB/s. Rough practical remaining upside about 2% of score, estimate only.",
+  "noise_note": "Unchanged timed kernels drew 2.2351, 2.2362, 2.2529 and 2.2624 in these private checks, against the scored 2.2470. No harness file or no-op variant was or should be scored to capture a high draw."
+}

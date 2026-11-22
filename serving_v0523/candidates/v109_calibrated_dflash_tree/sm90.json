@@ -1,0 +1,660 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width2_k2_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 2,
+        "WIDTH": 2,
+        "K": 2,
+        "BLOCK": 4,
+        "ALT_PLANE": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "8353f2db243e7261bac4a7b0585801651174f6327ed6ea141aacfc29c18a7c17",
+      "cubin_bytes": 13304,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width2_k16_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 2,
+        "WIDTH": 2,
+        "K": 16,
+        "BLOCK": 32,
+        "ALT_PLANE": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "f93037c762b2a7985c357729fb41ca8e4e6d87e7535fcf57f32567529dfb0106",
+      "cubin_bytes": 15608,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 25 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width2_k32_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 2,
+        "WIDTH": 2,
+        "K": 32,
+        "BLOCK": 64,
+        "ALT_PLANE": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "39199aa4f3db1da4da3af6cc16e6130bc738af386261b9aa55872fdfca98e4ac",
+      "cubin_bytes": 18552,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 26 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_select_spine_tree",
+      "label": "width2",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i64",
+        "i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 2,
+        "BLOCK": 2,
+        "STATE_STRIDE": 5,
+        "ALT_PLANE": 64
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "309686d037d3b33205819283b0cfb76c96774e4e2e06aef4880941e9a33b6402",
+      "cubin_bytes": 16232,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 36 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_update_spine_margins",
+      "label": "width2",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 2,
+        "BLOCK": 2,
+        "STATE_STRIDE": 5,
+        "ALT_PLANE": 64
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "9fda21d4f7de20f66cb888fd5005fe207c614900aae77ea5e7b7a2e2f105509c",
+      "cubin_bytes": 22264,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 33 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width5_k2_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 5,
+        "WIDTH": 5,
+        "K": 2,
+        "BLOCK": 16,
+        "ALT_PLANE": 160
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "55fcb5d138e2404a58a205f4a5e6a792f500f03a88e0b48c1f60bad95fc216de",
+      "cubin_bytes": 26488,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width5_k16_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 5,
+        "WIDTH": 5,
+        "K": 16,
+        "BLOCK": 128,
+        "ALT_PLANE": 160
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "fa223d72bfb638a3b4662008e707cbea30ab43a3a519f8a4a3f530aa9f86e549",
+      "cubin_bytes": 27896,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width5_k32_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 5,
+        "WIDTH": 5,
+        "K": 32,
+        "BLOCK": 256,
+        "ALT_PLANE": 160
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "1d9826e6b0bcca6be7f975443fe090f742c601ef57c19431e2a71f4b4c104dd6",
+      "cubin_bytes": 29432,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_select_spine_tree",
+      "label": "width5",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i64",
+        "i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 5,
+        "BLOCK": 8,
+        "STATE_STRIDE": 8,
+        "ALT_PLANE": 160
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "ad4cd824589b75aebe1438b2c5cf56f28ae7284157c5a2f26c99fff43d1dc14f",
+      "cubin_bytes": 28776,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 36 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_update_spine_margins",
+      "label": "width5",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 5,
+        "BLOCK": 8,
+        "STATE_STRIDE": 8,
+        "ALT_PLANE": 160
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "766190cd6d94e44ebc86cddc00d8df81ae34e3d6e0cd85a332d89afe9d8917de",
+      "cubin_bytes": 51960,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 49 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width8_k2_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 8,
+        "WIDTH": 8,
+        "K": 2,
+        "BLOCK": 16,
+        "ALT_PLANE": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "90041dcd4c22a7391b2c4e7e7e3cbdb122731c4ac4b01d295f7aff9fe793aff9",
+      "cubin_bytes": 26488,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width8_k16_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 8,
+        "WIDTH": 8,
+        "K": 16,
+        "BLOCK": 128,
+        "ALT_PLANE": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "ffdfe3022eea4bbc9bc388b063fd48d4884062844825cfce0426a19ff9f80306",
+      "cubin_bytes": 27896,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width8_k32_all_temperatures",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 8,
+        "WIDTH": 8,
+        "K": 32,
+        "BLOCK": 256,
+        "ALT_PLANE": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "c49d3f8e27ad6e469a6b5ab9035a14b3e382643fd3b05004e88865d0c4cbb0bb",
+      "cubin_bytes": 31096,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 40 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_select_spine_tree",
+      "label": "width8",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i64",
+        "i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 8,
+        "BLOCK": 8,
+        "STATE_STRIDE": 11,
+        "ALT_PLANE": 256
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "006cb9b7c9db52580badeb1bb4b912338778ac6cc548aebc3d41f2fce20b8587",
+      "cubin_bytes": 34664,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 38 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_update_spine_margins",
+      "label": "width8",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i64"
+      ],
+      "constants": {
+        "WIDTH": 8,
+        "BLOCK": 8,
+        "STATE_STRIDE": 11,
+        "ALT_PLANE": 256
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "3445162d9ffacda2acfe17b530bf237c44c1884be4b0413ac1bfa71c31622898",
+      "cubin_bytes": 63608,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 42 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_select_spine_tree",
+      "label": "width5_disabled",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i64",
+        "i32"
+      ],
+      "constants": {
+        "WIDTH": 5,
+        "BLOCK": 8,
+        "STATE_STRIDE": 0,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "dfa4c8ca4f51adf98da0387ce37108e116e3239d9263e89f0e06b5d52a8aa57e",
+      "cubin_bytes": 25696,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 38 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_update_spine_margins",
+      "label": "width5_disabled",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "WIDTH": 5,
+        "BLOCK": 8,
+        "STATE_STRIDE": 0,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "103103a3818f8b2c5a36e72473e4c810207a819dd26ad96f4b6df31867072a4b",
+      "cubin_bytes": 30960,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 34 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width5_k2_all_temperatures_disabled",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 5,
+        "WIDTH": 5,
+        "K": 2,
+        "BLOCK": 16,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "b3d284640b91718d53dda430275605c98e7ce7d88df5a98576ff1557439a09b5",
+      "cubin_bytes": 25840,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_select_spine_tree",
+      "label": "width8_disabled",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i64",
+        "i32"
+      ],
+      "constants": {
+        "WIDTH": 8,
+        "BLOCK": 8,
+        "STATE_STRIDE": 0,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "bc865a842bf0a045f3998f33f661c15c47ea6d9c18a3e364c226ec1f5fea4423",
+      "cubin_bytes": 31968,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 38 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_update_spine_margins",
+      "label": "width8_disabled",
+      "types": [
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "WIDTH": 8,
+        "BLOCK": 8,
+        "STATE_STRIDE": 0,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "0896aadc5ff22937e8a952858970182723414d5bcc18c1afe770a595bd442cfe",
+      "cubin_bytes": 33776,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 41 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_tree.py",
+      "kernel": "_propose_tree",
+      "label": "width8_k2_all_temperatures_disabled",
+      "types": [
+        "*i64",
+        "*fp32",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64",
+        "*i64"
+      ],
+      "constants": {
+        "ANCHOR_STRIDE": 8,
+        "WIDTH": 8,
+        "K": 2,
+        "BLOCK": 16,
+        "ALT_PLANE": 0,
+        "Alternatives": null
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "ef114b8c6ed52b5952afadc8a4f0cbd943f7fc1167d52822e93a9a19b51b968a",
+      "cubin_sha256": "a5c926a61654a19456cd1081328829862c0bf6b6d0cb71dc3eff5e04e2c10603",
+      "cubin_bytes": 25840,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    }
+  ]
+}

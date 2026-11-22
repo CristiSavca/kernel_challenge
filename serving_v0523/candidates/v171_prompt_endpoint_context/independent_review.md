@@ -1,0 +1,5 @@
+# V171 worker and draft cache
+
+The native DFLASH worker produced the same normalized features, physical cache slots and positions in 351 CPU cases at logical TP2/4/8. Across 3,340,224 BF16 elements, the 27 eligible forwards applied FC and RMSNorm once per owner row before the gather. The 324 fallback forwards used the ordinary combined draft projection. All cases reached the normal context append with eager, full-graph or breakable-graph trimming; the fixture also forced the fused cache writer to fail and compared its sequential retry. [Executable fixture](independent_worker.py) · [Results and source hashes](independent_worker.json)
+
+The fixture invokes the production worker, registered Muse outer forward, native RMSNorm reference, output trimmer and draft cache-append method. It checks fresh lengths and bonus publication, prefix positions on two requests, materialized embeddings, rank padding, actual hook callbacks, capture, feature visibility, MIS/setwise scoring and changed RMSNorm dispatch. The CPU harness simulates owner transport and the final CUDA writer. H200 correctness and elapsed time require a device run.

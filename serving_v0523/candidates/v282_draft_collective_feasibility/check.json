@@ -1,0 +1,116 @@
+{
+  "assembled_tree": "f8c2c4055b660f859f7d075dede43293130d9c85",
+  "source_sha256": {
+    "models/dflash.py": "55f01a604f5dc1a578fa5e9a0ca4ee2325d220bd192a2a729cafdf8eb7dddef9",
+    "models/muse_spark.py": "4a90efa8b9394ff3454bb2c055e92c2abb0449f59f8d8d08d8612ea8a7b6dbd7",
+    "distributed/parallel_state.py": "bd356b92933a4e5eb08f22cf3eda8b788cc09efbbb2fb421745803847b8d2f5c",
+    "layers/linear.py": "2c1031cfaafe329a71ac5faf6215a8eb21206b79f8a5e7d821f21bb810c13afc",
+    "speculative/dflash_worker_v2.py": "83abc451fb3e753d4bf5f1320a0453190186d18af9b65b262ca8318cd63d2d47"
+  },
+  "post_filter_overlap": [
+    {
+      "users": 1,
+      "raw_native_H200_pooler_median_us": 25.32800007611513,
+      "eligible_post_filter_weight_MiB": 160,
+      "quarter_size_times_ten_proxy_us": 63.32000019028783,
+      "illustrative_full_overlap_multiplier": 1.0032270362752949
+    },
+    {
+      "users": 32,
+      "raw_native_H200_pooler_median_us": 34.84800085425377,
+      "eligible_post_filter_weight_MiB": 160,
+      "quarter_size_times_ten_proxy_us": 87.12000213563442,
+      "illustrative_full_overlap_multiplier": 1.000898973163196
+    }
+  ],
+  "dense_benchmark_receipt_sha256": "cbdc77d744ea9fcde14cc1e463180eb88ba86689f788b6fbe1a8ac9cfc3833cd",
+  "torch_version": "2.5.1",
+  "native_conv_source": "def _grouped_conv(hidden_states, delta, base, block_size, num_groups, group_size, taps):\n    blocks = hidden_states.unflatten(-1, (num_groups, group_size))\n    coefficients = base.view(1, taps, num_groups, group_size) + delta.unsqueeze(-1)\n    out = coefficients[:, 0] * blocks\n    position = torch.arange(hidden_states.shape[0], device=hidden_states.device)\n    if block_size & block_size - 1 == 0:\n        position = position & block_size - 1\n    else:\n        position = position % block_size\n    for tap in range(1, taps):\n        shifted = F.pad(blocks[:-tap], (0, 0, 0, 0, tap, 0))\n        shifted = torch.where((position >= tap).view(-1, 1, 1), shifted, 0)\n        out = out + coefficients[:, tap] * shifted\n    return out.flatten(-2)",
+  "cases": [
+    {
+      "users": 1,
+      "live_owners": 1,
+      "BF16_words_compared": 11520,
+      "ten_sublayers": true
+    },
+    {
+      "users": 4,
+      "live_owners": 4,
+      "BF16_words_compared": 46080,
+      "ten_sublayers": true
+    },
+    {
+      "users": 16,
+      "live_owners": 8,
+      "BF16_words_compared": 184320,
+      "ten_sublayers": true
+    },
+    {
+      "users": 32,
+      "live_owners": 8,
+      "BF16_words_compared": 368640,
+      "ten_sublayers": true
+    }
+  ],
+  "geometry": [
+    {
+      "users": 1,
+      "rows": 8,
+      "padded_collective_rows": 64,
+      "baseline_ring_sent_MiB_10_allreduces": 2.1875,
+      "owner_ring_sent_MiB_10_RS_11_AG": 18.375,
+      "nine_owned_ring_sent_MiB_10_RS_10_AG": 17.5,
+      "V123_extra_ring_sent_MiB_ten_coeff_gathers": 0.2734375,
+      "V279_filter_work_GFLOP_per_rank": 2.68435456,
+      "wholeblock_owner_max_rank_filter_work_GFLOP": 2.68435456,
+      "V123_filter_work_GFLOP_per_rank": 0.33554432,
+      "critical_fullbank_MiB": 320,
+      "V123_fullbank_MiB": 40
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "padded_collective_rows": 64,
+      "baseline_ring_sent_MiB_10_allreduces": 8.75,
+      "owner_ring_sent_MiB_10_RS_11_AG": 18.375,
+      "nine_owned_ring_sent_MiB_10_RS_10_AG": 17.5,
+      "V123_extra_ring_sent_MiB_ten_coeff_gathers": 1.09375,
+      "V279_filter_work_GFLOP_per_rank": 10.73741824,
+      "wholeblock_owner_max_rank_filter_work_GFLOP": 2.68435456,
+      "V123_filter_work_GFLOP_per_rank": 1.34217728,
+      "critical_fullbank_MiB": 320,
+      "V123_fullbank_MiB": 40
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "padded_collective_rows": 128,
+      "baseline_ring_sent_MiB_10_allreduces": 35.0,
+      "owner_ring_sent_MiB_10_RS_11_AG": 36.75,
+      "nine_owned_ring_sent_MiB_10_RS_10_AG": 35.0,
+      "V123_extra_ring_sent_MiB_ten_coeff_gathers": 4.375,
+      "V279_filter_work_GFLOP_per_rank": 42.94967296,
+      "wholeblock_owner_max_rank_filter_work_GFLOP": 5.36870912,
+      "V123_filter_work_GFLOP_per_rank": 5.36870912,
+      "critical_fullbank_MiB": 320,
+      "V123_fullbank_MiB": 40
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "padded_collective_rows": 256,
+      "baseline_ring_sent_MiB_10_allreduces": 70.0,
+      "owner_ring_sent_MiB_10_RS_11_AG": 73.5,
+      "nine_owned_ring_sent_MiB_10_RS_10_AG": 70.0,
+      "V123_extra_ring_sent_MiB_ten_coeff_gathers": 8.75,
+      "V279_filter_work_GFLOP_per_rank": 85.89934592,
+      "wholeblock_owner_max_rank_filter_work_GFLOP": 10.73741824,
+      "V123_filter_work_GFLOP_per_rank": 10.73741824,
+      "critical_fullbank_MiB": 320,
+      "V123_fullbank_MiB": 40
+    }
+  ],
+  "control_BF16_vs_FP32_tree_mismatches": 1002,
+  "control_values": 2048,
+  "scope": "CPU BF16 original convolution. Matches after identical rank-sum ordering. Synthetic rank projections, simulated collective transport; hardware reduction order, traffic and time unmeasured."
+}

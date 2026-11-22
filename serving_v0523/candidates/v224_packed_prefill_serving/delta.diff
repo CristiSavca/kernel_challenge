@@ -1,0 +1,521 @@
+diff --git a/python/sglang/kernels/ops/attention/batched_prompt_kv.py b/python/sglang/kernels/ops/attention/batched_prompt_kv.py
+new file mode 100644
+index 0000000..a8e713c
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/batched_prompt_kv.py
+@@ -0,0 +1,53 @@
++"""Build private guarded FP8 sequences from cached prefixes and contiguous new rows."""
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _pack_prompt_rows(
++    CacheK, CacheV, NewK, NewV, Slots, Lengths, CuQ, Starts, Used,
++    OutK, OutV, key_pitch, value_pitch, table_pitch,
++    ROW: tl.constexpr, BLOCK: tl.constexpr, GUARD: tl.constexpr,
++):
++    seq = tl.program_id(1)
++    q0 = tl.load(CuQ + seq)
++    queries = tl.load(CuQ + seq + 1) - q0
++    length = tl.load(Lengths + seq)
++    used = tl.load(Used + seq)
++    halo = used - queries
++    begin = tl.load(Starts + seq).to(tl.int64)
++    cols = tl.arange(0, ROW)
++    for tile in range(tl.program_id(0), tl.cdiv(used + GUARD, BLOCK), tl.num_programs(0)):
++        row = tile * BLOCK + tl.arange(0, BLOCK)
++        old = row < halo
++        new = (row >= halo) & (row < used)
++        slot = tl.load(Slots + seq.to(tl.int64) * table_pitch + (length - used + row), old, 0).to(tl.int64)
++        src = (q0 + row - halo).to(tl.int64)[:, None] * ROW + cols[None, :]
++        dst = (begin + row)[:, None] * ROW + cols[None, :]
++        key = tl.load(CacheK + slot[:, None] * key_pitch + cols[None, :], old[:, None], 0)
++        value = tl.load(CacheV + slot[:, None] * value_pitch + cols[None, :], old[:, None], 0)
++        key = key | tl.load(NewK + src, new[:, None], 0)
++        value = value | tl.load(NewV + src, new[:, None], 0)
++        valid = row[:, None] < used + GUARD
++        tl.store(OutK + dst, key, valid)
++        tl.store(OutV + dst, value, valid)
++
++
++def pack_prompt_rows(key_cache, value_cache, key, value, table, lengths, cuq, layout):
++    starts, used, capacity, max_used = layout
++    _, heads, dim = key.shape
++    width = heads * dim
++    block = min(32, 4096 // width)
++    count = table.shape[0]
++    blocks = min(triton.cdiv(max_used + 256, block), triton.cdiv(1024, count))
++    packed = key.new_empty((2, capacity, heads, dim))
++    out_k, out_v = packed.unbind()
++    _pack_prompt_rows[(blocks, count)](
++        key_cache.view(torch.uint8), value_cache.view(torch.uint8),
++        key.view(torch.uint8), value.view(torch.uint8), table, lengths, cuq,
++        starts, used, out_k.view(torch.uint8), out_v.view(torch.uint8),
++        key_cache.stride(0), value_cache.stride(0), table.stride(0),
++        ROW=width, BLOCK=block, GUARD=256,
++    )
++    return out_k, out_v
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index 9ad903b..7d7c868 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -98,3 +98,82 @@ def complete_direct_prompt_kv(metadata, packed, key_cache, value_cache, table, l
+             metadata._direct_prompt_lengths = cached
+         lengths = cached[2]
+     return key.unsqueeze(0), value.unsqueeze(0), lengths
++
++
++def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
++    """Check ordinary ragged EXTEND geometry before converting the writer's operands."""
++    metadata = backend.forward_metadata
++    count = batch.batch_size
++    if (
++        count < 2 or batch.forward_mode != ForwardMode.EXTEND or batch.dcp_kv_mask is not None
++        or metadata is backend.full_cg_prefill_metadata or metadata.image_token_ranges is not None
++        or metadata.swa_spec_metadata is not None or layer.is_cross_attention
++        or layer.attn_type in (AttentionType.ENCODER_ONLY, AttentionType.DECODER_BIDIRECTIONAL)
++        or getattr(batch, "mixed_verify_logits_indices", None) is not None
++        or torch.compiler.is_compiling() or not k.is_cuda or torch.cuda.is_current_stream_capturing()
++        or torch.are_deterministic_algorithms_enabled() or torch.is_grad_enabled()
++    ):
++        return None
++    n = k.shape[0]
++    if is_in_prefill_graph_scope():
++        if is_in_full_prefill_graph() or get_prefill_raw_num_tokens() != n:
++            return None
++    elif batch.req_pool_indices_cpu is None:
++        return None
++    pool = backend.token_to_kv_pool
++    table, slots, owner = metadata.page_table, write.loc, pool
++    if type(pool) is SWAKVPool:
++        _, sliding = pool.layers_mapping[layer.layer_id]
++        owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
++        if sliding:
++            table, slots = metadata.swa_page_table, write.swa_loc
++    h, d = layer.tp_k_head_num, layer.head_dim
++    lengths, cuq = metadata.cache_seqlens_int32, metadata.cu_seqlens_q
++    if (
++        n < 4096 or q.shape[0] != n or q.numel() != n * layer.tp_q_head_num * d
++        or d != layer.v_head_dim or h != layer.tp_v_head_num or d > 256 or d % 16
++        or not 16 <= h * d <= 1024 or (h * d) & (h * d - 1)
++        or k.shape != (n, h, d) or v.shape != k.shape or q.dtype != torch.bfloat16
++        or k.dtype != q.dtype or v.dtype != q.dtype or slots is None or slots.shape != (n,)
++        or table is None or table.ndim != 2 or table.shape[0] != count or table.stride(1) != 1
++        or table.shape[1] < metadata.max_seq_len_k or table.dtype not in (torch.int32, torch.int64)
++        or lengths is None or lengths.shape != (count,) or cuq is None or cuq.shape != (count + 1,)
++        or any(t.device != k.device for t in (v, q, slots, table, lengths, cuq))
++        or any(t.dtype != torch.int32 or not t.is_contiguous() for t in (lengths, cuq))
++        or "set_kv_buffer" in vars(pool) or "set_kv_buffer" in vars(owner) or "_store_kv_layer" in vars(owner)
++    ):
++        return None
++    window = layer.sliding_window_size
++    left = -1 if window is None or window < 0 else window
++    layouts = getattr(metadata, "_batched_prompt_layouts", None)
++    if layouts is None:
++        metadata._batched_prompt_layouts = layouts = {}
++    # Ordinary eager/Breakable metadata is created anew for each live forward.
++    # The cached entries contain only offsets and lengths for this forward.
++    identity = (left, h, d, n, id(lengths), id(cuq))
++    if identity in layouts:
++        return layouts[identity]
++    rows, prefixes, host = batch.extend_seq_lens_cpu, batch.extend_prefix_lens_cpu, batch.seq_lens_cpu
++    if (not all(isinstance(x, (list, tuple)) and len(x) == count for x in (rows, prefixes))
++            or any(type(x) is not int or x < 0 for x in (*rows, *prefixes))
++            or min(rows) < 1 or sum(rows) != n or max(rows) != metadata.max_seq_len_q
++            or not isinstance(host, torch.Tensor) or host.device.type != "cpu" or host.shape != (count,)):
++        return None
++    totals = [p + r for p, r in zip(prefixes, rows)]
++    if totals != host.tolist() or max(totals) != metadata.max_seq_len_k:
++        return None
++    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows, prefixes)]
++    capacity = sum(visible) + 256 * count
++    # Bound both the packed allocation and the contiguous FP8 operands held for the writer.
++    if 2 * (capacity + n) * h * d > 32 * 1024 * 1024:
++        layouts[identity] = None
++        return None
++    if left < 0:
++        used = lengths
++    else:
++        qlens = cuq[1:] - cuq[:-1]
++        used = qlens + (lengths - qlens).clamp(max=left)
++    starts = torch.nn.functional.pad(torch.cumsum(used + 256, 0, dtype=torch.int32), (1, 0))
++    layout = starts, used, capacity, max(visible)
++    layouts[identity] = layout
++    return layout
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index ced7a15..45f4194 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -24,6 +24,7 @@ from sglang.srt.configs.model_config import AttentionArch
+ from sglang.srt.environ import envs
+ from sglang.srt.layers.attention.direct_prompt_kv import (
+     complete_direct_prompt_kv,
++    prepare_batched_prompt_kv,
+     prepare_direct_prompt_kv,
+     supports_direct_prompt_pool,
+ )
+@@ -1631,6 +1632,7 @@ class FlashAttentionBackend(AttentionBackend):
+         extend_lse = None
+         cp_active = is_cp_active(forward_batch)
+         direct_prompt_kv = None
++        batched_prompt_kv = None
+ 
+         if k is not None:
+             assert v is not None
+@@ -1670,12 +1672,24 @@ class FlashAttentionBackend(AttentionBackend):
+                     write_k, write_v = k, v
+                     if (self._direct_fp8_prompt and not return_lse and sinks is None and score_mod is None
+                             and rel_bias is None and q_rope is None and k_rope is None):
+-                        direct_prompt_kv = prepare_direct_prompt_kv(
+-                            self, q, k, v, layer, forward_batch, write, k_scale, v_scale
+-                        )
+-                        if direct_prompt_kv is not None:
+-                            key, value, _, halo = direct_prompt_kv
+-                            write_k, write_v = key[halo:], value[halo:]
++                        if forward_batch.batch_size == 1:
++                            direct_prompt_kv = prepare_direct_prompt_kv(
++                                self, q, k, v, layer, forward_batch, write, k_scale, v_scale
++                            )
++                            if direct_prompt_kv is not None:
++                                key, value, _, halo = direct_prompt_kv
++                                write_k, write_v = key[halo:], value[halo:]
++                        else:
++                            batched_prompt_kv = prepare_batched_prompt_kv(
++                                self, q, k, v, layer, forward_batch, write
++                            )
++                            if batched_prompt_kv is not None:
++                                if k_scale is not None:
++                                    k.div_(k_scale)
++                                if v_scale is not None:
++                                    v.div_(v_scale)
++                                write_k = k.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
++                                write_v = v.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
+                     self.token_to_kv_pool.set_kv_buffer(layer, write, write_k, write_v, k_scale, v_scale)
+ 
+         # Use precomputed metadata across all layers
+@@ -1960,6 +1974,27 @@ class FlashAttentionBackend(AttentionBackend):
+                         num_sms=self._hopper_verify_sms,
+                         **({"origins": origins} if origins is not None else {}),
+                     )
++                if (
++                    batched_prompt_kv is not None and query.dtype == self.kv_cache_dtype
++                    and page_table is not None and kwargs.keys() <= {"k_descale", "v_descale"}
++                    and all(t.dtype == self.kv_cache_dtype and t.device == query.device
++                            and t.ndim == 4 and t.shape[1:] == (1, layer.tp_k_head_num, layer.head_dim)
++                            and t.stride()[-2:] == (layer.head_dim, 1) for t in (key_cache, value_cache))
++                ):
++                    from sglang.kernels.ops.attention.batched_prompt_kv import pack_prompt_rows
++
++                    dense_k, dense_v = pack_prompt_rows(
++                        key_cache, value_cache, write_k, write_v, page_table, cache_seqlens,
++                        cu_seqlens_q, batched_prompt_kv,
++                    )
++                    starts, used, _, max_used = batched_prompt_kv
++                    result = self.flash_attn_varlen_func(
++                        q=query, k=dense_k, v=dense_v, cu_seqlens_q=cu_seqlens_q,
++                        cu_seqlens_k=starts, seqused_k=used, max_seqlen_q=max_seqlen_q,
++                        max_seqlen_k=max_used, causal=causal, window_size=window_size,
++                        softmax_scale=layer.scaling, softcap=layer.logit_cap,
++                        num_splits=self.num_splits, out=_fa_out, **kwargs,
++                    )
+                 if result is None:
+                     if direct_prompt_kv is not None:
+                         key_cache, value_cache, cache_seqlens = complete_direct_prompt_kv(
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 6c87d12..5cfab39 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -469,6 +469,31 @@ def humming_expert_outputs(
+     return outputs.view(num_tokens, topk, hidden_size), local_ids
+ 
+ 
++@triton.jit
++def _pack_prompt_routes(
++    Hidden, Slots, Inputs, RowMap,
++    first_local, num_routes, num_slots, hidden_row_stride, hidden_col_stride,
++    TOPK: tl.constexpr, HIDDEN: tl.constexpr, BLOCK_H: tl.constexpr, BLOCK_MAP: tl.constexpr,
++):
++    program = tl.program_id(0)
++    if program < num_routes:
++        slot = tl.load(Slots + first_local + program)
++        token = slot.to(tl.int64) // TOPK
++        row = program.to(tl.int64)
++        for start in range(0, HIDDEN, BLOCK_H):
++            cols = start + tl.arange(0, BLOCK_H)
++            values = tl.load(Hidden + token * hidden_row_stride + cols.to(tl.int64) * hidden_col_stride,
++                             mask=cols < HIDDEN, other=0)
++            tl.store(Inputs + row * HIDDEN + cols, values, mask=cols < HIDDEN)
++    else:
++        # Argsort is a permutation of all original slots. Each map entry has exactly one writer.
++        positions = (program - num_routes).to(tl.int64) * BLOCK_MAP + tl.arange(0, BLOCK_MAP)
++        valid = positions < num_slots
++        slots = tl.load(Slots + positions, mask=valid, other=0)
++        rows = tl.where(positions < first_local, -1, positions - first_local)
++        tl.store(RowMap + slots, rows, mask=valid)
++
++
+ def humming_grouped_expert_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+@@ -504,13 +529,16 @@ def humming_grouped_expert_outputs(
+     ):
+         return humming_expert_outputs(layer, hidden_states, local_ids)
+ 
+-    slots = slots[first_local:]
+     route_experts = route_experts[first_local:]
+     offsets = offsets - first_local
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+-    torch.index_select(
+-        hidden_states, 0, torch.div(slots, topk, rounding_mode="floor"), out=inputs
++    mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
++    map_block = 256
++    _pack_prompt_routes[(num_routes + triton.cdiv(slots.numel(), map_block),)](
++        hidden_states, slots, inputs, mapped_rows, first_local, num_routes, slots.numel(),
++        hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
++        BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
+     )
+     activations = None
+     if getattr(layer, "humming_prompt_gate_up", None) is not None:
+@@ -550,10 +578,4 @@ def humming_grouped_expert_outputs(
+         if name == "w13":
+             silu_and_mul(gate_up, activations)
+ 
+-    mapped_rows = torch.full_like(local_ids, -1)
+-    mapped_rows.view(-1).index_copy_(
+-        0,
+-        slots,
+-        torch.arange(num_routes, dtype=mapped_rows.dtype, device=mapped_rows.device),
+-    )
+     return outputs, mapped_rows
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 0336633..9b60eb6 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -835,6 +835,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+ 
+     # Shared raw tap matrix for serialized target verification graphs.
+     dflash_verify_raw_buffer: Optional[torch.Tensor] = None
++    dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 6695f91..6a01755 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -499,6 +499,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         self._prefill_static_buffers: Optional[Dict[str, torch.Tensor]] = None
+         self.static_draft_hidden_states: Optional[torch.Tensor] = None
+         self.layer_model = None
++        self._muse_prompt_taps = None
+         self._capture_req_slots = 1
+         # Same rationale: _run_compile_pass runs a dummy _run_forward before
+         # resolve_prefill_backend returns, and that forward reads
+@@ -1689,6 +1690,57 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         with self.model_context():
+             self._capture()
+ 
++    def _bind_muse_prompt_taps(self):
++        previous = self._muse_prompt_taps
++        self._muse_prompt_taps = None
++        if (
++            type(self.backend) is not BreakableCudaGraphBackend
++            or self.model_runner.is_draft_worker or not self.model_runner.spec_algorithm.is_dflash()
++            or not self.capture_hidden_mode.is_full() or self.pp_size != 1
++            or self.model_runner.lora_manager is not None or self.backend._debug_eager
++        ):
++            return
++        from torch.nn.modules import module as module_hooks
++        from sglang.srt.layers import layernorm_sp
++        from sglang.srt.models.muse_spark import MuseSpark1xModel, MuseSparkModel, MuseSparkTextForCausalLM
++
++        group = get_parallel().tp_group
++        target = self.model_runner.model
++        if (
++            group.world_size < 2 or get_parallel().attn_dp_enabled or get_parallel().attn_cp_size != 1
++            or not layernorm_sp.runs_sp(self.capture_forward_mode)
++            or not isinstance(target, MuseSparkTextForCausalLM) or type(self.layer_model) is not MuseSparkModel
++            or target.model is not self.layer_model or type(self.layer_model.language_model) is not MuseSpark1xModel
++            or module_hooks._global_forward_hooks or module_hooks._global_forward_pre_hooks
++        ):
++            return
++        body = self.layer_model.language_model
++        if any(
++            m._forward_hooks or m._forward_pre_hooks or "forward" in vars(m)
++            or getattr(m, "_compiled_call_impl", None) is not None
++            for m in (target, self.layer_model, body)
++        ):
++            return
++        taps = body.layers_to_capture
++        if not taps or len(set(taps)) != len(taps) or not target.capture_aux_hidden_states:
++            return
++        rows = _ceil_div(self.max_num_tokens, group.world_size)
++        width = int(body.config.hidden_size)
++        try:
++            shape = (rows, len(taps) * width)
++            if previous is not None and previous.shape == shape and previous.dtype == body.operator_dtype:
++                raw = previous
++            else:
++                raw = torch.empty(shape, device=self.device, dtype=body.operator_dtype)
++            final = raw.new_empty((rows, width))
++            leaves = list(raw.split(width, dim=-1))
++        except torch.OutOfMemoryError:
++            return
++        # The captured body still returns (final, list_of_taps). Every key shares
++        # these local-row buffers, the same lifetime as the backend's native output.
++        if self.backend.bind_shared_output((final, leaves)):
++            self._muse_prompt_taps = raw
++
+     def _capture(self) -> None:
+         # Warm up + autotune kernels once before capture (run-once across the
+         # decode + prefill runners; see BaseRunner.warmup).
+@@ -1702,6 +1754,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 ) as graph_capture_context:
+                     self.stream = graph_capture_context.stream
+                     with self.backend.capture_session(self.stream):
++                        self._bind_muse_prompt_taps()
+                         self._capture_one_stream()
+         finally:
+             dp_flags.capturing_prefill_graph = False
+@@ -1752,6 +1805,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         """
+         num_tokens = size
+         forward_batch, attn_backend = self.capture_prepare(num_tokens)
++        if self._muse_prompt_taps is not None:
++            local_rows = _ceil_div(num_tokens, get_parallel().tp_group.world_size)
++            forward_batch.dflash_prefill_raw_buffer = self._muse_prompt_taps[:local_rows]
+         # Recapture can follow decode replay, which may change model-owned storage.
+         prepare = getattr(self.model_runner.model, "prepare_for_forward", None)
+         if prepare is not None:
+@@ -2215,6 +2271,12 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 self._fill_input_embeds_slot(args, layer_kwargs, static_num_tokens)
+             hs = self.backend.replay(shape_key, static_forward_batch, **kwargs)
+             hs = self._restore_qwen_bcg_hc_output(hs)
++            if self._muse_prompt_taps is not None:
++                # A newly installed live wrapper hook observes native contiguous
++                # tap tensors. Its replacements flow through ordinary packing.
++                from torch.nn.modules import module as module_hooks
++                if self.layer_model._forward_hooks or module_hooks._global_forward_hooks:
++                    hs = hs[0], [tap.clone(memory_format=torch.contiguous_format) for tap in hs[1]]
+             return _slice_output_rows(hs, raw_num_tokens) if full_path else hs
+ 
+         original_layer_forward = self.layer_model.forward
+@@ -2233,6 +2295,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # BCG has no request-slot padding, so static_forward_batch is
+             # already the serving batch and already holds the body's verdict.
+             tail_batch = static_forward_batch
++            if self._muse_prompt_taps is not None:
++                tail_batch = copy.copy(static_forward_batch)
++                tail_batch.dflash_prefill_raw_buffer = self._muse_prompt_taps
+         if not full_path:
+             # MTP consumes the target model's live multimodal embeddings in its
+             # eager wrapper before the captured transformer body is replayed.
+diff --git a/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py b/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py
+index f89716a..85871e7 100644
+--- a/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py
++++ b/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py
+@@ -171,6 +171,13 @@ class BreakableCudaGraphBackend(DedupedCudaGraphMixin, BaseCudaGraphBackend):
+         # CUDA graphs retain tensor addresses, not Python tensor lifetimes.
+         self._capture_inputs[shape_key] = capture_inputs
+ 
++    def bind_shared_output(self, output: Any) -> bool:
++        """Install a producer-owned output tree at the start of a capture session."""
++        if self._shared_output_buffer is not None:
++            return False
++        self._shared_output_buffer = output
++        return True
++
+     def _output_rows(self, output: Any, cap: int) -> int:
+         """Leading-dim row count actually produced by the body, clamped to ``cap``.
+ 
+@@ -232,7 +239,13 @@ class BreakableCudaGraphBackend(DedupedCudaGraphMixin, BaseCudaGraphBackend):
+                 f"{type(output)} vs {type(output_buffer)}"
+             )
+         if torch.is_tensor(output) and torch.is_tensor(output_buffer):
+-            output_buffer[:num_tokens].copy_(output[:num_tokens])
++            dest, source = output_buffer[:num_tokens], output[:num_tokens]
++            if (
++                dest.dtype != source.dtype or dest.device != source.device
++                or dest.is_conj() != source.is_conj() or dest.is_neg() != source.is_neg()
++                or not dest.is_set_to(source)
++            ):
++                dest.copy_(source)
+             return
+         if isinstance(output, PPProxyTensors) and isinstance(
+             output_buffer, PPProxyTensors
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 6905bba..b094462 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1261,13 +1261,14 @@ class MuseSpark1xModel(nn.Module):
+         stream = hidden_states.to(self.residual_dtype)
+         attn_input = self.layers[0].self_attn_input_norm(stream)
+         aux_hidden_states = []
+-        packed = getattr(forward_batch, "dflash_verify_raw_buffer", None)
++        prompt_buffer = getattr(forward_batch, "dflash_prefill_raw_buffer", None) if sp_active else None
++        packed = prompt_buffer if prompt_buffer is not None else getattr(forward_batch, "dflash_verify_raw_buffer", None)
+         width = stream.shape[-1]
+         if packed is not None and (
+             len(set(self.layers_to_capture)) != len(self.layers_to_capture)
+             or packed.shape != (stream.shape[0], len(self.layers_to_capture) * width)
+             or packed.dtype != self.operator_dtype or packed.device != stream.device
+-            or not forward_batch.forward_mode.is_target_verify() or sp_active
++            or (prompt_buffer is None and (not forward_batch.forward_mode.is_target_verify() or sp_active))
+         ):
+             packed = None
+         tap = 0
+@@ -1278,11 +1279,14 @@ class MuseSpark1xModel(nn.Module):
+                 if packed is None:
+                     aux_hidden_states.append(stream.to(self.operator_dtype))
+                 else:
+-                    packed[:, tap * width : (tap + 1) * width].copy_(stream)
++                    leaf = packed[:, tap * width : (tap + 1) * width]
++                    leaf.copy_(stream)
++                    if prompt_buffer is not None:
++                        aux_hidden_states.append(leaf)
+                     tap += 1
+         norm_input = stream.to(self.operator_dtype)
+         hidden_states = self.norm(norm_input).to(self.operator_dtype)
+-        if packed is not None and tap == len(self.layers_to_capture) and tap:
++        if packed is not None and prompt_buffer is None and tap == len(self.layers_to_capture) and tap:
+             return hidden_states, packed
+         if aux_hidden_states:
+             return hidden_states, aux_hidden_states
+@@ -1306,6 +1310,23 @@ class MuseSparkModel(nn.Module):
+         return self.language_model.layers
+ 
+ 
++def _pack_muse_prompt_taps(taps, workspace):
++    if (
++        workspace is not None and isinstance(taps, list) and taps
++        and isinstance(taps[0], torch.Tensor) and taps[0].ndim == 2
++    ):
++        rows, width = taps[0].shape
++        raw = workspace[:rows]
++        if raw.shape == (rows, len(taps) * width) and all(
++            isinstance(t, torch.Tensor) and t.ndim == 2 and t.dtype == raw.dtype and t.device == raw.device
++            and t.is_conj() == raw.is_conj() and t.is_neg() == raw.is_neg()
++            and t.is_set_to(raw[:, i * width : (i + 1) * width])
++            for i, t in enumerate(taps)
++        ):
++            return raw
++    return pack_aux_hidden_states(taps)
++
++
+ class MuseSparkTextForCausalLM(nn.Module):
+     packed_modules_mapping = {
+         "qkv_proj": ["q_proj", "k_proj", "v_proj"],
+@@ -1374,7 +1395,9 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # Pack while sequence-sharded so the logits processor does not
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+-            aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
++            aux_hidden_states = _pack_muse_prompt_taps(
++                aux_hidden_states, getattr(forward_batch, "dflash_prefill_raw_buffer", None)
++            )
+             projected = project_dflash_prefill_shard(
+                 aux_hidden_states,
+                 num_tokens,

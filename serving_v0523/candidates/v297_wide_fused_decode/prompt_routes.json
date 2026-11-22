@@ -1,0 +1,450 @@
+{
+  "sources": {
+    "python/sglang/srt/models/muse_spark.py": "81c289de40b53eaf602203035986f6d24461e220bf2e1d57eccb2ce81a5a6029",
+    "python/sglang/srt/layers/layernorm_sp.py": "24bb5a0581b366c1da0326b3f9f0a034ef3213653b88157d79f31b8956bb1993",
+    "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py": "497cd4d1cc9a3f98407cab0644bfffbbb90e7219e8658d902683ff171c6de677",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da"
+  },
+  "torch": "2.5.1",
+  "totals": {
+    "observed_calls": 276,
+    "route_pairs": 861584,
+    "activation_words": 7813888,
+    "empty_local": 22
+  },
+  "detail": {
+    "tp4/published/ragged": {
+      "observed_calls": 8,
+      "route_pairs": 17240,
+      "activation_words": 137920,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp4/published/accepted": {
+      "observed_calls": 16,
+      "route_pairs": 34272,
+      "activation_words": 274176,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp4/published/empty": {
+      "observed_calls": 4,
+      "route_pairs": 8568,
+      "activation_words": 68544,
+      "empty_local": 3,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp4/published/hook": {
+      "observed_calls": 8,
+      "route_pairs": 17152,
+      "activation_words": 274432,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp4/published/wide_ids": {
+      "observed_calls": 4,
+      "route_pairs": 8600,
+      "activation_words": 68800,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp4/published/marked": {
+      "observed_calls": 4,
+      "route_pairs": 8560,
+      "activation_words": 68480,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp4/published/noncontig": {
+      "observed_calls": 4,
+      "route_pairs": 8520,
+      "activation_words": 68160,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp4/published/oversize": {
+      "observed_calls": 4,
+      "route_pairs": 8736,
+      "activation_words": 139776,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp4/published/short": {
+      "observed_calls": 4,
+      "route_pairs": 104,
+      "activation_words": 1664,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp4/published/all_remote": {
+      "observed_calls": 4,
+      "route_pairs": 8552,
+      "activation_words": 0,
+      "empty_local": 4,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp4/legacy/ragged": {
+      "observed_calls": 4,
+      "route_pairs": 8624,
+      "activation_words": 68992,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp4/legacy/hook": {
+      "observed_calls": 4,
+      "route_pairs": 8584,
+      "activation_words": 137344,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp4/legacy/oversize": {
+      "observed_calls": 4,
+      "route_pairs": 8736,
+      "activation_words": 139776,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp4/legacy/short": {
+      "observed_calls": 4,
+      "route_pairs": 104,
+      "activation_words": 1664,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp4/absent/ragged": {
+      "observed_calls": 4,
+      "route_pairs": 8624,
+      "activation_words": 137984,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp4/absent/hook": {
+      "observed_calls": 4,
+      "route_pairs": 8584,
+      "activation_words": 137344,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp4/absent/oversize": {
+      "observed_calls": 4,
+      "route_pairs": 8736,
+      "activation_words": 139776,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp4/absent/short": {
+      "observed_calls": 4,
+      "route_pairs": 104,
+      "activation_words": 1664,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/published/ragged": {
+      "observed_calls": 16,
+      "route_pairs": 68992,
+      "activation_words": 275968,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp8/published/accepted": {
+      "observed_calls": 32,
+      "route_pairs": 137152,
+      "activation_words": 548608,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp8/published/empty": {
+      "observed_calls": 8,
+      "route_pairs": 34240,
+      "activation_words": 136960,
+      "empty_local": 7,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp8/published/hook": {
+      "observed_calls": 16,
+      "route_pairs": 68544,
+      "activation_words": 1096704,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp8/published/wide_ids": {
+      "observed_calls": 8,
+      "route_pairs": 34320,
+      "activation_words": 137280,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp8/published/marked": {
+      "observed_calls": 8,
+      "route_pairs": 34288,
+      "activation_words": 137152,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp8/published/noncontig": {
+      "observed_calls": 8,
+      "route_pairs": 34144,
+      "activation_words": 136576,
+      "empty_local": 0,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp8/published/oversize": {
+      "observed_calls": 8,
+      "route_pairs": 34944,
+      "activation_words": 559104,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp8/published/short": {
+      "observed_calls": 8,
+      "route_pairs": 208,
+      "activation_words": 3328,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/published/all_remote": {
+      "observed_calls": 8,
+      "route_pairs": 34224,
+      "activation_words": 0,
+      "empty_local": 8,
+      "events": [
+        "publication",
+        "grouped"
+      ]
+    },
+    "tp8/legacy/ragged": {
+      "observed_calls": 8,
+      "route_pairs": 34528,
+      "activation_words": 138112,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "grouped",
+        "publication"
+      ]
+    },
+    "tp8/legacy/hook": {
+      "observed_calls": 8,
+      "route_pairs": 34384,
+      "activation_words": 550144,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp8/legacy/oversize": {
+      "observed_calls": 8,
+      "route_pairs": 34944,
+      "activation_words": 559104,
+      "empty_local": 0,
+      "events": [
+        "scores",
+        "ids",
+        "vote",
+        "activation",
+        "dense"
+      ]
+    },
+    "tp8/legacy/short": {
+      "observed_calls": 8,
+      "route_pairs": 208,
+      "activation_words": 3328,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/absent/ragged": {
+      "observed_calls": 8,
+      "route_pairs": 34528,
+      "activation_words": 552448,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/absent/hook": {
+      "observed_calls": 8,
+      "route_pairs": 34384,
+      "activation_words": 550144,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/absent/oversize": {
+      "observed_calls": 8,
+      "route_pairs": 34944,
+      "activation_words": 559104,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    },
+    "tp8/absent/short": {
+      "observed_calls": 8,
+      "route_pairs": 208,
+      "activation_words": 3328,
+      "empty_local": 0,
+      "events": [
+        "activation",
+        "scores",
+        "ids",
+        "dense"
+      ]
+    }
+  },
+  "scope": "Gloo, mapped CPU slabs, per-rank reader skew and staged Python SP model, storage, packet, rank checks, fallback gathers, and grouped routing. Host CUDA streams and devices, Triton route inversion, Humming arithmetic and final reduction are modeled."
+}

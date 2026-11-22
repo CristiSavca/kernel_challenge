@@ -1,0 +1,109 @@
+{
+  "at_utc": "2026-11-18T13:51:58.551622+00:00",
+  "objective": "4x four-load serving score, with 3x as an intermediate milestone",
+  "incumbent": {
+    "candidate": "V64",
+    "scored_job": "abd217baf0ed49fd",
+    "four_load_score": 1.4119
+  },
+  "official_checks": {
+    "V68": {
+      "id": "04b01f958aa5487c",
+      "status": "passed",
+      "users": 16,
+      "tokens_per_second_per_gpu": 17512.9,
+      "median_decode_tokens_per_second_per_user": 48.0,
+      "peak_gb_over_stock": 1.7
+    },
+    "V87": {
+      "id": "00c134c978104d65",
+      "users": 4,
+      "result": "crashed",
+      "error": "TypeError",
+      "server_python_traceback": false,
+      "throughput": null,
+      "root_cause": "unresolved"
+    },
+    "V88": {
+      "id": "30bb36feb528416f",
+      "status": "queued"
+    },
+    "V93": {
+      "id": "75557c21595347de",
+      "status": "queued"
+    }
+  },
+  "nov19_private_checks": {
+    "armed_receipt": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "start_utc": "2026-11-19T00:03:00+00:00",
+    "state_at_snapshot": [
+      "V120b/32",
+      "V102/16",
+      "V125/16"
+    ],
+    "third_if_v93_passes_and_shared_parents_eligible": "V101b/16",
+    "third_if_exact_v68_passed_and_v93_pending_or_failed": "V125/16",
+    "third_if_v93_unknown": "defer",
+    "scored_actions": 0,
+    "regression_tests": 102,
+    "private_submissions_this_iteration": 0
+  },
+  "work": {
+    "V120b": {
+      "receipt": "serving_v0523/candidates/v120b_native_muse_prompt/validation.json",
+      "detail": "Restore prompt projection on the native Muse logits processor. 144 CPU calls across TP2/4/8; independent constructor/dispatch trace. At 16,320 prompt rows on TP8, logical all-gather output falls from 1,275 to 255 MiB.",
+      "new_measured_speed": null,
+      "patch_sha256": "0cb0a90248b98b07047075964ee6bf7200d9ebaadcf9b2eb4b10fd6098f9f7b7",
+      "patch_bytes": 97151
+    },
+    "V121": {
+      "receipt": "serving_v0523/candidates/v121_target_head_feasibility/head.json",
+      "detail": "Feasibility only. Target greedy verification already exchanges row winners; the four local FP32 accesses at one user total 3.08 MiB per rank versus 394.625 MiB of local head weights.",
+      "new_measured_speed": null
+    },
+    "V122": {
+      "receipt": "serving_v0523/candidates/v122_clustered_expert_mlp/validation.json",
+      "detail": "Cluster-fused packed MoE gate, scaled SiLU and down projection on V117. Its SM90 instruction and control words match V125. V117 descends from V87; the V87 crash cause remains unresolved.",
+      "new_measured_speed": null,
+      "patch_sha256": "32cb771ba043e37ab566a4f11c6bfb4c012c33998b3875c3efdefb926cc4a071",
+      "patch_bytes": 208142
+    },
+    "V123b": {
+      "receipt": "serving_v0523/candidates/v123b_compile_safe_draft_filters/validation.json",
+      "detail": "Rank-major draft convolution filters avoid token-major copies in eager execution. Full-module compilation retains the original layout; 12 BF16/FP32 fullgraph cases and distributed CPU checks passed.",
+      "new_measured_speed": null,
+      "patch_sha256": "4575b2454cc7399edd570c9142aae379147819c60d8773c001262a8b006a8629",
+      "patch_bytes": 194329
+    },
+    "V124": {
+      "receipt": "serving_v0523/candidates/v124_multicast_scatter_feasibility/dispatch.json",
+      "detail": "Feasibility only. V64 has 16 MiB of registered pull workspace, excluding full-chunk 127.5 and 255 MiB collectives from this custom path. Checked 8,192 size/dispatch combinations.",
+      "new_measured_speed": null
+    },
+    "V125": {
+      "receipt": "serving_v0523/candidates/v125_v68_clustered_expert_mlp/validation.json",
+      "detail": "V122 expert math adapted to measured V68. Possible two fewer launches per eligible layer. Four integrated CPU route patterns matched 524,288 BF16 outputs. SM90a offline assembly uses 126 registers and zero spills; physical H200 performance and runtime correctness unknown.",
+      "new_measured_speed": null,
+      "patch_sha256": "3564873a4327719c83fa88a3d1eae5cf3f06d6c42b8505c45a7403a883d658d3",
+      "patch_bytes": 102004,
+      "integrated_output_values": 524288,
+      "integrated_receipt": "serving_v0523/candidates/v125_v68_clustered_expert_mlp/integrated.json",
+      "compiler_receipt": "serving_v0523/candidates/v125_v68_clustered_expert_mlp/sm90.json",
+      "compiler_targets": [
+        "sm_90",
+        "sm_90a"
+      ],
+      "same_3200_cluster_instructions_as_v122": true,
+      "independent_review": "serving_v0523/candidates/v125_v68_clustered_expert_mlp/independent_review.md"
+    }
+  },
+  "final_queue_observed_utc": "2026-11-18T14:14:32.045514+00:00",
+  "cleanup_ledgers": [
+    "serving_v0523/candidates/v120b_native_muse_prompt/cleanup.json",
+    "serving_v0523/candidates/v122_clustered_expert_mlp/cleanup.json",
+    "serving_v0523/candidates/v123_rank_major_draft_filters/cleanup.json",
+    "serving_v0523/candidates/v123b_compile_safe_draft_filters/cleanup.json",
+    "serving_v0523/candidates/v125_v68_clustered_expert_mlp/cleanup.json",
+    "serving_v0523/candidates/v125_v68_clustered_expert_mlp/compiler_cleanup.json"
+  ]
+}

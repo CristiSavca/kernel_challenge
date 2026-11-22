@@ -1,0 +1,44 @@
+{
+  "torch": "2.5.1",
+  "rank_cases_values_early_plans": {
+    "2": [
+      48,
+      418368,
+      24
+    ],
+    "4": [
+      96,
+      442944,
+      54
+    ],
+    "8": [
+      192,
+      492288,
+      114
+    ]
+  },
+  "production_methods": [
+    "_forward_sp_replicated_experts",
+    "_prepare_sp_grouped_routes",
+    "forward",
+    "_forward_w4a16",
+    "_grouped_humming_and_combine_impl",
+    "humming_grouped_expert_outputs",
+    "humming_grouped_route_order"
+  ],
+  "real_gloo_collectives": true,
+  "physical_cuda": false,
+  "includes": [
+    "changing rows and routes",
+    "ragged",
+    "mixed rank hooks/overrides",
+    "full-capture fallback",
+    "breakable instruction ordering",
+    "all remote and drop sentinels"
+  ],
+  "totals": {
+    "rank_cases": 336,
+    "matching_bf16_elements": 1353600,
+    "early_route_plans": 192
+  }
+}

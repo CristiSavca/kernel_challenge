@@ -1,0 +1,157 @@
+{
+  "goal": "4x official four-load serving frontier",
+  "official_incumbent": {
+    "candidate": "V64",
+    "score": 1.4119,
+    "job": "abd217baf0ed49fd"
+  },
+  "required_uniform_multiplier": 2.8330618315744744,
+  "public_base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "candidates": [
+    {
+      "version": 257,
+      "tree": "f21c55ca4bc064099488c58fe64a87873969082f",
+      "bytes": 405125,
+      "patch_sha256": "d79351da3fc899b1d4c63dd9aff8c618fc73cfd4152be0f7295d56a0bef3bdf4",
+      "parent": "V256",
+      "new_H200_result": false,
+      "validation": "serving_v0523/candidates/v257_final_residual_gate/validation.json"
+    },
+    {
+      "version": 258,
+      "tree": "fd9923eb113afab0bce4ad85f3c38546e9038e6d",
+      "bytes": 406746,
+      "patch_sha256": "f6b674d5fa44256e9b73a33e23e40f54cdb038b18d5d19402757ac5f4f92f6ad",
+      "parent": "V256",
+      "new_H200_result": false,
+      "validation": "serving_v0523/candidates/v258_compact_prompt_route_plan/validation.json"
+    },
+    {
+      "version": 260,
+      "tree": "12a5a39fbe9e7617dababdee06f075a509289955",
+      "bytes": 408225,
+      "patch_sha256": "d1c5afd143cdce14640a52598a9bdf68ead7f8c1c49f4d093a3ebf9d8ff37638",
+      "parent": "V256",
+      "new_H200_result": false,
+      "validation": "serving_v0523/candidates/v260_pipelined_prompt_qkv/validation.json"
+    },
+    {
+      "version": 261,
+      "tree": "aced505bef7f5062e74a39225a56c5954d2cf3ae",
+      "bytes": 404326,
+      "patch_sha256": "1e76c0aa912a7d6325c23f73f4edcf02f5ce662c9a262b7254b3c86e82602143",
+      "parent": "V256",
+      "new_H200_result": false,
+      "validation": "serving_v0523/candidates/v261_fused_decode_route_staging/validation.json"
+    }
+  ],
+  "V261_decode": {
+    "staging_launches_per_62_eligible_layers": [
+      124,
+      62
+    ],
+    "source_sha256": "cb69448203db9a69fe8f542f6a5aa9bb62ea5e23871dbaa0fa5696cacaa0caf2",
+    "production_candidate_sm90_builds": 22,
+    "sm90_reference_builds": 12,
+    "interpreter_BF16_output_words": 10262680,
+    "live_words": 3256403,
+    "guard_words": 1200,
+    "native_entry": {
+      "path": "serving_v0523/candidates/v261_fused_decode_route_staging/independent_plan.json",
+      "sha256": "15868b770d79ce4b48b9432a1fe6db3654dd13431ce697b3ca11565dcb15c85a"
+    },
+    "static_rule_verification": {
+      "path": "serving_v0523/candidates/v261_fused_decode_route_staging/validation.json",
+      "sha256": "22f7b5d82319150315023da6270dd9a5c8259053ce6422401eeb906450e6a3c9"
+    },
+    "timing_driver": "serving_v0523/candidates/v261_fused_decode_route_staging/benchmark_staging.py",
+    "timing_driver_fixture": {
+      "path": "serving_v0523/candidates/v261_fused_decode_route_staging/benchmark_fixture.json",
+      "sha256": "a9efb8a52d751be7dfb74ad0d9fd52f8a28242027c677a401a5790e7780c832b"
+    },
+    "geometry": "At checkpoint top-8 routing, up to 32 verification rows under the 256-slot cap; 8 rows per request reaches up to four simultaneous requests."
+  },
+  "V260_prompt_QKV": {
+    "tested_Gloo_rank_cases": 108,
+    "exchange_BF16_outputs": 104387776,
+    "full_width_BF16_outputs": 41319936,
+    "full_width_CPU_mismatches": 0,
+    "H200_timing_model": [
+      {
+        "users": 16,
+        "V41_wall_s": 164.83263510899997,
+        "modeled_perfect_overlap_s": 1.3869165226666669
+      },
+      {
+        "users": 32,
+        "V41_wall_s": 304.4294033150002,
+        "modeled_perfect_overlap_s": 2.784514830791111
+      }
+    ],
+    "modeled_component_rates": "450 GB/s per direction, 989 TFLOP/s. This model excludes extra launches, contention and GEMM algorithm changes."
+  },
+  "V258_stable_prompt_routes": {
+    "at_16k_tokens": {
+      "routed_slots": 131072,
+      "average_live_routes": 16384,
+      "average_inactive_routes": 114688,
+      "tile_ctas_each_count_place": 512,
+      "expert_scan_ctas": 33,
+      "parent_explicit_bytes": {
+        "full_sorted_int32_expert_ids": 524288,
+        "full_int64_permutation": 1048576
+      },
+      "candidate_explicit_rank_mean_bytes": {
+        "compact_int32_expert_ids": 65536,
+        "int32_tile_prefix": 67584,
+        "int32_totals": 132
+      },
+      "rank_mean_reduction_bytes": 1439612
+    },
+    "interpreter": {
+      "path": "serving_v0523/candidates/v258_compact_prompt_route_plan/interpreter.json",
+      "sha256": "621441667f047c8baa402cafb2450bc0f070ecf3cb09aee6bab03d16acbea4a8"
+    },
+    "gloo": {
+      "path": "serving_v0523/candidates/v258_compact_prompt_route_plan/gloo.json",
+      "sha256": "092d04861f200a7eb56c47f56cef4484f0c9a1aba661852d8f690dcc963b3571"
+    }
+  },
+  "V257_final_residual": {
+    "evidence": {
+      "path": "serving_v0523/candidates/v257_final_residual_gate/model_entry.json",
+      "sha256": "6a8ce10b3f8b62daea0851d8b6100df5985a842e6e19ed7f11d6f00ca6a85fb8"
+    },
+    "quantified_work": {
+      "path": "serving_v0523/candidates/v257_final_residual_gate/work.json",
+      "sha256": "4009414a956992a53b4236cfd143d63cf2356717c41b6cdc2f15483953e7aa0c"
+    }
+  },
+  "V259_dense_expert_residency": {
+    "decision": "Retired. Two BF16 banks use 6 GiB per rank and could displace full KV capacity. V256 already dequantizes inside Humming.",
+    "evidence": {
+      "path": "serving_v0523/candidates/v259_dense_expert_residency/check.json",
+      "sha256": "1514b0479c37cd6115406fe8a9367bb71f286682b8f7ba95e9b7d16ed31b82f2"
+    }
+  },
+  "V262_phase_budget": {
+    "decision": "Measure the slowest rank's captured target expert projections and reduction alongside draft replay; isolated operator data cannot establish 4x.",
+    "evidence": {
+      "path": "serving_v0523/candidates/v262_decode_phase_budget/check.json",
+      "sha256": "cbdc77d744ea9fcde14cc1e463180eb88ba86689f788b6fbe1a8ac9cfc3833cd"
+    }
+  },
+  "queue": {
+    "path": "serving_v0523/candidates/v260_pipelined_prompt_qkv/judge_observation.json",
+    "sha256": "ada741848a18d75e2c19a49d55899cb2f807caa1182b036b466269b0d42e8d98"
+  },
+  "private_checks_remaining": 0,
+  "new_submissions": 0,
+  "new_external_GPU_allocations": 0,
+  "unmeasured": [
+    "generated-token agreement on H200",
+    "time to first token",
+    "peak memory",
+    "serving throughput"
+  ]
+}

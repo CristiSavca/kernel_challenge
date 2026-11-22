@@ -1,0 +1,195 @@
+diff --git a/python/sglang/kernels/ops/attention/dense_prefill_kv.py b/python/sglang/kernels/ops/attention/dense_prefill_kv.py
+index 8a34e81..be1ab68 100644
+--- a/python/sglang/kernels/ops/attention/dense_prefill_kv.py
++++ b/python/sglang/kernels/ops/attention/dense_prefill_kv.py
+@@ -61,3 +61,69 @@ def dense_prefill_kv(key, value, table, lengths):
+         ROW_BYTES=row_bytes, BLOCK_ROWS=block_rows,
+     )
+     return dense_key, dense_value, None
++
++
++@triton.jit
++def _pack_ragged_prefill_kv(
++    K, V, Table, CuK, PackedCuK, DenseK, DenseV, k_stride, v_stride,
++    table_stride, batch, ROW_BYTES: tl.constexpr, BLOCK_ROWS: tl.constexpr,
++):
++    seq = tl.program_id(1)
++    block = tl.program_id(0)
++    begin = tl.load(CuK + seq)
++    end = tl.load(CuK + seq + 1)
++    length = end - begin
++    # Each sequence owns a whole zero guard after its final live row.
++    # FA3 still uses its original seqused_k for causal alignment.
++    guard: tl.constexpr = 256
++    dst_begin = begin.to(tl.int64) + seq.to(tl.int64) * guard
++    if block == 0:
++        tl.store(PackedCuK + seq, dst_begin)
++        if seq == batch - 1:
++            tl.store(PackedCuK + batch, end + batch * guard)
++    cols = tl.arange(0, ROW_BYTES)
++    for tile in range(block, tl.cdiv(length + guard, BLOCK_ROWS), tl.num_programs(0)):
++        rows = tile * BLOCK_ROWS + tl.arange(0, BLOCK_ROWS)
++        live = rows < length
++        slots = tl.load(Table + seq.to(tl.int64) * table_stride + rows, live, 0).to(tl.int64)
++        dst = (dst_begin + rows)[:, None] * ROW_BYTES + cols[None, :]
++        keys = tl.load(K + slots[:, None] * k_stride + cols[None, :], live[:, None], 0)
++        tl.store(DenseK + dst, keys, mask=rows[:, None] < length + guard)
++        vals = tl.load(V + slots[:, None] * v_stride + cols[None, :], live[:, None], 0)
++        tl.store(DenseV + dst, vals, mask=rows[:, None] < length + guard)
++
++
++def pack_ragged_prefill_kv(key, value, table, lengths, cu_k, cu_q, live_k, q_rows, live_q):
++    """Bound a full-causal gather by published live lengths on eager or Breakable replay."""
++    if table is None or table.ndim != 2 or key.ndim != 4 or cu_k is None or cu_q is None:
++        return None
++    batch, width = table.shape
++    _, page_size, heads, dim = key.shape
++    row_bytes = heads * dim
++    capacity = live_k + 256 * batch
++    limit = 32 * 1024 * 1024
++    if (
++        batch < 2 or width <= 0 or page_size != 1 or value.shape != key.shape
++        or q_rows != live_q or live_k < 1 or live_k > batch * width
++        or key.dtype != torch.float8_e4m3fn or value.dtype != key.dtype
++        or not 16 <= row_bytes <= 1024 or row_bytes & (row_bytes - 1)
++        or 2 * batch * width * row_bytes <= limit or 2 * capacity * row_bytes > limit
++        or table.dtype not in (torch.int32, torch.int64) or table.stride(1) != 1
++        or key.stride()[-2:] != (dim, 1) or value.stride()[-2:] != (dim, 1)
++        or lengths.shape != (batch,) or cu_k.shape != (batch + 1,) or cu_q.shape != cu_k.shape
++        or not all(t.is_contiguous() and t.dtype == torch.int32 for t in (lengths, cu_k, cu_q))
++        or any(t.device != key.device for t in (value, table, lengths, cu_k, cu_q))
++    ):
++        return None
++    packed = key.new_empty((2, capacity, heads, dim))
++    dense_key, dense_value = packed.unbind()
++    packed_cu_k = torch.empty_like(cu_k)
++    block_rows = min(32, 4096 // row_bytes)
++    blocks = min(triton.cdiv(width + 256, block_rows), triton.cdiv(1024, batch))
++    _pack_ragged_prefill_kv[(blocks, batch)](
++        key.view(torch.uint8), value.view(torch.uint8), table, cu_k, packed_cu_k,
++        dense_key.view(torch.uint8), dense_value.view(torch.uint8),
++        key.stride(0), value.stride(0), table.stride(0), batch,
++        ROW_BYTES=row_bytes, BLOCK_ROWS=block_rows,
++    )
++    return dense_key, dense_value, packed_cu_k
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 5d637f3..4539488 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
+ 
+ import torch
+ 
+-from sglang.kernels.ops.attention.dense_prefill_kv import dense_prefill_kv
++from sglang.kernels.ops.attention.dense_prefill_kv import dense_prefill_kv, pack_ragged_prefill_kv
+ from sglang.kernels.ops.attention.metadata import (
+     draft_extend_set_metadata,
+     normal_decode_set_metadata,
+@@ -84,6 +84,8 @@ class FlashAttentionMetadata:
+ 
+     # Sequence lengths for the forward batch
+     cache_seqlens_int32: torch.Tensor = None
++    # Present only when ordinary prefill initializes metadata from the current CPU mirror.
++    ragged_prefill_k_rows: Optional[int] = None
+     # Maximum sequence length for query
+     max_seq_len_q: int = 1
+     # Maximum sequence length for key
+@@ -1195,6 +1197,17 @@ class FlashAttentionBackend(AttentionBackend):
+         ):
+             metadata.cache_seqlens_int32 = seqlens_in_batch.to(torch.int32)
+             metadata.max_seq_len_k = eager_max_k
++            if (
++                self._dense_fp8_prefill and self.page_size == 1 and batch_size > 1
++                and forward_batch.forward_mode == ForwardMode.EXTEND
++                and not self._disable_scheduler_metadata_precompute and self.attn_cp_size == 1
++                and not self.is_encoder_decoder and self._kv_shard_pool is None
++                and not self.is_draft_runner and not self.kv_index_translator.is_translating
++                and seq_lens_cpu is not None and seq_lens_cpu.device.type == "cpu"
++                and seq_lens_cpu.shape == (batch_size,)
++                and 2 * batch_size * eager_max_k * self.num_kv_heads * self.head_dim > 32 * 1024 * 1024
++            ):
++                metadata.ragged_prefill_k_rows = int(seq_lens_cpu.sum().item())
+             metadata.cu_seqlens_k = torch.nn.functional.pad(
+                 torch.cumsum(seqlens_in_batch, dim=0, dtype=torch.int32), (1, 0)
+             )
+@@ -1799,6 +1812,7 @@ class FlashAttentionBackend(AttentionBackend):
+                 )
+             else:
+                 query = q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim)
++                ragged = None
+                 if (
+                     self._dense_fp8_prefill
+                     and self.page_size == 1
+@@ -1813,28 +1827,51 @@ class FlashAttentionBackend(AttentionBackend):
+                     and query.dtype == torch.float8_e4m3fn
+                     and kwargs.keys() <= {"k_descale", "v_descale"}
+                 ):
+-                    key_cache, value_cache, page_table = dense_prefill_kv(
+-                        key_cache, value_cache, page_table, cache_seqlens
++                    if (
++                        metadata.ragged_prefill_k_rows is not None
++                        and metadata is not self.full_cg_prefill_metadata
++                        and not torch.compiler.is_compiling()
++                        and not torch.cuda.is_current_stream_capturing()
++                        and not layer.is_cross_attention and not self.is_draft_runner
++                    ):
++                        ragged = pack_ragged_prefill_kv(
++                            key_cache, value_cache, page_table, cache_seqlens, cu_seqlens_k,
++                            cu_seqlens_q, metadata.ragged_prefill_k_rows, query.shape[0],
++                            forward_batch.extend_num_tokens,
++                        )
++                    if ragged is None:
++                        key_cache, value_cache, page_table = dense_prefill_kv(
++                            key_cache, value_cache, page_table, cache_seqlens
++                        )
++                if ragged is not None:
++                    dense_key, dense_value, packed_cu_k = ragged
++                    result = self.flash_attn_varlen_func(
++                        q=query, k=dense_key, v=dense_value, cu_seqlens_q=cu_seqlens_q,
++                        cu_seqlens_k=packed_cu_k, seqused_k=cache_seqlens,
++                        max_seqlen_q=max_seqlen_q, max_seqlen_k=metadata.max_seq_len_k,
++                        softmax_scale=layer.scaling, causal=True, window_size=window_size,
++                        softcap=layer.logit_cap, num_splits=self.num_splits, out=_fa_out, **kwargs,
++                    )
++                else:
++                    result = flash_attn_with_kvcache(
++                        q=query,
++                        k_cache=key_cache,
++                        v_cache=value_cache,
++                        page_table=page_table,
++                        cache_seqlens=cache_seqlens,
++                        cu_seqlens_q=cu_seqlens_q,
++                        cu_seqlens_k_new=cu_seqlens_k if not use_local_attn else None,
++                        max_seqlen_q=max_seqlen_q,
++                        softmax_scale=layer.scaling,
++                        causal=False if use_cascade_attn else causal,
++                        window_size=window_size,
++                        softcap=layer.logit_cap,
++                        return_softmax_lse=use_cascade_attn or return_lse,
++                        num_splits=self.num_splits,
++                        out=_fa_out,
++                        ver=self.fa_impl_ver,
++                        **kwargs,
+                     )
+-                result = flash_attn_with_kvcache(
+-                    q=query,
+-                    k_cache=key_cache,
+-                    v_cache=value_cache,
+-                    page_table=page_table,
+-                    cache_seqlens=cache_seqlens,
+-                    cu_seqlens_q=cu_seqlens_q,
+-                    cu_seqlens_k_new=cu_seqlens_k if not use_local_attn else None,
+-                    max_seqlen_q=max_seqlen_q,
+-                    softmax_scale=layer.scaling,
+-                    causal=False if use_cascade_attn else causal,
+-                    window_size=window_size,
+-                    softcap=layer.logit_cap,
+-                    return_softmax_lse=use_cascade_attn or return_lse,
+-                    num_splits=self.num_splits,
+-                    out=_fa_out,
+-                    ver=self.fa_impl_ver,
+-                    **kwargs,
+-                )
+ 
+             if return_lse and not use_cascade_attn:
+                 if not isinstance(result, tuple):

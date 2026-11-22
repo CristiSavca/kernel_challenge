@@ -1,0 +1,242 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index 9b312ec5fbff3f02584c0edb1f351fd9a987a1cb..c0ec9f1a7f151c5dfcaa46f349d5dd9de3abc0b0 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -263,6 +263,26 @@ struct VectorStage {
+   SGL_DEVICE void publish() { publish_packed(); }
+ };
+ 
++template <bool Gate>
++SGL_DEVICE void finish_channels(const Projection& p, const int32_t* job, uint32_t column, uint32_t expert,
++                                uint32_t lane, uint32_t band, uint32_t part, const float4& gate, const float4& up) {
++  const float scale = cast<float>(p.global[expert]);
++#pragma unroll
++  for (uint32_t i = 0; i < 4; ++i) {
++    const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
++    if (out >= 0) {
++      const float a[4] = {gate.x, gate.y, gate.z, gate.w};
++      float value = scaled_bf16(a[i], scale);
++      if constexpr (Gate) {
++        const float b[4] = {up.x, up.y, up.z, up.w};
++        value = apply_activation_f32<ActivationKind::kSiLU>(value) * scaled_bf16(b[i], scale);
++      }
++      const uint32_t n = column + 64 * band + 16 * part + lane / 4 + 8 * (i / 2);
++      p.outputs[size_t(out) * p.output_width + n] = cast<bf16_t>(value);
++    }
++  }
++}
++
+ template <bool Gate, class Stage = VectorStage>
+ SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32_t column, PackedTile<Gate>* buffers, Stage stage = {}) {
+   const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+@@ -301,21 +321,7 @@ SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32
+     // The last rendezvous also protects shared storage across grid-stride jobs.
+     stage.publish();
+   }
+-  const float scale = cast<float>(p.global[expert]);
+-#pragma unroll
+-  for (uint32_t i = 0; i < 4; ++i) {
+-    const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
+-    if (out >= 0) {
+-      const float a[4] = {gate.x, gate.y, gate.z, gate.w};
+-      float value = scaled_bf16(a[i], scale);
+-      if constexpr (Gate) {
+-        const float b[4] = {up.x, up.y, up.z, up.w};
+-        value = apply_activation_f32<ActivationKind::kSiLU>(value) * scaled_bf16(b[i], scale);
+-      }
+-      const uint32_t n = column + 64 * band + 16 * part + lane / 4 + 8 * (i / 2);
+-      p.outputs[size_t(out) * p.output_width + n] = cast<bf16_t>(value);
+-    }
+-  }
++  finish_channels<Gate>(p, job, column, expert, lane, band, part, gate, up);
+ }
+ 
+ template <bool Gate>
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+index 05d493377090aa2218a44f74956e87661c6c0d40..c0d4c4dd3738f20b49698160abd9fce8e175b1f6 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+@@ -81,6 +81,128 @@ __global__ __launch_bounds__(32 * kChannelWarps) void tensor_projection(
+   }
+ }
+ 
++// The producer copies each live 128-feature row contiguously. A four-word
++// inter-row pad keeps the consuming warp's eight row groups on separate banks.
++template <bool Gate>
++struct alignas(128) StreamTile {
++  uint32_t weights[Gate ? 2 : 1][kKSteps][256];
++  uint16_t scales[Gate ? 2 : 1][kKSteps][64];
++  uint32_t inputs[kRows][8 * kKSteps + 4];
++};
++
++SGL_DEVICE uint32_t shared_addr(const void* ptr) {
++  return static_cast<uint32_t>(__cvta_generic_to_shared(ptr));
++}
++
++SGL_DEVICE void wait_phase(uint64_t* barrier, uint32_t parity) {
++  uint32_t complete;
++  do {
++    asm volatile("{ .reg .pred p; mbarrier.try_wait.parity.shared::cta.b64 p,[%1],%2; "
++                 "selp.b32 %0,1,0,p; }" : "=r"(complete) : "r"(shared_addr(barrier)), "r"(parity) : "memory");
++  } while (!complete);
++}
++
++template <bool Gate>
++SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Gate>& tile, uint64_t* full,
++                        uint32_t expert, uint32_t column, uint32_t chunk, int32_t slot, uint32_t live) {
++  constexpr uint32_t bytes = kKSteps * 16 * sizeof(bf16_t);
++  const uint32_t lane = threadIdx.x % 32, bar = shared_addr(full);
++  if (lane == 0) {
++    const uint32_t total = sizeof(tile.weights) + sizeof(tile.scales) + live * bytes;
++    asm volatile("mbarrier.arrive.expect_tx.shared::cta.b64 _, [%0], %1;" :: "r"(bar), "r"(total) : "memory");
++    const uint32_t y = expert * (p.input_width / 16) + chunk * kKSteps;
++#pragma unroll
++    for (uint32_t plane = 0; plane < (Gate ? 2u : 1u); ++plane) {
++      const uint32_t x = column + plane * p.output_width;
++      issue_tensor(&tile.weights[plane][0][0], &maps.weight, 2 * x, y, bar);
++      issue_tensor(&tile.scales[plane][0][0], &maps.scale, x / 2, y, bar);
++    }
++  }
++  __syncwarp();
++  if (slot >= 0) {
++    const uint32_t row = uint32_t(slot) / p.top_k;
++    const auto* src = p.inputs + size_t(row) * p.input_width + chunk * (16 * kKSteps);
++    asm volatile("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];"
++                 :: "r"(shared_addr(&tile.inputs[lane][0])), "l"(src), "n"(bytes), "r"(bar) : "memory");
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps) {
++  constexpr uint32_t stages = Gate ? 2 : 3;
++  __shared__ StreamTile<Gate> ring[stages];
++  __shared__ uint64_t full[stages], empty[stages];
++  const uint32_t jobs = p.plan[0];
++  if (blockIdx.y >= jobs) return;
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  if (threadIdx.x < stages) {
++    asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;\n"
++                 "mbarrier.init.shared::cta.b64 [%1], %2;\n"
++                 "fence.proxy.async.shared::cta;"
++                 :: "r"(shared_addr(full + lane)), "r"(shared_addr(empty + lane)), "n"(kChannelWarps) : "memory");
++  }
++  __syncthreads();
++  const uint32_t column = blockIdx.x * 128, chunks = p.input_width / (16 * kKSteps);
++  uint32_t sequence = 0;
++  for (uint32_t j = blockIdx.y; j < jobs; j += gridDim.y) {
++    const int32_t* job = p.plan + 1 + j * (kRows + 1);
++    const uint32_t expert = job[0];
++    if (warp == kChannelWarps) {
++      const int32_t slot = lane < kRows ? job[1 + lane] : -1;
++      const uint32_t live = __popc(__ballot_sync(0xffffffffu, slot >= 0));
++      for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++        const uint32_t index = sequence % stages;
++        if (sequence >= stages) wait_phase(empty + index, ((sequence / stages) - 1) & 1);
++        produce<Gate>(p, maps, ring[index], full + index, expert, column, chunk, slot, live);
++      }
++    } else {
++      const uint32_t band = warp / 4, part = (warp + lane / 8) % 4;
++      const uint32_t wi = 128 * band + 4 * lane + part, si = 32 * band + 4 * (lane / 4) + part;
++      const bool live = job[1 + lane / 4] >= 0;
++      float4 gate{}, up{};
++      for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++        const uint32_t index = sequence % stages;
++        wait_phase(full + index, (sequence / stages) & 1);
++        const auto& tile = ring[index];
++#pragma unroll
++        for (uint32_t s = 0; s < kKSteps; ++s) {
++          const auto* x = &tile.inputs[lane / 4][s * 8 + lane % 4];
++          const uint32_t lo = live ? x[0] : 0u, hi = live ? x[4] : 0u;
++          contract_fragment(gate, tile.weights[0][s][wi], tile.scales[0][s][si], lo, hi);
++          if constexpr (Gate) contract_fragment(up, tile.weights[1][s][wi], tile.scales[1][s][si], lo, hi);
++        }
++        __syncwarp();
++        if (lane == 0) {
++          asm volatile("mbarrier.arrive.shared::cta.b64 _, [%0];" :: "r"(shared_addr(empty + index)) : "memory");
++        }
++      }
++      finish_channels<Gate>(p, job, column, expert, lane, band, part, gate, up);
++    }
++  }
++}
++
++template <bool Gate>
++inline uint32_t resident_stream_blocks(int device) {
++  int current = -1, sms = 0, blocks = 0;
++  if (cudaGetDevice(&current) != cudaSuccess || current != device
++      || cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, device) != cudaSuccess
++      || cudaOccupancyMaxActiveBlocksPerMultiprocessor(&blocks, streamed_projection<Gate>,
++                                                     32 * (kChannelWarps + 1), 0) != cudaSuccess) return 0u;
++  return static_cast<uint32_t>(sms * blocks);
++}
++
++template <bool Gate>
++inline void launch_stream(const Projection& p, const BankMaps& maps, uint32_t groups, uint32_t bound, uint32_t resident, DLDevice dev) {
++  const uint32_t columns = p.output_width / 128;
++  const uint32_t lanes = resident / columns;
++  if (groups < lanes) {
++    host::LaunchKernel(dim3(columns, std::min(bound, lanes)), 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate>, p, maps);
++  } else {
++    host::LaunchKernel(dim3(columns, groups), 32 * kChannelWarps, dev)(tensor_projection<Gate>, p, maps);
++  }
++}
++
+ inline auto encoder() {
+   static const auto fn = [] {
+     void* ptr = nullptr;
+@@ -108,7 +230,7 @@ inline bool encode(tvm::ffi::TensorView bank, bool weight, CUtensorMap* output)
+ }
+ 
+ inline void check_map_storage(tvm::ffi::TensorView maps) {
+-  host::TensorMatcher({int64_t(2 * sizeof(BankMaps))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(maps);
++  host::TensorMatcher({int64_t(2 * sizeof(BankMaps) + 2 * sizeof(uint32_t))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(maps);
+ }
+ 
+ }  // namespace muse_tma_route
+@@ -121,7 +243,11 @@ struct MuseTmaRoutePair {
+     BankMaps encoded[2]{};
+     if (!encode(gate, true, &encoded[0].weight) || !encode(gs, false, &encoded[0].scale)
+         || !encode(down, true, &encoded[1].weight) || !encode(ds, false, &encoded[1].scale)) return false;
+-    std::memcpy(maps.data_ptr(), encoded, sizeof(encoded));
++    const int dev = gate.device().device_id;
++    const uint32_t resident[] = {resident_stream_blocks<true>(dev), resident_stream_blocks<false>(dev)};
++    auto* dst = static_cast<uint8_t*>(maps.data_ptr());
++    std::memcpy(dst, encoded, sizeof(encoded));
++    std::memcpy(dst + sizeof(encoded), resident, sizeof(resident));
+     return true;
+   }
+ 
+@@ -133,11 +259,15 @@ struct MuseTmaRoutePair {
+     using namespace muse_tma_route;
+     check_map_storage(maps);
+     BankMaps encoded[2];
+-    std::memcpy(encoded, maps.data_ptr(), sizeof(encoded));
++    uint32_t resident[2];
++    const auto* src = static_cast<const uint8_t*>(maps.data_ptr());
++    std::memcpy(encoded, src, sizeof(encoded));
++    std::memcpy(resident, src + sizeof(encoded), sizeof(resident));
+     MuseRoutePair::run_with([&](const auto& up, const auto& out, uint32_t count, DLDevice dev) {
+       if (aligned_packed_projection(up) && aligned_packed_projection(out)) {
+-        host::LaunchKernel(dim3(up.output_width / 128, count), 256, dev)(tensor_projection<true>, up, encoded[0]);
+-        host::LaunchKernel(dim3(out.output_width / 128, count), 256, dev)(tensor_projection<false>, out, encoded[1]);
++        const uint32_t bound = (plan.size(0) - 1) / (kRows + 1);
++        launch_stream<true>(up, encoded[0], count, bound, resident[0], dev);
++        launch_stream<false>(out, encoded[1], count, bound, resident[1], dev);
+       } else {
+         launch_projection<true>(up, count, dev);
+         launch_projection<false>(out, count, dev);
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index a97bccd9574a0711a6ad6c72157c7c10fa038505..8eebc1dab4d9a4f93056dcea8ffe2443d82e66cb 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -219,7 +219,8 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     if layer.humming_route_pair:
+         module = _tma_route_pair_module()
+         if module is not None:
+-            maps = torch.empty(512, dtype=torch.uint8, device="cpu")
++            # Four tensor maps plus two startup-measured resident CTA counts.
++            maps = torch.empty(520, dtype=torch.uint8, device="cpu")
+             banks = (layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale)
+             if module.prepare(banks[0], banks[1].view(torch.uint8), banks[2], banks[3].view(torch.uint8), maps):
+                 # Check live addresses again before each captured or eager launch.

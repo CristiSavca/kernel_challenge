@@ -1,0 +1,15 @@
+{
+  "scope": "V27 WGS layout inverse CPU proof",
+  "packer_sha256": "7310dd760cee4ae4802b1290d46d3dbb2e871a1cde131b78bb6e69743c23d0c1",
+  "method": "Run six frozen packer functions with a NumPy tensor shim and compare an independent inverse against each input code nibble and scale byte.",
+  "cases": [
+    {"projection": "w2", "n": 256, "k": 4096, "code_nibbles": 1048576, "scale_bytes": 65536},
+    {"projection": "w13", "n": 512, "k": 4096, "code_nibbles": 2097152, "scale_bytes": 131072},
+    {"projection": "w2", "n": 512, "k": 4096, "code_nibbles": 2097152, "scale_bytes": 131072},
+    {"projection": "w13", "n": 1024, "k": 4096, "code_nibbles": 4194304, "scale_bytes": 262144}
+  ],
+  "code_nibbles_compared": 9437184,
+  "scale_bytes_compared": 589824,
+  "mismatches": 0,
+  "gpu_validation": false
+}

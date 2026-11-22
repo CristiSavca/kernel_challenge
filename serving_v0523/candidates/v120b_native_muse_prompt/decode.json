@@ -1,0 +1,16 @@
+{
+  "torch": "2.5.1",
+  "collectives": "real Gloo all_gather_into_tensor and startup MIN",
+  "tp": [
+    2,
+    4,
+    8
+  ],
+  "decode_cases_per_tp": 8,
+  "ordinary_and_preprojected_prefill_cases_per_tp": 16,
+  "empty_worker_calls_per_tp": 2,
+  "full_K": 40960,
+  "maximum_verify_rows": 256,
+  "compare": "bitwise BF16 normalized draft input, lengths, all physical slots and positions",
+  "cuda_h200": false
+}

@@ -1,0 +1,218 @@
+{
+  "checked_at_utc": "2026-11-18T17:31:02.047390+00:00",
+  "measured_incumbent": {
+    "candidate": "V64",
+    "receipt": "serving_v0523/runs/abd217baf0ed49fd.json",
+    "official_score": 1.4119,
+    "ratios_at_1_4_16_32": [
+      1.17,
+      1.316,
+      1.5919,
+      1.6213
+    ],
+    "peak_GB_per_GPU_above_stock": 1.9
+  },
+  "work": {
+    "V144": {
+      "directory": "serving_v0523/candidates/v144_pipelined_expert_projection",
+      "patch_sha256": "c6f2938fae1d63325122f70a922b14e58d4f542f29b0de43e2be7079ab4cce09",
+      "bytes": 96499,
+      "files": 16,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "validation": "serving_v0523/candidates/v144_pipelined_expert_projection/validation.json",
+      "H200_measurement": null,
+      "parent": "V141",
+      "change": "Pipeline the live low-density NVFP4 gate/up and down projections while preserving ascending-K FP32 accumulation and BF16 boundaries.",
+      "observed": {
+        "SM90_and_SM90a": "zero spills",
+        "registers_per_thread_W13": [
+          63,
+          78
+        ],
+        "registers_per_thread_W2": [
+          40,
+          56
+        ],
+        "steady_HMMA_W13_W2": [
+          8,
+          4
+        ],
+        "startup_dispatch_cases": [
+          72,
+          81
+        ]
+      },
+      "tradeoff": "Earlier independent loads and later waits compete with increased registers and lower possible occupancy."
+    },
+    "V145": {
+      "directory": "serving_v0523/candidates/v145_committed_row_feasibility",
+      "fixture": "serving_v0523/candidates/v145_committed_row_feasibility/check.json",
+      "disposition": "feasibility only",
+      "change_tested": "Project only committed dense DFLASH target rows in verification.",
+      "evidence": {
+        "four_request_patterns": 4096,
+        "validated_live_rows": 73728,
+        "single_user_m16_tiles_before_after": [
+          1,
+          1
+        ],
+        "V64_cold_weight_MiB_before_after": [
+          660,
+          660
+        ],
+        "V120b_cold_weight_MiB_before_after": [
+          100,
+          100
+        ]
+      },
+      "decision": "Retain the incumbent. The native one-user projection reads all channels with either row count."
+    },
+    "V146": {
+      "directory": "serving_v0523/candidates/v146_zero_copy_window_prefill",
+      "patch_sha256": "f214d93d59bd7b1759aef61dd3fd4055638e376108cf6fb920f3fc276850d2c5",
+      "bytes": 61251,
+      "files": 11,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "validation": "serving_v0523/candidates/v146_zero_copy_window_prefill/validation.json",
+      "H200_measurement": null,
+      "parent": "V143",
+      "change": "Certify live sliding-window FP8 KV suffixes in the original cache and pass eligible dense views to FA3.",
+      "observed": {
+        "new_interpreter_cases": 220,
+        "compiled_SM90_specializations": 16,
+        "zero_spills": true,
+        "full_path_interpreter_regression": 243,
+        "wrapper_pairs": 72,
+        "compared_FP8_bytes": 57103104,
+        "native_attention_range_comparisons": 460800
+      },
+      "tradeoff": "Physical contiguity, proof readiness and per-layer fast-path uptake control the net gain. Native V64 already skips expired keys."
+    },
+    "V147": {
+      "directory": "serving_v0523/candidates/v147_integrated_experts_prefill",
+      "patch_sha256": "7a3d4dc6c0e526b60ca50bc975a6036da7796d8eb05f9e8afb70423164425437",
+      "bytes": 113650,
+      "files": 17,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "validation": "serving_v0523/candidates/v147_integrated_experts_prefill/validation.json",
+      "H200_measurement": null,
+      "composition": [
+        "V144",
+        "V146"
+      ],
+      "anchor": "V64",
+      "tree": "cd089ab0b54e9fa2ee4c1cfdcb3f354370748d85",
+      "observed": {
+        "composition_both_orders_and_reverse": true,
+        "python_modules": 14,
+        "new_FP8_writes_bytes": 538624,
+        "new_or_existing_attention_wrapper_pairs": [
+          72,
+          63
+        ],
+        "independent_FP8_reference_bytes": 57103104,
+        "independent_FP32_reference_components": 16128,
+        "independent_verification_layers_with_stale_certificates": 62
+      },
+      "next_measurement": "Eligible for the conditional Nov19 16-user private check. A passing matched check measures one load."
+    }
+  },
+  "nov19_private_checks": {
+    "receipt": "serving_v0523/runs/nov19_integrated_verify_runner.launch.json",
+    "armed_at_utc": "2026-11-18T17:29:20.986547+00:00",
+    "pid": 75333,
+    "caffeinate_pid": 75340,
+    "window_utc": [
+      "2026-11-19T00:03:00+00:00",
+      "2026-11-19T22:00:00+00:00"
+    ],
+    "current_conditions": [
+      "V120b/32 on authenticated V87 crash and passing V64",
+      "V147/16 on V93 pending and passing V64",
+      "V139/4 on its existing guards"
+    ],
+    "slot_two_alternatives": {
+      "eligible_V93_pass": "V98/16",
+      "confirmed_V93_or_V68_failure": "V95/16",
+      "unknown": "defer"
+    },
+    "regressions": {
+      "nov19": 91,
+      "nov20": 37
+    },
+    "action_on_arm": "none"
+  },
+  "nov20_private_checks": {
+    "receipt": "serving_v0523/runs/nov20_slot_arbitration.rollover.json",
+    "start_utc": "2026-11-20T00:03:00Z",
+    "end_utc_exclusive": "2026-11-20T07:59:00Z",
+    "nominal": [
+      "V129/1",
+      "V132/32",
+      "V141/32"
+    ],
+    "alternate": [
+      "V129/1",
+      "V141/32",
+      "V132/32"
+    ],
+    "grace_ends_utc": "2026-11-20T00:13:00Z",
+    "V132": "Needs the exact measured V120b/32 pass. In slot three it additionally requires authenticated V141/32 acceptance that day.",
+    "V141": "Needs authenticated V139/4 passed or pending, V129/1 accepted. May take slot two after grace if V132 is unattempted and its control is absent or confirmed pending/failed. Ambiguous evidence defers.",
+    "quota_by_slot": {
+      "second": {
+        "used": 1,
+        "left": 2,
+        "reserve_checks": 1
+      },
+      "third": {
+        "used": 2,
+        "left": 1,
+        "reserve_checks": 0
+      }
+    },
+    "checks_today_from_rollover": 0,
+    "cross_process_lock": true,
+    "attempt_receipts_unchanged_on_rollover": 28,
+    "armed_waiters": {
+      "nov20_v132_runner": 74375,
+      "nov20_v141_runner": 74393
+    }
+  },
+  "deadline_and_quota": {
+    "official_tracks": "https://openkernelchallenge.dev/api/v1/serving",
+    "phase": "serving",
+    "kernel_open": false,
+    "kernel_close_utc": "2026-11-05T08:00:00Z",
+    "serving_exclusive_end_utc": "2026-11-20T08:00:00Z",
+    "nov19_scored_quota": {
+      "start_utc": "2026-11-19T00:00:00Z",
+      "end_utc_exclusive": "2026-11-20T00:00:00Z",
+      "maximum_scored_runs": 1,
+      "scheduled_scored_runs": 0
+    },
+    "private_checks_per_UTC_day": 3,
+    "kernel_cli_note": "okc problems can list daily kernel allowance counts after its track closes. The official track status controls eligibility."
+  },
+  "remaining_H200_verification": [
+    "agreement with stock and exact generated lengths",
+    "peak per-GPU memory at most 2 GB above stock",
+    "TTFT at most twice stock at each load",
+    "four-load frontier score at stock per-user speed"
+  ]
+}

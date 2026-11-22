@@ -1,0 +1,46 @@
+{
+  "parent": "v84_routed_decode_committed_context",
+  "parent_patch_sha256": "8dafee38e53c17a484217016c9f0858b9f2b9bee1969af0818552e97818d298e",
+  "patch_sha256": "9e3ed9204b56015d69420d220375c4d2bddeb7e32f8b92ca3442fd6dcd1acecd",
+  "patch_bytes": 168634,
+  "files": 30,
+  "max_added_line_bytes": 107,
+  "pinned_checkout": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "official_export": true,
+  "original_official_export_reproduced": true,
+  "changed_files_vs_parent": [
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py"
+  ],
+  "kernel_sha256": "26bf172d57eea38c00ff3b4bd3b71a9734dd9b2af1207d47e45597379c47f4a0",
+  "renamed_locals": [
+    "query_depth",
+    "key_depth"
+  ],
+  "python_sources_compiled": 27,
+  "forward_reverse_apply": true,
+  "gpu_execution": false,
+  "attention_compile": {
+    "target": "sm90",
+    "triton": "3.8.0",
+    "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+    "assembled_specializations": {
+      "width8-window-1-tree1": "7b4eea9e996bf6e568868fe2ec606e316d93e532bf6eef6a387073c7f15368a0",
+      "width8-window-1-tree0": "3f7ad61791ad84ffb159a599e5c78f8ad5303da5a211476d4f01e4a48e532612",
+      "width8-window-1": "2fd45aa1fa498fbd1aad1ff5d5f5d03c72e49abd91cbf49ef256e6bd61ca71e8",
+      "width8-window512-tree1": "a6a9909694d04e7bd76d97c1b19f75f563ea045485c20d08b2bb3e0a468e66ca",
+      "width8-window512-tree0": "1fa9df35add800f06587d206ae12b387a2a17c1087be52d563ec152e214f796d",
+      "width8-window512": "29eadebfb30c3c16b90c221d078b851d7e8bc069fdaf6cda9668271ed8c7bbb6",
+      "width8-window-1-tree1-captured-i32-gqa8": "cd1efe6f73046b5b5ce92733d67d732491fb55b80e790cf9015f93b88b97e5b8",
+      "width8-window512-tree1-captured-i32-gqa8": "80668c3ed6d43e04ed79550a7ab813b30079a5ae31d9f8f41276b7ba9ee23dfa"
+    }
+  },
+  "cpu_attention_regression": {
+    "source": "v70 tree fixture with V84a and its identical checked attention source",
+    "bitwise_cpu_results_vs_parent": 72,
+    "max_relative_l2": 0.001504,
+    "proposals": 1400,
+    "accept_slot_cases": 9800,
+    "graph_resets": 707,
+    "capability_cases": 32
+  }
+}

@@ -1,0 +1,506 @@
+{
+  "trace_files": {
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__load.json": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__server.log": "b7212de67ee2c9fe42b113054891cb4f56cdb3eaa5d9daf5cca2602c1af29bc4",
+    "experiments/iterations/20261118-serving-mixed-graph-capacity.json": "e9a3bebc20e2cce814b952f8d3f0d9d451af34147006d364cfa6fc02658d126b",
+    "serving_v0523/candidates/v194_mixed_decode_chunk_budget/trace.json": "fb3c6741c6df204244d8468f204813605e644c18f27821ccce400e2af7dcdbf1"
+  },
+  "selector_sha256": "78a02c646841d7ecf24a3c6d1f3af8c6c27d8bb85d46541cc14db76dc70ff295",
+  "raw_v41_requests": 767,
+  "repetitions": 7,
+  "observed_server": "Eight H200 TP8 V41, mixed prefill and LayerNorm SP disabled during observation",
+  "width": 8,
+  "tp": 8,
+  "vocab": 202048,
+  "channels": 8192,
+  "source_taps": 5,
+  "toy": {
+    "prompts": 2,
+    "prompt_rows": 3992,
+    "tails": 3,
+    "live_rows": 4016,
+    "captured_rows": 4096,
+    "logits_rows": 26,
+    "projected_gate": true,
+    "selected_endpoint_gate": true,
+    "captured_span_selection_gate": true,
+    "fp32_full_logits_bytes": 21012992,
+    "tail_full_logit_bytes": 19396608,
+    "raw_tap_gather_bytes": 328990720,
+    "normalized_feature_gather_bytes": 65798144,
+    "raw_minus_normalized_bytes": 263192576,
+    "source_rows_per_rank": 502,
+    "endpoint_gather_rows": 208,
+    "endpoint_selected_bytes": 3407872,
+    "endpoint_full_bytes": 65798144,
+    "selected_positions": [
+      999,
+      3991,
+      3992,
+      3993,
+      3994,
+      3995,
+      3996,
+      3997,
+      3998,
+      3999,
+      4000,
+      4001,
+      4002,
+      4003,
+      4004,
+      4005,
+      4006,
+      4007,
+      4008,
+      4009,
+      4010,
+      4011,
+      4012,
+      4013,
+      4014,
+      4015
+    ]
+  },
+  "loads": {
+    "1": {
+      "prompt_calls": 54,
+      "paper_schedule": {
+        "calls": 0,
+        "prompt_requests": 0,
+        "tail_appearances": 0,
+        "head_rows": 0,
+        "rows_per_call": null,
+        "vocabulary_gib_per_rank": 0.0,
+        "tail_vocabulary_gib_per_rank": 0.0,
+        "normalized_context_calls": 0,
+        "owner_head_eligible_calls": 0,
+        "owner_head_with_captured_span": 0,
+        "context_rows": 0,
+        "eligible_context_gather_gib": {
+          "raw": 0.0,
+          "projected": 0.0
+        },
+        "selected_endpoint_gib_per_rank": 0.0,
+        "selected_endpoint_input_rows_per_rank": 0,
+        "selected_endpoint_gathered_rows_per_rank": 0
+      },
+      "ordinary_budget": {
+        "calls": 0,
+        "prompt_requests": 0,
+        "tail_appearances": 0,
+        "head_rows": 0,
+        "rows_per_call": null,
+        "vocabulary_gib_per_rank": 0.0,
+        "tail_vocabulary_gib_per_rank": 0.0,
+        "normalized_context_calls": 0,
+        "owner_head_eligible_calls": 0,
+        "owner_head_with_captured_span": 0,
+        "context_rows": 0,
+        "eligible_context_gather_gib": {
+          "raw": 0.0,
+          "projected": 0.0
+        },
+        "selected_endpoint_gib_per_rank": 0.0,
+        "selected_endpoint_input_rows_per_rank": 0,
+        "selected_endpoint_gathered_rows_per_rank": 0
+      },
+      "extra_identifiable_continuations": {
+        "calls": 0,
+        "prompt_requests": 0,
+        "tail_appearances": 0,
+        "head_rows": 0,
+        "rows_per_call": null,
+        "vocabulary_gib_per_rank": 0.0,
+        "tail_vocabulary_gib_per_rank": 0.0,
+        "normalized_context_calls": 0,
+        "owner_head_eligible_calls": 0,
+        "owner_head_with_captured_span": 0,
+        "context_rows": 0,
+        "eligible_context_gather_gib": {
+          "raw": 0.0,
+          "projected": 0.0
+        },
+        "selected_endpoint_gib_per_rank": 0.0,
+        "selected_endpoint_input_rows_per_rank": 0,
+        "selected_endpoint_gathered_rows_per_rank": 0
+      },
+      "client_requests": 39,
+      "generated": 9724,
+      "matching_generated_fraction_at_four_commits": 0.0,
+      "conditional_ceiling_fraction_at_eight_commits": 0.0,
+      "measured_client_seconds": {
+        "cold_ttft": 24.176633247999916,
+        "later_ttft": 12.364837519999583,
+        "stream": 37.44842957800006,
+        "gaps": 0.0015785930002039095
+      },
+      "measured_client_time_shares": {
+        "cold_ttft": 0.32674888507001837,
+        "later_ttft": 0.1671116417363874,
+        "stream": 0.5061181383990633,
+        "gaps": 2.1334794530939663e-05
+      },
+      "observed_repetition_wall_seconds": [
+        25.116745897999863,
+        22.131640414999993,
+        26.743092625999907
+      ],
+      "all_phase_removal_raw_rung_factor": {
+        "first_turn_ttft_free": 1.496460870650668,
+        "later_turn_ttft_free": 1.2011773114051016,
+        "after_first_token_free": 2.0408397862943586
+      },
+      "hypothetical_makespan_credit": [
+        {
+          "net_milliseconds_per_fused_call": 10.0,
+          "raw_throughput_factor": 1.0
+        },
+        {
+          "net_milliseconds_per_fused_call": 50.0,
+          "raw_throughput_factor": 1.0
+        },
+        {
+          "net_milliseconds_per_fused_call": 100.0,
+          "raw_throughput_factor": 1.0
+        }
+      ]
+    },
+    "4": {
+      "prompt_calls": 127,
+      "paper_schedule": {
+        "calls": 70,
+        "prompt_requests": 74,
+        "tail_appearances": 176,
+        "head_rows": 1482,
+        "rows_per_call": {
+          "min": 9,
+          "median": 25.0,
+          "max": 25
+        },
+        "vocabulary_gib_per_rank": 1.1154828071594238,
+        "tail_vocabulary_gib_per_rank": 1.059783935546875,
+        "normalized_context_calls": 42,
+        "owner_head_eligible_calls": 42,
+        "owner_head_with_captured_span": 42,
+        "context_rows": 120068,
+        "eligible_context_gather_gib": {
+          "raw": 9.1717529296875,
+          "projected": 1.8343505859375
+        },
+        "selected_endpoint_gib_per_rank": 0.107177734375,
+        "selected_endpoint_input_rows_per_rank": 878,
+        "selected_endpoint_gathered_rows_per_rank": 7024
+      },
+      "ordinary_budget": {
+        "calls": 66,
+        "prompt_requests": 70,
+        "tail_appearances": 164,
+        "head_rows": 1382,
+        "rows_per_call": {
+          "min": 9,
+          "median": 25.0,
+          "max": 25
+        },
+        "vocabulary_gib_per_rank": 1.0402140617370605,
+        "tail_vocabulary_gib_per_rank": 0.9875259399414062,
+        "normalized_context_calls": 38,
+        "owner_head_eligible_calls": 38,
+        "owner_head_with_captured_span": 38,
+        "context_rows": 54532,
+        "eligible_context_gather_gib": {
+          "raw": 4.1717529296875,
+          "projected": 0.8343505859375
+        },
+        "selected_endpoint_gib_per_rank": 0.094970703125,
+        "selected_endpoint_input_rows_per_rank": 778,
+        "selected_endpoint_gathered_rows_per_rank": 6224
+      },
+      "extra_identifiable_continuations": {
+        "calls": 4,
+        "prompt_requests": 4,
+        "tail_appearances": 12,
+        "head_rows": 100,
+        "rows_per_call": {
+          "min": 25,
+          "median": 25.0,
+          "max": 25
+        },
+        "vocabulary_gib_per_rank": 0.07526874542236328,
+        "tail_vocabulary_gib_per_rank": 0.07225799560546875,
+        "normalized_context_calls": 4,
+        "owner_head_eligible_calls": 4,
+        "owner_head_with_captured_span": 4,
+        "context_rows": 65536,
+        "eligible_context_gather_gib": {
+          "raw": 5.0,
+          "projected": 1.0
+        },
+        "selected_endpoint_gib_per_rank": 0.01220703125,
+        "selected_endpoint_input_rows_per_rank": 100,
+        "selected_endpoint_gathered_rows_per_rank": 800
+      },
+      "client_requests": 104,
+      "generated": 21774,
+      "matching_generated_fraction_at_four_commits": 0.03233213924864517,
+      "conditional_ceiling_fraction_at_eight_commits": 0.06466427849729034,
+      "measured_client_seconds": {
+        "cold_ttft": 200.55707192700015,
+        "later_ttft": 37.00751040200021,
+        "stream": 137.84517806699955,
+        "gaps": 0.05691591200024959
+      },
+      "measured_client_time_shares": {
+        "cold_ttft": 0.5341541196121506,
+        "later_ttft": 0.0985640344061918,
+        "stream": 0.36713025886196987,
+        "gaps": 0.0001515871196877156
+      },
+      "observed_repetition_wall_seconds": [
+        45.58841756400011,
+        55.364123770000106
+      ],
+      "all_phase_removal_raw_rung_factor": {
+        "first_turn_ttft_free": 1.9884067719041352,
+        "later_turn_ttft_free": 1.0970638065345657,
+        "after_first_token_free": 1.6779331524840488
+      },
+      "hypothetical_makespan_credit": [
+        {
+          "net_milliseconds_per_fused_call": 10.0,
+          "raw_throughput_factor": 1.0069768473288874
+        },
+        {
+          "net_milliseconds_per_fused_call": 50.0,
+          "raw_throughput_factor": 1.035886046299329
+        },
+        {
+          "net_milliseconds_per_fused_call": 100.0,
+          "raw_throughput_factor": 1.0744445340569544
+        }
+      ]
+    },
+    "16": {
+      "prompt_calls": 241,
+      "paper_schedule": {
+        "calls": 99,
+        "prompt_requests": 112,
+        "tail_appearances": 1305,
+        "head_rows": 10552,
+        "rows_per_call": {
+          "min": 17,
+          "median": 113,
+          "max": 121
+        },
+        "vocabulary_gib_per_rank": 7.942358016967773,
+        "tail_vocabulary_gib_per_rank": 7.858057022094727,
+        "normalized_context_calls": 58,
+        "owner_head_eligible_calls": 58,
+        "owner_head_with_captured_span": 58,
+        "context_rows": 86791,
+        "eligible_context_gather_gib": {
+          "raw": 6.6375732421875,
+          "projected": 1.3275146484375
+        },
+        "selected_endpoint_gib_per_rank": 0.7498779296875,
+        "selected_endpoint_input_rows_per_rank": 6143,
+        "selected_endpoint_gathered_rows_per_rank": 49144
+      },
+      "ordinary_budget": {
+        "calls": 99,
+        "prompt_requests": 112,
+        "tail_appearances": 1305,
+        "head_rows": 10552,
+        "rows_per_call": {
+          "min": 17,
+          "median": 113,
+          "max": 121
+        },
+        "vocabulary_gib_per_rank": 7.942358016967773,
+        "tail_vocabulary_gib_per_rank": 7.858057022094727,
+        "normalized_context_calls": 58,
+        "owner_head_eligible_calls": 58,
+        "owner_head_with_captured_span": 58,
+        "context_rows": 86791,
+        "eligible_context_gather_gib": {
+          "raw": 6.6375732421875,
+          "projected": 1.3275146484375
+        },
+        "selected_endpoint_gib_per_rank": 0.7498779296875,
+        "selected_endpoint_input_rows_per_rank": 6143,
+        "selected_endpoint_gathered_rows_per_rank": 49144
+      },
+      "extra_identifiable_continuations": {
+        "calls": 0,
+        "prompt_requests": 0,
+        "tail_appearances": 0,
+        "head_rows": 0,
+        "rows_per_call": null,
+        "vocabulary_gib_per_rank": 0.0,
+        "tail_vocabulary_gib_per_rank": 0.0,
+        "normalized_context_calls": 0,
+        "owner_head_eligible_calls": 0,
+        "owner_head_with_captured_span": 0,
+        "context_rows": 0,
+        "eligible_context_gather_gib": {
+          "raw": 0.0,
+          "projected": 0.0
+        },
+        "selected_endpoint_gib_per_rank": 0.0,
+        "selected_endpoint_input_rows_per_rank": 0,
+        "selected_endpoint_gathered_rows_per_rank": 0
+      },
+      "client_requests": 208,
+      "generated": 45027,
+      "matching_generated_fraction_at_four_commits": 0.11593044173495902,
+      "conditional_ceiling_fraction_at_eight_commits": 0.23186088346991804,
+      "measured_client_seconds": {
+        "cold_ttft": 1704.3680659189997,
+        "later_ttft": 95.55345720599917,
+        "stream": 729.9001032200003,
+        "gaps": 0.18601411400027246
+      },
+      "measured_client_time_shares": {
+        "cold_ttft": 0.6736612327422812,
+        "later_ttft": 0.037768050846148295,
+        "stream": 0.2884971932683888,
+        "gaps": 7.352314318170413e-05
+      },
+      "observed_repetition_wall_seconds": [
+        164.83263510899997
+      ],
+      "all_phase_removal_raw_rung_factor": {
+        "first_turn_ttft_free": 2.826522271723326,
+        "later_turn_ttft_free": 1.0311677618709605,
+        "after_first_token_free": 1.4498253893715942
+      },
+      "hypothetical_makespan_credit": [
+        {
+          "net_milliseconds_per_fused_call": 10.0,
+          "raw_throughput_factor": 1.0060423832865077
+        },
+        {
+          "net_milliseconds_per_fused_call": 50.0,
+          "raw_throughput_factor": 1.0309602102606412
+        },
+        {
+          "net_milliseconds_per_fused_call": 100.0,
+          "raw_throughput_factor": 1.063898738913432
+        }
+      ]
+    },
+    "32": {
+      "prompt_calls": 351,
+      "paper_schedule": {
+        "calls": 59,
+        "prompt_requests": 88,
+        "tail_appearances": 1274,
+        "head_rows": 10280,
+        "rows_per_call": {
+          "min": 17,
+          "median": 203,
+          "max": 249
+        },
+        "vocabulary_gib_per_rank": 7.737627029418945,
+        "tail_vocabulary_gib_per_rank": 7.671390533447266,
+        "normalized_context_calls": 45,
+        "owner_head_eligible_calls": 38,
+        "owner_head_with_captured_span": 38,
+        "context_rows": 158771,
+        "eligible_context_gather_gib": {
+          "raw": 12.1234130859375,
+          "projected": 2.4246826171875
+        },
+        "selected_endpoint_gib_per_rank": 0.7716064453125,
+        "selected_endpoint_input_rows_per_rank": 6321,
+        "selected_endpoint_gathered_rows_per_rank": 50568
+      },
+      "ordinary_budget": {
+        "calls": 55,
+        "prompt_requests": 84,
+        "tail_appearances": 1150,
+        "head_rows": 9284,
+        "rows_per_call": {
+          "min": 17,
+          "median": 201,
+          "max": 249
+        },
+        "vocabulary_gib_per_rank": 6.987950325012207,
+        "tail_vocabulary_gib_per_rank": 6.924724578857422,
+        "normalized_context_calls": 41,
+        "owner_head_eligible_calls": 34,
+        "owner_head_with_captured_span": 34,
+        "context_rows": 93235,
+        "eligible_context_gather_gib": {
+          "raw": 7.1234130859375,
+          "projected": 1.4246826171875
+        },
+        "selected_endpoint_gib_per_rank": 0.6500244140625,
+        "selected_endpoint_input_rows_per_rank": 5325,
+        "selected_endpoint_gathered_rows_per_rank": 42600
+      },
+      "extra_identifiable_continuations": {
+        "calls": 4,
+        "prompt_requests": 4,
+        "tail_appearances": 124,
+        "head_rows": 996,
+        "rows_per_call": {
+          "min": 249,
+          "median": 249.0,
+          "max": 249
+        },
+        "vocabulary_gib_per_rank": 0.7496767044067383,
+        "tail_vocabulary_gib_per_rank": 0.7466659545898438,
+        "normalized_context_calls": 4,
+        "owner_head_eligible_calls": 4,
+        "owner_head_with_captured_span": 4,
+        "context_rows": 65536,
+        "eligible_context_gather_gib": {
+          "raw": 5.0,
+          "projected": 1.0
+        },
+        "selected_endpoint_gib_per_rank": 0.12158203125,
+        "selected_endpoint_input_rows_per_rank": 996,
+        "selected_endpoint_gathered_rows_per_rank": 7968
+      },
+      "client_requests": 416,
+      "generated": 94370,
+      "matching_generated_fraction_at_four_commits": 0.054000211931757976,
+      "conditional_ceiling_fraction_at_eight_commits": 0.10800042386351595,
+      "measured_client_seconds": {
+        "cold_ttft": 6808.2587145259995,
+        "later_ttft": 304.29081697699826,
+        "stream": 2244.534572389999,
+        "gaps": 0.6589991970072333
+      },
+      "measured_client_time_shares": {
+        "cold_ttft": 0.7275534965560079,
+        "later_ttft": 0.0325175433461642,
+        "stream": 0.2398585372202444,
+        "gaps": 7.042287758355178e-05
+      },
+      "observed_repetition_wall_seconds": [
+        304.4294033150002
+      ],
+      "all_phase_removal_raw_rung_factor": {
+        "first_turn_ttft_free": 3.32072336460862,
+        "later_turn_ttft_free": 1.031989542392843,
+        "after_first_token_free": 1.359548521713427
+      },
+      "hypothetical_makespan_credit": [
+        {
+          "net_milliseconds_per_fused_call": 10.0,
+          "raw_throughput_factor": 1.0019418152930886
+        },
+        {
+          "net_milliseconds_per_fused_call": 50.0,
+          "raw_throughput_factor": 1.00978507973534
+        },
+        {
+          "net_milliseconds_per_fused_call": 100.0,
+          "raw_throughput_factor": 1.0197635473574256
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+  "shapes": [
+    {
+      "tokens": 8192,
+      "legacy_capacity_rows": [
+        8192,
+        8199
+      ],
+      "compact_capacity_rows": [
+        12291,
+        12298
+      ],
+      "bf16_workspace_bytes_before_and_after": 201498624,
+      "max_waves": [
+        8,
+        6
+      ],
+      "synthetic_wave_counts": [
+        {
+          "1": 245,
+          "2": 267
+        },
+        {
+          "1": 512
+        }
+      ],
+      "mean_waves": [
+        1.521484375,
+        1.0
+      ],
+      "conditional_mean_projection_calls_per_rank_per_62_layers": [
+        188.6640625,
+        124.0
+      ],
+      "conditional_mean_separate_SiLU_calls_per_rank_per_62_layers": [
+        94.33203125,
+        0
+      ]
+    },
+    {
+      "tokens": 16384,
+      "legacy_capacity_rows": [
+        16377,
+        16384
+      ],
+      "compact_capacity_rows": [
+        24569,
+        24576
+      ],
+      "bf16_workspace_bytes_before_and_after": 402653184,
+      "max_waves": [
+        9,
+        6
+      ],
+      "synthetic_wave_counts": [
+        {
+          "2": 265,
+          "1": 247
+        },
+        {
+          "1": 512
+        }
+      ],
+      "mean_waves": [
+        1.517578125,
+        1.0
+      ],
+      "conditional_mean_projection_calls_per_rank_per_62_layers": [
+        188.1796875,
+        124.0
+      ],
+      "conditional_mean_separate_SiLU_calls_per_rank_per_62_layers": [
+        94.08984375,
+        0
+      ]
+    }
+  ],
+  "archived_H200_synthetic_route_counts": [
+    {
+      "tokens": 12288,
+      "synthetic_H200_local_routes": 12046,
+      "fits_without_overflow_V115": true,
+      "fits_without_overflow_V306": true
+    },
+    {
+      "tokens": 16384,
+      "synthetic_H200_local_routes": 16224,
+      "fits_without_overflow_V115": true,
+      "fits_without_overflow_V306": true
+    }
+  ],
+  "eligibility_envelope": [
+    {
+      "users": 1,
+      "rep": 0,
+      "eligible_prompt_passes": 6,
+      "modelled_eager_count_readbacks_avoided_per_rank": 372,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 3.2151492444956338,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 43.68592073831549
+    },
+    {
+      "users": 1,
+      "rep": 1,
+      "eligible_prompt_passes": 4,
+      "modelled_eager_count_readbacks_avoided_per_rank": 248,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 4.249546930683568,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 57.740825159336175
+    },
+    {
+      "users": 1,
+      "rep": 2,
+      "eligible_prompt_passes": 7,
+      "modelled_eager_count_readbacks_avoided_per_rank": 434,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 2.934287099626941,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 39.869699323358496
+    },
+    {
+      "users": 4,
+      "rep": 0,
+      "eligible_prompt_passes": 15,
+      "modelled_eager_count_readbacks_avoided_per_rank": 930,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 2.3342763729646783,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 31.71703857456685
+    },
+    {
+      "users": 4,
+      "rep": 1,
+      "eligible_prompt_passes": 20,
+      "modelled_eager_count_readbacks_avoided_per_rank": 1240,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 2.126118424347165,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 28.888687243777678
+    },
+    {
+      "users": 16,
+      "rep": 0,
+      "eligible_prompt_passes": 75,
+      "modelled_eager_count_readbacks_avoided_per_rank": 4650,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 1.6879942151459308,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 22.93566359815069
+    },
+    {
+      "users": 32,
+      "rep": 0,
+      "eligible_prompt_passes": 150,
+      "modelled_eager_count_readbacks_avoided_per_rank": 9300,
+      "average_net_saving_ms_per_eligible_layer_for_5pct_run": 1.558778306784437,
+      "average_net_saving_ms_per_eligible_layer_for_2_833x_run": 21.17993921289118
+    }
+  ],
+  "conditional_assumptions": "512 independent draws per shape; eight distinct uniform choices, 32 of 256 experts local. Counterfactual kernel calls, counting only eligible conditional replays on each rank.",
+  "eligibility_assumptions": "Prior scheduler-shape reconstruction with 62 expert layers per eligible pass. Includes no measurement of actual calls, graph capture, routing skew, sync latency or device overlap.",
+  "baseline_note": "V197 already fuses W13 on supported prompt geometry. Against V197 the new benefit is removal of the host route-count read and eager graph break. V115 supplies the wave-workspace comparison.",
+  "physical_V306_timing": false
+}

@@ -1,0 +1,172 @@
+{
+  "recorded_utc": "2026-11-19T02:01:31.491287+00:00",
+  "objective": "4x official four-load serving score",
+  "best_official": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "candidate": "V229",
+  "exports": {
+    "V225": {
+      "patch": "serving_v0523/candidates/v225_packed_draft_candidates/patch.diff",
+      "parent": "V224",
+      "tree": "a328927d38a145ed9d9c627cdced2987be9fc67f",
+      "bytes": 370398,
+      "patch_sha256": "734cc00c345e97f9b43e33487fc580ba79951a7cd0935c9ad9285b634f82969c",
+      "delta_sha256": "4653fc0e33ed169bb68f73ccd1fc4c7cc39ff5a56d07b31dd704d8156328b285"
+    },
+    "V228": {
+      "patch": "serving_v0523/candidates/v228_sharded_verify_projections/patch.diff",
+      "parent": "V224",
+      "tree": "0a66d4a6b1af96d87f58501388520b695582bbd0",
+      "bytes": 370243,
+      "patch_sha256": "9a4076c880c43d059660251e050fb64429595c67c657c60a61e607630307f901",
+      "delta_sha256": "ae0bf6728ae363bd1e29f4076adbf502bc8c7339778580d8be63a9b15edbdc37"
+    },
+    "V229": {
+      "patch": "serving_v0523/candidates/v229_sharded_decode_serving/patch.diff",
+      "parent": "V224",
+      "tree": "fab843fba01f208bed745d72b99c718f137f5785",
+      "bytes": 378445,
+      "patch_sha256": "d81634df5c43230867d314540c7ae9ebe5ff8ba40c8fdc59482104ee3d75adcd",
+      "delta_sha256": "cd09dc82e2bf4f8f79c4b64d4cddea69f387a25ced3c00462390e64835e98a98"
+    }
+  },
+  "official_rules": "serving_v0523/candidates/v229_sharded_decode_serving/validation.json",
+  "score_measured_on_v229": false,
+  "verified_source_receipts": {
+    "projection_gloo.json": "serving_v0523/candidates/v229_sharded_decode_serving/projection_gloo.json",
+    "selector_compiled.json": "serving_v0523/candidates/v229_sharded_decode_serving/selector_compiled.json",
+    "selector_gloo.json": "serving_v0523/candidates/v229_sharded_decode_serving/selector_gloo.json",
+    "prefill_regression.json": "serving_v0523/candidates/v229_sharded_decode_serving/prefill_regression.json",
+    "flags.json": "serving_v0523/candidates/v229_sharded_decode_serving/flags.json",
+    "global_names.json": "serving_v0523/candidates/v229_sharded_decode_serving/global_names.json",
+    "validation.json": "serving_v0523/candidates/v229_sharded_decode_serving/validation.json",
+    "independent_standby.json": "serving_v0523/candidates/v229_sharded_decode_serving/independent_standby.json"
+  },
+  "projection_replay": {
+    "paired_rank_calls": 168,
+    "checked_words": 218726400,
+    "dense_outputs": 700416,
+    "unequal_dense_outputs": 0
+  },
+  "selector_replay": {
+    "tp": 4,
+    "per_rank": {
+      "tokens": 1113,
+      "ids": 17808,
+      "q": 17808,
+      "bytes_native": 213696,
+      "bytes_packed": 71232,
+      "replays": 12
+    },
+    "native_calls_per_forward": 2,
+    "packed_calls_per_forward": 1,
+    "per_forward_cpu_votes": 0
+  },
+  "selector_compiled_words": 89280,
+  "logical_work_at_16_users": {
+    "users": 16,
+    "rows": 128,
+    "nominal_matrix_reads_avoided_bytes_per_rank_layer": 117440512,
+    "nominal_matrix_reads_avoided_GiB_per_rank_pass": 6.78125,
+    "additional_logical_incoming_ring_bytes_per_rank_pass": 170655744,
+    "pool_us": 29.23200000077486,
+    "router_us": 20.287999883294106,
+    "unpool_us": 23.919999599456787,
+    "v64_approximate_verify_period_ms": 79.84031936127744,
+    "isolated_changed_projection_budget_us_per_layer": 53.15199960023165,
+    "replacement_budget_us_per_layer_for_1_63pct_verify_gain": 32.49837615292567,
+    "illustrative_verify_ratio_if_changed_projection_time_were_zero": 1.0430521716515975
+  },
+  "timing_scope": "Nominal BF16 bytes; assumes eligible SM90 multicast at eight rows. Timings are an isolated, single-rank H200 kernel-board baseline and a different serving receipt. Includes no measured projection/gather overlap or V228 wall time.",
+  "overlap_study": {
+    "directory": "serving_v0523/candidates/v226_expert_overlap_feasibility",
+    "decision": "retain incumbent expert scheduling",
+    "basis": "No execution waves recovered on two measured routing histograms in the modeled schedule."
+  },
+  "queue": {
+    "observed_utc": "2026-11-19 01:57:41 UTC",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "serving_priority": false,
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "created_at": 1794986590.9584968,
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "created_at": 1795046590.5890377,
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32,
+        "created_at": 1795046583.5217726
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4,
+        "created_at": 1795046593.0501187
+      }
+    },
+    "v229_submitted": false
+  },
+  "private_standby": {
+    "armed_at_utc": "2026-11-19T02:00:28.773799+00:00",
+    "positive_selection": "V229",
+    "fallback": "v198",
+    "window_utc": [
+      "2026-11-20T04:00:00+00:00",
+      "2026-11-20T08:00:00+00:00"
+    ],
+    "parent": "7fcdf9abf39b486a",
+    "predecessors": [
+      "v129_nov20_check1",
+      "v141_nov20_check32"
+    ],
+    "pending_control": "v120b_nov19_check32",
+    "comparison_margin": {
+      "job": "abd217baf0ed49fd",
+      "concurrency": 16,
+      "reps": 3,
+      "spread": 0.0163,
+      "comparison": "strict raw and at_stock_point gains above the measured V64 /16 spread"
+    },
+    "plan": "serving_v0523/runs/history/nov20_v229_staging/nov20_v229.plan.json",
+    "launch": "serving_v0523/runs/nov20_v229_runner.launch.json",
+    "submitted_during_transition": false,
+    "existing_receipts_preserved": 31,
+    "cpu_tests": 145,
+    "independent_ordinary_cases": 131,
+    "independent_races": 2,
+    "independent_clock_boundary_cases": 9
+  },
+  "scratch_ledgers": [
+    "serving_v0523/candidates/v225_packed_draft_candidates/cleanup.json",
+    "serving_v0523/candidates/v228_sharded_verify_projections/export_cleanup.json",
+    "serving_v0523/candidates/v229_sharded_decode_serving/export_cleanup.json"
+  ]
+}

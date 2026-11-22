@@ -1,0 +1,143 @@
+{
+  "objective": "Official four-load 4× serving score",
+  "observed_utc": "2026-11-19 06:34:19 UTC",
+  "official_incumbent": {
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "passed": true
+  },
+  "candidates": [
+    {
+      "candidate": "V283",
+      "parent": "V229",
+      "bytes": 350239,
+      "tree": "09c6a487bfe3f7db2ea6ce0bbf771c3ffd4321de",
+      "parent_tree": "fab843fba01f208bed745d72b99c718f137f5785",
+      "patch_sha256": "c7b35981c7bb36bd03c87e3b33a673ce2d94b0b359687464f3fd17a9c6b28cda",
+      "delta_sha256": "8eea3bc60127f025ccdd8d84de6c3923d01d896da90e7a348b18f3ae280804e4",
+      "submitted": false
+    },
+    {
+      "candidate": "V284",
+      "parent": "V283",
+      "bytes": 362077,
+      "tree": "f03597033db52d3fe58c559b430b5a79c53e101a",
+      "parent_tree": "09c6a487bfe3f7db2ea6ce0bbf771c3ffd4321de",
+      "patch_sha256": "58b40f6a40ab911259500405c3be9bd9e5f07960ecbabe14961821beae657fa7",
+      "delta_sha256": "4574a4da28fcebda065123453cf8bf9dcc0d492964d00d54a00d45d85cc2b509",
+      "submitted": false
+    }
+  ],
+  "combined_opportunities_vs_v229": [
+    {
+      "users": 1,
+      "rows": 8,
+      "user_model": "uniform local top-eight routing, all eligible boundaries, native multicast at eight rows",
+      "avoided_graph_nodes_per_rank_pass": 124,
+      "logical_payload_read_write_avoided_MiB_per_rank_pass": 15.5,
+      "excludes": "small extra route-map loads, HBM cache behavior and all timing effects"
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "user_model": "uniform local top-eight routing, all eligible boundaries, native multicast at eight rows",
+      "avoided_graph_nodes_per_rank_pass": 185,
+      "logical_payload_read_write_avoided_MiB_per_rank_pass": 123.0,
+      "excludes": "small extra route-map loads, HBM cache behavior and all timing effects"
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "user_model": "uniform local top-eight routing, all eligible boundaries, native multicast at eight rows",
+      "avoided_graph_nodes_per_rank_pass": 185,
+      "logical_payload_read_write_avoided_MiB_per_rank_pass": 492.0,
+      "excludes": "small extra route-map loads, HBM cache behavior and all timing effects"
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "user_model": "uniform local top-eight routing, all eligible boundaries, native multicast at eight rows",
+      "avoided_graph_nodes_per_rank_pass": 185,
+      "logical_payload_read_write_avoided_MiB_per_rank_pass": 984.0,
+      "excludes": "small extra route-map loads, HBM cache behavior and all timing effects"
+    }
+  ],
+  "hardware_measurements_for_new_candidates": 0,
+  "host_work": {
+    "v283_Gloo_words": 119832576,
+    "V284_live_host_kernel_words": 5920768,
+    "V284_padding_host_kernel_words": 24160256,
+    "V284_rank_conditions": 204,
+    "V284_flag_orders": 720
+  },
+  "held_hypotheses": {
+    "V281": "Low-row W2 has no duplicate FP4 weights to share and a second bank would exceed the memory limit.",
+    "V282": "Draft block-owner placement increases filter replication and collective count. A BF16 sum reordering changed 1002 of 2048 comparison words.",
+    "V285": "A new peer transport still owes every remote column and explicit publication and retirement. The prior multicast sentinel can change signed zero."
+  },
+  "private_standby": {
+    "candidate": "V229 or V198, conditional on already authorized plan",
+    "entry_receipt": "serving_v0523/runs/nov20_v229_quota_split_runner.launch.json",
+    "pid": 30406,
+    "changes": "Authenticated separate scored receipt no longer suppresses the original private chance.",
+    "offline_tests": 151,
+    "previous_receipts_unchanged": 31
+  },
+  "judge": {
+    "observed_utc": "2026-11-19 06:34:19 UTC",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4
+      }
+    },
+    "incumbent": {
+      "job_id": "abd217baf0ed49fd",
+      "score": 1.4119,
+      "passed": true
+    },
+    "visible_run_count": 28,
+    "new_submissions": 0,
+    "paid_allocations": 0
+  },
+  "free_space_ledgers": [
+    "serving_v0523/candidates/v283_rank_major_unpool_boundary/export_cleanup.json",
+    "serving_v0523/candidates/v283_rank_major_unpool_boundary/guest_cleanup.json",
+    "serving_v0523/candidates/v284_rank_major_routed_pool/cleanup.json",
+    "serving_v0523/candidates/v284_rank_major_routed_pool/independent_native_cleanup.json"
+  ],
+  "current_gpu_evidence": "Offline SM90a compilation and host numerical replay. H200 output agreement, peak allocation, TTFT and throughput remain unknown."
+}

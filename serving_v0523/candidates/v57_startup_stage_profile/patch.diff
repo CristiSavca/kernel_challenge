@@ -1,0 +1,947 @@
+diff --git a/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh b/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbd26355445e322ff605d8a90c620fadb36fd2f7
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh
+@@ -0,0 +1,168 @@
++// Dequantize rows of one Marlin-packed NVFP4 expert matrix to dense BF16.
++//
++// Input is exactly what the Marlin MoE kernel reads: E2M1 codes repacked by
++// gptq_marlin_repack (16 x 64 tiles of 128 words, see gptq_marlin_repack.cuh)
++// and block scales permuted and re-encoded by nvfp4_marlin_process_scales.
++// Output is out[n - row_begin, k] = code(n, k) * scale(n, k / 16), the value the
++// Marlin kernel forms in registers. A code has at most 2 significant bits and a
++// scale 4, so the product is exact in BF16 and equals the top half of its FP32
++// encoding. The per-expert global scale is not applied here; like Marlin, the
++// caller applies it to the GEMM output.
++//
++// One block handles one 64-row n tile over 64 k tiles. It first builds a table
++// of every code * scale product in shared memory (16 codes for each of the 128
++// scale encodings Marlin keeps, plus a zero row), so the hot loop is a table
++// lookup per value. A warp owns 8 k tiles and walks the 64 rows; its two
++// stores per row together cover 256 contiguous bytes.
++
++#pragma once
++
++#include <sgl_kernel/tensor.h>
++#include <sgl_kernel/utils.h>
++
++#include <sgl_kernel/utils.cuh>
++
++#include <tvm/ffi/container/tensor.h>
++
++#include <cstdint>
++
++namespace sglang {
++
++namespace nvfp4_marlin {
++
++constexpr int kTileK = 16;
++constexpr int kTileN = 64;
++constexpr int kTileWords = kTileK * kTileN / 8;
++constexpr int kWarps = 8;                 // one per group of 8 k tiles
++constexpr int kBlockKTiles = kWarps * 8;  // k tiles per thread block
++constexpr int kThreads = kWarps * 32;
++constexpr int kScaleRows = 129;           // 128 kept scale encodings + a zero row
++constexpr int kTableSize = kScaleRows * 16;
++
++struct DequantParams {
++  const uint32_t* __restrict__ qweight;  // [K / 16, 2 * N]
++  const uint8_t* __restrict__ scales;    // [K / 16, N]
++  uint32_t* __restrict__ out;            // [rows, K] BF16, two values per word
++  int size_n;
++  int size_k;
++  int row_begin;
++};
++
++// Position of row n (within its 64-row tile) in a processed scale row:
++// marlin_permute_scales applies scale_perm, then nvfp4_marlin_process_scales
++// swaps the middle two entries of every group of four.
++__device__ __forceinline__ int scale_position(int n_local) {
++  const int p = (n_local % 8) * 8 + n_local / 8;
++  const int r = p % 4;
++  return p - r + (r == 1 ? 2 : r == 2 ? 1 : r);
++}
++
++// A processed scale byte holds the 5-bit exponent e and top 3 mantissa bits m of
++// half(scale * 128), so scale = (1 + m / 8) * 2^(e - 22). The Marlin BF16 decode
++// keeps only e >= 16, that is scale >= 2^-6 (E4M3's smallest normal); below
++// that its product underflows to 0. Table row: byte - 128 when kept, else 128.
++__device__ __forceinline__ uint32_t scale_row(uint32_t byte) { return byte >= 128u ? byte - 128u : 128u; }
++
++__device__ __forceinline__ float decode_scale_row(uint32_t row) {
++  const uint32_t byte = row + 128u;
++  const uint32_t bits = row >= 128u ? 0u : (((byte >> 3) + 105u) << 23) | ((byte & 7u) << 20);
++  return __uint_as_float(bits);
++}
++
++// E2M1: sign, 2 exponent bits e, 1 mantissa bit m. Magnitude is m / 2 for e == 0
++// and (1 + m / 2) * 2^(e - 1) otherwise, built directly as FP32 bits.
++__device__ __forceinline__ float decode_code(uint32_t code) {
++  const uint32_t e = (code >> 1) & 3u;
++  const uint32_t m = code & 1u;
++  const uint32_t magnitude = e == 0 ? m * 0x3F000000u : ((e + 126u) << 23) | (m << 22);
++  return __uint_as_float(((code & 8u) << 28) | magnitude);
++}
++
++__launch_bounds__(kThreads) __global__ void dequant_kernel(const DequantParams __grid_constant__ params) {
++  // BF16 is the top half of FP32, and code * scale has no bits below it.
++  __shared__ uint16_t table[kTableSize];
++  for (int i = threadIdx.x; i < kTableSize; i += kThreads) {
++    const float value = decode_code(i & 15) * decode_scale_row(i >> 4);
++    table[i] = static_cast<uint16_t>(__float_as_uint(value) >> 16);
++  }
++  __syncthreads();
++
++  const int n_tiles = params.size_n / kTileN;
++  const int n_tile = params.row_begin / kTileN + blockIdx.x;
++  const int lane = threadIdx.x % 32;
++  const int k_tile = (blockIdx.y * kWarps + threadIdx.x / 32) * 8 + lane / 4;
++  if (k_tile >= params.size_k / kTileK) return;
++  // Each lane owns one mma row pair of its k tile: tile columns 2 * pair + {0, 1}
++  // and 2 * pair + {8, 9}.
++  const int pair = lane % 4;
++
++  const uint32_t* __restrict__ tile =
++      params.qweight + (static_cast<int64_t>(k_tile) * n_tiles + n_tile) * kTileWords;
++  const uint8_t* __restrict__ tile_scales =
++      params.scales + static_cast<int64_t>(k_tile) * params.size_n + n_tile * kTileN;
++  uint32_t* __restrict__ dst =
++      params.out + (static_cast<int64_t>(blockIdx.x) * kTileN * params.size_k + k_tile * kTileK) / 2 + pair;
++
++  // gptq_marlin_repack: word th * 4 + warp of a tile holds, for mma thread th
++  // (column th / 4, row pair th % 4) of warp `warp`, the codes of matrix rows
++  // warp * 16 + th / 4 and + 8 at tile columns 2 * (th % 4) + {0, 1, 8, 9}, in
++  // nibble order {b1 c0, b1 c8, b2 c0, b2 c8, b1 c1, b1 c9, b2 c1, b2 c9}.
++  for (int n_local = 0; n_local < kTileN; ++n_local) {
++    const uint32_t word = tile[((n_local % 8) * 4 + pair) * 4 + n_local / 16] >> (((n_local % 16) / 8) * 8);
++    const uint16_t* __restrict__ row = table + scale_row(tile_scales[scale_position(n_local)]) * 16;
++    uint32_t* __restrict__ out = dst + static_cast<int64_t>(n_local) * params.size_k / 2;
++    out[0] = row[word & 15u] | (static_cast<uint32_t>(row[(word >> 16) & 15u]) << 16);
++    out[4] = row[(word >> 4) & 15u] | (static_cast<uint32_t>(row[(word >> 20) & 15u]) << 16);
++  }
++}
++
++}  // namespace nvfp4_marlin
++
++void nvfp4_marlin_dequant(
++    tvm::ffi::TensorView qweight,  // [K / 16, 2 * N] int32
++    tvm::ffi::TensorView scales,   // [K / 16, N] uint8
++    tvm::ffi::TensorView out,      // [rows, K] bf16
++    int64_t row_begin) {
++  using namespace host;
++
++  SymbolicSize KT{"k_tiles"};
++  SymbolicSize N2{"packed_n"};
++  SymbolicSize N{"size_n"};
++  SymbolicSize R{"rows"};
++  SymbolicSize K{"size_k"};
++  SymbolicDevice device_;
++  device_.set_options<kDLCUDA>();
++
++  TensorMatcher({KT, N2}).with_dtype<int32_t>().with_device(device_).verify(qweight);
++  TensorMatcher({KT, N}).with_dtype<uint8_t>().with_device(device_).verify(scales);
++  TensorMatcher({R, K}).with_dtype<bf16_t>().with_device(device_).verify(out);
++
++  const int size_n = static_cast<int>(N.unwrap());
++  const int size_k = static_cast<int>(K.unwrap());
++  const int rows = static_cast<int>(R.unwrap());
++  RuntimeCheck(size_k % nvfp4_marlin::kTileK == 0 && size_n % nvfp4_marlin::kTileN == 0, "unsupported shape");
++  RuntimeCheck(KT.unwrap() * nvfp4_marlin::kTileK == size_k, "qweight rows do not match size_k");
++  RuntimeCheck(N2.unwrap() == 2 * static_cast<int64_t>(size_n), "qweight columns do not match size_n");
++  RuntimeCheck(
++      row_begin >= 0 && row_begin % nvfp4_marlin::kTileN == 0 && rows % nvfp4_marlin::kTileN == 0 &&
++          row_begin + rows <= size_n,
++      "rows must be whole 64-row tiles inside the matrix");
++  RuntimeCheck(reinterpret_cast<uintptr_t>(out.data_ptr()) % 4 == 0, "out must be 4-byte aligned");
++  if (rows == 0) return;
++
++  const nvfp4_marlin::DequantParams params{
++      .qweight = static_cast<const uint32_t*>(qweight.data_ptr()),
++      .scales = static_cast<const uint8_t*>(scales.data_ptr()),
++      .out = static_cast<uint32_t*>(out.data_ptr()),
++      .size_n = size_n,
++      .size_k = size_k,
++      .row_begin = static_cast<int>(row_begin),
++  };
++
++  const int k_tiles = size_k / nvfp4_marlin::kTileK;
++  const dim3 grid(
++      rows / nvfp4_marlin::kTileN, (k_tiles + nvfp4_marlin::kBlockKTiles - 1) / nvfp4_marlin::kBlockKTiles);
++  LaunchKernel(grid, nvfp4_marlin::kThreads, device_.unwrap(), 0)(nvfp4_marlin::dequant_kernel, params);
++}
++
++}  // namespace sglang
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index ed451fd01bacc814c3060f20c5879fcdc367da79..07e36783e9e43012a08fc3de9d6c10c41a6f7d9e 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -21,6 +21,7 @@ def _post_expert_norm_weighted_sum_kernel(
+     HAS_WEIGHT: tl.constexpr,
+     WEIGHT_FIRST: tl.constexpr,
+     HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr,
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
+ ):
+@@ -34,10 +35,16 @@ def _post_expert_norm_weighted_sum_kernel(
+     acc = tl.zeros([BLOCK_H], dtype=tl.float32)
+ 
+     for k in tl.static_range(TOPK):
+-        base = (tok * TOPK + k) * H
++        slot = tok * TOPK + k
+         live = True
+-        if HAS_IDS:
+-            live = tl.load(ids_ptr + tok * TOPK + k) >= 0
++        if HAS_ROW_MAP:
++            row = tl.load(ids_ptr + slot)
++            live = row >= 0
++            base = row.to(tl.int64) * H
++        else:
++            base = slot * H
++            if HAS_IDS:
++                live = tl.load(ids_ptr + slot) >= 0
+         if live:
+             x = tl.load(x_ptr + base + offs, mask=mask, other=0.0).to(tl.float32)
+ 
+@@ -55,7 +62,7 @@ def _post_expert_norm_weighted_sum_kernel(
+             else:
+                 y = x
+ 
+-            s = tl.load(s_ptr + tok * TOPK + k).to(tl.float32)
++            s = tl.load(s_ptr + slot).to(tl.float32)
+             product = y * s
+             if ROUND_PRODUCT:
+                 product = product.to(x_ptr.dtype.element_ty).to(tl.float32)
+@@ -73,18 +80,33 @@ def fused_post_expert_norm_weighted_sum(
+     apply_norm: bool = True,
+     slot_expert_ids: Optional[torch.Tensor] = None,
+     round_product: bool = False,
++    *,
++    slot_row_indices: Optional[torch.Tensor] = None,
++    out: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+     """Normalize and combine experts without reading inactive slots.
+ 
+     round_product preserves input-dtype multiplication before FP32 accumulation
+     when combining an already normalized low-precision tensor.
++
++    With slot_row_indices, expert_output contains only local routes. The
++    [tokens, topk] map supplies an input row index or -1 for each slot, and
++    out is a caller-owned contiguous [tokens, hidden] tensor.
+     """
+     x = expert_output.contiguous()
+-    tokens, topk, hidden = x.shape
+-    out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++    if slot_row_indices is None:
++        assert out is None
++        tokens, topk, hidden = x.shape
++        out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++        slot_ids = slot_expert_ids
++    else:
++        assert slot_expert_ids is None and out is not None
++        tokens, topk = slot_row_indices.shape
++        _, hidden = x.shape
++        slot_ids = slot_row_indices
+     if tokens == 0:
+         return out
+-    if tokens < _MIN_TOKENS_FOR_FUSED and slot_expert_ids is None and not round_product:
++    if tokens < _MIN_TOKENS_FOR_FUSED and slot_ids is None and not round_product:
+         y = x
+         if apply_norm:
+             f = y.float()
+@@ -108,7 +130,7 @@ def fused_post_expert_norm_weighted_sum(
+         norm_weight.contiguous() if norm_weight is not None else x,
+         topk_scores.contiguous(),
+         out,
+-        slot_expert_ids.contiguous() if slot_expert_ids is not None else x,
++        slot_ids.contiguous() if slot_ids is not None else x,
+         TOPK=topk,
+         H=hidden,
+         eps=eps,
+@@ -116,6 +138,7 @@ def fused_post_expert_norm_weighted_sum(
+         HAS_WEIGHT=norm_weight is not None,
+         WEIGHT_FIRST=weight_first,
+         HAS_IDS=slot_expert_ids is not None,
++        HAS_ROW_MAP=slot_row_indices is not None,
+         ROUND_PRODUCT=round_product,
+         BLOCK_H=block_h,
+         num_warps=8 if block_h >= 4096 else 4,
+diff --git a/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py b/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a9dfc59c04b002e03a6673069dbc080aace70673
+--- /dev/null
++++ b/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py
+@@ -0,0 +1,43 @@
++"""Dequantize rows of one Marlin-packed NVFP4 expert matrix to dense BF16."""
++
++from __future__ import annotations
++
++from typing import TYPE_CHECKING
++
++import torch
++
++from sglang.kernels.jit.utils import cache_once, load_jit
++
++if TYPE_CHECKING:
++    from tvm_ffi.module import Module
++
++
++@cache_once
++def _jit_module() -> Module:
++    return load_jit(
++        "nvfp4_marlin_dequant",
++        cuda_files=["gemm/marlin_moe/nvfp4_marlin_dequant.cuh"],
++        cuda_wrappers=[("nvfp4_marlin_dequant", "nvfp4_marlin_dequant")],
++    )
++
++
++def nvfp4_marlin_dequant(
++    qweight: torch.Tensor,
++    scales: torch.Tensor,
++    out: torch.Tensor,
++    row_begin: int = 0,
++) -> torch.Tensor:
++    """Write ``out[n, k] = code(row_begin + n, k) * scale(row_begin + n, k // 16)``.
++
++    ``qweight`` is one expert of a Marlin-repacked NVFP4 weight, int32
++    ``[K / 16, 2 * N]``, and ``scales`` its processed block scales,
++    ``[K / 16, N]`` with one byte per element. ``out`` is BF16 ``[rows, K]``;
++    ``row_begin`` and ``rows`` are multiples of 64. The product is exact in
++    BF16, so ``out`` holds the operand the Marlin kernel forms in registers.
++    The per-expert global scale is left to the caller.
++    """
++    assert out.dtype == torch.bfloat16 and out.is_contiguous()
++    _jit_module().nvfp4_marlin_dequant(
++        qweight.contiguous(), scales.contiguous().view(torch.uint8), out, row_begin
++    )
++    return out
+diff --git a/python/sglang/srt/arg_groups/muse_spark_hook.py b/python/sglang/srt/arg_groups/muse_spark_hook.py
+index 2dd159c8e87b482e6d29fb1a7d8a797da3ae0082..9d39ea6905dc8df10b63d97241fa773d57ba8b6a 100644
+--- a/python/sglang/srt/arg_groups/muse_spark_hook.py
++++ b/python/sglang/srt/arg_groups/muse_spark_hook.py
+@@ -16,12 +16,14 @@ MUSE_SPARK_ARCHITECTURES = ("MuseSparkForConditionalGeneration",)
+ MUSE_SPARK_CHAT_TEMPLATE_FILE = "chat_template.jinja"
+ 
+ # Graph-pool and KV-sizing switches the reference launcher (sglang_meta) sets.
++# Out-of-window SWA slots keep the generic default (freed): 46 of Muse's 62 layers
++# are sliding-window, so pinning a running request's whole context in the SWA pool
++# caps how many long requests fit at once.
+ MUSE_SPARK_ENV_DEFAULTS = (
+     (envs.SGLANG_ENABLE_CUDA_GRAPH_DEDUP, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_BORROW, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_PRECARVE, True),
+     (envs.SGLANG_ENABLE_POST_CAPTURE_KV_SIZING, True),
+-    (envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS, False),
+ )
+ 
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 41c463dcfabe782eb681e9b2ab7b5c37c81d0df2..160e25bd80f379671cf9dafb0acfae38d6589b75 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -34,7 +34,15 @@ from sglang.srt.layers.moe.moe_runner.base import MoeRunnerConfig
+ from sglang.srt.layers.muse_spark.muse_spark_nvfp4_moe import (
+     MuseSparkNvFp4FusedMoEMethod,
+ )
++from sglang.srt.layers.muse_spark.startup_profile import lap as stage_lap
++from sglang.srt.layers.muse_spark.startup_profile import note_dense_routes
+ from sglang.srt.layers.quantization.base_config import QuantizationConfig
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import (
++    eager_on_graph,
++)
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context import (
++    is_in_breakable_cuda_graph,
++)
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+ 
+ if TYPE_CHECKING:
+@@ -51,6 +59,14 @@ _NVFP4_PER_TOKEN_SCALE_INV = 1.0 / (448.0 * 6.0)
+ 
+ _MARLIN_SHAPE_ALIGNMENT = 64
+ _MARLIN_BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
++# Expected routes per local expert from which dequantizing an expert to BF16 and
++# running dense GEMMs beats the Marlin W4A16 kernels. Dequantization is a fixed
++# cost per expert, so the dense path wins once enough rows share it. Measured
++# with 4096-wide experts it ties Marlin near 384 routes per expert on an H100
++# and near 448 on an H200, and is 1.13x (H200) to 1.28x (H100) faster at 512.
++_DENSE_MIN_ROUTES_PER_EXPERT = 448
++# nvfp4_marlin_process_global_scale stores the global scale times 2 ** 119.
++_MARLIN_GLOBAL_SCALE_EXPONENT = 119
+ 
+ 
+ def _resolve_moe_runner_backend():
+@@ -377,6 +393,18 @@ class MuseSpark1xFp4Experts(nn.Module):
+         )
+         return output.to(out_dtype)
+ 
++    def _local_marlin_topk_ids(self, topk_ids: torch.Tensor) -> torch.Tensor:
++        from sglang.srt.layers.moe.token_dispatcher.standard import (
++            _map_topk_ids_to_local_experts,
++        )
++
++        local_topk_ids = topk_ids.to(torch.int32)
++        if self._expert_map is not None:
++            local_topk_ids = _map_topk_ids_to_local_experts(
++                local_topk_ids, self._expert_map
++            )
++        return local_topk_ids.contiguous()
++
+     def _marlin_expert_outputs(
+         self,
+         hidden_states: torch.Tensor,
+@@ -389,9 +417,6 @@ class MuseSpark1xFp4Experts(nn.Module):
+         from sglang.kernels.ops.activation.activation import silu_and_mul
+         from sglang.kernels.ops.moe.moe_wna16_marlin import moe_wna16_marlin_gemm
+         from sglang.srt.layers.moe.fused_moe_triton import moe_align_block_size
+-        from sglang.srt.layers.moe.token_dispatcher.standard import (
+-            _map_topk_ids_to_local_experts,
+-        )
+         from sglang.srt.layers.quantization.marlin_utils import marlin_make_workspace
+ 
+         hidden_states = hidden_states.contiguous()
+@@ -399,19 +424,20 @@ class MuseSpark1xFp4Experts(nn.Module):
+         topk = topk_ids.shape[1]
+         size_n = self.intermediate_size_per_partition
+         gemm1_n = 2 * size_n
+-        expert_map = self._expert_map
+-
+-        local_topk_ids = topk_ids.to(torch.int32)
+-        if expert_map is not None:
+-            local_topk_ids = _map_topk_ids_to_local_experts(local_topk_ids, expert_map)
+-        local_topk_ids = local_topk_ids.contiguous()
++        local_topk_ids = self._local_marlin_topk_ids(topk_ids)
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
++        # Expected routes per local expert. Under expert parallelism only
++        # num_local_experts / global_num_experts of the routes land on this rank.
++        routes_per_expert = num_tokens * topk / self.global_num_experts
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            if routes_per_expert / block_size_m < 0.9:
+                 break
+ 
+-        if num_tokens == 1 and topk <= 32 and expert_map is None:
++        # The ids are already local, with -1 for experts on other ranks, so align
++        # over the local experts. The -1 routes form the inactive prefix that the
++        # sorted Marlin kernels skip, with or without expert parallelism.
++        if num_tokens == 1 and topk <= 32:
+             from sglang.kernels.ops.moe.moe_align_single_token import (
+                 moe_align_single_token,
+             )
+@@ -422,16 +448,11 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 )
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids,
+                 block_size_m,
+-                align_num_experts,
+-                return_inactive_prefix_count=expert_map is None,
++                self.num_local_experts,
++                return_inactive_prefix_count=True,
+             )
+ 
+         # Both aligners emit ascending block IDs with inactive blocks first;
+@@ -450,6 +471,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         cache1 = cache13[: num_tokens * topk * gemm1_n].view(-1, gemm1_n)
+         cache3 = cache13[: num_tokens * topk * size_k].view(-1, size_k)
+ 
++        stage_lap("marlin_align_allocate")
+         cache1 = moe_wna16_marlin_gemm(
+             hidden_states,
+             cache1,
+@@ -468,7 +490,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=topk,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens,
+             size_n=gemm1_n,
+@@ -478,15 +500,17 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         )
++        stage_lap("marlin_gate_up")
+         silu_and_mul(
+             cache1.view(-1, gemm1_n),
+             cache2,
+             expert_ids=local_topk_ids.view(-1),
+             expert_step=1,
+         )
+-        return moe_wna16_marlin_gemm(
++        stage_lap("marlin_activation")
++        output = moe_wna16_marlin_gemm(
+             cache2,
+             cache3,
+             self.w2_weight,
+@@ -504,7 +528,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=1,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens * topk,
+             size_n=size_k,
+@@ -514,8 +538,122 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
+-        ).view(num_tokens, topk, size_k), local_topk_ids
++            has_inactive_prefix_count=True,
++        ).view(num_tokens, topk, size_k)
++        stage_lap("marlin_down")
++        return output, local_topk_ids
++
++    def _use_dense_experts(
++        self, hidden_states: torch.Tensor, routes_per_expert: float
++    ) -> bool:
++        if routes_per_expert < _DENSE_MIN_ROUTES_PER_EXPERT:
++            return False
++        if hidden_states.dtype != torch.bfloat16:
++            return False
++        # The rows per expert depend on routing, so this path runs eagerly: as a
++        # break in a breakable graph, never inside a full CUDA graph.
++        return (
++            not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph()
++        )
++
++    def _dense_experts_and_combine_impl(
++        self,
++        hidden_states: torch.Tensor,
++        local_topk_ids: torch.Tensor,
++        topk_scores: torch.Tensor,
++        output: torch.Tensor,
++    ) -> None:
++        """Large batches: dense BF16 GEMMs and finalization of compact local routes.
++
++        Each expert matrix is dequantized from the Marlin layout to the BF16
++        operand the Marlin kernel forms in registers, so the math is the same
++        W4A16 product with FP32 accumulation; only the summation order differs.
++        The dense copy lives in two reused buffers, one expert at a time, so it
++        costs no extra weight memory.
++        """
++        from sglang.kernels.ops.activation.activation import silu_and_mul
++        from sglang.kernels.ops.moe.nvfp4_marlin_dequant import nvfp4_marlin_dequant
++
++        size_k = hidden_states.shape[1]
++        topk = local_topk_ids.shape[1]
++        size_n = self.intermediate_size_per_partition
++        num_experts = self.num_local_experts
++
++        # Local routes grouped by expert; bucket 0 holds the other ranks' routes.
++        flat_ids = local_topk_ids.reshape(-1)
++        order = torch.argsort(flat_ids, stable=True)
++        counts = torch.bincount(flat_ids + 1, minlength=num_experts + 1).tolist()
++        counts = counts[: num_experts + 1]
++        num_routes = sum(counts[1:])
++        note_dense_routes(counts)
++        if num_routes == 0:
++            output.zero_()
++            stage_lap("dense_route_gather")
++            return
++        slots = order[counts[0] : counts[0] + num_routes]
++        route_expert = flat_ids[slots].long()
++        unscale = 2.0**-_MARLIN_GLOBAL_SCALE_EXPONENT
++        dtype = hidden_states.dtype
++        scale13 = (self.w13_weight_scale_2.float() * unscale).to(dtype)[route_expert]
++        scale2 = (self.w2_weight_scale_2.float() * unscale).to(dtype)[route_expert]
++
++        # GEMM1 reads `rows`; GEMM2 then reuses it for the outputs.
++        rows = hidden_states.index_select(
++            0, torch.div(slots, topk, rounding_mode="floor")
++        )
++        gate_up = rows.new_empty((num_routes, 2 * size_n))
++        w13 = rows.new_empty((2 * size_n, size_k))
++        stage_lap("dense_route_gather")
++        start = 0
++        for expert, count in enumerate(counts[1:]):
++            if count:
++                nvfp4_marlin_dequant(
++                    self.w13_weight[expert], self.w13_weight_scale[expert], w13
++                )
++                stop = start + count
++                torch.mm(rows[start:stop], w13.t(), out=gate_up[start:stop])
++                start = stop
++        stage_lap("dense_gate_up_dequant_gemm")
++        gate_up.mul_(scale13.unsqueeze(1))
++        activated = silu_and_mul(gate_up, rows.new_empty((num_routes, size_n)))
++        stage_lap("dense_activation")
++
++        w2 = rows.new_empty((size_k, size_n))
++        start = 0
++        for expert, count in enumerate(counts[1:]):
++            if count:
++                nvfp4_marlin_dequant(
++                    self.w2_weight[expert], self.w2_weight_scale[expert], w2
++                )
++                stop = start + count
++                torch.mm(activated[start:stop], w2.t(), out=rows[start:stop])
++                start = stop
++        stage_lap("dense_down_dequant_gemm")
++        rows.mul_(scale2.unsqueeze(1))
++
++        # Undo the permutation with one index per slot rather than scattering
++        # whole rows. The finalizer visits the original slots in top-k order.
++        slot_rows = torch.full_like(local_topk_ids, -1)
++        slot_rows.view(-1).index_copy_(
++            0,
++            slots,
++            torch.arange(num_routes, dtype=slot_rows.dtype, device=slot_rows.device),
++        )
++        fused_post_expert_norm_weighted_sum(
++            rows,
++            topk_scores,
++            norm_weight=self._post_expert_norm_weight,
++            eps=self._post_expert_norm_eps,
++            weight_first=self._post_expert_norm_weight_first,
++            slot_row_indices=slot_rows,
++            out=output,
++        )
++
++    # Route counts are unknown at capture time. Replay fills the fixed output
++    # from the preceding graph segment before downstream graph work reads it.
++    _dense_experts_and_combine = eager_on_graph(
++        True, capture_stub=lambda *args, **kwargs: None
++    )(_dense_experts_and_combine_impl)
+ 
+     def _forward_marlin(
+         self,
+@@ -538,11 +676,24 @@ class MuseSpark1xFp4Experts(nn.Module):
+             )
+         if pre_expert_norm is not None:
+             hidden_states = pre_expert_norm(hidden_states)
++        if self._post_expert_norm is not post_expert_norm:
++            self.set_post_expert_norm(post_expert_norm)
++        routes_per_expert = topk_ids.numel() / self.global_num_experts
++        if self._post_expert_norm_weight is not None and self._use_dense_experts(
++            hidden_states, routes_per_expert
++        ):
++            local_topk_ids = self._local_marlin_topk_ids(topk_ids)
++            output = torch.empty_like(
++                hidden_states, memory_format=torch.contiguous_format
++            )
++            self._dense_experts_and_combine(
++                hidden_states, local_topk_ids, topk_scores, output
++            )
++            return output
++
+         expert_outputs, local_topk_ids = self._marlin_expert_outputs(
+             hidden_states, topk_scores, topk_ids
+         )
+-        if self._post_expert_norm is not post_expert_norm:
+-            self.set_post_expert_norm(post_expert_norm)
+         if self._post_expert_norm_weight is not None:
+             return fused_post_expert_norm_weighted_sum(
+                 expert_outputs,
+diff --git a/python/sglang/srt/layers/muse_spark/startup_profile.py b/python/sglang/srt/layers/muse_spark/startup_profile.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f428408f33f5e5c900fefad0d4966144770b2ba
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/startup_profile.py
+@@ -0,0 +1,133 @@
++"""One-shot stage diagnostics during the normal CUDA graph warmup."""
++
++from __future__ import annotations
++
++import json
++import logging
++import time
++from contextvars import ContextVar
++from functools import wraps
++
++import torch
++
++logger = logging.getLogger(__name__)
++_active: ContextVar[_Timeline | None] = ContextVar("muse_startup_timeline", default=None)
++_measured_phases: set[str] = set()
++
++
++class _Timeline:
++    def __init__(self) -> None:
++        self.events: list[tuple[str, torch.cuda.Event]] = []
++        self.dense_layers = 0
++        self.dense_experts = 0
++        self.dense_routes = 0
++        self.dense_max_routes_per_expert = 0
++
++    def mark(self, stage: str) -> None:
++        event = torch.cuda.Event(enable_timing=True)
++        event.record()
++        self.events.append((stage, event))
++
++    def summary(self) -> tuple[float, dict[str, float], dict[str, int]]:
++        first, last = self.events[0][1], self.events[-1][1]
++        milliseconds: dict[str, float] = {}
++        counts: dict[str, int] = {}
++        previous = first
++        for stage, event in self.events[1:]:
++            elapsed = previous.elapsed_time(event)
++            milliseconds[stage] = milliseconds.get(stage, 0.0) + elapsed
++            counts[stage] = counts.get(stage, 0) + 1
++            previous = event
++        return (
++            round(first.elapsed_time(last), 3),
++            {stage: round(ms, 3) for stage, ms in milliseconds.items()},
++            counts,
++        )
++
++
++def lap(stage: str) -> None:
++    timeline = _active.get()
++    if timeline is not None:
++        timeline.mark(stage)
++
++
++def note_dense_routes(counts: list[int]) -> None:
++    timeline = _active.get()
++    if timeline is not None:
++        active = counts[1:]
++        timeline.dense_layers += 1
++        timeline.dense_experts += sum(n > 0 for n in active)
++        timeline.dense_routes += sum(active)
++        timeline.dense_max_routes_per_expert = max(
++            timeline.dense_max_routes_per_expert, max(active, default=0)
++        )
++
++
++def profile_second_warmup(forward, model_runner, forward_batch, *, phase: str):
++    """Wrap a two-warmup capture callback with one uncaptured diagnostic."""
++    if model_runner.is_draft_worker or "MuseSparkForConditionalGeneration" not in (
++        model_runner.model_config.hf_config.architectures or ()
++    ):
++        return forward
++
++    calls = 0
++
++    @wraps(forward)
++    def run():
++        nonlocal calls
++        calls += 1
++        if (
++            calls != 2
++            or phase in _measured_phases
++            or not torch.cuda.is_available()
++            or torch.cuda.is_current_stream_capturing()
++        ):
++            return forward()
++
++        # These are CPU copies from the standard capture batch. No profiling
++        # code reads activation values, device metadata, or request contents.
++        seq_lens = forward_batch.seq_lens_cpu
++        prefix_lens = forward_batch.extend_prefix_lens_cpu
++        shape = {
++            "phase": phase,
++            "warmup_index": calls,
++            "requests": forward_batch.batch_size,
++            "tokens": forward_batch.input_ids.numel(),
++            "max_seq_len": int(max(seq_lens, default=0)) if seq_lens is not None else None,
++            "max_prefix_len": int(max(prefix_lens, default=0)) if prefix_lens is not None else None,
++        }
++        _measured_phases.add(phase)
++        timeline = _Timeline()
++        started = time.perf_counter()
++        timeline.mark("start")
++        context_token = _active.set(timeline)
++        try:
++            result = forward()
++            timeline.mark("tail")
++        finally:
++            _active.reset(context_token)
++        enqueued = time.perf_counter()
++        timeline.events[-1][1].synchronize()
++        completed = time.perf_counter()
++        gpu_ms, stages_ms, counts = timeline.summary()
++        logger.info(
++            "Muse startup stage profile %s",
++            json.dumps(
++                {
++                    **shape,
++                    "gpu_ms": gpu_ms,
++                    "wall_ms": round(1000 * (completed - started), 3),
++                    "enqueue_ms": round(1000 * (enqueued - started), 3),
++                    "stages_ms": stages_ms,
++                    "counts": counts,
++                    "dense_layers": timeline.dense_layers,
++                    "dense_experts": timeline.dense_experts,
++                    "dense_routes": timeline.dense_routes,
++                    "dense_max_routes_per_expert": timeline.dense_max_routes_per_expert,
++                },
++                separators=(",", ":"),
++            ),
++        )
++        return result
++
++    return run
+diff --git a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+index dc70e106863847847980f681c4c45e5a9fe8cf0e..5b2a44e14138b53a2b706154eb0089ac92c9335d 100644
+--- a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+@@ -96,6 +96,9 @@ from sglang.srt.model_executor.runner.shape_key import ShapeKey
+ from sglang.srt.model_executor.runner_backend.breakable_cuda_graph_backend import (
+     BreakableCudaGraphBackend,
+ )
++from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import (
++    FullCudaGraphBackend,
++)
+ from sglang.srt.model_executor.runner_backend.utils import resolve_decode_backend
+ from sglang.srt.model_executor.runner_backend_utils import CUDA_GRAPH_CAPTURE_FAILED_MSG
+ from sglang.srt.model_executor.runner_utils.buffers import DecodeInputBuffers
+@@ -1496,6 +1499,24 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+                     post_warmup_hook=post_warmup_hook,
+                     run_lm_head=True,
+                 )
++                if (
++                    size == self.max_bs
++                    and stream_idx is None
++                    and variant_label is None
++                    and attention_variant is None
++                    and get_parallel().tp_rank == 0
++                    and self.capture_forward_mode.is_target_verify()
++                    and isinstance(
++                        self.backend, (BreakableCudaGraphBackend, FullCudaGraphBackend)
++                    )
++                ):
++                    from sglang.srt.layers.muse_spark.startup_profile import (
++                        profile_second_warmup,
++                    )
++
++                    run_once = profile_second_warmup(
++                        run_once, self.model_runner, forward_batch, phase="verify"
++                    )
+                 self.backend.capture_one(
+                     shape_key,
+                     run_once,
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d08eaeb4274d7fef405c856b78ce05b3c4..ca71a0c085c6809d8b1c89ddc91e8252ed4dd178 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -1829,6 +1829,19 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 post_warmup_hook()
+         else:
+             post_warmup_hook = getattr(attn_backend, "on_after_cuda_graph_warmup", None)
++        if (
++            num_tokens == self.max_num_tokens
++            and not prefix_num_chunks
++            and get_parallel().tp_rank == 0
++            and isinstance(self.backend, (BreakableCudaGraphBackend, FullCudaGraphBackend))
++        ):
++            from sglang.srt.layers.muse_spark.startup_profile import (
++                profile_second_warmup,
++            )
++
++            run_once = profile_second_warmup(
++                run_once, self.model_runner, forward_batch, phase="prefill"
++            )
+         self.backend.capture_one(
+             shape_key,
+             run_once,
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 6b638e9f5ebd3b74271fe4c5eb7fa81c13bdcba1..2ae0197e8a2d4934abb45d3d3fc0a10b14feb431 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -73,6 +73,7 @@ from sglang.srt.layers.logits_processor import LogitsProcessor as OSSLogitsProce
+ from sglang.srt.layers.moe.topk import StandardTopKOutput
+ from sglang.srt.layers.muse_spark.muse_spark_bf16_moe import MuseSpark1xBf16Experts
+ from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++from sglang.srt.layers.muse_spark.startup_profile import lap as stage_lap
+ from sglang.srt.layers.muse_spark.muse_spark_layers import (
+     MuseSpark1xNormPreservingResidualConnection,
+     MuseSpark1xRMSNorm,
+@@ -410,6 +411,7 @@ class MuseSpark1xAttention(nn.Module):
+         if hidden_states.shape[0] == 0:
+             return hidden_states
+         qkv, _ = self.qkv_proj(hidden_states)
++        stage_lap("attention_qkv")
+         split_sizes = [self.q_size, self.kv_size, self.kv_size]
+         if self.use_o_gate:
+             q, k, v, o_gate = qkv.split(split_sizes + [self.q_size], dim=-1)
+@@ -431,9 +433,13 @@ class MuseSpark1xAttention(nn.Module):
+             q, k = self._fused_qk_norm(qkv, kv_store=kv_store)
+         if self.rotary_emb is not None and not fuse_rope:
+             q, k = self.rotary_emb(positions, q, k)
++        stage_lap("attention_qk_norm_rope_cache")
+         output = self.attn(q, k, v, forward_batch, save_kv_cache=kv_store is None)
++        stage_lap("attention_swa" if self.attn.sliding_window_size > 0 else "attention_full")
+         output = self._fused_o_norm_gate(output, o_gate)
++        stage_lap("attention_output_norm_gate")
+         output, _ = self.o_proj(output)
++        stage_lap("attention_output_projection_sum")
+         return output
+ 
+ 
+@@ -710,7 +716,9 @@ class MuseSpark1xMoE(nn.Module):
+             router_input,
+             ar_workspace=ar_workspace,
+         )
+-        return self._reduce_and_unpool(output, already_reduced=ar_workspace is not None)
++        output = self._reduce_and_unpool(output, already_reduced=ar_workspace is not None)
++        stage_lap("moe_unpool")
++        return output
+ 
+     def _reduce_and_unpool(
+         self, output: torch.Tensor, *, already_reduced: bool = False
+@@ -723,6 +731,7 @@ class MuseSpark1xMoE(nn.Module):
+             and not already_reduced
+         ):
+             output = tensor_model_parallel_all_reduce(output)
++        stage_lap("moe_sum")
+         if self.post_expert_proj is not None:
+             if _is_cpu:
+                 output, _ = self.post_expert_proj(output)
+@@ -861,6 +870,7 @@ class MuseSpark1xMoE(nn.Module):
+             return self._forward_sp_experts(
+                 expert_input, topk_scores, topk_ids, router_logits
+             )
++        stage_lap("moe_pool_router_join")
+         if self.nvfp4_checkpoint:
+             output = self.experts(
+                 expert_input,
+@@ -883,6 +893,7 @@ class MuseSpark1xMoE(nn.Module):
+                 packed_topk_ids=packed_topk_ids,
+                 ar_workspace=ar_workspace,
+             )
++        stage_lap("moe_finalize")
+         return output
+ 
+     def _forward_sp_experts(
+@@ -1024,10 +1035,12 @@ class MuseSpark1xDecoderLayer(nn.Module):
+             branch_dtype=self.operator_dtype,
+             router_dtype=router_dtype,
+         )
++        stage_lap("attention_boundary")
+         if self.is_moe_layer:
+             ffn_output = self.mlp(ffn_input, router_input, forward_batch)
+         else:
+             ffn_output = self.mlp(ffn_input)
++            stage_lap("dense_ffn")
+         # A TP-sliced branch means the unpooler gather was deferred to the FFN boundary.
+         if ffn_output.shape[-1] != stream.shape[-1]:
+             next_attn_input, stream = all_gather_norm_residual(
+@@ -1216,12 +1229,14 @@ class MuseSpark1xModel(nn.Module):
+             hidden_states = layernorm_sp.sp_entry_scatter(hidden_states)
+         stream = hidden_states.to(self.residual_dtype)
+         attn_input = self.layers[0].self_attn_input_norm(stream)
++        stage_lap("model_input")
+         aux_hidden_states = []
+         for layer_idx, layer in enumerate(self.layers):
+             stream, attn_input = layer(positions, stream, attn_input, forward_batch)
+             if layer_idx in self.layers_to_capture:
+                 # Draft context projection reads operator dtype, not residual_dtype.
+                 aux_hidden_states.append(stream.to(self.operator_dtype))
++            stage_lap("ffn_boundary")
+         norm_input = stream.to(self.operator_dtype)
+         hidden_states = self.norm(norm_input).to(self.operator_dtype)
+         if aux_hidden_states:

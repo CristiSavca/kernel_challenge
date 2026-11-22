@@ -1,0 +1,25 @@
+# V101b guarded native-prefix depth
+
+V101b retains the two existing V99 endpoint proposals, the original DFLASH tree and the native chain. It can instead use a partly branched tree from V101 when that tree's estimated number of committed tokens strictly exceeds both endpoint estimates. It proposes from the existing draft pass and verifies the same number of target rows. Eligible requests start at the original tree. [Full patch](patch.diff) · [One-file change from V101](delta.diff) · [Tree construction and acceptance proof](../v101_adaptive_draft_spine/README.md)
+
+The zero-th lane of the existing per-request score tensor holds the signed V99 endpoint vote. The other lanes track the difference between each pair of adjacent minimum native-prefix depths. The selector compares the best interior cumulative score with both endpoint scores. A tie defers to V99, as does a stronger endpoint. When several interior scores share the strict maximum, the shortest winning spine is selected. Width two has only endpoints. The same target-verified prefix and bonus update all scores. The update reads only tokens committed for the current request and retains only integer statistics across calls.
+
+## Why preserve the endpoint decision
+
+On the synthetic 60/40 binary selector, a target that agrees with the leading choice 94% of the time favors a long native chain. Over the first eight verification calls, the original V101 controller committed 91.04% as many tokens per call as V99, while the guarded controller reached 99.31%. With 80% target agreement over 64 calls, the guarded controller achieved 104.12% of V99. It reached 111.16% when target agreement alternated between 60% and 94% every call, and 99.18% when it switched every eight calls. Each comparison used 4,096 paired seeds. Those probes count commits on independently constructed proposal lattices at each call. [Paired methodology and results](../v101_adaptive_draft_spine/paired_replay_review.md)
+
+On a separate two-mode distribution selected to exhibit a hybrid gain, the production kernel bodies averaged 3.913 commits per call against 2.979 for V99. The fixture reset policy state for each of 32 requests and ran 64 calls per request. Each learner saw only its own verified prefix. None of the synthetic distributions estimates how often an equivalent pattern occurs in challenge traffic. [Actual online kernel replay](online_example.json)
+
+## Source and validation
+
+The production delta against V101 changes only the two policy kernels. Their surrounding worker, sampler, target mask, greedy acceptance, request-state propagation, and distributed proposal broadcast are identical. Both candidates use the exact V99 launch flags plus `--speculative-dflash-adaptive-spine`. The flag defaults off. [Full configuration and patch validation](validation.json) · [Worker ingress coverage](../v101_adaptive_draft_spine/worker_modes.json)
+
+The CPU comparison checked 1,638 updates against the actual V99 endpoint kernel, 6,552 adjacent-margin updates against explicit path trees, and every resulting selection. This included 447 interior overrides, 1,191 endpoint choices, and 234 width-two cases. The complete 225,416-byte patch exports from pinned SGLang, applies and reverses, and reconstructs from the frozen V101 patch and its delta. It touches 38 permitted files and all 33 Python modules compile. Its SHA-256 is `5efac32facda3a20a0e7ba5fb1b1724454eba4e2439c4fe95da11cba67b1e39e`. [Guard comparison](guard_cpu.json) · [Export receipt](validation.json) · [Serving rules](../../RULES.md)
+
+The actual request-state methods preserved signed endpoint votes and every adjacent margin through all 120 permutations of five live slots at each width from two through eight. Missing state reset correctly in 28 direct merge cases and seven explicit slot-reuse checks. A separate fixture exercised equal-token siblings and repeated IDs under different parents through 24 layouts, 192 partial observations and 1,344 margin comparisons. [Request lifecycle](endpoint_lifecycle.json) · [Duplicate path coverage](duplicate_paths.json)
+
+Fourteen Triton specializations for Hopper compiled from the final source. The Triton 3.8 interpreter separately verified 252 selection rows and 252 feedback rows across widths two through eight. An independent request-state and topology review also validated 142,220 identifiable neighboring rewards and 69,924 legitimately censored comparisons. [SM90 compilation](sm90.json) · [Interpreter results](interpreter.json) · [Independent review](../v101_adaptive_draft_spine/independent_lifecycle.json)
+
+H200 output agreement, throughput, TTFT and peak memory remain unmeasured. The additional policy computation and the finite-precision sensitivity of the inherited attention layout require a hardware check.
+
+The November 19 runner selects V101b at 16 users after an exact V93 pass and eligible shared dependencies. V79a remains the wider-tree alternative. [Private window](../../runs/nov19_decode_runner.launch.json)

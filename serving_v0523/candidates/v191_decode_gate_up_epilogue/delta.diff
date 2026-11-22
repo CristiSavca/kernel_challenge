@@ -1,0 +1,444 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+new file mode 100644
+index 0000000..0214316
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+@@ -0,0 +1,94 @@
++// Appended to Humming's generated, uninstantiated grouped WGMMA translation unit.
++// The scheduler, mainloop, dequantization and BF16 shared epilogue are the vendor's.
++using MuseGateCtx = KernelContext<
++    MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>, Shape<MUSE_GATE_M, 256, 128>,
++    Shape<MUSE_GATE_M, 32, 64>, Shape<0, 0, 0>, FloatingPointType<16, 8, 7>,
++    FloatingPointType<4, 2, 1>, FloatingPointType<16, 8, 7>, FloatingPointType<8, 4, 3>,
++    LayerConfig, ComputeConfig, TuningConfig>;
++
++static_assert(MuseGateCtx::kNumWriteSplits == 1 && !MuseGateCtx::kUseStreamK && !MuseGateCtx::kUseTmaC);
++static_assert(MuseGateCtx::kMultiCastSize == 1 && MuseGateCtx::kWeightScaleGroupSize == 16);
++static_assert(MuseGateCtx::kIsGroupedContiguousGemm && MuseGateCtx::kUseTmaB && MuseGateCtx::kUseTmaBS);
++
++template <bool Weight>
++struct MusePackedGateLoader {
++  MuseGateCtx& ctx;
++  const void* map;
++  uint32_t col, row;
++  CUDA_INLINE MusePackedGateLoader(MuseGateCtx& ctx) : ctx(ctx), map(Weight ? ctx.params.b : ctx.params.bs) {}
++
++  CUDA_INLINE void seek(uint32_t expert, uint32_t n_tile, uint32_t k_tile) {
++    col = n_tile * (Weight ? 16 : 8);
++    row = expert * (HUMMING_SHAPE_K / 16) + k_tile * 8;
++  }
++
++  template <bool Advance = true>
++  CUDA_INLINE void load(int4* dest, void* bar) {
++    if (ctx.load_thread_id() == 0) {
++      const auto dst = cast_smem_ptr_to_uint(dest);
++      const auto mbar = cast_smem_ptr_to_uint(bar);
++      // Physical gate/up halves are distinct planes. The TMA box packs two
++      // matching 128-channel bands consecutively in each native 256-wide row.
++      asm volatile("cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes "
++                   "[%0], [%1, {0, %2, 0, %3}], [%4];"
++                   :: "r"(dst), "l"(map), "r"(col), "r"(row), "r"(mbar) : "memory");
++    }
++    if constexpr (Advance) row += 8;
++  }
++};
++
++template <> class G2SMemoryLoaderB<MuseGateCtx> : public MusePackedGateLoader<true> {
++ public: using MusePackedGateLoader<true>::MusePackedGateLoader;
++};
++template <> class G2SMemoryLoaderBS<MuseGateCtx> : public MusePackedGateLoader<false> {
++ public: using MusePackedGateLoader<false>::MusePackedGateLoader;
++};
++
++template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx>> {
++  MuseGateCtx& ctx;
++  int4* output;
++  uint32_t start, live, band;
++  float scale;
++
++  CUDA_INLINE int4 fragment(uint32_t row, uint32_t col) {
++    const uint32_t base = offsetof(SharedStorageType, reduce) / 128;
++    return ctx.smem.reduce[row * 8 + (col ^ ((row + base) % 8))];
++  }
++
++  CUDA_INLINE static float scaled(__nv_bfloat16 value, float scale) {
++    float product;
++    asm("mul.rn.f32 %0, %1, %2;" : "=f"(product) : "f"(__bfloat162float(value)), "f"(scale));
++    return __bfloat162float(__float2bfloat16_rn(product));
++  }
++
++ public:
++  CUDA_INLINE EpilogueGmemWriter(MuseGateCtx& ctx, EpilogueArithmetic<MuseGateCtx>&)
++      : ctx(ctx), output(reinterpret_cast<int4*>(const_cast<void*>(ctx.params.c))) {}
++
++  CUDA_INLINE void seek(uint32_t, uint32_t n_tile, uint32_t expert_end, uint32_t row_start) {
++    start = row_start;
++    live = min(static_cast<uint32_t>(MUSE_GATE_M), expert_end - start);
++    band = n_tile * 16;
++    const auto* scales = static_cast<const __nv_bfloat16*>(ctx.params.bs2);
++    // The grouped ABI has no indexed top-k. Its scalar parameter carries the packed-key shift.
++    scale = __bfloat162float(scales[(uint32_t(ctx.params.expert_ids_ptr[start]) >> ctx.params.top_k) - 1]);
++  }
++
++  CUDA_INLINE void write(uint32_t, uint32_t, uint32_t) {
++    constexpr uint32_t pitch = HUMMING_SHAPE_N / 2 / 8;
++    for (uint32_t i = threadIdx.x; i < MUSE_GATE_M * 16; i += MuseGateCtx::kNumMathThreads) {
++      const uint32_t s = i / 8, col = i % 8, row = s % MUSE_GATE_M;
++      if (row >= live) continue;
++      auto gate = fragment(s, col);
++      auto up = fragment(s + 2 * MUSE_GATE_M, col);
++      auto* g = reinterpret_cast<__nv_bfloat16*>(&gate);
++      auto* u = reinterpret_cast<__nv_bfloat16*>(&up);
++      PRAGMA_UNROLL
++      for (int j = 0; j < 8; ++j) {
++        const float x = scaled(g[j], scale), y = scaled(u[j], scale);
++        g[j] = __float2bfloat16_rn((x / (1.0f + expf(-x))) * y);
++      }
++      output[static_cast<uint64_t>(start + row) * pitch + band + s / MUSE_GATE_M * 8 + col] = gate;
++    }
++  }
++};
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+new file mode 100644
+index 0000000..4ec8f9d
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -0,0 +1,85 @@
++#include <sgl_kernel/tensor.h>
++#include <sgl_kernel/utils.cuh>
++#include <cuda.h>
++#include <cstring>
++#include <limits>
++
++namespace sglang {
++struct MuseDecodeGateUp {
++  using Tensor = tvm::ffi::TensorView;
++  struct Maps { CUtensorMap weight, scale; };
++
++  static bool bank_map(Tensor bank, uint64_t inner, bool weight, CUtensorMap* out) {
++    const cuuint64_t x = weight ? inner / 8 : inner / 16;
++    const cuuint64_t dims[] = {16, x, 2, uint64_t(bank.size(0)) * bank.size(1)};
++    const cuuint64_t stride[] = {weight ? 64u : 16u, (weight ? 64u : 16u) * x, (weight ? 128u : 32u) * x};
++    const cuuint32_t box[] = {16, weight ? 16u : 8u, 2, 8}, step[] = {1, 1, 1, 1};
++    return cuTensorMapEncodeTiled(out, weight ? CU_TENSOR_MAP_DATA_TYPE_UINT32 : CU_TENSOR_MAP_DATA_TYPE_UINT8,
++        4, bank.data_ptr(), dims, stride, box, step, CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_NONE,
++        CU_TENSOR_MAP_L2_PROMOTION_NONE, CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) == CUDA_SUCCESS;
++  }
++
++  static void check_storage(Tensor storage) {
++    host::TensorMatcher({int64_t(sizeof(Maps))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(storage);
++  }
++
++  static bool prepare(Tensor bank, Tensor scales, Tensor storage) {
++    check_storage(storage);
++    if (!bank.IsContiguous() || !scales.IsContiguous() || bank.ndim() != 3 || scales.ndim() != 3
++        || bank.device().device_type != kDLCUDA || scales.device().device_type != kDLCUDA
++        || scales.device().device_id != bank.device().device_id || bank.size(0) != scales.size(0)
++        || bank.size(1) != scales.size(1) || bank.size(2) != 2 * scales.size(2)
++        || bank.dtype().code != kDLInt || bank.dtype().bits != 32 || scales.dtype().code != kDLUInt || scales.dtype().bits != 8
++        || scales.size(2) % 256 || scales.size(2) < 256 || bank.size(0) <= 0 || bank.size(1) <= 0
++        || bank.size(0) > INT32_MAX / bank.size(1)) return false;
++    Maps maps{};
++    const auto inner = scales.size(2) / 2;
++    if (!bank_map(bank, inner, true, &maps.weight) || !bank_map(scales, inner, false, &maps.scale)) return false;
++    std::memcpy(storage.data_ptr(), &maps, sizeof(maps));
++    return true;
++  }
++
++  static bool configure(int64_t function, int64_t shared) {
++    return function && shared > 0 && shared < INT32_MAX && cuFuncSetAttribute(reinterpret_cast<CUfunction>(function),
++        CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, static_cast<int>(shared)) == CUDA_SUCCESS;
++  }
++
++  static bool run(Tensor input, Tensor output, Tensor ids, Tensor offsets, Tensor scales, Tensor storage,
++                  int64_t function, int64_t shared, int64_t tile, int64_t sms) {
++    using namespace host;
++    check_storage(storage);
++    auto rows = SymbolicSize{"rows"}, k = SymbolicSize{"K"}, i = SymbolicSize{"intermediate"}, e = SymbolicSize{"experts"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({rows, k}).with_dtype<bf16_t>().with_device(dev).verify(input);
++    TensorMatcher({rows, i}).with_dtype<bf16_t>().with_device(dev).verify(output);
++    TensorMatcher({rows}).with_dtype<int32_t>().with_device(dev).verify(ids);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(scales);
++    TensorMatcher({e.unwrap() + 1}).with_dtype<int32_t>().with_device(dev).verify(offsets);
++    if (i.unwrap() < 128 || i.unwrap() % 128 || k.unwrap() % 128 || rows.unwrap() <= 0
++        || rows.unwrap() > INT32_MAX / (i.unwrap() / 128)
++        || tile <= 0 || tile > 256 || sms <= 0 || sms > INT32_MAX) return false;
++
++    CUtensorMap a{};
++    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(rows.unwrap())}, stride[] = {2 * dims[0]};
++    const cuuint32_t box[] = {64, uint32_t(tile)}, step[] = {1, 1};
++    if (cuTensorMapEncodeTiled(&a, CU_TENSOR_MAP_DATA_TYPE_BFLOAT16, 2, input.data_ptr(), dims, stride, box, step,
++        CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_128B, CU_TENSOR_MAP_L2_PROMOTION_NONE,
++        CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) != CUDA_SUCCESS) return false;
++    Maps maps{};
++    std::memcpy(&maps, storage.data_ptr(), sizeof(maps));
++    void* c = output.data_ptr(), *factor = scales.data_ptr(), *experts = ids.data_ptr(), *layout = offsets.data_ptr();
++    void* none = nullptr;
++    uint32_t m = rows.unwrap(), key_shift = 0;
++    // _plan_grouped_decode packs (local_expert + 1) above ceil(log2(slots)) bits.
++    for (uint32_t bits = m - 1; bits; bits >>= 1) ++key_shift;
++    bool int64_layout = false;
++    void* args[] = {&a, &maps.weight, &c, &none, &maps.scale, &none, &none, &factor, &none,
++                    &experts, &none, &layout, &none, &none, &m, &key_shift, &int64_layout};
++    auto stream = static_cast<CUstream>(::TVMFFIEnvGetStream(kDLCUDA, dev.unwrap().device_id));
++    const auto status = cuLaunchKernel(reinterpret_cast<CUfunction>(function), sms, 1, 1, 640, 1, 1, shared, stream, args, nullptr);
++    RuntimeCheck(status == CUDA_SUCCESS, "grouped gate/up launch failed: ", static_cast<int>(status));
++    return true;
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+index 4474de0..a893ad7 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -1,6 +1,10 @@
++#ifdef MUSE_OVERLAP_CONTEXT
++using MuseOverlapCtx = MUSE_OVERLAP_CONTEXT;
++#else
+ using MuseOverlapCtx = KernelContext<MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>,
+     Shape<MUSE_OVERLAP_M, 128, 256>, Shape<MUSE_OVERLAP_M, 32, 64>, Shape<0, 0, 0>,
+     BFloat16, Float4E2M1, BFloat16, Float8E4M3, LayerConfig, ComputeConfig, TuningConfig>;
++#endif
+ 
+ // Humming 0.1.12's BF16 grouped geometry has two independent output bands
+ // per warpgroup and four K16 slices per shared stage. Consecutive operations
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+new file mode 100644
+index 0000000..6a3d9aa
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -0,0 +1,150 @@
++"""Run the native grouped expert WGMMA with a paired gate/up epilogue."""
++
++import json
++import logging
++import subprocess
++from functools import lru_cache
++from importlib.metadata import PackageNotFoundError, version
++from pathlib import Path
++
++import torch
++
++from sglang.kernels.jit.utils import load_jit
++
++
++@lru_cache(maxsize=1)
++def _launcher():
++    try:
++        return load_jit(
++            "muse_decode_gate_up", cuda_files=["muse_spark/decode_gate_up_launch.cuh"],
++            cuda_wrappers=[(name, f"MuseDecodeGateUp::{name}") for name in ("prepare", "configure", "run")],
++            extra_ldflags=["-lcuda"],
++        )
++    except (ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped projection because the launcher is unavailable: %s", exc)
++        return None
++
++
++@lru_cache(maxsize=128)
++def _compile(context, meta, compute, tuning):
++    from humming.jit.compiler import NVCCCompiler
++    from humming.jit.runtime import KernelRuntime
++    from humming.kernel.humming import HummingKernel
++
++    # The complete generated kernel and these specializations share Humming's
++    # normal code cache key. Load the CUfunction directly for the compact ABI.
++    class GroupedDecodeGateUpKernel(HummingKernel):
++        @staticmethod
++        def _get_compiler():
++            return NVCCCompiler
++
++        def load_cubin(self):
++            if self.cubin_loaded:
++                return
++            # Some compiler/toolkit combinations can eliminate the math path
++            # despite compiling the persistent producer. Check this module once.
++            binary = NVCCCompiler._get_env()["binaries"].get("cuobjdump")
++            if not binary:
++                raise RuntimeError("CUDA disassembler unavailable for the grouped gate/up kernel")
++            assembly = subprocess.check_output([binary, "-sass", self.kernel_filename], text=True)
++            opcode = f"HGMMA.64x{self.block_shape[0]}x16.F32.BF16"
++            if assembly.count(opcode) != 32 or assembly.count("WARPGROUP.DEPBAR.LE") != 12 or "UTMALDG.4D" not in assembly:
++                raise RuntimeError("grouped gate/up kernel lacks its Hopper matrix or paired tensor instruction")
++            KernelRuntime.load_cubin(self)
++
++        def prepare(self):
++            if (self.sm_version != 90 or self.num_stages != 4 or tuple(self.block_shape[1:]) != (256, 128)
++                    or tuple(self.warp_shape) != (self.block_shape[0], 32, 64)
++                    or self.num_threads != 640 or self.num_math_threads != 512
++                    or not (self.use_tma_a and self.use_tma_b and self.use_tma_bs)
++                    or self.use_tma_as or self.use_tma_bzp or self.use_tma_bias or self.use_tma_bs2
++                    or not self.use_warp_spec or self.use_tma_c or self.use_stream_k):
++                raise ValueError("unsupported grouped gate/up launch layout")
++            from sglang.kernels import jit
++
++            header = Path(jit.__file__).parent / "csrc/muse_spark/decode_gate_up.cuh"
++            self.code += f"\n#define MUSE_GATE_M {self.block_shape[0]}\n" + header.read_text()
++            pair = header.with_name("grouped_decode_mma_pair.cuh")
++            self.code += "\n#define MUSE_OVERLAP_CONTEXT MuseGateCtx\n" + pair.read_text()
++            KernelRuntime.prepare(self)
++
++    config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
++    config.pop("sublayer_name", None)
++    required = {
++        "gemm_type": "grouped_contiguous", "mma_type": "wgmma", "use_f16_accum": False,
++        "a_dtype": "bfloat16", "b_dtype": "float4e2m1", "c_dtype": "bfloat16", "bs_dtype": "float8e4m3",
++        "weight_scale_group_size": 16, "weight_scale_type": "group", "weight_scale_2_type": "none",
++    }
++    if (config.pop("num_sms", 0) or any(config.get(k) != v for k, v in required.items())
++            or any(config.get(k) for k in ("has_bias", "has_zero_point", "use_packed_k_layout",
++                                           "use_fused_e8m0_scale", "input_scale_group_size",
++                                           "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
++        return None
++    try:
++        kernel = GroupedDecodeGateUpKernel(**config)
++        kernel.check_context()
++        handle, shared = int(kernel.func), kernel.estimated_smem_size
++        if _launcher().configure(handle, shared):
++            return kernel, handle, shared, int(kernel.block_shape[0])
++    except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped gate/up projection: %s", exc)
++    return None
++
++
++def prepare_gate_up(layer, meta, compute, tunings):
++    from humming.kernel.humming import HummingKernel
++
++    try:
++        if version("humming-kernels") != "0.1.12":
++            return None
++    except PackageNotFoundError:
++        return None
++    bank, scales = layer.w13_weight, layer.w13_weight_scale
++    experts, hidden, intermediate = layer.num_local_experts, layer.hidden_size, layer.intermediate_size_per_partition
++    if (hidden % 128 or intermediate % 128 or hidden > intermediate
++            or bank.shape != (experts, hidden // 16, 4 * intermediate) or bank.dtype != torch.int32
++            or scales.shape != (experts, hidden // 16, 2 * intermediate) or scales.dtype != torch.float8_e4m3fn
++            or layer.w13_global_scale.shape != (experts,) or layer.w13_global_scale.dtype != torch.bfloat16
++            or not all(t.is_contiguous() for t in (bank, scales, layer.w13_global_scale))
++            or any(bank.device != t.device for t in (scales, layer.w13_global_scale))):
++        return None
++    config = json.loads(meta)
++    if (config.get("mma_type") != "wgmma" or config.get("use_packed_k_layout")
++            or config.get("weight_scale_group_size") != 16):
++        return None
++    widths = {t for _, t in tunings}
++    try:
++        launcher = _launcher()
++        if launcher is None:
++            return None
++        maps = torch.empty(256, dtype=torch.uint8, device="cpu")
++        if not launcher.prepare(bank, scales.view(torch.uint8), maps):
++            return None
++        ctx = HummingKernel.current_context()
++        kernels = {t: _compile(ctx, meta, compute, t) for t in sorted(widths)}
++    except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped decode: %s", exc)
++        return None
++    if not any(kernels.values()):
++        return None
++    sms = torch.cuda.get_device_properties(bank.device).multi_processor_count
++    bindings = tuple((t.data_ptr(), t.shape) for t in (bank, scales))
++    return launcher, maps, bindings, kernels, sms
++
++
++def run_gate_up(layer, inputs, keys, offsets, tuning):
++    """Return compact BF16 activations, or decline before issuing the projection."""
++    state = getattr(layer, "humming_decode_gate_up", None)
++    if not state:
++        return None
++    launcher, maps, addresses, kernels, sms = state
++    kernel = kernels.get(tuning)
++    if kernel is None or addresses != tuple(
++        (t.data_ptr(), t.shape) for t in (layer.w13_weight, layer.w13_weight_scale)
++    ):
++        return None
++    _, handle, shared, width = kernel
++    active = inputs.new_empty((inputs.shape[0], layer.intermediate_size_per_partition))
++    if launcher.run(inputs, active, keys, offsets, layer.w13_global_scale, maps, handle, shared, width, sms):
++        return active
++    return None
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 872934b..48da1f5 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -56,6 +56,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     grouped_tunings = {}
+     decode_tunings = {}
+     layer.humming_decode_down = {}
++    gate_meta = None
+     for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
+         packed = getattr(layer, checkpoint_name)
+         scales = getattr(layer, f"{checkpoint_name}_weight_scale")
+@@ -142,6 +143,8 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             )
+             for _, tuning in decode_tunings[name]:
+                 HummingKernel.prepare_kernels(meta.to_str(), _GROUPED_COMPUTE, tuning)
++            if name == "w13" and torch.cuda.get_device_capability(packed.device) == (9, 0):
++                gate_meta = meta.to_str()
+             if name == "w2" and torch.cuda.get_device_capability(packed.device) == (9, 0):
+                 from sglang.srt.layers.muse_spark.decode_mma_pair import prepare_down
+ 
+@@ -156,6 +159,11 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     layer.humming_indexed_tunings = tunings
+     layer.humming_grouped_tunings = grouped_tunings
+     layer.humming_decode_tunings = decode_tunings
++    layer.humming_decode_gate_up = None
++    if gate_meta is not None:
++        from sglang.srt.layers.muse_spark.decode_gate_up import prepare_gate_up
++
++        layer.humming_decode_gate_up = prepare_gate_up(layer, gate_meta, _GROUPED_COMPUTE, decode_tunings["w13"])
+ 
+ 
+ @triton.jit
+@@ -275,11 +283,7 @@ def humming_grouped_decode_outputs(
+         num_warps=4 if span <= 256 else 8,
+     )
+     staging = hidden_states.new_empty(slots * intermediate)
+-    arena = hidden_states.new_empty(slots * max(2 * intermediate, hidden_size))
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
+-    activations = staging[: slots * intermediate].view(slots, intermediate)
+-    outputs = arena[: slots * hidden_size].view(slots, hidden_size)
+     _gather_grouped_decode[(min(slots, 128),)](
+         hidden_states,
+         row_keys,
+@@ -294,15 +298,27 @@ def humming_grouped_decode_outputs(
+     )
+ 
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+-    for name, source, destination in (
+-        ("w13", inputs, gate_up),
+-        ("w2", activations, outputs),
+-    ):
+-        tuning = next(
+-            config
+-            for maximum, config in layer.humming_decode_tunings[name]
+-            if estimated_local_routes <= maximum
+-        )
++    def select(name):
++        return next(config for maximum, config in layer.humming_decode_tunings[name]
++                    if estimated_local_routes <= maximum)
++
++    gate_tuning = select("w13")
++    activations = None
++    if getattr(layer, "humming_decode_gate_up", None) is not None:
++        from sglang.srt.layers.muse_spark.decode_gate_up import run_gate_up
++
++        activations = run_gate_up(layer, inputs, row_keys, offsets, gate_tuning)
++    if activations is None:
++        arena = hidden_states.new_empty(slots * max(2 * intermediate, hidden_size))
++        gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
++        activations = staging.view(slots, intermediate)
++        outputs = arena[: slots * hidden_size].view(slots, hidden_size)
++        phases = (("w13", inputs, gate_up, gate_tuning), ("w2", activations, outputs, select("w2")))
++    else:
++        # The new W13 output is separate. Once it finishes, W2 may reuse W13's input.
++        outputs = inputs
++        phases = (("w2", activations, outputs, select("w2")),)
++    for name, source, destination, tuning in phases:
+         down = getattr(layer, "humming_decode_down", {}).get(tuning) if name == "w2" else None
+         if down is not None:
+             from sglang.srt.layers.muse_spark.decode_mma_pair import run_down

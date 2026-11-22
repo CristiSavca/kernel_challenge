@@ -1,0 +1,41 @@
+{
+  "rank_major_tp": 8,
+  "cases": [
+    {
+      "threads": 256,
+      "variants": {
+        "old": {
+          "instruction_sites_across_16_kernels": 22784,
+          "header_sha256": "c227348c4d705183d377ac623a62b1ed6957eb8832fb0508f4ac99f1aa3cb0c8"
+        },
+        "new": {
+          "instruction_sites_across_16_kernels": 24224,
+          "header_sha256": "42858366360128a74fb4509f0551ea3d243dedbc222b855aaf14fd953007df35"
+        },
+        "address_u32": {
+          "instruction_sites_across_16_kernels": 23464,
+          "header_sha256": "8e46731ad33ed6e2066091721ba9aee9287dab42a9e84885a9ba098503ad2bea"
+        }
+      }
+    },
+    {
+      "threads": 512,
+      "variants": {
+        "old": {
+          "instruction_sites_across_16_kernels": 11168,
+          "header_sha256": "c227348c4d705183d377ac623a62b1ed6957eb8832fb0508f4ac99f1aa3cb0c8"
+        },
+        "new": {
+          "instruction_sites_across_16_kernels": 11496,
+          "header_sha256": "42858366360128a74fb4509f0551ea3d243dedbc222b855aaf14fd953007df35"
+        },
+        "address_u32": {
+          "instruction_sites_across_16_kernels": 11544,
+          "header_sha256": "8e46731ad33ed6e2066091721ba9aee9287dab42a9e84885a9ba098503ad2bea"
+        }
+      }
+    }
+  ],
+  "change": "Calculate rank and shard offset from unsigned vector index to remove signed division adjustment.",
+  "decision": "Held separately. Fewer aggregate static instruction sites in the small-row kernel and more in the large-row kernel. No device timing."
+}

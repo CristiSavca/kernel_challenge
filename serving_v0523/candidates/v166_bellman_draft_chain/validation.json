@@ -1,0 +1,50 @@
+{
+  "candidate": "V166",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "tree": "cd1167e6ddec99c126c033bebe868109a8ff880a",
+  "patch_sha256": "148b21f4b92a55636fbf457fb23a2f8fe7eacb147b626a3fe37697f6ce25e8f6",
+  "delta_sha256": "e3b8a064e9ca3a2e3cd1a9f9cefb8964a06907383f12a3870d33581958a73628",
+  "bytes": 50473,
+  "delta_bytes": 6674,
+  "paths": [
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/speculative/dflash.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/dflash.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/speculative/dflash.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/models/dflash.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-prefix-value": ""
+  },
+  "fixed_flag_patterns": 76,
+  "source_sha256": "e42f67446b7c7cc7ad35f5aef0d053fc933f899e23f899fd65d4057431de77ec",
+  "official_export": "okc serve diff .",
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "strict_roundtrips": true,
+  "maximum_added_line_chars": 111,
+  "original_fields_preserved": 546,
+  "real_cli_msgspec": "0.22.0",
+  "physical_h200": false,
+  "submitted": false
+}

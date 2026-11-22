@@ -1,0 +1,126 @@
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index d364336..2763fdd 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -79,6 +79,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Shard the unquantized DFLASH target-context projection across the draft TP group.",
+     ] = False
++    speculative_dflash_tp_conv_projection: A[
++        bool,
++        "Shard dynamic DFLASH convolution filter projections across the draft TP group.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index fe0a223..be516cf 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -1,4 +1,4 @@
+-"""Output-sharded target-context projection for tensor-parallel DFLASH."""
++"""Output-sharded BF16/FP16 linear projections for tensor-parallel DFLASH."""
+ 
+ from torch import nn
+ from torch.nn import functional as F
+@@ -7,19 +7,25 @@ from sglang.srt.model_loader.weight_utils import sharded_weight_loader
+ from sglang.srt.utils import set_weight_attrs
+ 
+ 
+-class DFlashContextProjection(nn.Linear):
++class DFlashGatheredLinear(nn.Linear):
+     def __init__(self, input_size, output_size, tp_group):
+         super().__init__(input_size, output_size // tp_group.world_size, bias=False)
+         self.full_output_size = output_size
+         self.tp_group = tp_group
+-        set_weight_attrs(
+-            self.weight,
+-            {"weight_loader": sharded_weight_loader(0, parallel_group="tp")},
+-        )
++        load_shard = sharded_weight_loader(0, parallel_group="tp")
++
++        def load_weight(param, checkpoint):
++            if tuple(checkpoint.shape) != (output_size, input_size):
++                raise ValueError(
++                    f"Expected DFLASH weight {(output_size, input_size)}, got {tuple(checkpoint.shape)}."
++                )
++            load_shard(param, checkpoint)
++
++        set_weight_attrs(self.weight, {"weight_loader": load_weight})
+ 
+     def forward(self, inputs):
+         # Each output retains the original full-K dot product and output dtype.
+-        # Gather complete channels before the unchanged hidden RMSNorm.
++        # Restore complete output channels in checkpoint order.
+         projected = F.linear(inputs, self.weight)
+         if projected.shape[0] == 0:
+             return inputs.new_empty((0, self.full_output_size))
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index e95c228..92034b9 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -18,7 +18,7 @@ from sglang.srt.configs.draft_parallel import DraftParallelSpec, DraftTPExecutio
+ from sglang.srt.configs.laguna import normalize_gating
+ from sglang.srt.distributed.communication_op import tensor_model_parallel_all_gather
+ from sglang.srt.layers.activation import SiluAndMul
+-from sglang.srt.layers.dflash_context_projection import DFlashContextProjection
++from sglang.srt.layers.dflash_context_projection import DFlashGatheredLinear
+ from sglang.srt.layers.layernorm import GemmaRMSNorm, RMSNorm
+ from sglang.srt.layers.linear import (
+     ColumnParallelLinear,
+@@ -542,7 +542,7 @@ class DFlashGroupedConv(nn.Module):
+     """
+ 
+     def __init__(
+-        self, hidden_size: int, block_size: int, taps: int, group_size: int
++        self, hidden_size: int, block_size: int, taps: int, group_size: int, *, shard_filter=False
+     ) -> None:
+         super().__init__()
+         if hidden_size % group_size:
+@@ -559,9 +559,13 @@ class DFlashGroupedConv(nn.Module):
+         base_kernel = torch.zeros(2, self.taps, hidden_size)
+         base_kernel[:, 0] = 1.0
+         self.base_kernel = nn.Parameter(base_kernel)
+-        self.kernel_projection = nn.Linear(
+-            hidden_size, 2 * self.taps * self.num_groups, bias=False
+-        )
++        output_size = 2 * self.taps * self.num_groups
++        if shard_filter:
++            group = get_parallel().tp_group
++            if group.world_size > 1 and output_size % group.world_size == 0:
++                self.kernel_projection = DFlashGatheredLinear(hidden_size, output_size, group)
++                return
++        self.kernel_projection = nn.Linear(hidden_size, output_size, bias=False)
+ 
+     def _convolve(self, hidden_states, delta, side: int) -> torch.Tensor:
+         # Marked here, not inside: by the time the compiled function traces, the dim
+@@ -724,6 +728,11 @@ class DFlashDraftModel(nn.Module):
+                 self.block_size,
+                 draft_config.conv_kernel_size,
+                 draft_config.conv_group_size,
++                shard_filter=(
++                    get_spec().speculative_dflash_tp_conv_projection
++                    and not self.quantizable
++                    and is_cuda()
++                ),
+             )
+ 
+         self.layers = nn.ModuleList(
+@@ -775,7 +784,7 @@ class DFlashDraftModel(nn.Module):
+             and get_parallel().tp_group.world_size > 1
+             and hidden_size % get_parallel().tp_group.world_size == 0
+         ):
+-            self.fc = DFlashContextProjection(
++            self.fc = DFlashGatheredLinear(
+                 self.num_context_features * hidden_size,
+                 hidden_size,
+                 get_parallel().tp_group,
+@@ -973,7 +982,7 @@ class DFlashDraftModel(nn.Module):
+                             and tuple(loaded_weight.shape) == tuple(param.shape)
+                         )
+                     else:
+-                        if isinstance(self.fc, DFlashContextProjection):
++                        if isinstance(self.fc, DFlashGatheredLinear):
+                             expected_shape = (
+                                 self.fc.full_output_size, self.fc.in_features
+                             )

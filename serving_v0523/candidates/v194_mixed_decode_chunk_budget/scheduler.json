@@ -1,0 +1,25 @@
+{
+  "single_rank": {
+    "native_chunk_calls": 144,
+    "admitted_real_mixed_batches": 14,
+    "native_decoder_allocations": 14,
+    "unsupported_declines": 20
+  },
+  "torch": "2.5.1",
+  "multi_rank": {
+    "2": {
+      "consensus": 4,
+      "rank_veto": 6
+    },
+    "4": {
+      "consensus": 8,
+      "rank_veto": 12
+    },
+    "8": {
+      "consensus": 16,
+      "rank_veto": 24
+    }
+  },
+  "physical_h200": false,
+  "scope": "Native scheduler continuation selection, native PrefillAdder.add_chunked_req and accounting, native V160 mixed admission and decode reservation. Fixture supplies the memory backend and request metadata; Gloo consensus is real."
+}

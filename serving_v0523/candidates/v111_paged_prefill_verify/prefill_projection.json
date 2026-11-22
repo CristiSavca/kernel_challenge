@@ -1,0 +1,26 @@
+{
+  "torch": "2.5.1",
+  "collectives": "actual Gloo all_gather_into_tensor and all_reduce(MIN)",
+  "tp_sizes": [
+    2,
+    4,
+    8
+  ],
+  "full_K_fixture": {
+    "M": 259,
+    "N": 7,
+    "K": 40960,
+    "tp_sizes": [
+      2,
+      4,
+      8
+    ],
+    "bf16_bitwise_equal": true
+  },
+  "cases_per_size": 23,
+  "early_startup_checks_per_size": 3,
+  "paths": "production FC, tap pack and gather, Muse text model forward, logits FULL capture, replay trim and draft norm/KV boundary",
+  "equality": "bit-exact BF16 fixture comparisons across every rank, sampled-position logits, every draft input, positions, reversed slots",
+  "boundary_cases": "threshold, overallocated buckets, row trim, one-rank hooks/overrides/compiled/strides/dtype/visibility and deterministic mode, nested scope",
+  "h200_executed": false
+}

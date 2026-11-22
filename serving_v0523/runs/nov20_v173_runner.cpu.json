@@ -1,0 +1,52 @@
+{
+  "at": "2026-11-18T20:27:27.766408+00:00",
+  "source_sha256": {
+    "submit_nov20_v173_check.py": "03818c50edd65b19c4c2ad9fba9c676204b57de3bc24e7bc33da8ff848f3a51b",
+    "test_nov20_v173_check.py": "b491c8bdd46678cffdf0fee679c10a05e19cb5cea29e3be9c39d4f4af9957818",
+    "submit_nov20_v163_check.py": "31dfce583e6d8f0f35919eeba3c3f455abf8f86c941cc6e0dd0b027b63e9351c",
+    "nov20_check_slots.py": "df08468e3660489e6dafd12d3e48260d4494c4be42a0c9e98f028309c3c0c6ff",
+    "submit_nov20_v154c_check.py": "9a128b25e76f6c9820cad77874fce048181d056dc5fcfda0333973a66e8807d2",
+    "submit_nov20_v141_check.py": "56c35603dd8be3acb4a533af3f26a6c8d73dd3de9f12d7f4301ddddeec9b40a1",
+    "submit_nov20_v132_check.py": "501b3d5283e36b9ac9def8ad2e5cc71f4210dd1721dc9604e65388c743e1695c",
+    "submit_nov20_v129_check.py": "fd380e447581d4c97e2e0a14d0f592722ef179d76049c2c123353c54698ce0e3",
+    "submit_nov19_decode_checks.py": "77f9fd4f7ae2bbc93af23d42bbee9128bbe9f52e15c684cb16b4404ad9eb73ad",
+    "submit_nov17_integrated_checks.py": "b04830f38a89cf0bb00f65a44bba504e8f9dad4205d4fefe02a80c616ce4028f"
+  },
+  "plan_sha256": "58c2b129a9f194efb4f42f18b0dbfdac31de9c6791195a1c78ddf7bfc41c640c",
+  "tests": [
+    {
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-q",
+        "-p",
+        "test_nov19*.py"
+      ],
+      "result": "----------------------------------------------------------------------\nRan 97 tests in 0.209s\n\nOK",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-q",
+        "-p",
+        "test_nov20*.py"
+      ],
+      "result": "----------------------------------------------------------------------\nRan 79 tests in 4.661s\n\nOK",
+      "exit_code": 0
+    }
+  ],
+  "independent_review_of_core": {
+    "sha256": "55d683cb06beec7acb186fe182b034f890811765a4cc6d4ceb426103e4c75288",
+    "spec85_probes": 36,
+    "expert86_probes": 26
+  },
+  "final_change": "Reject an array, null or Boolean checks value as unavailable. Three cases exercised in test_nov20_v173_check."
+}

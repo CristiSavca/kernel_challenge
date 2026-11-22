@@ -1,0 +1,2313 @@
+diff --git a/python/sglang/kernels/ops/attention/metadata.py b/python/sglang/kernels/ops/attention/metadata.py
+index ba48665..debc937 100644
+--- a/python/sglang/kernels/ops/attention/metadata.py
++++ b/python/sglang/kernels/ops/attention/metadata.py
+@@ -292,6 +292,16 @@ def _fused_decode_metadata_kernel(
+         )
+ 
+ 
++@triton.jit
++def _draft_page_index(token_index, PAGE_SIZE: tl.constexpr, PAGE_SHIFT: tl.constexpr):
++    if PAGE_SHIFT >= 0:
++        return token_index >> PAGE_SHIFT
++    # Preserve floor division, including a negative unmapped slot.
++    return tl.where(
++        token_index >= 0, token_index // PAGE_SIZE, (token_index + 1) // PAGE_SIZE - 1
++    )
++
++
+ @triton.jit
+ def _draft_extend_metadata_kernel(
+     # Input tensors
+@@ -322,8 +332,8 @@ def _draft_extend_metadata_kernel(
+     B,
+     max_seq_pages,
+     tokens_per_req,
+-    PAGE_SIZE_ONE: tl.constexpr,
+-    SHIFT: tl.constexpr,
++    PAGE_SIZE: tl.constexpr,
++    PAGE_SHIFT: tl.constexpr,
+     BLOCK_COLS: tl.constexpr,
+     HAS_SWA: tl.constexpr,
+     OUT_BLOCK: tl.constexpr,
+@@ -368,10 +378,12 @@ def _draft_extend_metadata_kernel(
+         return
+ 
+     seq_len = tl.load(seq_lens + pid_b * seq_lens_stride_0).to(tl.int32)
+-    if PAGE_SIZE_ONE:
++    if PAGE_SIZE == 1:
+         num_live_pages = seq_len
++    elif PAGE_SHIFT >= 0:
++        num_live_pages = (seq_len + PAGE_SIZE - 1) >> PAGE_SHIFT
+     else:
+-        num_live_pages = (seq_len + (1 << SHIFT) - 1) >> SHIFT
++        num_live_pages = tl.cdiv(seq_len, PAGE_SIZE)
+     num_live_pages = tl.minimum(num_live_pages, max_seq_pages)
+     if pid_c * BLOCK_COLS >= num_live_pages:
+         return
+@@ -382,30 +394,21 @@ def _draft_extend_metadata_kernel(
+     col_offsets = pid_c * BLOCK_COLS + tl.arange(0, BLOCK_COLS)
+     mask = col_offsets < num_live_pages
+ 
+-    if PAGE_SIZE_ONE:
+-        col_idx = col_offsets
+-    else:
+-        col_idx = col_offsets << SHIFT
++    col_idx = col_offsets * PAGE_SIZE
+ 
+     rt_offsets = row_offset + col_idx * req_to_token_stride_1
+     page_index = tl.load(
+         req_to_token + rt_offsets, mask=mask, other=0, cache_modifier=".cg"
+     )
+ 
+-    if PAGE_SIZE_ONE:
+-        page_table_val = page_index
+-    else:
+-        page_table_val = page_index >> SHIFT
++    page_table_val = _draft_page_index(page_index, PAGE_SIZE, PAGE_SHIFT)
+ 
+     pt_offsets = pid_b * page_table_stride_0 + col_offsets * page_table_stride_1
+     tl.store(page_table + pt_offsets, page_table_val, mask=mask, cache_modifier=".cg")
+ 
+     if HAS_SWA:
+         swa_loc = tl.load(full_to_swa_index_mapping + page_index, mask=mask, other=0)
+-        if PAGE_SIZE_ONE:
+-            swa_page_table_val = swa_loc
+-        else:
+-            swa_page_table_val = swa_loc >> SHIFT
++        swa_page_table_val = _draft_page_index(swa_loc, PAGE_SIZE, PAGE_SHIFT)
+         tl.store(
+             swa_page_table + pt_offsets,
+             swa_page_table_val.to(tl.int32),
+@@ -441,8 +444,9 @@ def draft_extend_set_metadata(
+     row tails keep stale values that attention kernels never read past
+     cache_seqlens, matching the eager replay path's bounded writes.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
++    page_shift = (
++        page_size.bit_length() - 1 if page_size & (page_size - 1) == 0 else -1
+     )
+ 
+     batch_size = cache_seqlens_int32.shape[0]
+@@ -492,8 +496,8 @@ def draft_extend_set_metadata(
+         batch_size,
+         max_seq_pages,
+         tokens_per_req,
+-        PAGE_SIZE_ONE=page_size == 1,
+-        SHIFT=(page_size).bit_length() - 1 if page_size > 1 else 0,
++        PAGE_SIZE=page_size,
++        PAGE_SHIFT=page_shift,
+         BLOCK_COLS=BLOCK_COLS,
+         num_warps=8,
+         num_stages=3,
+@@ -533,9 +537,7 @@ def normal_decode_set_metadata(
+     independently of address translation. ``skip_page_table=True`` leaves
+     both page tables untouched and computes only lengths and the prefix sum.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
+-    )
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
+     if swa_page_table is not None and not skip_page_table:
+         assert (full_to_swa_index_mapping is None) != (swa_v2p is None), (
+             "SWA output requires exactly one token-slot or page mapping"
+diff --git a/python/sglang/kernels/ops/attention/swa_prefill_kv.py b/python/sglang/kernels/ops/attention/swa_prefill_kv.py
+new file mode 100644
+index 0000000..12d79bb
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/swa_prefill_kv.py
+@@ -0,0 +1,119 @@
++"""Pack the visible sliding-window suffix for one dense variable-length FA3 call."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _pack_swa_suffix(
++    K, V, Table, Lengths, CuQ, DenseK, DenseV, PackedCuQ, PackedCuK, UsedK,
++    k_page_stride, k_token_stride, v_page_stride, v_token_stride, table_stride, q_capacity, batch,
++    PAGE_SIZE: tl.constexpr, LEFT: tl.constexpr, ROW_WIDTH: tl.constexpr, BLOCK_ROWS: tl.constexpr,
++):
++    seq = tl.program_id(1)
++    block = tl.program_id(0)
++    # The extra sequence owns any graph-bucket query padding. Its one key
++    # and value are zero so every padded output is finite and isolated.
++    dummy = seq == batch
++    q_begin = tl.load(CuQ + seq)
++    q_end = tl.load(CuQ + seq + 1, mask=~dummy, other=0)
++    q_len = q_end - q_begin
++    k_len = tl.load(Lengths + seq, mask=~dummy, other=0)
++    live = tl.where(q_len > 0, tl.minimum(k_len, q_len + LEFT), 0)
++    live = tl.where(dummy, 1, live)
++    start = k_len - live
++    # Reserve a zero guard after each live suffix for unpredicated lanes
++    # in the final dense FA3 K/V tile. Prefix space is independent of k_len.
++    guard: tl.constexpr = 256
++    dst_begin = q_begin.to(tl.int64) + seq.to(tl.int64) * (LEFT + guard)
++    if block == 0:
++        tl.store(PackedCuQ + seq, q_begin)
++        tl.store(PackedCuK + seq, dst_begin)
++        tl.store(UsedK + seq, live)
++        if dummy:
++            tl.store(PackedCuQ + seq + 1, q_capacity)
++            tl.store(PackedCuK + seq + 1, q_capacity + batch * (LEFT + guard) + guard)
++
++    cols = tl.arange(0, ROW_WIDTH)
++    extent = tl.where(dummy, guard, live + guard)
++    for tile in range(block, tl.cdiv(extent, BLOCK_ROWS), tl.num_programs(0)):
++        row = tile * BLOCK_ROWS + tl.arange(0, BLOCK_ROWS)
++        read = (row < live) & ~dummy
++        token = tl.where(read, start + row, 0).to(tl.uint32)
++        page = tl.load(Table + seq.to(tl.int64) * table_stride + token // PAGE_SIZE,
++                       mask=read, other=0).to(tl.int64)
++        offset = (token % PAGE_SIZE).to(tl.int64)
++        k_row = page * k_page_stride + offset * k_token_stride
++        v_row = page * v_page_stride + offset * v_token_stride
++        dst = (dst_begin + row)[:, None] * ROW_WIDTH + cols[None, :]
++        keys = tl.load(K + k_row[:, None] + cols[None, :], read[:, None], other=0)
++        tl.store(DenseK + dst, keys, mask=row[:, None] < extent)
++        values = tl.load(V + v_row[:, None] + cols[None, :], read[:, None], other=0)
++        tl.store(DenseV + dst, values, mask=row[:, None] < extent)
++
++
++def can_pack_swa_prefill(key, value, table, lengths, cu_q, q_capacity, left):
++    if table is None or table.ndim != 2 or key.ndim != 4 or cu_q is None:
++        return False
++    batch, columns = table.shape
++    _, page_size, heads, dim = key.shape
++    row_bytes = heads * dim
++    capacity = q_capacity + batch * (left + 256) + 256
++    return (
++        batch > 0 and columns > 0 and page_size > 0 and left >= 0
++        and value.shape == key.shape and value.dtype == key.dtype == torch.float8_e4m3fn
++        and 16 <= row_bytes <= 1024 and row_bytes & (row_bytes - 1) == 0
++        and key.stride()[-2:] == value.stride()[-2:] == (dim, 1)
++        and (page_size == 1 or all(
++            cache.stride(1) >= row_bytes
++            and cache.stride(0) >= (page_size - 1) * cache.stride(1) + row_bytes
++            for cache in (key, value)
++        ))
++        and table.stride(1) == 1 and table.dtype in (torch.int32, torch.int64)
++        and lengths.shape == (batch,) and cu_q.shape == (batch + 1,)
++        and lengths.dtype == cu_q.dtype == torch.int32
++        and lengths.is_contiguous() and cu_q.is_contiguous()
++        and 2 * capacity * row_bytes <= 48 * 1024 * 1024
++    )
++
++
++def pack_swa_prefill(key, value, table, lengths, cu_q, q_capacity, max_q, left):
++    batch, columns = table.shape
++    _, page_size, heads, dim = key.shape
++    capacity = q_capacity + batch * (left + 256) + 256
++    packed = key.new_empty((2, capacity, heads, dim))
++    dense_k, dense_v = packed.unbind()
++    q_bounds = cu_q.new_empty(batch + 2)
++    k_bounds = cu_q.new_empty(batch + 2)
++    used_k = lengths.new_empty(batch + 1)
++    row_bytes = heads * dim
++    # Dense FP8 cache rows can usually move four bytes per lane. The byte
++    # path also accepts views with storage offsets or strides between words.
++    word_aligned = dim % 4 == 0 and all(
++        tensor.storage_offset() % 4 == 0 and tensor.data_ptr() % 4 == 0
++        and all(stride % 4 == 0 for stride in tensor.stride()[:-1])
++        for tensor in (key, value)
++    )
++    dtype = torch.int32 if word_aligned else torch.uint8
++    source_k, source_v = key.view(dtype), value.view(dtype)
++    row_width = row_bytes // source_k.element_size()
++    block_rows = min(32, (4096 if word_aligned else 2048) // row_bytes)
++    max_k = min(columns * page_size, max_q + left)
++    # Independent blocks stream the rows of a request. Bound idle work for
++    # a long chunk batched with short chunks or empty graph rows.
++    blocks = min(triton.cdiv(max_k + 256, block_rows), triton.cdiv(1024, batch + 1))
++    _pack_swa_suffix[(blocks, batch + 1)](
++        source_k, source_v, table, lengths, cu_q,
++        dense_k.view(dtype), dense_v.view(dtype), q_bounds, k_bounds, used_k,
++        source_k.stride(0), source_k.stride(1), source_v.stride(0), source_v.stride(1),
++        table.stride(0), q_capacity, batch,
++        PAGE_SIZE=page_size, LEFT=left, ROW_WIDTH=row_width, BLOCK_ROWS=block_rows,
++    )
++    return dense_k, dense_v, q_bounds, k_bounds, used_k, max_k
++
++
++def with_padding_descale(scale):
++    if scale.shape[0] == 1 or scale.stride(0) == 0:
++        return scale[:1].expand(scale.shape[0] + 1, -1)
++    return torch.cat((scale, scale[:1]), dim=0)
+diff --git a/python/sglang/kernels/ops/attention/verify_fp8_cache.py b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+new file mode 100644
+index 0000000..00d4ae5
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+@@ -0,0 +1,69 @@
++"""Encode a target verification query and scatter its current keys and values."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++def bf16_e4m3_encodings(device):
++    # Use this installation's torch cast, including signed NaNs and overflow.
++    bits = torch.arange(65536, dtype=torch.int32, device=device).to(torch.int16)
++    return bits.view(torch.bfloat16).to(torch.float8_e4m3fn).view(torch.uint8)
++
++
++@triton.jit
++def _encode_and_scatter(
++    Q, K, V, OUT, KC, VC, LOC, TABLE,
++    q_pitch, k_pitch, v_pitch, kc_pitch, vc_pitch, loc_pitch, capacity,
++    Q_WIDTH: tl.constexpr, KV_WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    row = tl.program_id(0).to(tl.int64)
++    start = tl.program_id(1) * BLOCK
++    cols = start + tl.arange(0, BLOCK)
++    q_bits = tl.load(Q + row * q_pitch + cols, cols < Q_WIDTH, other=0).to(tl.uint32)
++    q8 = tl.load(TABLE + q_bits)
++    tl.store(OUT + row * Q_WIDTH + cols, q8, cols < Q_WIDTH)
++    if start < KV_WIDTH:
++        slot = tl.load(LOC + row * loc_pitch).to(tl.int64)
++        tl.device_assert((slot >= 0) & (slot < capacity), "KV cache slot out of range")
++        if (slot > 0) & (slot < capacity):
++            live = cols < KV_WIDTH
++            k_bits = tl.load(K + row * k_pitch + cols, live, other=0).to(tl.uint32)
++            v_bits = tl.load(V + row * v_pitch + cols, live, other=0).to(tl.uint32)
++            tl.store(KC + slot * kc_pitch + cols, tl.load(TABLE + k_bits), live)
++            tl.store(VC + slot * vc_pitch + cols, tl.load(TABLE + v_bits), live)
++
++
++def encode_verify_qkv(q, k, v, k_cache, v_cache, slots, capacity, table):
++    rows = q.shape[0]
++    if (
++        q.ndim != 2 or not rows or q.stride(1) != 1
++        or k.ndim != 3 or k.shape[0] != rows or v.shape != k.shape
++        or k.stride()[1:] != (k.shape[2], 1) or v.stride()[1:] != k.stride()[1:]
++        or any(t.dtype != torch.bfloat16 for t in (q, k, v))
++        or slots.ndim != 1 or slots.numel() != rows
++        or slots.dtype not in (torch.int32, torch.int64)
++        or any(t.device != q.device for t in (k, v, k_cache, v_cache, slots, table))
++    ):
++        return None
++    q_width, kv_width = q.shape[1], k.shape[1] * k.shape[2]
++    if not (0 < kv_width <= q_width and 0 < capacity):
++        return None
++    for cache in (k_cache, v_cache):
++        if (
++            cache.ndim != 3 or cache.shape[1:] != k.shape[1:]
++            or cache.shape[0] < capacity or cache.stride(0) < kv_width
++            or cache.stride()[1:] != k.stride()[1:]
++            or cache.dtype != torch.float8_e4m3fn
++        ):
++            return None
++    out = torch.empty(q.shape, device=q.device, dtype=torch.float8_e4m3fn)
++    block = min(256, triton.next_power_of_2(q_width))
++    _encode_and_scatter[(rows, triton.cdiv(q_width, block))](
++        q.view(torch.uint16), k.view(torch.uint16), v.view(torch.uint16),
++        out.view(torch.uint8), k_cache.view(torch.uint8), v_cache.view(torch.uint8),
++        slots, table, q.stride(0), k.stride(0), v.stride(0),
++        k_cache.stride(0), v_cache.stride(0), slots.stride(0), capacity,
++        Q_WIDTH=q_width, KV_WIDTH=kv_width, BLOCK=block, num_warps=4, debug=True,
++    )
++    return out
+diff --git a/python/sglang/kernels/ops/memory/allocator.py b/python/sglang/kernels/ops/memory/allocator.py
+index f0f4a77..704d845 100644
+--- a/python/sglang/kernels/ops/memory/allocator.py
++++ b/python/sglang/kernels/ops/memory/allocator.py
+@@ -151,7 +151,9 @@ def alloc_extend_kernel(
+     num_part1 = (
+         min(seq_len, (pre_len + page_size - 1) // page_size * page_size) - pre_len
+     )
+-    offset_one_page = tl.arange(0, page_size)
++    # Only the vector extent needs to be a power of two. The two partial-page
++    # stores below mask against the number of actual tokens in the page.
++    offset_one_page = tl.arange(0, triton.next_power_of_2(page_size))
+     tl.store(
+         out_indices + output_start_loc + offset_one_page,
+         last_loc + 1 + offset_one_page,
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index ed451fd..3e2e3c1 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -21,6 +21,7 @@ def _post_expert_norm_weighted_sum_kernel(
+     HAS_WEIGHT: tl.constexpr,
+     WEIGHT_FIRST: tl.constexpr,
+     HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr,
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
+ ):
+@@ -34,10 +35,16 @@ def _post_expert_norm_weighted_sum_kernel(
+     acc = tl.zeros([BLOCK_H], dtype=tl.float32)
+ 
+     for k in tl.static_range(TOPK):
+-        base = (tok * TOPK + k) * H
++        slot = tok * TOPK + k
+         live = True
+-        if HAS_IDS:
+-            live = tl.load(ids_ptr + tok * TOPK + k) >= 0
++        if HAS_ROW_MAP:
++            row = tl.load(ids_ptr + slot)
++            live = row >= 0
++            base = row.to(tl.int64) * H
++        else:
++            base = slot * H
++            if HAS_IDS:
++                live = tl.load(ids_ptr + slot) >= 0
+         if live:
+             x = tl.load(x_ptr + base + offs, mask=mask, other=0.0).to(tl.float32)
+ 
+@@ -55,7 +62,7 @@ def _post_expert_norm_weighted_sum_kernel(
+             else:
+                 y = x
+ 
+-            s = tl.load(s_ptr + tok * TOPK + k).to(tl.float32)
++            s = tl.load(s_ptr + slot).to(tl.float32)
+             product = y * s
+             if ROUND_PRODUCT:
+                 product = product.to(x_ptr.dtype.element_ty).to(tl.float32)
+@@ -73,18 +80,39 @@ def fused_post_expert_norm_weighted_sum(
+     apply_norm: bool = True,
+     slot_expert_ids: Optional[torch.Tensor] = None,
+     round_product: bool = False,
++    *,
++    slot_row_indices: Optional[torch.Tensor] = None,
++    out: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+     """Normalize and combine experts without reading inactive slots.
+ 
+     round_product preserves input-dtype multiplication before FP32 accumulation
+     when combining an already normalized low-precision tensor.
++
++    With slot_row_indices, expert_output contains only local routes. The
++    [tokens, topk] map supplies an input row index or -1 for each slot.
++    out, when supplied, is a caller-owned contiguous [tokens, hidden] tensor.
+     """
+     x = expert_output.contiguous()
+-    tokens, topk, hidden = x.shape
+-    out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++    has_out = out is not None
++    if slot_row_indices is None:
++        tokens, topk, hidden = x.shape
++        if out is None:
++            out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++        slot_ids = slot_expert_ids
++    else:
++        assert slot_expert_ids is None and out is not None
++        tokens, topk = slot_row_indices.shape
++        _, hidden = x.shape
++        slot_ids = slot_row_indices
+     if tokens == 0:
+         return out
+-    if tokens < _MIN_TOKENS_FOR_FUSED and slot_expert_ids is None and not round_product:
++    if (
++        tokens < _MIN_TOKENS_FOR_FUSED
++        and slot_ids is None
++        and not round_product
++        and not has_out
++    ):
+         y = x
+         if apply_norm:
+             f = y.float()
+@@ -108,7 +136,7 @@ def fused_post_expert_norm_weighted_sum(
+         norm_weight.contiguous() if norm_weight is not None else x,
+         topk_scores.contiguous(),
+         out,
+-        slot_expert_ids.contiguous() if slot_expert_ids is not None else x,
++        slot_ids.contiguous() if slot_ids is not None else x,
+         TOPK=topk,
+         H=hidden,
+         eps=eps,
+@@ -116,6 +144,7 @@ def fused_post_expert_norm_weighted_sum(
+         HAS_WEIGHT=norm_weight is not None,
+         WEIGHT_FIRST=weight_first,
+         HAS_IDS=slot_expert_ids is not None,
++        HAS_ROW_MAP=slot_row_indices is not None,
+         ROUND_PRODUCT=round_product,
+         BLOCK_H=block_h,
+         num_warps=8 if block_h >= 4096 else 4,
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 0b8f528..36502a5 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -23,6 +23,18 @@ import triton
+ import triton.language as tl
+ 
+ 
++@triton.jit
++def _cache_round(value, scale, FP8: tl.constexpr):
++    if FP8:
++        # Preserve the stock FP32 reciprocal multiplication and BF16 rounding
++        # before saturation, including their handling of signed NaNs.
++        value = (value.to(tl.float32) * tl.div_rn(1.0, scale)).to(tl.bfloat16)
++        value = tl.where(value > 448.0, 448.0, value).to(tl.bfloat16)
++        value = tl.where(value < -448.0, -448.0, value).to(tl.bfloat16)
++        value = value.to(tl.float8e4nv)
++    return value
++
++
+ @triton.jit
+ def _fused_norm_rope_kernel_stacked(
+     kv_ptr,  # [total_ctx, n_layers, kv_size * 2]
+@@ -50,6 +62,11 @@ def _fused_norm_rope_kernel_stacked(
+     rotary_dim: tl.constexpr,
+     half_rotary_dim: tl.constexpr,
+     BLOCK_HD: tl.constexpr,
++    Loc=None,
++    Lengths=None,
++    WIDTH: tl.constexpr = 0,
++    CACHE_FP8: tl.constexpr = False,
++    cache_scale=1.0,
+ ):
+     """Fused RMSNorm(K) + RoPE(K) materialization. Grid: (total_ctx, num_kv_heads, n_layers)."""
+     ctx_id = tl.program_id(0)
+@@ -58,23 +75,37 @@ def _fused_norm_rope_kernel_stacked(
+     if ctx_id >= total_ctx or layer_id >= n_layers:
+         return
+ 
++    if WIDTH:
++        if ctx_id % WIDTH >= tl.load(Lengths + ctx_id // WIDTH):
++            return
++
+     position = tl.load(positions_ptr + ctx_id)
+     eps = tl.load(eps_ptr + layer_id).to(tl.float32)
+     kv_base = kv_ptr + ctx_id * kv_stride_ctx + layer_id * kv_stride_layer
+     k_base = kv_base + head_id * head_dim
+     v_base = kv_base + kv_size + head_id * head_dim
+-    k_write = (
+-        k_out_ptr
+-        + layer_id * k_out_stride_layer
+-        + ctx_id * k_out_stride_ctx
+-        + head_id * k_out_stride_head
+-    )
+-    v_write = (
+-        v_out_ptr
+-        + layer_id * v_out_stride_layer
+-        + ctx_id * v_out_stride_ctx
+-        + head_id * v_out_stride_head
+-    )
++    if WIDTH:
++        slot = tl.load(Loc + ctx_id).to(tl.int64)
++        offset = slot * kv_size + head_id * head_dim
++        if CACHE_FP8:
++            dtype: tl.constexpr = tl.float8e4nv
++        else:
++            dtype: tl.constexpr = tl.bfloat16
++        k_write = tl.load(k_out_ptr + layer_id).to(tl.pointer_type(dtype)) + offset
++        v_write = tl.load(v_out_ptr + layer_id).to(tl.pointer_type(dtype)) + offset
++    else:
++        k_write = (
++            k_out_ptr
++            + layer_id * k_out_stride_layer
++            + ctx_id * k_out_stride_ctx
++            + head_id * k_out_stride_head
++        )
++        v_write = (
++            v_out_ptr
++            + layer_id * v_out_stride_layer
++            + ctx_id * v_out_stride_ctx
++            + head_id * v_out_stride_head
++        )
+ 
+     offs = tl.arange(0, BLOCK_HD)
+     mask_hd = offs < head_dim
+@@ -114,13 +145,13 @@ def _fused_norm_rope_kernel_stacked(
+     k_rot_first = k_first * cos_v - k_second * sin_v
+     k_rot_second = k_second * cos_v + k_first * sin_v
+ 
+-    tl.store(v_write + offs, v_raw, mask=mask_hd)
+-    tl.store(k_write + offs, k_rot_first.to(v_raw.dtype), mask=mask_half)
+-    tl.store(
+-        k_write + half_rotary_dim + offs, k_rot_second.to(v_raw.dtype), mask=mask_half
+-    )
++    tl.store(v_write + offs, _cache_round(v_raw, cache_scale, CACHE_FP8), mask=mask_hd)
++    k_first_out = _cache_round(k_rot_first.to(v_raw.dtype), cache_scale, CACHE_FP8)
++    k_second_out = _cache_round(k_rot_second.to(v_raw.dtype), cache_scale, CACHE_FP8)
++    tl.store(k_write + offs, k_first_out, mask=mask_half)
++    tl.store(k_write + half_rotary_dim + offs, k_second_out, mask=mask_half)
+     mask_pass = (offs >= rotary_dim) & (offs < head_dim)
+-    tl.store(k_write + offs, k_normed.to(v_raw.dtype), mask=mask_pass)
++    tl.store(k_write + offs, _cache_round(k_normed.to(v_raw.dtype), cache_scale, CACHE_FP8), mask=mask_pass)
+ 
+ 
+ def _fused_norm_rope_stacked(
+@@ -283,6 +314,7 @@ class FusedKVMaterializeHelper:
+             getattr(self.rotary_emb, "cos_sin_cache", torch.empty((0,))).shape[0]
+         )
+         self._mm_out_supported = True
++        self._prefix_cache = None
+         self._workspace_capacity = 0
+         self._workspace_dtype: Optional[torch.dtype] = None
+         self._proj_workspace: Optional[torch.Tensor] = None
+@@ -337,6 +369,51 @@ class FusedKVMaterializeHelper:
+         if self.max_position_hint is not None:
+             self._ensure_rope_cache(self.max_position_hint)
+ 
++    def configure_prefix_cache(self, pool, layers):
++        from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
++
++        if (
++            type(pool) is not MHATokenToKVPool
++            or pool.kv_cache_layout != "nhd"
++            or pool.dtype not in (torch.bfloat16, torch.float8_e4m3fn)
++            or self.flat_kv_weight_t.dtype != torch.bfloat16
++            or self.flat_kv_weight_t.device.type != "cuda"
++            or torch.version.hip is not None
++            or torch.cuda.get_device_capability(self.flat_kv_weight_t.device)[0] < 9
++            or pool.layer_num != self.n_layers
++            or pool.head_num != self.num_kv_heads
++            or pool.head_dim != self.head_dim
++            or pool.v_head_dim != self.head_dim
++            or pool.k_scale_buffer is not None
++            or pool.v_scale_buffer is not None
++        ):
++            return
++        if getattr(pool.set_kv_buffer_prefix_valid, "__func__", None) is not MHATokenToKVPool.set_kv_buffer_prefix_valid:
++            return
++        fp8 = pool.dtype == torch.float8_e4m3fn
++        expected_dtype = torch.uint8 if fp8 else torch.bfloat16
++        for index, layer in enumerate(layers):
++            attn = layer.self_attn.attn
++            if attn.layer_id != pool.start_layer + index:
++                return
++            for buf in (pool.k_buffer[index], pool.v_buffer[index]):
++                if (
++                    buf.ndim != 3
++                    or tuple(buf.shape[1:]) != (self.num_kv_heads, self.head_dim)
++                    or not buf.is_contiguous()
++                    or buf.device != self.flat_kv_weight_t.device
++                    or buf.dtype != expected_dtype
++                ):
++                    return
++        for table in (pool.k_data_ptrs, pool.v_data_ptrs):
++            if (table is None or table.shape != (self.n_layers,) or not table.is_contiguous()
++                or table.device != self.flat_kv_weight_t.device or table.dtype != torch.uint64):
++                return
++        # The regular writer skips scale division for BF16 input into BF16 storage.
++        # For FP8, check the live layer scales before every direct write.
++        scaled_layers = tuple(layer.self_attn.attn for layer in layers) if fp8 else ()
++        self._prefix_cache = (pool, pool.k_data_ptrs, pool.v_data_ptrs, scaled_layers)
++
+     def _ensure_rope_cache(self, max_position: int) -> torch.Tensor:
+         if max_position + 1 > self._reserved_rope_cache_len:
+             ensure_cos_sin_cache_length = getattr(
+@@ -391,6 +468,7 @@ class FusedKVMaterializeHelper:
+         ctx_hidden: torch.Tensor,
+         positions: torch.Tensor,
+         write_layer_kv: Callable[[int, torch.Tensor, torch.Tensor], None],
++        prefix_cache=None,
+     ) -> None:
+         """Materialize KV cache for all layers using batched projection."""
+         total_ctx = ctx_hidden.shape[0]
+@@ -439,6 +517,29 @@ class FusedKVMaterializeHelper:
+             proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+ 
+         proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
++        if prefix_cache is not None and self._prefix_cache is not None:
++            pool, loc, lengths = prefix_cache
++            configured_pool, k_table, v_table, scaled_layers = self._prefix_cache
++            if (
++                pool is configured_pool and pool.k_data_ptrs is k_table and pool.v_data_ptrs is v_table
++                and loc.ndim == 2 and loc.numel() == total_ctx and loc.shape[1] > 0
++                and lengths.shape == (loc.shape[0],) and lengths.dtype == torch.int32
++                and loc.dtype == torch.int64 and loc.device == lengths.device == proj_out.device
++                and loc.is_contiguous() and lengths.is_contiguous() and positions.is_contiguous()
++                and (not scaled_layers or all(
++                    type(scale) in (int, float) and scale == 1
++                    for layer in scaled_layers for scale in (layer.k_scale, layer.v_scale)
++                ))
++            ):
++                _fused_norm_rope_kernel_stacked[(total_ctx, self.num_kv_heads, self.n_layers)](
++                    proj_out, self.k_norm_weights, self.eps_values, cos_sin_cache, positions,
++                    k_table, v_table, proj_out.stride(0), proj_out.stride(1),
++                    self.k_norm_weights.stride(0), cos_sin_cache.stride(0),
++                    0, 0, 0, 0, 0, 0, total_ctx, self.n_layers, self.num_kv_heads,
++                    self.head_dim, self.kv_size, self.rotary_dim, self.rotary_dim // 2,
++                    triton.next_power_of_2(self.head_dim), loc, lengths, loc.shape[1], bool(scaled_layers), 1.0,
++                )
++                return
+         tmp_k = self._k_workspace[:, :total_ctx]
+         tmp_v = self._v_workspace[:, :total_ctx]
+         cache_k, cache_v = _fused_norm_rope_stacked(
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..4189107 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -28,6 +28,10 @@ class Spec(msgspec.Struct):
+     # -------------------------------------------------------------------------
+     # Speculative decoding
+     # -------------------------------------------------------------------------
++    speculative_dflash_direct_prefix_kv: A[
++        bool,
++        "Write eligible stacked DFLASH context KV directly to committed draft cache slots.",
++    ] = False
+     speculative_algorithm: A[
+         Optional[str],
+         "Speculative algorithm. Builtins: EAGLE, EAGLE3, NEXTN, STANDALONE, NGRAM, DFLASH, DSPARK, UNO. Or any name registered via `SpeculativeAlgorithm.register`.",
+@@ -71,6 +75,18 @@ class Spec(msgspec.Struct):
+         Optional[int],
+         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
+     ] = None
++    speculative_dflash_sp_prefill_context: A[
++        bool,
++        "Project DFLASH prefill features before gathering sequence-parallel token rows.",
++    ] = False
++    speculative_dflash_parallel_verify_context: A[
++        bool,
++        "Partition full-width DFLASH context outputs across draft TP ranks during verification.",
++    ] = False
++    speculative_dflash_share_verify_schedule: A[
++        bool,
++        "Share compatible FlashAttention 3 scheduling metadata within a DFLASH target verification.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/arg_groups/layernorm_sp_hook.py b/python/sglang/srt/arg_groups/layernorm_sp_hook.py
+index 9b5da34..e85741b 100644
+--- a/python/sglang/srt/arg_groups/layernorm_sp_hook.py
++++ b/python/sglang/srt/arg_groups/layernorm_sp_hook.py
+@@ -42,6 +42,24 @@ def handle_layernorm_sp(server_args: ServerArgs) -> None:
+     if architectures and architectures[0] in ("MuseSparkForConditionalGeneration",):
+         from sglang.srt.environ import envs
+ 
++        if cfg.moe_runner_backend in ("marlin", "humming"):
++            from sglang.srt.utils.common import get_device_capability, is_cuda
++
++            if not (is_cuda() and get_device_capability() == (9, 0)):
++                raise ValueError("Muse W4A16 LayerNorm SP requires NVIDIA Hopper.")
++            if cfg.attn_cp_size != 1 or cfg.dcp_size != 1 or cfg.enable_prefill_cp:
++                raise ValueError("Muse W4A16 LayerNorm SP requires no context parallelism.")
++            if cfg.enable_attn_tp_input_scattered or cfg.enable_mixed_chunk:
++                raise ValueError(
++                    "Muse W4A16 LayerNorm SP requires ordinary prefill and unscattered TP input."
++                )
++            if (
++                cfg.enable_deterministic_inference
++                or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            ):
++                raise ValueError("Muse W4A16 LayerNorm SP requires nondeterministic collectives.")
++            return
++
+         if use_megamoe:
+             if cfg.enable_mixed_chunk:
+                 raise ValueError(
+@@ -138,13 +156,14 @@ def validate_layernorm_sp(
+             "shard across a single TP rank."
+         )
+     if is_muse_spark_architecture(architecture):
++        use_w4a16 = moe_runner_backend in ("marlin", "humming")
+         if (tp_size, ep_size) not in ((4, 4), (8, 8)):
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires TP4/EP4 or TP8/EP8; "
+                 f"got TP{tp_size}/EP{ep_size}."
+             )
+         # MegaMoE shares TRT-LLM expert weights for both BF16 and NVFP4.
+-        # The standalone FlashInfer A2A path remains restricted to NVFP4.
++        # The FlashInfer A2A and standalone W4A16 paths require NVFP4.
+         if quantization != "modelopt_fp4" and not (
+             quantization is None and enable_megamoe_for_layernorm_sp
+         ):
+@@ -159,12 +178,17 @@ def validate_layernorm_sp(
+                     "Muse MegaMoE prefill requires --moe-a2a-backend none or flashinfer; "
+                     "MegaMoE performs its own dispatch/combine and decode uses all-reduce."
+                 )
++        elif use_w4a16:
++            if moe_a2a_backend != "none":
++                raise ValueError("Muse W4A16 LayerNorm SP requires --moe-a2a-backend none.")
+         elif moe_a2a_backend != "flashinfer":
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires "
+                 "--moe-a2a-backend flashinfer."
+             )
+-        if moe_runner_backend != "flashinfer_trtllm":
++        if moe_runner_backend != "flashinfer_trtllm" and not (
++            use_w4a16 and not enable_megamoe_for_layernorm_sp
++        ):
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires "
+                 "--moe-runner-backend flashinfer_trtllm."
+diff --git a/python/sglang/srt/arg_groups/muse_spark_hook.py b/python/sglang/srt/arg_groups/muse_spark_hook.py
+index 2dd159c..9d39ea6 100644
+--- a/python/sglang/srt/arg_groups/muse_spark_hook.py
++++ b/python/sglang/srt/arg_groups/muse_spark_hook.py
+@@ -16,12 +16,14 @@ MUSE_SPARK_ARCHITECTURES = ("MuseSparkForConditionalGeneration",)
+ MUSE_SPARK_CHAT_TEMPLATE_FILE = "chat_template.jinja"
+ 
+ # Graph-pool and KV-sizing switches the reference launcher (sglang_meta) sets.
++# Out-of-window SWA slots keep the generic default (freed): 46 of Muse's 62 layers
++# are sliding-window, so pinning a running request's whole context in the SWA pool
++# caps how many long requests fit at once.
+ MUSE_SPARK_ENV_DEFAULTS = (
+     (envs.SGLANG_ENABLE_CUDA_GRAPH_DEDUP, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_BORROW, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_PRECARVE, True),
+     (envs.SGLANG_ENABLE_POST_CAPTURE_KV_SIZING, True),
+-    (envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS, False),
+ )
+ 
+ 
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 0b4ecf1..46af32d 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -18,8 +18,14 @@ from sglang.kernels.ops.attention.suffix_attention_merge import (
+ from sglang.kernels.ops.attention.trtllm_mha_page_table import (
+     build_trtllm_mha_page_table,
+ )
++from sglang.kernels.ops.attention.swa_prefill_kv import (
++    can_pack_swa_prefill,
++    pack_swa_prefill,
++    with_padding_descale,
++)
+ from sglang.kernels.ops.attention.utils import assert_buffer_fits
+ from sglang.srt.configs.model_config import AttentionArch
++from sglang.srt.environ import envs
+ from sglang.srt.layers.attention.base_attn_backend import AttentionBackend
+ from sglang.srt.layers.attention.kv_shard_hooks import (
+     get_kv_shard_pool,
+@@ -35,7 +41,7 @@ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.radix_attention import AttentionType
+ from sglang.srt.mem_cache.kv_loc_plan import IdSpaceKind
+ from sglang.srt.mem_cache.layout.paged_view import paged_kv_view, paged_view
+-from sglang.srt.mem_cache.memory_pool import KVWriteLoc
++from sglang.srt.mem_cache.memory_pool import KVWriteLoc, MHATokenToKVPool
+ from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+ from sglang.srt.runtime_context import (
+@@ -43,6 +49,7 @@ from sglang.srt.runtime_context import (
+     get_memory,
+     get_model,
+     get_parallel,
++    get_platform,
+     get_schedule,
+     get_spec,
+ )
+@@ -317,6 +324,20 @@ class FlashAttentionBackend(AttentionBackend):
+         else:
+             raise ValueError(f"Invalid version: {self.fa_impl_ver=}")
+ 
++        self._verify_fp8_encodings = None
++        if (
++            self.fa_impl_ver == 3 and device_capability[0] == 9
++            and self.kv_cache_dtype == torch.float8_e4m3fn
++            and self.kv_cache_dtype_str != "auto"
++            and not self.is_draft_runner and not self.use_mla
++            and not self.kv_index_translator.is_translating and self._kv_shard_pool is None
++            and not get_memory().enable_unified_memory
++            and not get_exec().deterministic.enable_deterministic_inference
++        ):
++            from sglang.kernels.ops.attention.verify_fp8_cache import bf16_e4m3_encodings
++
++            self._verify_fp8_encodings = bf16_e4m3_encodings(self.device)
++
+         self.flash_attn_varlen_func = flash_attn_varlen_func
+         self.flash_attn_with_kvcache = flash_attn_with_kvcache
+ 
+@@ -337,6 +358,15 @@ class FlashAttentionBackend(AttentionBackend):
+ 
+         # num_splits == 0 delegates SplitKV sizing to the selected FA runtime.
+         deterministic = get_exec().deterministic.enable_deterministic_inference
++        self._pack_swa_fp8_prefill = (
++            fa_impl_ver == 3
++            and get_platform().is_sm90
++            and self.kv_cache_dtype == torch.float8_e4m3fn
++            and not deterministic
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and envs.SGLANG_RAGGED_VERIFY_MODE.get() == "static"
++            and get_parallel().attn_dcp_size == 1
++        )
+         if self._get_fa_runtime_policy is None:
+             self.num_splits = 1 if deterministic else 0
+             self.decode_num_splits = self.num_splits
+@@ -379,6 +409,18 @@ class FlashAttentionBackend(AttentionBackend):
+         self._disable_scheduler_metadata_precompute = (
+             _should_disable_scheduler_metadata_precompute()
+         )
++        self._verify_schedule_sms = 0
++        if (
++            get_spec().speculative_dflash_share_verify_schedule
++            and model_runner.spec_algorithm.is_dflash()
++            and self._pack_swa_fp8_prefill and not self.is_draft_runner
++            and not self._disable_scheduler_metadata_precompute
++            and not self.is_encoder_decoder and not self.use_mla and self.topk <= 1
++            and self.local_attn_builder is None and not self.is_prefill_aware_swa
++            and self.attn_cp_size == 1 and self._kv_shard_pool is None
++            and not self.kv_index_translator.is_translating and self.num_splits == 0
++        ):
++            self._verify_schedule_sms = torch.cuda.get_device_properties(self.device).multi_processor_count
+ 
+     def _maybe_init_local_attn_builder(
+         self, model_runner: ModelRunner
+@@ -435,6 +477,57 @@ class FlashAttentionBackend(AttentionBackend):
+             num_splits=self.num_splits,
+         )
+ 
++    def _verify_schedule(
++        self, schedules, q, key_cache, value_cache, page_table, lengths, cu_q,
++        width, layer, window, forward_batch,
++    ):
++        # The standalone metadata API approximates total_q as batch * width.
++        # The paged attention API derives max_seqlen_k from table columns.
++        batch = lengths.shape[0]
++        q_heads, kv_heads = layer.tp_q_head_num, layer.tp_k_head_num
++        if (
++            width <= 1 or batch == 0 or q.shape[0] != batch * width
++            or q.numel() != batch * width * q_heads * 64
++            or width != getattr(forward_batch.spec_info, "num_tokens_per_req", None)
++            or getattr(forward_batch.spec_info, "ragged_verify_layout", None) is not None
++            or layer.head_dim != 64 or layer.v_head_dim != 64 or layer.logit_cap != 0
++            or kv_heads <= 0 or q_heads < kv_heads or q_heads % kv_heads
++            or q.dtype != torch.float8_e4m3fn or not q.is_cuda
++            or q.device.index != torch.cuda.current_device()
++            or len(key_cache.shape) != 4 or key_cache.shape != value_cache.shape
++            or key_cache.shape[1:] != (self.page_size, kv_heads, 64)
++            or key_cache.dtype != q.dtype or value_cache.dtype != q.dtype
++            or lengths.shape != (batch,) or cu_q.shape != (batch + 1,)
++            or lengths.dtype != torch.int32 or cu_q.dtype != torch.int32
++            or not lengths.is_contiguous() or not cu_q.is_contiguous()
++            or page_table.ndim != 2 or page_table.shape[0] != batch
++            or any(t.device != q.device for t in (key_cache, value_cache, page_table, lengths, cu_q))
++        ):
++            return None
++        packed_width = width * (q_heads // kv_heads)
++        capacity = page_table.shape[1] * self.page_size
++        loaded = capacity if window[0] < 0 else min(capacity, window[0] + 1 + 64)
++        # Pinned SM90 E4M3 small-Q/D64 tiles are 64x128. With >=5 N
++        # tiles and <=half a wave, the second split doubles efficiency.
++        # This avoids a separate per-layer semaphore zero for single-split calls.
++        m_blocks = ((batch * packed_width + 63) // 64) * kv_heads
++        if packed_width > 64 or loaded <= 4 * 128 or 2 * m_blocks > self._verify_schedule_sms:
++            return None
++        # Each mutable semaphore belongs to one stream and model invocation.
++        # Holding the original length tensors also keeps their identities live.
++        key = (
++            self, q.device, torch.cuda.current_stream(q.device).cuda_stream,
++            lengths, cu_q, width, capacity, q_heads, kv_heads, window,
++        )
++        if key not in schedules:
++            schedules[key] = self._get_scheduler_metadata(
++                batch_size=batch, max_seqlen_q=width, max_seqlen_k=capacity,
++                num_heads=q_heads, num_heads_k=kv_heads, headdim=64,
++                cache_seqlens=lengths, cu_seqlens_q=cu_q, qkv_dtype=q.dtype,
++                page_size=self.page_size, causal=True, window_size=window,
++            )
++        return schedules[key]
++
+     def validate_elastic_cuda_graph_recapture(self) -> None:
+         if self.use_mla and self.fa_impl_ver != 3:
+             raise ValueError(
+@@ -1438,6 +1531,39 @@ class FlashAttentionBackend(AttentionBackend):
+             k_rope = k_rope.to(self.kv_cache_dtype) if k_rope is not None else None
+         return q, q_rope, k_rope, k_descale, v_descale
+ 
++    def _encode_verify_qkv(self, q, k, v, layer, forward_batch):
++        from sglang.kernels.ops.attention.verify_fp8_cache import encode_verify_qkv
++        from sglang.kernels.ops.kvcache.kvcache import can_use_store_cache
++
++        if (
++            layer.is_cross_attention or layer.head_dim > 256
++            or layer.k_scale is not None or layer.v_scale is not None
++            or layer.tp_k_head_num != layer.tp_v_head_num
++            or forward_batch.dcp_kv_mask is not None
++        ):
++            return None
++        pool = self.token_to_kv_pool
++        owner = pool
++        write = KVWriteLoc.for_layer(
++            forward_batch, layer, swa_loc=self.forward_metadata.swa_out_cache_loc
++        )
++        slots = write.loc
++        if type(pool) is SWAKVPool:
++            _, sliding = pool.layers_mapping[layer.layer_id]
++            owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
++            slots = write.swa_loc if sliding else write.loc
++        if (
++            type(owner) is not MHATokenToKVPool or slots is None
++            or owner.is_quantized_kv_cache or owner.kv_cache_layout != "nhd"
++            or not can_use_store_cache(owner.row_dim, owner.v_row_dim)
++        ):
++            return None
++        k_cache, v_cache = pool.get_kv_buffer(layer.layer_id)
++        return encode_verify_qkv(
++            q, k, v, k_cache, v_cache, slots, owner.size + owner.page_size,
++            self._verify_fp8_encodings,
++        )
++
+     def get_fused_kv_write_buffers(self, layer, forward_batch):
+         if (
+             self.kv_cache_dtype != torch.bfloat16
+@@ -1535,18 +1661,28 @@ class FlashAttentionBackend(AttentionBackend):
+                 else:
+                     k_scale = k_descale if self.kv_cache_is_mxfp8 else layer.k_scale
+                     v_scale = v_descale if self.kv_cache_is_mxfp8 else layer.v_scale
+-                    self.token_to_kv_pool.set_kv_buffer(
+-                        layer,
+-                        KVWriteLoc.for_layer(
+-                            forward_batch,
++                    encoded_q = None
++                    if (
++                        getattr(self, "_verify_fp8_encodings", None) is not None
++                        and forward_batch.forward_mode.is_target_verify()
++                        and q_rope is None and k_rope is None
++                    ):
++                        encoded_q = self._encode_verify_qkv(q, k, v, layer, forward_batch)
++                    if encoded_q is not None:
++                        q = encoded_q
++                    else:
++                        self.token_to_kv_pool.set_kv_buffer(
+                             layer,
+-                            swa_loc=self.forward_metadata.swa_out_cache_loc,
+-                        ),
+-                        k,
+-                        v,
+-                        k_scale,
+-                        v_scale,
+-                    )
++                            KVWriteLoc.for_layer(
++                                forward_batch,
++                                layer,
++                                swa_loc=self.forward_metadata.swa_out_cache_loc,
++                            ),
++                            k,
++                            v,
++                            k_scale,
++                            v_scale,
++                        )
+ 
+         # Use precomputed metadata across all layers
+         metadata = self.forward_metadata
+@@ -1785,7 +1921,53 @@ class FlashAttentionBackend(AttentionBackend):
+                     out=_fa_out,
+                     **kwargs,
+                 )
++            elif (
++                self._pack_swa_fp8_prefill
++                and forward_batch.forward_mode == ForwardMode.EXTEND
++                and is_swa_layer and causal and window_size[0] >= 0 and window_size[1] == 0
++                and max_seqlen_q >= 512 and key_cache.shape[1] == self.page_size
++                and (
++                    self.page_size == 1 or not self.use_sliding_window_kv_pool
++                    or page_table is metadata.swa_page_table
++                )
++                and not use_local_attn and not self.is_prefill_aware_swa
++                and not self.kv_index_translator.is_translating
++                and forward_batch.dcp_kv_mask is None and not return_lse
++                and q.dtype == torch.float8_e4m3fn and kwargs.keys() <= {"k_descale", "v_descale"}
++                and can_pack_swa_prefill(
++                    key_cache, value_cache, page_table, cache_seqlens,
++                    cu_seqlens_q, q.shape[0], window_size[0],
++                )
++            ):
++                dk, dv, cq, ck, used_k, max_k = pack_swa_prefill(
++                    key_cache, value_cache, page_table, cache_seqlens,
++                    cu_seqlens_q, q.shape[0], max_seqlen_q, window_size[0],
++                )
++                result = self.flash_attn_varlen_func(
++                    q=q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim),
++                    k=dk, v=dv, cu_seqlens_q=cq, cu_seqlens_k=ck, seqused_k=used_k,
++                    max_seqlen_q=q.shape[0], max_seqlen_k=max_k,
++                    softmax_scale=layer.scaling, causal=causal, window_size=window_size,
++                    softcap=layer.logit_cap, num_splits=self.num_splits, out=_fa_out,
++                    **{name: with_padding_descale(value) for name, value in kwargs.items()},
++                )
+             else:
++                if (
++                    getattr(self, "_verify_schedule_sms", 0) and not torch.compiler.is_compiling()
++                    and forward_batch._fa3_verify_schedules is not None
++                    and forward_batch.forward_mode.is_target_verify() and causal
++                    and not use_local_attn and not use_cascade_attn and not return_lse
++                    and not layer.is_cross_attention and q_rope is None and k_rope is None
++                    and forward_batch.dcp_kv_mask is None
++                    and kwargs.keys() <= {"k_descale", "v_descale"}
++                ):
++                    schedule = self._verify_schedule(
++                        forward_batch._fa3_verify_schedules, q, key_cache, value_cache,
++                        page_table, cache_seqlens, cu_seqlens_q, max_seqlen_q,
++                        layer, window_size, forward_batch,
++                    )
++                    if schedule is not None:
++                        kwargs["scheduler_metadata"] = schedule
+                 result = flash_attn_with_kvcache(
+                     q=q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim),
+                     k_cache=key_cache,
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+new file mode 100644
+index 0000000..4540bf7
+--- /dev/null
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -0,0 +1,195 @@
++"""DFLASH context projection on sequence-parallel token rows."""
++
++from contextlib import contextmanager
++from contextvars import ContextVar
++from typing import NamedTuple
++
++import torch
++from torch import nn
++from torch.nn import functional as F
++from torch.nn.modules import module as module_hooks
++
++
++class _PrefillContext(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    project_target_hidden: object
++    group: object
++    target: nn.Module
++    logits_processor: nn.Module
++
++
++_prefill_context = ContextVar("dflash_sp_prefill_context", default=None)
++
++
++def _agree(ready, group):
++    # Keep device collective shapes uniform even for rank-local instrumentation.
++    status = torch.tensor(int(ready), device="cpu", dtype=torch.int32)
++    torch.distributed.all_reduce(
++        status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++    )
++    return bool(status.item())
++
++
++class _VerifyProjection(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    weight: torch.Tensor
++    projector: object
++    group: object
++    first_channel: int
++    width: int
++
++
++def prepare_dflash_verify_projection(draft, group):
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.out_features % group.world_size == 0
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++    )
++    if not _agree(compatible, group):
++        return None
++    width = fc.out_features // group.world_size
++    return _VerifyProjection(
++        draft, fc, fc.weight, draft.project_target_hidden, group,
++        group.rank_in_group * width, width,
++    )
++
++
++def project_dflash_verify(context, inputs):
++    """Project complete output channels on each rank before the native hidden norm."""
++    draft, fc, original_weight, projector, group, first_channel, width = context
++    # Verification features are replicated in the draft TP group. Run its
++    # collective before any rank-local hooks or overrides can modify the input.
++    with torch.autocast(device_type=inputs.device.type, enabled=False):
++        local = F.linear(
++            inputs.to(original_weight.dtype), original_weight.narrow(0, first_channel, width)
++        )
++    projected = group.all_gather(local, -1)
++    if (
++        draft.fc is not fc
++        or fc.weight is not original_weight
++        or inputs.dtype != original_weight.dtype
++        or fc.bias is not None
++        or draft.quantizable
++        or draft.project_target_hidden != projector
++        or "forward" in vars(fc)
++        or fc._forward_hooks
++        or fc._forward_pre_hooks
++        or module_hooks._global_forward_hooks
++        or module_hooks._global_forward_pre_hooks
++        or getattr(fc, "_compiled_call_impl", None) is not None
++        or torch.is_autocast_enabled(inputs.device.type)
++        or torch.are_deterministic_algorithms_enabled()
++    ):
++        return draft.project_target_hidden(inputs)
++    return draft.hidden_norm(projected)
++
++
++def _supports_projected_prompt_taps(processor):
++    from sglang.srt.layers.logits_processor import LogitsProcessor
++
++    if type(processor) is LogitsProcessor:
++        return True
++    if not isinstance(processor, LogitsProcessor):
++        return False
++    # Muse changes the LM-head GEMM but inherits the native auxiliary-state
++    # pruning and FULL capture. Other processors may consume the raw taps.
++    from sglang.srt.models.muse_spark import MuseSpark1xLogitsProcessor
++
++    return type(processor) is MuseSpark1xLogitsProcessor
++
++
++def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.in_features > fc.out_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++        and _supports_projected_prompt_taps(logits_processor)
++    )
++    if _agree(compatible, group):
++        return _PrefillContext(
++            draft, fc, draft.project_target_hidden, group, target, logits_processor
++        )
++    return None
++
++
++@contextmanager
++def dflash_sp_prefill_scope(context):
++    token = _prefill_context.set(context)
++    try:
++        yield
++    finally:
++        _prefill_context.reset(token)
++
++
++def project_dflash_prefill_shard(inputs, num_tokens, group, logits_processor, full_capture):
++    """Assign each replicated full-K projection row to its SP owner."""
++    context = _prefill_context.get()
++    # Small shards do not amortize the GEMM and host capability agreement.
++    if context is None or num_tokens < 128 * group.world_size:
++        return None
++    if inputs.is_cuda and torch.cuda.is_current_stream_capturing():
++        return None
++    draft, fc, projector, expected_group, target, expected_logits = context
++    compatible = (
++        group is expected_group
++        and full_capture
++        and logits_processor is expected_logits
++        and not logits_processor.keep_last_hidden_states
++        and logits_processor.expected_aux_hidden_states is None
++        and not any(
++            name in vars(logits_processor)
++            for name in ("_get_pruned_states", "_get_hidden_states_to_store",
++                         "_get_last_hidden_states_to_store")
++        )
++        and not draft.quantizable
++        and draft.fc is fc
++        and draft.project_target_hidden == projector
++        and fc.bias is None
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and all(
++            not mod._forward_hooks
++            and not mod._forward_pre_hooks
++            and getattr(mod, "_compiled_call_impl", None) is None
++            and "forward" not in vars(mod)
++            for mod in (fc, target, logits_processor)
++        )
++        and inputs.ndim == 2
++        and inputs.shape[0] * group.world_size >= num_tokens
++        and inputs.shape[1] == fc.in_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_contiguous()
++        and inputs.device == fc.weight.device
++        and inputs.dtype == fc.weight.dtype == torch.bfloat16
++    )
++    if _agree(compatible, group):
++        return fc(inputs)
++    return None
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 132715e..ea02720 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -35,6 +35,7 @@ nothing in this module executes.
+ 
+ from __future__ import annotations
+ 
++import os
+ from typing import Optional
+ 
+ import torch
+@@ -143,6 +144,29 @@ def sp_exit_gather(hidden_states: torch.Tensor, num_tokens: int) -> torch.Tensor
+     return output[:num_tokens]
+ 
+ 
++def reduce_scatter_token_rows(full: torch.Tensor, group) -> torch.Tensor:
++    """Shard a replicated SUM while retaining accelerated all-reduce precision."""
++    num_tokens = full.shape[0]
++    padded = ceil_align(num_tokens, group.world_size)
++    # Preserve the original dispatcher on accelerator paths that may accumulate
++    # in FP32. Check unpadded metadata so tails keep the original algorithm.
++    use_all_reduce = (
++        torch.compiler.is_compiling()
++        or group.is_symmetric_memory_enabled()
++        or os.environ.get("NCCL_NVLS_ENABLE", "1") != "0"
++        or group._can_use_flashinfer_allreduce(full)
++        or group._resolve_outplace_all_reduce_method(full) not in (None, "pynccl")
++    )
++    if use_all_reduce:
++        full = group.all_reduce(full)
++    if padded != num_tokens:
++        full = torch.nn.functional.pad(full, (0, 0, 0, padded - num_tokens))
++    if use_all_reduce:
++        rows = padded // group.world_size
++        return full.narrow(0, group.rank_in_group * rows, rows)
++    return group.reduce_scatter_along_dim(full, dim=0)
++
++
+ def maybe_exit_gather(
+     *,
+     hidden_states: torch.Tensor,
+@@ -192,7 +216,8 @@ def sp_fused_matmul_eligible(linear) -> bool:
+     depends only on static layer properties and is identical across TP ranks.
+     """
+     if (
+-        not (_HAS_TORCH_SYMM_MEM_FUSED or getattr(linear, "_sp_use_cutlass", False))
++        getattr(linear, "_sp_unfused_collective", False)
++        or not (_HAS_TORCH_SYMM_MEM_FUSED or getattr(linear, "_sp_use_cutlass", False))
+         or linear.bias is not None
+     ):
+         return False
+@@ -252,6 +277,11 @@ def row_parallel_gbar_matmul(linear, input_: torch.Tensor, bias) -> torch.Tensor
+     """
+     tp_size = linear.tp_group.world_size if linear.tp_group is not None else 1
+     x = input_.contiguous()
++    if getattr(linear, "_sp_unfused_collective", False):
++        group = linear.tp_group
++        with group.use_symmetric_memory(group):
++            full = linear.quant_method.apply(linear, x, bias)
++        return reduce_scatter_token_rows(full, group)
+     num_tokens = x.shape[0]
+     padded = ceil_align(num_tokens, tp_size)
+     if padded != num_tokens:
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index 8178ba3..ed5f5e1 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -292,6 +292,9 @@ class LogitsProcessorOutput:
+     # Scheduler-local output copied alongside the ordinary generation result.
+     auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None
+ 
++    # For the DFLASH worker consuming the native prefill capture on this rank.
++    dflash_prefill_fc_done: bool = False
++
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+             return
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 41c463d..a3479b0 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -35,6 +35,12 @@ from sglang.srt.layers.muse_spark.muse_spark_nvfp4_moe import (
+     MuseSparkNvFp4FusedMoEMethod,
+ )
+ from sglang.srt.layers.quantization.base_config import QuantizationConfig
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import (
++    eager_on_graph,
++)
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context import (
++    is_in_breakable_cuda_graph,
++)
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+ 
+ if TYPE_CHECKING:
+@@ -51,6 +57,8 @@ _NVFP4_PER_TOKEN_SCALE_INV = 1.0 / (448.0 * 6.0)
+ 
+ _MARLIN_SHAPE_ALIGNMENT = 64
+ _MARLIN_BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
++# Amortize the routing sort, materialization, and graph break on larger batches.
++_HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT = 256
+ 
+ 
+ def _resolve_moe_runner_backend():
+@@ -131,8 +139,14 @@ class MuseSpark1xFp4Experts(nn.Module):
+ 
+         capability = get_device_capability() if is_cuda() else None
+         self.use_marlin = self.moe_runner_backend.is_marlin()
++        self.use_humming = self.moe_runner_backend.is_humming()
++        if self.use_humming and (
++            capability != (9, 0) or self.params_dtype != torch.bfloat16
++        ):
++            raise ValueError("Muse Humming NVFP4 requires a Hopper GPU and BF16")
++        self.use_w4a16 = self.use_marlin or self.use_humming
+         self._sm_major = capability[0] if capability is not None else 0
+-        if not self.use_marlin and capability is not None and capability < (10, 0):
++        if not self.use_w4a16 and capability is not None and capability < (10, 0):
+             raise ValueError(
+                 f"--moe-runner-backend {self.moe_runner_backend.value} needs a "
+                 f"Blackwell (SM100+) device for packed NVFP4 experts, but this "
+@@ -160,7 +174,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         self._post_expert_norm_weight_first = True
+         self._fused_finalize_op = (
+             None
+-            if self.use_marlin
++            if self.use_w4a16
+             else FusedPostExpertNormWeightedSumTRTLLM(
+                 topk=top_k, hidden_dim=hidden_size, eps=1e-8, weight_first=False
+             )
+@@ -177,7 +191,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         self.register_buffer("_expert_map", expert_map, persistent=False)
+ 
+         self.quant_method = MuseSparkNvFp4FusedMoEMethod(quant_config)
+-        if not self.use_marlin and not self.quant_method.enable_flashinfer_trtllm_moe:
++        if not self.use_w4a16 and not self.quant_method.enable_flashinfer_trtllm_moe:
+             raise ValueError(
+                 "Packed NVFP4 experts need the FlashInfer TRT-LLM MoE backend, "
+                 "which prepares the shuffled FP4 weights this forward reads. "
+@@ -192,7 +206,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             params_dtype=self.params_dtype,
+             extra_weight_attrs={},
+         )
+-        if self.use_marlin:
++        if self.use_w4a16:
+             self.w13_blockscale_swizzled = None
+             self.w2_blockscale_swizzled = None
+ 
+@@ -229,7 +243,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             weight = torch.ones(
+                 self.hidden_size,
+                 dtype=torch.bfloat16,
+-                device=self.gate_up_proj.device,
++                device=self.gate_up_proj_input_scale.device,
+             )
+         object.__setattr__(self, "_post_expert_norm", post_expert_norm)
+         self._post_expert_norm_weight = weight.detach().to(torch.bfloat16)
+@@ -267,7 +281,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         post_expert_norm: Optional[nn.Module],
+     ) -> FlashinferCombineInput:
+         """Run expert-owned SP rows and build the BF16 A2A combine payload."""
+-        if self.use_marlin:
++        if self.use_w4a16:
+             raise ValueError(
+                 "Muse Spark sequence-parallel prefill dispatches the routed "
+                 "experts through the TRT-LLM FP4 MoE runner, which needs a "
+@@ -407,11 +421,17 @@ class MuseSpark1xFp4Experts(nn.Module):
+         local_topk_ids = local_topk_ids.contiguous()
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
++        # Expected routes per local expert. Under expert parallelism only
++        # num_local_experts / global_num_experts of the routes land on this rank.
++        routes_per_expert = num_tokens * topk / self.global_num_experts
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            if routes_per_expert / block_size_m < 0.9:
+                 break
+ 
+-        if num_tokens == 1 and topk <= 32 and expert_map is None:
++        # The ids are already local, with -1 for experts on other ranks, so align
++        # over the local experts. The -1 routes form the inactive prefix that the
++        # sorted Marlin kernels skip, with or without expert parallelism.
++        if num_tokens == 1 and topk <= 32:
+             from sglang.kernels.ops.moe.moe_align_single_token import (
+                 moe_align_single_token,
+             )
+@@ -422,16 +442,11 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 )
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids,
+                 block_size_m,
+-                align_num_experts,
+-                return_inactive_prefix_count=expert_map is None,
++                self.num_local_experts,
++                return_inactive_prefix_count=True,
+             )
+ 
+         # Both aligners emit ascending block IDs with inactive blocks first;
+@@ -468,7 +483,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=topk,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens,
+             size_n=gemm1_n,
+@@ -478,7 +493,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         )
+         silu_and_mul(
+             cache1.view(-1, gemm1_n),
+@@ -504,7 +519,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=1,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens * topk,
+             size_n=size_k,
+@@ -514,10 +529,43 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         ).view(num_tokens, topk, size_k), local_topk_ids
+ 
+-    def _forward_marlin(
++    def _grouped_humming_and_combine_impl(
++        self,
++        hidden_states: torch.Tensor,
++        local_topk_ids: torch.Tensor,
++        topk_scores: torch.Tensor,
++        output: torch.Tensor,
++    ) -> None:
++        from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++            humming_grouped_expert_outputs,
++        )
++
++        values, ids = humming_grouped_expert_outputs(self, hidden_states, local_topk_ids)
++        if values.shape[0] == 0:
++            output.zero_()
++            return
++
++        compact = values.ndim == 2
++        fused_post_expert_norm_weighted_sum(
++            values,
++            topk_scores,
++            norm_weight=self._post_expert_norm_weight,
++            eps=self._post_expert_norm_eps,
++            weight_first=self._post_expert_norm_weight_first,
++            slot_expert_ids=None if compact else ids,
++            slot_row_indices=ids if compact else None,
++            out=output,
++        )
++
++    # Graph replay fills the fixed output using the current route counts.
++    _grouped_humming_and_combine = eager_on_graph(
++        True, capture_stub=lambda *args, **kwargs: None
++    )(_grouped_humming_and_combine_impl)
++
++    def _forward_w4a16(
+         self,
+         hidden_states: torch.Tensor,
+         topk_scores: torch.Tensor,
+@@ -527,7 +575,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+     ) -> torch.Tensor:
+         if post_expert_norm is None:
+             raise ValueError(
+-                "The NVFP4 Marlin fallback requires moe_use_post_expert_norm=True. "
++                "The NVFP4 W4A16 path requires moe_use_post_expert_norm=True. "
+                 "Marlin carries one NVFP4 global scale per expert, so "
+                 "w13_weight_scale_2 is collapsed to its gate column and every "
+                 "expert output picks up a constant gain 1/r with "
+@@ -538,11 +586,40 @@ class MuseSpark1xFp4Experts(nn.Module):
+             )
+         if pre_expert_norm is not None:
+             hidden_states = pre_expert_norm(hidden_states)
+-        expert_outputs, local_topk_ids = self._marlin_expert_outputs(
+-            hidden_states, topk_scores, topk_ids
+-        )
+         if self._post_expert_norm is not post_expert_norm:
+             self.set_post_expert_norm(post_expert_norm)
++        if self.use_humming:
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                humming_expert_outputs,
++                local_humming_expert_ids,
++            )
++
++            local_topk_ids = local_humming_expert_ids(self, topk_ids)
++            if (
++                self._post_expert_norm_weight is not None
++                and hidden_states.dtype == torch.bfloat16
++                and topk_ids.numel()
++                >= self.global_num_experts * _HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++                and not torch.compiler.is_compiling()
++                and (
++                    not torch.cuda.is_current_stream_capturing()
++                    or is_in_breakable_cuda_graph()
++                )
++            ):
++                output = torch.empty_like(
++                    hidden_states, memory_format=torch.contiguous_format
++                )
++                self._grouped_humming_and_combine(
++                    hidden_states, local_topk_ids, topk_scores, output
++                )
++                return output
++            expert_outputs, local_topk_ids = humming_expert_outputs(
++                self, hidden_states, local_topk_ids
++            )
++        else:
++            expert_outputs, local_topk_ids = self._marlin_expert_outputs(
++                hidden_states, topk_scores, topk_ids
++            )
+         if self._post_expert_norm_weight is not None:
+             return fused_post_expert_norm_weighted_sum(
+                 expert_outputs,
+@@ -645,8 +722,8 @@ class MuseSpark1xFp4Experts(nn.Module):
+         *,
+         ar_workspace: FinalizePushWorkspace | None = None,
+     ) -> torch.Tensor:
+-        if self.use_marlin:
+-            return self._forward_marlin(
++        if self.use_w4a16:
++            return self._forward_w4a16(
+                 hidden_states,
+                 topk_scores,
+                 topk_ids,
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+new file mode 100644
+index 0000000..77abcaf
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -0,0 +1,302 @@
++"""Humming W4A16 experts for Muse's per-route finalization."""
++
++from __future__ import annotations
++
++import json
++from typing import TYPE_CHECKING
++
++import torch
++import triton
++import triton.language as tl
++
++if TYPE_CHECKING:
++    from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++
++
++_GROUPED_COMPUTE = json.dumps(
++    {"gemm_type": "grouped_contiguous", "use_f16_accum": False}
++)
++
++
++def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
++    """Replace the local checkpoint bank with packed Humming weights."""
++    from humming import dtypes
++    from humming.config import GemmType
++    from humming.kernel.humming import HummingKernel
++    from humming.layer import HummingMethod
++    from humming.schema.humming import HummingInputSchema, HummingWeightSchema
++    from humming.transform import transform_humming_tensors
++
++    if layer.quant_config.group_size != 16:
++        raise ValueError("Muse Humming NVFP4 requires groups of 16 weight elements")
++
++    input_schema = HummingInputSchema(a_dtype=dtypes.bfloat16)
++    weight_schema = HummingWeightSchema(
++        b_dtype=dtypes.float4e2m1,
++        bs_dtype=dtypes.float8e4m3,
++        weight_scale_group_size=16,
++    )
++    params = {}
++    tunings = {}
++    grouped_tunings = {}
++    for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
++        packed = getattr(layer, checkpoint_name)
++        scales = getattr(layer, f"{checkpoint_name}_weight_scale")
++        global_scale = getattr(layer, f"{checkpoint_name}_weight_scale_2")
++        experts, n, packed_k = packed.shape
++        k = packed_k * 2
++        if n % 256 or k % 128 or experts != layer.num_local_experts:
++            raise ValueError("Muse Humming requires aligned local expert matrices")
++        if packed.dtype != torch.uint8 or scales.dtype != torch.float8_e4m3fn:
++            raise ValueError("Muse Humming requires packed E2M1 and E4M3 scales")
++        if scales.shape != (experts, n, k // 16):
++            raise ValueError("Muse Humming received an incompatible scale shape")
++
++        # Reproduce Marlin's NVFP4 BF16 operand. Its E4M3 unpack maps all
++        # subnormal scales to zero and assumes non-negative finite scales.
++        scale_bytes = scales.view(torch.uint8)
++        if (scale_bytes > 0x7E).any().item():
++            raise ValueError("Muse Humming requires non-negative finite block scales")
++        scale_bytes = scale_bytes.masked_fill(scale_bytes < 8, 0)
++
++        meta = HummingMethod.prepare_layer_meta(
++            layer,
++            shape_n=n,
++            shape_k=k,
++            weight_schema=weight_schema,
++            input_schema=input_schema,
++            num_experts=experts,
++            torch_dtype=torch.bfloat16,
++            sublayer_name=name,
++        )
++        tensors = transform_humming_tensors(
++            meta,
++            {
++                "weight": packed.view(torch.int32),
++                "weight_scale": scale_bytes.view(torch.float8_e4m3fn),
++            },
++            already_padded=True,
++        )
++        params[meta.weight_name] = tensors["weight"]
++        params[meta.weight_scale_name] = tensors["weight_scale"]
++        # Stock Marlin collapses the gate/up global scales to the gate value
++        # and multiplies after the BF16 output cast. Preserve both boundaries.
++        if name == "w13" and global_scale.ndim == 2:
++            global_scale = global_scale[:, 0]
++        if global_scale.shape != (experts,):
++            raise ValueError("Muse Humming requires one global scale per expert")
++        params[f"{name}_global_scale"] = global_scale.to(torch.bfloat16).contiguous()
++
++        # Each Stream-K slice would be rounded to BF16 before its output
++        # reduction. Keep a complete FP32 accumulation in each output tile.
++        tunings[name] = tuple(
++            (maximum, config | {"use_stream_k": False})
++            for _, maximum, config in HummingMethod.get_default_tuning_configs(
++                layer, gemm_type=GemmType.INDEXED, sublayer_name=name
++            )
++        )
++
++        grouped = HummingMethod.get_default_tuning_configs(
++            layer, gemm_type=GemmType.GROUPED_CONTIGUOUS, sublayer_name=name
++        )[-1][2]
++        grouped_tunings[name] = json.dumps(
++            grouped | {"use_stream_k": False, "use_tma_c": False}
++        )
++        # Dummy graph routes can be empty or concentrated on one EP rank.
++        # Compile the large-batch kernels while the model loads on every rank.
++        HummingKernel.prepare_kernels(
++            meta.to_str(), _GROUPED_COMPUTE, grouped_tunings[name]
++        )
++
++    for name, tensor in params.items():
++        setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
++    for name in ("gate_up_proj", "down_proj"):
++        delattr(layer, name)
++        delattr(layer, f"{name}_weight_scale")
++        delattr(layer, f"{name}_weight_scale_2")
++    layer.humming_indexed_tunings = tunings
++    layer.humming_grouped_tunings = grouped_tunings
++
++
++@triton.jit
++def _scale_live_routes(
++    values,
++    scales,
++    flat_ids,
++    sorted_ids,
++    padded,
++    slots,
++    WIDTH: tl.constexpr,
++    BLOCK: tl.constexpr,
++):
++    column = tl.arange(0, BLOCK)
++    count = tl.load(padded)
++    for position in range(tl.program_id(0), count, tl.num_programs(0)):
++        slot = tl.load(sorted_ids + position)
++        if 0 <= slot and slot < slots:
++            expert = tl.load(flat_ids + slot)
++            scale = tl.load(scales + expert).to(tl.float32)
++            offset = slot.to(tl.int64) * WIDTH + column
++            value = tl.load(values + offset, mask=column < WIDTH, other=0)
++            rounded = (value.to(tl.float32) * scale).to(tl.bfloat16)
++            tl.store(values + offset, rounded, mask=column < WIDTH)
++
++
++def local_humming_expert_ids(
++    layer: MuseSpark1xFp4Experts, topk_ids: torch.Tensor
++) -> torch.Tensor:
++    from sglang.srt.layers.moe.token_dispatcher.standard import (
++        _map_topk_ids_to_local_experts,
++    )
++
++    local_ids = topk_ids.to(torch.int32)
++    if layer._expert_map is not None:
++        local_ids = _map_topk_ids_to_local_experts(local_ids, layer._expert_map)
++    return local_ids.contiguous()
++
++
++def humming_expert_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    local_ids: torch.Tensor,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """Produce BF16 outputs for local expert slots in original route order."""
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.activation.activation import silu_and_mul
++    from sglang.srt.layers.moe.fused_moe_triton import moe_align_block_size
++
++    num_tokens, hidden_size = hidden_states.shape
++    topk = local_ids.shape[1]
++    if num_tokens == 0:
++        return hidden_states.new_empty((0, topk, hidden_size)), local_ids
++    if hidden_states.dtype != torch.bfloat16:
++        raise ValueError("Muse Humming NVFP4 expects BF16 activations")
++    flat_ids = local_ids.flatten()
++    num_slots = flat_ids.numel()
++    estimated_local_routes = max(
++        1, num_slots * layer.num_local_experts // layer.global_num_experts
++    )
++    intermediate = layer.intermediate_size_per_partition
++    activations = hidden_states.new_empty((num_slots, intermediate))
++    cache = hidden_states.new_empty((num_slots * max(2 * intermediate, hidden_size),))
++    gate_up = cache[: num_slots * 2 * intermediate].view(num_slots, 2 * intermediate)
++    outputs = cache[: num_slots * hidden_size].view(num_slots, hidden_size)
++
++    alignments = {}
++    for name, inputs, result, route_width in (
++        ("w13", hidden_states, gate_up, topk),
++        ("w2", activations, outputs, 1),
++    ):
++        tuning = next(
++            config
++            for maximum, config in layer.humming_indexed_tunings[name]
++            if estimated_local_routes <= maximum
++        )
++        block_m = tuning["block_shape"][0]
++        if block_m not in alignments:
++            alignments[block_m] = moe_align_block_size(
++                local_ids, block_m, layer.num_local_experts, ignore_invalid_expert=True
++            )
++        sorted_ids, expert_ids, padded = alignments[block_m]
++        HummingMethod.forward_layer(
++            layer,
++            inputs=inputs,
++            outputs=result,
++            sorted_ids=sorted_ids,
++            expert_ids=expert_ids,
++            num_tokens_padded=padded,
++            top_k=route_width,
++            valid_shape_m=estimated_local_routes,
++            compute_config={"gemm_type": "indexed", "use_f16_accum": False},
++            tuning_config=tuning,
++            sublayer_name=name,
++        )
++        # Indexed alignment omits remote routes. Scale only the GEMM rows that
++        # were written, leaving both remote slots and expert padding untouched.
++        width = result.shape[1]
++        _scale_live_routes[(min(sorted_ids.numel(), 1024),)](
++            result,
++            getattr(layer, f"{name}_global_scale"),
++            flat_ids,
++            sorted_ids,
++            padded,
++            num_slots,
++            WIDTH=width,
++            BLOCK=triton.next_power_of_2(width),
++            num_warps=8 if width >= 4096 else 4,
++        )
++        if name == "w13":
++            silu_and_mul(gate_up, activations, expert_ids=flat_ids, expert_step=1)
++
++    return outputs.view(num_tokens, topk, hidden_size), local_ids
++
++
++def humming_grouped_expert_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    local_ids: torch.Tensor,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """Return expert outputs and their original route indices for finalization."""
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.activation.activation import silu_and_mul
++
++    _, hidden_size = hidden_states.shape
++    topk = local_ids.shape[1]
++    route_experts, slots = local_ids.flatten().sort(stable=True)
++    experts = torch.arange(
++        layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
++    )
++    offsets = torch.searchsorted(route_experts, experts, out_int32=True)
++    first_local = offsets[0].item()
++    num_routes = slots.numel() - first_local
++    if num_routes == 0:
++        return hidden_states.new_empty((0, hidden_size)), local_ids
++
++    intermediate = layer.intermediate_size_per_partition
++    stage_width = max(hidden_size, intermediate)
++    output_width = max(2 * intermediate, hidden_size)
++    if num_routes * (stage_width + output_width) > slots.numel() * (
++        intermediate + output_width
++    ):
++        return humming_expert_outputs(layer, hidden_states, local_ids)
++
++    slots = slots[first_local:]
++    route_experts = route_experts[first_local:].long()
++    offsets = offsets - first_local
++    staging = hidden_states.new_empty(num_routes * stage_width)
++    arena = hidden_states.new_empty(num_routes * output_width)
++    inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
++    gate_up = arena[: num_routes * 2 * intermediate].view(num_routes, 2 * intermediate)
++    activations = staging[: num_routes * intermediate].view(num_routes, intermediate)
++    outputs = arena[: num_routes * hidden_size].view(num_routes, hidden_size)
++    torch.index_select(
++        hidden_states, 0, torch.div(slots, topk, rounding_mode="floor"), out=inputs
++    )
++
++    for name, source, destination in (
++        ("w13", inputs, gate_up),
++        ("w2", activations, outputs),
++    ):
++        HummingMethod.forward_layer(
++            layer,
++            inputs=source,
++            outputs=destination,
++            expert_layout=offsets,
++            compute_config=_GROUPED_COMPUTE,
++            tuning_config=layer.humming_grouped_tunings[name],
++            sublayer_name=name,
++        )
++        scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
++        destination.mul_(scales.unsqueeze(1))
++        if name == "w13":
++            silu_and_mul(gate_up, activations)
++
++    mapped_rows = torch.full_like(local_ids, -1)
++    mapped_rows.view(-1).index_copy_(
++        0,
++        slots,
++        torch.arange(num_routes, dtype=mapped_rows.dtype, device=mapped_rows.device),
++    )
++    return outputs, mapped_rows
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
+index f3acc41..b26abdb 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
+@@ -84,6 +84,8 @@ def _align_fp4_moe_weights_for_flashinfer_trtllm(layer) -> None:
+ class MuseSparkNvFp4FusedMoEMethod(ModelOptNvFp4FusedMoEMethod):
+     """Prepare Muse FP4 experts without process-global mutation or duplication."""
+ 
++    _supports_humming_nvfp4 = True
++
+     def create_weights(
+         self,
+         layer,
+@@ -141,6 +143,12 @@ class MuseSparkNvFp4FusedMoEMethod(ModelOptNvFp4FusedMoEMethod):
+     def process_weights_after_loading(self, layer):
+         """Prepare the TRT-LLM layout from native HF parameters in place."""
+         backend = getattr(self, "_moe_runner_backend", None)
++        if backend is not None and backend.is_humming():
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                prepare_humming_nvfp4,
++            )
++
++            return prepare_humming_nvfp4(layer)
+         if backend is not None and backend.is_marlin():
+             return self._process_weights_for_marlin(layer)
+         input_scale = layer.gate_up_proj_input_scale.max().float()
+diff --git a/python/sglang/srt/layers/quantization/modelopt_quant.py b/python/sglang/srt/layers/quantization/modelopt_quant.py
+index 8e6ac10..f71e0f6 100755
+--- a/python/sglang/srt/layers/quantization/modelopt_quant.py
++++ b/python/sglang/srt/layers/quantization/modelopt_quant.py
+@@ -2366,6 +2366,9 @@ class ModelOptNvFp4FusedMoEMethod(FusedMoEMethodBase):
+         quant_config: NVFP4 Quant Config
+     """
+ 
++    # Muse supplies its own packed Humming weight preparation and forward.
++    _supports_humming_nvfp4 = False
++
+     def __init__(self, quant_config: ModelOptFp4Config):
+         self.quant_config = quant_config
+         moe_runner_backend = get_moe_runner_backend()
+@@ -2379,7 +2382,15 @@ class ModelOptNvFp4FusedMoEMethod(FusedMoEMethodBase):
+             use_marlin_fallback = (8, 0) <= capability < (10, 0)
+         else:
+             use_marlin_fallback = moe_runner_backend.is_marlin()
+-        if not get_platform().is_blackwell and not use_marlin_fallback:
++        use_humming = (
++            self._supports_humming_nvfp4
++            and moe_runner_backend.is_humming()
++            and is_cuda()
++            and get_device_capability() == (9, 0)
++        )
++        if not get_platform().is_blackwell and not (
++            use_marlin_fallback or use_humming
++        ):
+             raise ValueError(
+                 "Current platform does not support NVFP4"
+                 " quantization with the selected MoE backend. Please use "
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index a8280c2..b6c0a44 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -714,6 +714,8 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # === Runtime-filled (set during the forward pass / cuda graph / managers; not at construction) ===
+     # Preallocated piecewise-graph attention output, set by RadixAttention.
+     _attn_output: Optional[torch.Tensor] = None
++    # Set only for the duration of one target model call.
++    _fa3_verify_schedules: Optional[dict] = None
+ 
+     # Decode-graph-owned destination for AuxHiddenStatePacker; None when eager.
+     aux_hidden_states_buffer: Optional[torch.Tensor] = None
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..5d324f0 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2314,6 +2314,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # Bounded SWA replay returns the late layers' tail rows plus the
+             # extend indices they came from; the DSpark injector needs both.
+             hidden_states_token_indices=output.hidden_states_token_indices,
++            dflash_prefill_fc_done=output.dflash_prefill_fc_done,
+         )
+ 
+     def _finalize_execute_output(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 6b638e9..e6e865f 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -50,12 +50,14 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.layers.attention.trtllm_mha_backend import TRTLLMHAAttnBackend
+ from sglang.srt.layers.aux_hidden_states import pack_aux_hidden_states
++from sglang.srt.layers.dflash_context_projection import project_dflash_prefill_shard
+ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+     reserve_projection_workspace,
+ )
+ from sglang.srt.layers.cp.utils import is_cp_active
++from sglang.srt.layers.moe import get_moe_runner_backend
+ from sglang.srt.layers.dp_attention import (
+     dp_gather_replicate,
+     dp_scatter,
+@@ -95,7 +97,7 @@ from sglang.srt.model_executor.forward_context import (
+     get_token_to_kv_pool,
+ )
+ from sglang.srt.model_loader.weight_utils import default_weight_loader
+-from sglang.srt.runtime_context import get_forward, get_memory, get_parallel
++from sglang.srt.runtime_context import get_forward, get_memory, get_parallel, get_spec
+ from sglang.srt.state_capturer.routed_experts import get_global_experts_capturer
+ from sglang.srt.utils import add_prefix, is_cpu, use_intel_amx_backend
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+@@ -610,6 +612,7 @@ class MuseSpark1xMoE(nn.Module):
+         self.experts.post_expert_norm = post_expert_norm
+         self.experts.use_megamoe = self.use_megamoe
+         self.sp_dispatcher = None
++        self.sp_replicate_expert_input = False
+         self.finalize_ar_workspace = None
+         self.unpool_gather_boundary: Optional[FusedPostNormResidualPreNorm] = None
+         self.side_stream = None
+@@ -777,9 +780,15 @@ class MuseSpark1xMoE(nn.Module):
+     ) -> torch.Tensor:
+         if hidden_states.shape[0] == 0:
+             return hidden_states.new_zeros((0, self.expert_hidden_size))
++        sp_active = getattr(get_forward(), "sp_active", False)
++        router_num_tokens = (
++            layernorm_sp.sp_num_tokens()
++            if sp_active and self.sp_replicate_expert_input
++            else hidden_states.shape[0]
++        )
+         use_split2 = (
+             self.router_in_fp32
+-            and _use_split_bf16_router(hidden_states.shape[0])
++            and _use_split_bf16_router(router_num_tokens)
+             and self.gate.weight.dtype == torch.float32
+             and hidden_states.dtype in (torch.bfloat16, torch.float16)
+         )
+@@ -787,13 +796,12 @@ class MuseSpark1xMoE(nn.Module):
+             router_input = (
+                 hidden_states.float() if self.router_in_fp32 else hidden_states
+             )
+-        sp_active = getattr(get_forward(), "sp_active", False)
+         prepare_early = (
+             self.nvfp4_checkpoint
+             # Measured to help up to 128 tokens (decode c<=128); untested above.
+             and hidden_states.shape[0] <= 128
+             and not sp_active
+-            and not getattr(self.experts, "use_marlin", False)
++            and not getattr(self.experts, "use_w4a16", False)
+         )
+         prepared_input = None
+         use_side_stream = not _is_cpu and torch.cuda.is_available()
+@@ -895,6 +903,10 @@ class MuseSpark1xMoE(nn.Module):
+         """Return combined source-token shards, before the nonlinear FFN tail."""
+         if self.pre_expert_norm is not None:
+             expert_input = self.pre_expert_norm(expert_input)
++        if self.sp_replicate_expert_input:
++            return self._forward_sp_replicated_experts(
++                expert_input, topk_scores, topk_ids
++            )
+         if self.use_megamoe:
+             from sglang.srt.layers.muse_spark.muse_spark_megamoe import forward_megamoe
+ 
+@@ -917,6 +929,21 @@ class MuseSpark1xMoE(nn.Module):
+         )
+         return self.sp_dispatcher.combine(combine_input)
+ 
++    def _forward_sp_replicated_experts(
++        self,
++        expert_input: torch.Tensor,
++        topk_scores: torch.Tensor,
++        topk_ids: torch.Tensor,
++    ) -> torch.Tensor:
++        """Share pooled rows, run local EP experts, and return this TP token shard."""
++        num_tokens = layernorm_sp.sp_num_tokens()
++        tp_group = get_parallel().tp_group
++        inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)
++        scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
++        ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
++        output = self.experts(inputs, scores, ids, self.experts.post_expert_norm)
++        return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++
+ 
+ class MuseSpark1xDecoderLayer(nn.Module):
+     def __init__(
+@@ -1159,16 +1186,24 @@ class MuseSpark1xModel(nn.Module):
+                 for moe_layer in moe_layers:
+                     moe_layer.set_finalize_ar_workspace(self._finalize_ar_workspace)
+         if layernorm_sp.layernorm_sp_enabled():
+-            # Scope CUTLASS collectives to Muse; leave the generic Qwen SP
+-            # path unchanged. Decode never calls the SP participant hooks.
++            # Hopper uses ordinary graph-aware collectives. Keep Muse's
++            # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
++            backend = get_moe_runner_backend()
++            replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]
+                 if not layer.is_moe_layer:
+                     linears.extend([layer.mlp.gate_up_proj, layer.mlp.down_proj])
+                 for linear in linears:
+-                    linear._sp_use_cutlass = True
+-            moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+-            if moe_layers and not getattr(
++                    if replicate_expert_input:
++                        linear._sp_unfused_collective = True
++                    else:
++                        linear._sp_use_cutlass = True
++            if replicate_expert_input:
++                for moe_layer in moe_layers:
++                    moe_layer.sp_replicate_expert_input = True
++            elif moe_layers and not getattr(
+                 get_parallel(), "enable_megamoe_for_layernorm_sp", False
+             ):
+                 from sglang.srt.layers.moe.token_dispatcher.flashinfer import (
+@@ -1286,6 +1321,7 @@ class MuseSparkTextForCausalLM(nn.Module):
+             config, logit_scale=config.output_multiplier
+         )
+         self.capture_aux_hidden_states = False
++        self._share_verify_schedule = get_spec().speculative_dflash_share_verify_schedule
+ 
+     def forward(
+         self,
+@@ -1294,10 +1330,25 @@ class MuseSparkTextForCausalLM(nn.Module):
+         forward_batch: ForwardBatch,
+         input_embeds: Optional[torch.Tensor] = None,
+     ):
+-        hidden_states = self.model(
+-            input_ids, positions, forward_batch, input_embeds=input_embeds
+-        )
++        if (
++            self._share_verify_schedule
++            and not torch.compiler.is_compiling()
++            and forward_batch.forward_mode.is_target_verify()
++        ):
++            previous = forward_batch._fa3_verify_schedules
++            forward_batch._fa3_verify_schedules = {}
++            try:
++                hidden_states = self.model(
++                    input_ids, positions, forward_batch, input_embeds=input_embeds
++                )
++            finally:
++                forward_batch._fa3_verify_schedules = previous
++        else:
++            hidden_states = self.model(
++                input_ids, positions, forward_batch, input_embeds=input_embeds
++            )
+         aux_hidden_states = None
++        prefill_fc_done = False
+         if self.capture_aux_hidden_states:
+             hidden_states, aux_hidden_states = hidden_states
+         if aux_hidden_states is not None and layernorm_sp.runs_sp(
+@@ -1313,6 +1364,16 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+             aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
++            projected = project_dflash_prefill_shard(
++                aux_hidden_states,
++                num_tokens,
++                get_parallel().tp_group,
++                self.logits_processor,
++                forward_batch.capture_hidden_mode.is_full(),
++            )
++            if projected is not None:
++                aux_hidden_states = projected
++                prefill_fc_done = True
+             aux_hidden_states = layernorm_sp.sp_exit_gather(
+                 aux_hidden_states, num_tokens=num_tokens
+             )
+@@ -1329,9 +1390,12 @@ class MuseSparkTextForCausalLM(nn.Module):
+                 hidden_states, num_tokens=input_embeds.shape[0]
+             )
+             get_forward().set("sp_active", False)
+-        return self.logits_processor(
++        output = self.logits_processor(
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
++        if prefill_fc_done:
++            output.dflash_prefill_fc_done = True
++        return output
+ 
+     def set_dflash_layers_to_capture(self, layer_ids: List[int]) -> None:
+         """Capture the residual stream after each listed decoder layer.
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..4f2b2d3 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from contextlib import nullcontext
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -19,6 +20,12 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ )
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
++from sglang.srt.layers.dflash_context_projection import (
++    dflash_sp_prefill_scope,
++    prepare_dflash_sp_prefill,
++    prepare_dflash_verify_projection,
++    project_dflash_verify,
++)
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+     LogitsProcessor,
+@@ -614,6 +621,38 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._out_tokens_bufs: List[torch.Tensor] = []
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
++        self._sp_prefill_context = None
++        parallel = get_parallel()
++        if (
++            get_spec().speculative_dflash_sp_prefill_context
++            and is_cuda()
++            and parallel.tp_group.world_size > 1
++            and parallel.pp_size == 1
++            and parallel.attn_cp_size == 1
++            and not parallel.attn_dp_enabled
++            and not get_exec().deterministic.enable_deterministic_inference
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and torch.distributed.get_backend(parallel.tp_group.cpu_group) == "gloo"
++        ):
++            self._sp_prefill_context = prepare_dflash_sp_prefill(
++                self.draft_model,
++                self.target_worker.model_runner.model,
++                self._target_logits_processor,
++                parallel.tp_group,
++            )
++        self._verify_projection = None
++        with draft_tp_context(self.draft_parallel_layout):
++            group = get_parallel().tp_group
++            if (
++                get_spec().speculative_dflash_parallel_verify_context
++                and is_cuda()
++                and group.world_size > 1
++                and parallel.pp_size == 1
++                and not get_exec().deterministic.enable_deterministic_inference
++                and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++                and torch.distributed.get_backend(group.cpu_group) == "gloo"
++            ):
++                self._verify_projection = prepare_dflash_verify_projection(self.draft_model, group)
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1074,6 +1113,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 max_position_hint=self.target_worker.model_runner.model_config.context_len
+                 + int(self.block_size),
+             )
++            if get_spec().speculative_dflash_direct_prefix_kv:
++                self._fused_kv_helper.configure_prefix_cache(
++                    self.draft_model_runner.token_to_kv_pool, layers
++                )
+             if get_parallel().tp_rank == 0:
+                 logger.info(
+                     "DFLASH fused KV materialization enabled. "
+@@ -1827,6 +1870,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        prefill_fc_done: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1926,7 +1970,12 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
++            if prefill_fc_done:
++                ctx_hidden = self.draft_model.hidden_norm(target_hidden)
++            elif cache_loc_2d is not None and self._verify_projection is not None:
++                ctx_hidden = project_dflash_verify(self._verify_projection, target_hidden)
++            else:
++                ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+                 self._lilicorr_anchor = publish_anchor(
+                     draft_sampler=self._draft_sampler,
+@@ -2080,6 +2129,11 @@ class DFlashWorkerV2(BaseSpecWorker):
+             ctx_hidden=ctx_hidden,
+             positions=ctx_positions,
+             write_layer_kv=_write_layer_kv,
++            prefix_cache=(
++                (token_to_kv_pool, ctx_cache_loc_2d, commit_lens)
++                if ctx_cache_loc_2d is not None and commit_lens is not None
++                and self._fused_kv_helper._prefix_cache is not None else None
++            ),
+         )
+ 
+     def _update_target_mamba_state_after_verify(
+@@ -2345,12 +2399,22 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if batch.forward_mode.is_extend() or batch.is_extend_in_batch:
+             self._wait_for_fused_hicache_load(batch)
+             # Target prefill: capture DFlash aux hidden states for prompt tokens.
+-            batch_output = self.target_worker.forward_batch_generation(
+-                batch,
+-                pp_proxy_tensors=pp_proxy_tensors,
+-                capture_hidden_mode=CaptureHiddenMode.FULL,
+-                return_kv_loc_plan=True,
+-            )
++            scope = nullcontext()
++            if (
++                self._sp_prefill_context is not None
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.return_logprob
++                and not batch.return_hidden_states_mode.need_capture()
++                and not torch.cuda.is_current_stream_capturing()
++            ):
++                scope = dflash_sp_prefill_scope(self._sp_prefill_context)
++            with scope:
++                batch_output = self.target_worker.forward_batch_generation(
++                    batch,
++                    pp_proxy_tensors=pp_proxy_tensors,
++                    capture_hidden_mode=CaptureHiddenMode.FULL,
++                    return_kv_loc_plan=True,
++                )
+             kv_loc_plan, batch_output.kv_loc_plan = batch_output.kv_loc_plan, None
+ 
+             logits_output, next_token_ids = (
+@@ -2410,6 +2474,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc=self._draft_write_ids(kv_loc_plan),
+                 positions=positions,
+                 extend_lens=ctx_lens,
++                prefill_fc_done=logits_output.dflash_prefill_fc_done,
+             )
+ 
+             # Avoid copying large hidden-state buffers to CPU in overlap scheduling.

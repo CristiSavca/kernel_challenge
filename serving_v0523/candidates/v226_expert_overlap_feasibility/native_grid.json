@@ -1,0 +1,45 @@
+{
+  "pypi": "https://pypi.org/pypi/humming-kernels/0.1.12/json",
+  "wheel": "humming_kernels-0.1.12-py3-none-manylinux_2_28_x86_64.whl",
+  "wheel_sha256": "cd3ef712a93f3a9075ea99de2c72bcd3ec89dab3759b3a248d869f5507b60331",
+  "native": {
+    "humming/csrc/launcher/launcher.cpp": {
+      "sha256": "bb1b102c2e4012fab885c486f9782c3cb86e6bbdfff463c9e2e60bcad27bea5c",
+      "rows": [
+        {
+          "line": 104,
+          "text": "uint32_t num_ctas = kernel_data.num_ctas_per_sm * get_num_sms(num_sms, dev);"
+        },
+        {
+          "line": 175,
+          "text": "config.gridDimX = num_ctas;"
+        }
+      ]
+    },
+    "humming/include/humming/scheduler.cuh": {
+      "sha256": "24443b74d10ac799d805d2ffc840503142696f744a1b3882379c55a6efc1f2e2",
+      "rows": [
+        {
+          "line": 93,
+          "text": "uint32_t kNumCtaGroups = gridDim.x / kMultiCastSize;"
+        },
+        {
+          "line": 222,
+          "text": "dp_mn_next_index += gridDim.x / kMultiCastSize;"
+        }
+      ]
+    },
+    "humming/kernel/humming.py": {
+      "sha256": "97712961bfcfbfe4057211564cea439d08d63d372e7eb0fd000dbaf35f675a2b",
+      "rows": [
+        {
+          "line": 513,
+          "text": "num_sms = config.pop(\"num_sms\", 0)"
+        }
+      ]
+    }
+  },
+  "v224_sha256": "2de1b0195710e395b2d4c5e2666a8df7a42516c4bb3fc87ae313e0788f1e1a9a",
+  "full_sms_custom_W13": true,
+  "custom_rejects_selected_num_sms": true
+}

@@ -1,0 +1,295 @@
+{
+  "FLOP_model": "two FLOPs per FMA, 989.5 dense BF16 TFLOP/s, 1979 FP8 TFLOP/s",
+  "FP8_break_even": "FP8 effective fraction > dense_BF16_effective_fraction * number_of_FP8_MMA_products / 2, excluding all conversion and rescaling",
+  "HBM_model": "4.8 TB/s H200 SXM, 132 SMs, 1 CTA/SM, 176x256x64",
+  "controlled_cold_standalone_H200": {
+    "data": {
+      "32": {
+        "cold_DRAM_read_over_nominal_packed_requests": 1.0088,
+        "reported_DRAM_pct": 74.43
+      },
+      "256": {
+        "cold_DRAM_read_over_nominal_packed_requests": 1.0069,
+        "reported_DRAM_pct": 75.06
+      }
+    },
+    "profile_sha256": "0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7"
+  },
+  "geometry": [
+    {
+      "A_multicast_2x_roofline_ratios_no_sync_overhead": {
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_1": 1.142,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_1": 1.0493,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_1": 1.2689
+      },
+      "A_requested_full_tiles_before_multicast_MiB": 4224.0,
+      "A_requested_live_only_before_multicast_MiB": 3072.0,
+      "A_unique_W13_plus_W2_MiB": 128.0,
+      "B_logical_requested_MiB": 1728.0,
+      "B_unique_packed_MiB": 864.0,
+      "C_MMA_output_bytes_MiB": 192.0,
+      "hypothetical_B_pair_allocated_CTA_slots_per_real_tile": 1.0,
+      "hypothetical_safe_B_multicast_pair_requested_MiB": 864.0,
+      "ideal_elimination_of_all_M_padding_ratio": 1.375,
+      "ideal_final_wave_packing_speedup_only": [
+        1.0312,
+        1.0312
+      ],
+      "mean_M_tiles": 64.0,
+      "mean_W13_W2_CTAs": [
+        2048.0,
+        1024.0
+      ],
+      "mean_W13_W2_waves": [
+        16.0,
+        8.0
+      ],
+      "mean_routed_rows_rank": 8192.0,
+      "padded_compute_peak_floor_ms": 1.1459,
+      "rank_samples": 256,
+      "rows": 8192,
+      "useful_compute_peak_floor_ms": 0.8334
+    },
+    {
+      "A_multicast_2x_roofline_ratios_no_sync_overhead": {
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_1": 1.1545,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_1": 1.2828
+      },
+      "A_requested_full_tiles_before_multicast_MiB": 6231.33,
+      "A_requested_live_only_before_multicast_MiB": 4608.0,
+      "A_unique_W13_plus_W2_MiB": 192.0,
+      "B_logical_requested_MiB": 2549.18,
+      "B_unique_packed_MiB": 864.0,
+      "C_MMA_output_bytes_MiB": 288.0,
+      "hypothetical_B_pair_allocated_CTA_slots_per_real_tile": 1.3221,
+      "hypothetical_safe_B_multicast_pair_requested_MiB": 1685.18,
+      "ideal_elimination_of_all_M_padding_ratio": 1.3523,
+      "ideal_final_wave_packing_speedup_only": [
+        1.0269,
+        1.0486
+      ],
+      "mean_M_tiles": 94.414,
+      "mean_W13_W2_CTAs": [
+        3021.25,
+        1510.62
+      ],
+      "mean_W13_W2_waves": [
+        23.5,
+        12.0
+      ],
+      "mean_routed_rows_rank": 12288.0,
+      "padded_compute_peak_floor_ms": 1.6905,
+      "rank_samples": 256,
+      "rows": 12288,
+      "useful_compute_peak_floor_ms": 1.2501
+    },
+    {
+      "A_multicast_2x_roofline_ratios_no_sync_overhead": {
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_1": 1.0525,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_1": 1.3244,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_1": 1.1695,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.006,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_1": 1.4715
+      },
+      "A_requested_full_tiles_before_multicast_MiB": 6763.2,
+      "A_requested_live_only_before_multicast_MiB": 6120.0,
+      "A_unique_W13_plus_W2_MiB": 255.0,
+      "B_logical_requested_MiB": 2766.76,
+      "B_unique_packed_MiB": 864.0,
+      "C_MMA_output_bytes_MiB": 382.5,
+      "hypothetical_B_pair_allocated_CTA_slots_per_real_tile": 1.2491,
+      "hypothetical_safe_B_multicast_pair_requested_MiB": 1728.0,
+      "ideal_elimination_of_all_M_padding_ratio": 1.1051,
+      "ideal_final_wave_packing_speedup_only": [
+        1.0164,
+        1.0425
+      ],
+      "mean_M_tiles": 102.473,
+      "mean_W13_W2_CTAs": [
+        3279.12,
+        1639.56
+      ],
+      "mean_W13_W2_waves": [
+        25.25,
+        12.95
+      ],
+      "mean_routed_rows_rank": 16320.0,
+      "padded_compute_peak_floor_ms": 1.8347,
+      "rank_samples": 256,
+      "rows": 16320,
+      "useful_compute_peak_floor_ms": 1.6603
+    },
+    {
+      "A_multicast_2x_roofline_ratios_no_sync_overhead": {
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.35_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_0_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.6_B_duplicate_miss_1_A_duplicate_miss_1": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_0_A_duplicate_miss_1": 1.0476,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_0.9_B_duplicate_miss_1_A_duplicate_miss_1": 1.3204,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_0.5": 1.0,
+        "tensor_eff_1_B_duplicate_miss_0_A_duplicate_miss_1": 1.164,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0": 1.0,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_0.5": 1.0036,
+        "tensor_eff_1_B_duplicate_miss_1_A_duplicate_miss_1": 1.4671
+      },
+      "A_requested_full_tiles_before_multicast_MiB": 6818.62,
+      "A_requested_live_only_before_multicast_MiB": 6144.0,
+      "A_unique_W13_plus_W2_MiB": 256.0,
+      "B_logical_requested_MiB": 2789.44,
+      "B_unique_packed_MiB": 864.0,
+      "C_MMA_output_bytes_MiB": 384.0,
+      "hypothetical_B_pair_allocated_CTA_slots_per_real_tile": 1.239,
+      "hypothetical_safe_B_multicast_pair_requested_MiB": 1728.0,
+      "ideal_elimination_of_all_M_padding_ratio": 1.1098,
+      "ideal_final_wave_packing_speedup_only": [
+        1.0163,
+        1.039
+      ],
+      "mean_M_tiles": 103.312,
+      "mean_W13_W2_CTAs": [
+        3306.0,
+        1653.0
+      ],
+      "mean_W13_W2_waves": [
+        25.45,
+        13.01
+      ],
+      "mean_routed_rows_rank": 16384.0,
+      "padded_compute_peak_floor_ms": 1.8498,
+      "rank_samples": 256,
+      "rows": 16384,
+      "useful_compute_peak_floor_ms": 1.6668
+    }
+  ],
+  "representation": {
+    "BF16_mantissas_in_binade": 128,
+    "illustrative_sequential_full_K_fp32_witness": {
+      "both_results_exactly_BF16": true,
+      "full_K_fp32": 0.0,
+      "hi": [
+        72.0,
+        0.001953125,
+        -72.0
+      ],
+      "input": [
+        73.5,
+        0.001953125,
+        -73.5
+      ],
+      "lo": [
+        1.5,
+        0.0,
+        -1.5
+      ],
+      "nonzero_k": [
+        0,
+        16,
+        32
+      ],
+      "two_separate_fp32_dots": 0.001953125,
+      "weights": [
+        448.0,
+        1.0,
+        448.0
+      ]
+    },
+    "outside_e4m3_precision_at_any_power_of_two_scale": 444,
+    "outside_e5m2_precision_at_any_power_of_two_scale": 1096,
+    "prepared_subnormal_scales": "zero, as in pinned V64",
+    "signed_code_times_original_scale_pairs": 2032,
+    "significand_bits_by_pair": {
+      "0": 366,
+      "1": 120,
+      "2": 210,
+      "3": 240,
+      "4": 652,
+      "5": 180,
+      "6": 264
+    },
+    "single_e4m3_BF16_mantissas_in_binade": 8,
+    "single_unscaled_e4m3_pairs": 1502,
+    "single_unscaled_e5m2_pairs": 936,
+    "weight_precision_witness": {
+      "block_scale": 1.375,
+      "product": 2.0625,
+      "weight_code_value": 1.5
+    }
+  },
+  "status": "CPU exact representation audit and synthetic roofline model"
+}

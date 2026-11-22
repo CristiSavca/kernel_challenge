@@ -1,0 +1,2838 @@
+{
+  "nvcc": "12.9.86",
+  "hardware": false,
+  "build_inputs": {
+    "prior": {
+      "expert_medium_route_pair.cuh": "702ad9a3e4fc8aff76c8d7d10f7cda8fccd90be44f1a2ca9ae202642b6412c6f",
+      "expert_route_pair.cuh": "83ff1786f5b5ecdd03a3298a7b23f419deeec58e799ea03b052ef0d2ad74c54e",
+      "expert_tma_route_pair.cuh": "261fe8c62ce9d74044ca0bdadb3c8fda6242da53906cc10dfbe32197effb52f4"
+    },
+    "new": {
+      "expert_medium_route_pair.cuh": "702ad9a3e4fc8aff76c8d7d10f7cda8fccd90be44f1a2ca9ae202642b6412c6f",
+      "expert_route_pair.cuh": "47c13ae95077f1b23323ab085b5901bc0feb6bd4dc3bd81701fc9c225eb3dee0",
+      "expert_tma_route_pair.cuh": "71eb3ba557986fd5a9503b5e7b900ce7eb97226ab5e44922acdcfcc8bfff4fba"
+    }
+  },
+  "builds": {
+    "prior": {
+      "tma.sm_90a": {
+        "kernels": {
+          "tensor_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 38,
+            "barriers": 1,
+            "shared_bytes": 24592,
+            "machine_sha256": "e2e1e211685954685d9a3bdf9c6e0facea2a54658a39c059d2b59d0de97c663b",
+            "sites": 752,
+            "inner_mma_loops": [
+              {
+                "sites": 426,
+                "offset": "0xb10",
+                "end": "0x25a0",
+                "machine_sha256": "87e8ba703d32bc91b749d16a9ce9c146248e6914760e0e71eca7c29bbf411644",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 35,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "tensor_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 44,
+            "barriers": 1,
+            "shared_bytes": 43024,
+            "machine_sha256": "b4b0c09c4016a3f8183f25d9bb5e6c1127b093fa907cfcac4b0bdfd8cfff168f",
+            "sites": 1120,
+            "inner_mma_loops": [
+              {
+                "sites": 728,
+                "offset": "0xd40",
+                "end": "0x3ab0",
+                "machine_sha256": "8eaa254ced5970fcde8fce83ec1217f88b8cf15e065d9d9bc7ce002d355d8f26",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 51,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_special_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 36,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "2cbd32c6d7b94961af91133a5978ced3c967f1222d2a203b98bd2531ab0aa7d5",
+            "sites": 704,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x6b0",
+                "end": "0x1cc0",
+                "machine_sha256": "7393883612f9baedeb1b30314288384260ce2376ba5d6f0055c36d1ffafab921",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 561,
+                "offset": "0x7b0",
+                "end": "0x2ab0",
+                "machine_sha256": "6f908f5e073d759996dbe23850894970b864021ae2d72c2c8a14dd7b1f3de03d",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_special_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 39,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "61ae7d4cc5480b10ca855892d0fe16820f8fd693806b1c553b0f07a25ef3d715",
+            "sites": 1080,
+            "inner_mma_loops": [
+              {
+                "sites": 652,
+                "offset": "0x740",
+                "end": "0x2ff0",
+                "machine_sha256": "6701d01e798130424c313a460e5c620b8faf0dfabbb01f3cf0bae62c1d284c70",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 931,
+                "offset": "0x850",
+                "end": "0x4270",
+                "machine_sha256": "a6083ebfef7f5e400ab8ea1c31bd6822b2268072f1d1cff7de62b89951afbccc",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "46b6f947873feb53fc69c8ce300caef22b74da6a57dae597ce0df73aa1fcbf10",
+            "sites": 680,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x660",
+                "end": "0x1c70",
+                "machine_sha256": "8ee8690dead2139d2a4dc3f36f98a906663f7918465c163633f9dd6c3f981745",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 547,
+                "offset": "0x760",
+                "end": "0x2980",
+                "machine_sha256": "05e209151d9804e86fef4187d40d450bf40224ca6036c7c74123ee063019ce92",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "443142f2c637b1014f42b9fed1e18c5dff142ebd35c998b69212fd08d12d5612",
+            "sites": 1056,
+            "inner_mma_loops": [
+              {
+                "sites": 651,
+                "offset": "0x680",
+                "end": "0x2f20",
+                "machine_sha256": "121e29c2958e15ebe329e199af79fc822029952030255065837447ab5d34735a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 921,
+                "offset": "0x790",
+                "end": "0x4110",
+                "machine_sha256": "8a2275236236ff88ddf757df82d36e6bef2a6d5d02e5507c0bed29c13b8947b7",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "projection_special_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "418be5a7a02cb04e6b4a8c72b2042271d4a24b0f898a77598d202da095aabeaf",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_special_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "b6cdd63fce0e10ff7ed72f044a12a8c0c4a4e07312f358c33eac003e21ab4779",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows_padded": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "f0463f83f076c90f07fa528354d89664a4c78b9b83ddcec8e3cfbce53391390f",
+            "sites": 200,
+            "inner_mma_loops": []
+          },
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "5862609509348652a116d597f46fd6f66aa5e2982a74a1752e6b615ef49cff33",
+          "log": "3544d90231dc87d412670ac1afd95059795abe27c8a35bd3d604416eda4c8480",
+          "sass": "8cf9f88e2904c519da03ed690c3a08d4064a6ad396f397bedc5c0692d57ff083"
+        },
+        "wrapper_sha256": "ebea0348a5213e742a9c806b245d908c195e98b49a4d847e9cdf4bfe3569d221"
+      },
+      "tma.sm_90": {
+        "kernels": {
+          "tensor_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 38,
+            "barriers": 1,
+            "shared_bytes": 24592,
+            "machine_sha256": "e2e1e211685954685d9a3bdf9c6e0facea2a54658a39c059d2b59d0de97c663b",
+            "sites": 752,
+            "inner_mma_loops": [
+              {
+                "sites": 426,
+                "offset": "0xb10",
+                "end": "0x25a0",
+                "machine_sha256": "87e8ba703d32bc91b749d16a9ce9c146248e6914760e0e71eca7c29bbf411644",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 35,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "tensor_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 44,
+            "barriers": 1,
+            "shared_bytes": 43024,
+            "machine_sha256": "b4b0c09c4016a3f8183f25d9bb5e6c1127b093fa907cfcac4b0bdfd8cfff168f",
+            "sites": 1120,
+            "inner_mma_loops": [
+              {
+                "sites": 728,
+                "offset": "0xd40",
+                "end": "0x3ab0",
+                "machine_sha256": "8eaa254ced5970fcde8fce83ec1217f88b8cf15e065d9d9bc7ce002d355d8f26",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 51,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_special_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 36,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "2cbd32c6d7b94961af91133a5978ced3c967f1222d2a203b98bd2531ab0aa7d5",
+            "sites": 704,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x6b0",
+                "end": "0x1cc0",
+                "machine_sha256": "7393883612f9baedeb1b30314288384260ce2376ba5d6f0055c36d1ffafab921",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 561,
+                "offset": "0x7b0",
+                "end": "0x2ab0",
+                "machine_sha256": "6f908f5e073d759996dbe23850894970b864021ae2d72c2c8a14dd7b1f3de03d",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_special_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 39,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "61ae7d4cc5480b10ca855892d0fe16820f8fd693806b1c553b0f07a25ef3d715",
+            "sites": 1080,
+            "inner_mma_loops": [
+              {
+                "sites": 652,
+                "offset": "0x740",
+                "end": "0x2ff0",
+                "machine_sha256": "6701d01e798130424c313a460e5c620b8faf0dfabbb01f3cf0bae62c1d284c70",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 931,
+                "offset": "0x850",
+                "end": "0x4270",
+                "machine_sha256": "a6083ebfef7f5e400ab8ea1c31bd6822b2268072f1d1cff7de62b89951afbccc",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "46b6f947873feb53fc69c8ce300caef22b74da6a57dae597ce0df73aa1fcbf10",
+            "sites": 680,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x660",
+                "end": "0x1c70",
+                "machine_sha256": "8ee8690dead2139d2a4dc3f36f98a906663f7918465c163633f9dd6c3f981745",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 547,
+                "offset": "0x760",
+                "end": "0x2980",
+                "machine_sha256": "05e209151d9804e86fef4187d40d450bf40224ca6036c7c74123ee063019ce92",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "443142f2c637b1014f42b9fed1e18c5dff142ebd35c998b69212fd08d12d5612",
+            "sites": 1056,
+            "inner_mma_loops": [
+              {
+                "sites": 651,
+                "offset": "0x680",
+                "end": "0x2f20",
+                "machine_sha256": "121e29c2958e15ebe329e199af79fc822029952030255065837447ab5d34735a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 921,
+                "offset": "0x790",
+                "end": "0x4110",
+                "machine_sha256": "8a2275236236ff88ddf757df82d36e6bef2a6d5d02e5507c0bed29c13b8947b7",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "projection_special_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "418be5a7a02cb04e6b4a8c72b2042271d4a24b0f898a77598d202da095aabeaf",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_special_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "b6cdd63fce0e10ff7ed72f044a12a8c0c4a4e07312f358c33eac003e21ab4779",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows_padded": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "f0463f83f076c90f07fa528354d89664a4c78b9b83ddcec8e3cfbce53391390f",
+            "sites": 200,
+            "inner_mma_loops": []
+          },
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "c7fa8992540cc48a290f263ecdb9d4b026feb3138d2e2870a06df9114c772b17",
+          "log": "d8a231abbbb1ad213059289a4f54f4240f9249822453369ed2b1866b5f7d939c",
+          "sass": "827c1152fd96ae049304a0ae33de2f6a519d78f1408edd75085c52e138ed837c"
+        },
+        "wrapper_sha256": "ebea0348a5213e742a9c806b245d908c195e98b49a4d847e9cdf4bfe3569d221"
+      },
+      "medium.sm_90a": {
+        "kernels": {
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "c25aba6fb997f3a106b078f66f89bc02274482538910b52495356d5622894b1c",
+          "log": "03f9a6c28bb1e5f2e7a92fbe3dfa579784a6638f6998ec5c8edba6b9100d408a",
+          "sass": "8fd1840c6cb800d9181a2810426f3ffdc848fe9b14f932e3f57943eea7debeed"
+        },
+        "wrapper_sha256": "29c407c1f8a575db568dea0340717077ecfe42aff14be17a0380f374cbc1f22e"
+      },
+      "medium.sm_90": {
+        "kernels": {
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "af8c0ec2e44ece0b8561f613c401c0c8828823f0e9d4df2c444473d84a1a029e",
+          "log": "d378ccecd2ff8c1a2930a8224fbdb4279bc13826fe6d5b38838b230e5f0f7a3f",
+          "sass": "d16b55ce2896b4ba4177b2cd2fd74937e55b4e9ee0594d24baf3356e6a0295b4"
+        },
+        "wrapper_sha256": "29c407c1f8a575db568dea0340717077ecfe42aff14be17a0380f374cbc1f22e"
+      }
+    },
+    "new": {
+      "tma.sm_90a": {
+        "kernels": {
+          "tensor_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 38,
+            "barriers": 1,
+            "shared_bytes": 24592,
+            "machine_sha256": "e2e1e211685954685d9a3bdf9c6e0facea2a54658a39c059d2b59d0de97c663b",
+            "sites": 752,
+            "inner_mma_loops": [
+              {
+                "sites": 426,
+                "offset": "0xb10",
+                "end": "0x25a0",
+                "machine_sha256": "87e8ba703d32bc91b749d16a9ce9c146248e6914760e0e71eca7c29bbf411644",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 35,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "tensor_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 44,
+            "barriers": 1,
+            "shared_bytes": 43024,
+            "machine_sha256": "b4b0c09c4016a3f8183f25d9bb5e6c1127b093fa907cfcac4b0bdfd8cfff168f",
+            "sites": 1120,
+            "inner_mma_loops": [
+              {
+                "sites": 728,
+                "offset": "0xd40",
+                "end": "0x3ab0",
+                "machine_sha256": "8eaa254ced5970fcde8fce83ec1217f88b8cf15e065d9d9bc7ce002d355d8f26",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 51,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "multirow_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 55,
+            "barriers": 1,
+            "shared_bytes": 35872,
+            "machine_sha256": "e00fde8d05b4a95e1a3bc284ef911691eaa2d600acca5d1985fab82e48a008b1",
+            "sites": 2840,
+            "inner_mma_loops": [
+              {
+                "sites": 465,
+                "offset": "0x700",
+                "end": "0x2400",
+                "machine_sha256": "230aa2315ee5180f7a6d024e4affc4848c0c375061c4f82654872dfbf6c3f3d6",
+                "interesting_ops": {
+                  "HMMA": 32,
+                  "HMUL2": 64,
+                  "LDS": 80
+                }
+              },
+              {
+                "sites": 429,
+                "offset": "0x3ac0",
+                "end": "0x5580",
+                "machine_sha256": "826a653b0d78030418fd7a61ea89a6ca27f792ef4cad6fda8d54262052cef28a",
+                "interesting_ops": {
+                  "HMMA": 24,
+                  "HMUL2": 64,
+                  "LDS": 64
+                }
+              },
+              {
+                "sites": 395,
+                "offset": "0x66b0",
+                "end": "0x7f50",
+                "machine_sha256": "9de9f121b932cfa8e6b09e2c26fce98d3ac56e7f071cef103dd2ecaea80e8293",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 355,
+                "offset": "0x8b60",
+                "end": "0xa180",
+                "machine_sha256": "6a665dbd0900c84cf309d90aa7757e4fae9f7969f518af62ea072b157c6740fa",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 574,
+                "offset": "0x8c70",
+                "end": "0xb040",
+                "machine_sha256": "4d484d435b43fe5bbb7a162387782a14a6a1e6711fda8b9641e97bfa8b6f16e8",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "multirow_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 53,
+            "barriers": 1,
+            "shared_bytes": 45600,
+            "machine_sha256": "67a1fc25f33b6a9d9c594d947b0adf2652e01f816cf1a9884620dd2f55bee488",
+            "sites": 2088,
+            "inner_mma_loops": [
+              {
+                "sites": 693,
+                "offset": "0x7b0",
+                "end": "0x32f0",
+                "machine_sha256": "bd62d5a546f48eda6ff19fe6fea5f74d4aabbf116e57dd66170f357ae1034fe0",
+                "interesting_ops": {
+                  "HMMA": 32,
+                  "HMUL2": 128,
+                  "LDS": 64
+                }
+              },
+              {
+                "sites": 651,
+                "offset": "0x4610",
+                "end": "0x6eb0",
+                "machine_sha256": "3a023f31ce2d1645ba01882cadd45d6670d8f08bc9ad966a029d4e192cdb4f12",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 931,
+                "offset": "0x4720",
+                "end": "0x8140",
+                "machine_sha256": "03ae6cd9a3738071014f2e198df9f697d81ed73a8cc4f49a182b47a1ce97314e",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "46b6f947873feb53fc69c8ce300caef22b74da6a57dae597ce0df73aa1fcbf10",
+            "sites": 680,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x660",
+                "end": "0x1c70",
+                "machine_sha256": "8ee8690dead2139d2a4dc3f36f98a906663f7918465c163633f9dd6c3f981745",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 547,
+                "offset": "0x760",
+                "end": "0x2980",
+                "machine_sha256": "05e209151d9804e86fef4187d40d450bf40224ca6036c7c74123ee063019ce92",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "443142f2c637b1014f42b9fed1e18c5dff142ebd35c998b69212fd08d12d5612",
+            "sites": 1056,
+            "inner_mma_loops": [
+              {
+                "sites": 651,
+                "offset": "0x680",
+                "end": "0x2f20",
+                "machine_sha256": "121e29c2958e15ebe329e199af79fc822029952030255065837447ab5d34735a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 921,
+                "offset": "0x790",
+                "end": "0x4110",
+                "machine_sha256": "8a2275236236ff88ddf757df82d36e6bef2a6d5d02e5507c0bed29c13b8947b7",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "b122a02d5fdb2e5299f79fa4e4ebd4ace469fd843d72bbea092ac06f7497fac3",
+          "log": "27e3a26cbf8d04d5e7aed78191567f6f7a29a6d88f2b8deac23b390a62dc6998",
+          "sass": "9dfeede0c2280f98ef395be7f6bf4ffe60c7d91e025a97c5ddf59b8980be16ef"
+        },
+        "wrapper_sha256": "ebea0348a5213e742a9c806b245d908c195e98b49a4d847e9cdf4bfe3569d221"
+      },
+      "tma.sm_90": {
+        "kernels": {
+          "tensor_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 38,
+            "barriers": 1,
+            "shared_bytes": 24592,
+            "machine_sha256": "e2e1e211685954685d9a3bdf9c6e0facea2a54658a39c059d2b59d0de97c663b",
+            "sites": 752,
+            "inner_mma_loops": [
+              {
+                "sites": 426,
+                "offset": "0xb10",
+                "end": "0x25a0",
+                "machine_sha256": "87e8ba703d32bc91b749d16a9ce9c146248e6914760e0e71eca7c29bbf411644",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 35,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "tensor_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 44,
+            "barriers": 1,
+            "shared_bytes": 43024,
+            "machine_sha256": "b4b0c09c4016a3f8183f25d9bb5e6c1127b093fa907cfcac4b0bdfd8cfff168f",
+            "sites": 1120,
+            "inner_mma_loops": [
+              {
+                "sites": 728,
+                "offset": "0xd40",
+                "end": "0x3ab0",
+                "machine_sha256": "8eaa254ced5970fcde8fce83ec1217f88b8cf15e065d9d9bc7ce002d355d8f26",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 51,
+                  "LDGSTS": 1,
+                  "BAR": 1,
+                  "DEPBAR": 1,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "multirow_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 55,
+            "barriers": 1,
+            "shared_bytes": 35872,
+            "machine_sha256": "e00fde8d05b4a95e1a3bc284ef911691eaa2d600acca5d1985fab82e48a008b1",
+            "sites": 2840,
+            "inner_mma_loops": [
+              {
+                "sites": 465,
+                "offset": "0x700",
+                "end": "0x2400",
+                "machine_sha256": "230aa2315ee5180f7a6d024e4affc4848c0c375061c4f82654872dfbf6c3f3d6",
+                "interesting_ops": {
+                  "HMMA": 32,
+                  "HMUL2": 64,
+                  "LDS": 80
+                }
+              },
+              {
+                "sites": 429,
+                "offset": "0x3ac0",
+                "end": "0x5580",
+                "machine_sha256": "826a653b0d78030418fd7a61ea89a6ca27f792ef4cad6fda8d54262052cef28a",
+                "interesting_ops": {
+                  "HMMA": 24,
+                  "HMUL2": 64,
+                  "LDS": 64
+                }
+              },
+              {
+                "sites": 395,
+                "offset": "0x66b0",
+                "end": "0x7f50",
+                "machine_sha256": "9de9f121b932cfa8e6b09e2c26fce98d3ac56e7f071cef103dd2ecaea80e8293",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 355,
+                "offset": "0x8b60",
+                "end": "0xa180",
+                "machine_sha256": "6a665dbd0900c84cf309d90aa7757e4fae9f7969f518af62ea072b157c6740fa",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 574,
+                "offset": "0x8c70",
+                "end": "0xb040",
+                "machine_sha256": "4d484d435b43fe5bbb7a162387782a14a6a1e6711fda8b9641e97bfa8b6f16e8",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "multirow_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 53,
+            "barriers": 1,
+            "shared_bytes": 45600,
+            "machine_sha256": "67a1fc25f33b6a9d9c594d947b0adf2652e01f816cf1a9884620dd2f55bee488",
+            "sites": 2088,
+            "inner_mma_loops": [
+              {
+                "sites": 693,
+                "offset": "0x7b0",
+                "end": "0x32f0",
+                "machine_sha256": "bd62d5a546f48eda6ff19fe6fea5f74d4aabbf116e57dd66170f357ae1034fe0",
+                "interesting_ops": {
+                  "HMMA": 32,
+                  "HMUL2": 128,
+                  "LDS": 64
+                }
+              },
+              {
+                "sites": 651,
+                "offset": "0x4610",
+                "end": "0x6eb0",
+                "machine_sha256": "3a023f31ce2d1645ba01882cadd45d6670d8f08bc9ad966a029d4e192cdb4f12",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 931,
+                "offset": "0x4720",
+                "end": "0x8140",
+                "machine_sha256": "03ae6cd9a3738071014f2e198df9f697d81ed73a8cc4f49a182b47a1ce97314e",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "streamed_projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 34224,
+            "machine_sha256": "46b6f947873feb53fc69c8ce300caef22b74da6a57dae597ce0df73aa1fcbf10",
+            "sites": 680,
+            "inner_mma_loops": [
+              {
+                "sites": 354,
+                "offset": "0x660",
+                "end": "0x1c70",
+                "machine_sha256": "8ee8690dead2139d2a4dc3f36f98a906663f7918465c163633f9dd6c3f981745",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 32
+                }
+              },
+              {
+                "sites": 547,
+                "offset": "0x760",
+                "end": "0x2980",
+                "machine_sha256": "05e209151d9804e86fef4187d40d450bf40224ca6036c7c74123ee063019ce92",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6,
+                  "LDS": 32,
+                  "UTMALDG": 2
+                }
+              }
+            ]
+          },
+          "streamed_projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 47,
+            "barriers": 1,
+            "shared_bytes": 41248,
+            "machine_sha256": "443142f2c637b1014f42b9fed1e18c5dff142ebd35c998b69212fd08d12d5612",
+            "sites": 1056,
+            "inner_mma_loops": [
+              {
+                "sites": 651,
+                "offset": "0x680",
+                "end": "0x2f20",
+                "machine_sha256": "121e29c2958e15ebe329e199af79fc822029952030255065837447ab5d34735a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 48
+                }
+              },
+              {
+                "sites": 921,
+                "offset": "0x790",
+                "end": "0x4110",
+                "machine_sha256": "8a2275236236ff88ddf757df82d36e6bef2a6d5d02e5507c0bed29c13b8947b7",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDG": 6,
+                  "LDS": 48,
+                  "UTMALDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "51e01fcf45314a8c943ce933083e8f46238700208cdce1d74e77649e806c793a",
+          "log": "0c8fd996e3e88c5dc018fa6c1f49ec1bcc788792a226a12b40e3aa8d4a0002ba",
+          "sass": "bc26f6faa20016ececab3996efa81733654be7e7787f8738e1864ce02d0918cd"
+        },
+        "wrapper_sha256": "ebea0348a5213e742a9c806b245d908c195e98b49a4d847e9cdf4bfe3569d221"
+      },
+      "medium.sm_90a": {
+        "kernels": {
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "757afe9690875b9aac5f1ca56e2f972ea058c29c61ae3e7c39e08b60388911f4",
+          "log": "9a1c3ffee9b0ef0ecf85530898a1448affa939a8462b58a5f8299f1196d6d94a",
+          "sass": "8fd1840c6cb800d9181a2810426f3ffdc848fe9b14f932e3f57943eea7debeed"
+        },
+        "wrapper_sha256": "29c407c1f8a575db568dea0340717077ecfe42aff14be17a0380f374cbc1f22e"
+      },
+      "medium.sm_90": {
+        "kernels": {
+          "projection_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 118,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd",
+            "sites": 3008,
+            "inner_mma_loops": [
+              {
+                "sites": 200,
+                "offset": "0xf80",
+                "end": "0x1bf0",
+                "machine_sha256": "c0b3ad1d1606f75276388d79f10b3bc8af28d80008f0e00363c12ace5ff6046a",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 32,
+                  "LDG": 10
+                }
+              },
+              {
+                "sites": 177,
+                "offset": "0x6b40",
+                "end": "0x7640",
+                "machine_sha256": "985f7dec26720ab3aa72a0ca3946486982b4d31299b7112d32e192a64765b5da",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 32,
+                  "LDG": 6
+                }
+              },
+              {
+                "sites": 165,
+                "offset": "0x9e60",
+                "end": "0xa8a0",
+                "machine_sha256": "815b77fe4291750d45e882f594556ac6f21a0d5b5870cf818f83de12bbe54cf8",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 121,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602",
+            "sites": 2384,
+            "inner_mma_loops": [
+              {
+                "sites": 330,
+                "offset": "0xb30",
+                "end": "0x1fc0",
+                "machine_sha256": "4cf7976d94a32b615ff612ab0b8d11562ab4c768363afdc9c56631c7899263bb",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 64,
+                  "LDG": 8
+                }
+              },
+              {
+                "sites": 318,
+                "offset": "0x6140",
+                "end": "0x7510",
+                "machine_sha256": "4d704a03693d2f29f700417eaf6731688139624b88c56346885defd338f7aa5a",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "plan_rows": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 23,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a",
+            "sites": 192,
+            "inner_mma_loops": []
+          },
+          "projection_kernel_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 56,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c",
+            "sites": 976,
+            "inner_mma_loops": [
+              {
+                "sites": 189,
+                "offset": "0x9a0",
+                "end": "0x1560",
+                "machine_sha256": "cd4f3947dce964c062b282ec473df5945aa071cadc986154c201a8d29551b998",
+                "interesting_ops": {
+                  "HMMA": 4,
+                  "HMUL2": 32,
+                  "LDG": 4
+                }
+              }
+            ]
+          },
+          "projection_channels_W2": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 58,
+            "barriers": 1,
+            "shared_bytes": 24576,
+            "machine_sha256": "5a1074cd34ddd355e5aff40c254a29ce04ee5ab4746284bb756b3ff27d0cbdfd",
+            "sites": 1272,
+            "inner_mma_loops": [
+              {
+                "sites": 681,
+                "offset": "0x1e10",
+                "end": "0x4890",
+                "machine_sha256": "08e5a7ae558807bc0e9178f89b474faf3d119ad6827c52e8d2a2586d8b63e834",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDS": 59,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "projection_kernel_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 78,
+            "barriers": 0,
+            "shared_bytes": 0,
+            "machine_sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d",
+            "sites": 1320,
+            "inner_mma_loops": [
+              {
+                "sites": 327,
+                "offset": "0x9f0",
+                "end": "0x1e50",
+                "machine_sha256": "4dd7fcfda50d3518cb03388f44db6ac3ae72e52cbee05f7692c674518331d5e3",
+                "interesting_ops": {
+                  "HMMA": 8,
+                  "HMUL2": 64,
+                  "LDG": 6
+                }
+              }
+            ]
+          },
+          "projection_channels_W13": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 57,
+            "barriers": 1,
+            "shared_bytes": 43008,
+            "machine_sha256": "f43cba405c3f637e202d7aeeddfe495918b129779851b8f1165e539bc1b2b241",
+            "sites": 1648,
+            "inner_mma_loops": [
+              {
+                "sites": 987,
+                "offset": "0x1d90",
+                "end": "0x5b30",
+                "machine_sha256": "9ef2e91b7797767d67da1b96e069204444541bd9fc147cc80286356b9e24636f",
+                "interesting_ops": {
+                  "HMMA": 16,
+                  "HMUL2": 128,
+                  "LDS": 75,
+                  "LDGSTS": 15,
+                  "BAR": 1,
+                  "DEPBAR": 1
+                }
+              }
+            ]
+          },
+          "plan_routes": {
+            "stack_bytes": 0,
+            "spill_store_bytes": 0,
+            "spill_load_bytes": 0,
+            "registers": 32,
+            "barriers": 1,
+            "shared_bytes": 16,
+            "machine_sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f",
+            "sites": 440,
+            "inner_mma_loops": []
+          }
+        },
+        "file_sha256": {
+          "o": "12a4965772082a6d49c08c3912a1190d20cb2830cfa72190a7882e62cde81e1c",
+          "log": "3422d5d28638c696cef1472b1ecdfcd0d636818ff5ac9b62cfbf0f087f605a0d",
+          "sass": "d16b55ce2896b4ba4177b2cd2fd74937e55b4e9ee0594d24baf3356e6a0295b4"
+        },
+        "wrapper_sha256": "29c407c1f8a575db568dea0340717077ecfe42aff14be17a0380f374cbc1f22e"
+      }
+    }
+  },
+  "retained": {
+    "tma.sm_90a": {
+      "machine_identical": {
+        "plan_routes": true,
+        "plan_rows": true,
+        "projection_W13": true,
+        "projection_W2": true,
+        "projection_channels_W13": true,
+        "projection_channels_W2": true,
+        "projection_kernel_W13": true,
+        "projection_kernel_W2": true,
+        "streamed_projection_W13": true,
+        "streamed_projection_W2": true,
+        "tensor_projection_W13": true,
+        "tensor_projection_W2": true
+      },
+      "removed_specializations": [
+        "plan_rows_padded",
+        "projection_special_W13",
+        "projection_special_W2",
+        "streamed_projection_special_W13",
+        "streamed_projection_special_W2"
+      ],
+      "added_specializations": [
+        "multirow_W13",
+        "multirow_W2"
+      ]
+    },
+    "tma.sm_90": {
+      "machine_identical": {
+        "plan_routes": true,
+        "plan_rows": true,
+        "projection_W13": true,
+        "projection_W2": true,
+        "projection_channels_W13": true,
+        "projection_channels_W2": true,
+        "projection_kernel_W13": true,
+        "projection_kernel_W2": true,
+        "streamed_projection_W13": true,
+        "streamed_projection_W2": true,
+        "tensor_projection_W13": true,
+        "tensor_projection_W2": true
+      },
+      "removed_specializations": [
+        "plan_rows_padded",
+        "projection_special_W13",
+        "projection_special_W2",
+        "streamed_projection_special_W13",
+        "streamed_projection_special_W2"
+      ],
+      "added_specializations": [
+        "multirow_W13",
+        "multirow_W2"
+      ]
+    },
+    "medium.sm_90a": {
+      "machine_identical": {
+        "plan_routes": true,
+        "plan_rows": true,
+        "projection_W13": true,
+        "projection_W2": true,
+        "projection_channels_W13": true,
+        "projection_channels_W2": true,
+        "projection_kernel_W13": true,
+        "projection_kernel_W2": true
+      },
+      "removed_specializations": [],
+      "added_specializations": []
+    },
+    "medium.sm_90": {
+      "machine_identical": {
+        "plan_routes": true,
+        "plan_rows": true,
+        "projection_W13": true,
+        "projection_W2": true,
+        "projection_channels_W13": true,
+        "projection_channels_W2": true,
+        "projection_kernel_W13": true,
+        "projection_kernel_W2": true
+      },
+      "removed_specializations": [],
+      "added_specializations": []
+    }
+  }
+}

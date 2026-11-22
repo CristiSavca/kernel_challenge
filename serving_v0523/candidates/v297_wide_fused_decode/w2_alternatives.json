@@ -1,0 +1,97 @@
+{
+  "trials": 35,
+  "representative": {
+    "images/w2_m16_n256": {
+      "source_sha256": "3a92c59588816073e40feaeda584d1004556cbcdf249b573b285cb7a32e9c5d0",
+      "cubin_sha256": "654e283106b8991df7a4dbe1730a71c4917ba9e818f1c9451709d9b884ebcbd5",
+      "stack_store_load": [
+        [
+          88,
+          536,
+          336
+        ]
+      ],
+      "static_ldl": 80,
+      "static_stl": 130,
+      "wg_waits": 128,
+      "gmma": 128
+    },
+    "images/w2_m24_n256": {
+      "source_sha256": "023f384a7dcaf3dd9be1a25f2e38dd6a7dd3418e0262761cf6a12f1d83e9d16b",
+      "cubin_sha256": "d2aa7801e3438f0507305044cb7981511ebc517832eb0d121dacdb56d8a945a0",
+      "stack_store_load": [
+        [
+          208,
+          1660,
+          1116
+        ]
+      ],
+      "static_ldl": 254,
+      "static_stl": 390,
+      "wg_waits": 192,
+      "gmma": 192
+    },
+    "sweep/three_16_96": {
+      "source_sha256": "8e58eae54949092e6313c6cd449837d8763796ba469a123fb66b076975e1bfd1",
+      "cubin_sha256": "950311d1ecb4fce65efcc5cbae121d51502deedbace972b5d2312c01990872b0",
+      "stack_store_load": [
+        [
+          80,
+          388,
+          228
+        ]
+      ],
+      "static_ldl": 53,
+      "static_stl": 93,
+      "wg_waits": 96,
+      "gmma": 96
+    },
+    "sweep/three_24_96": {
+      "source_sha256": "5256537a307d404ae1f3439c992200256d8c5eda6c898d3f2ec80ed5d36876e4",
+      "cubin_sha256": "590bc7a904b778fea8a54375cd2f91bf3145462ebc98b3503c0667688e0dc524",
+      "stack_store_load": [
+        [
+          200,
+          1228,
+          840
+        ]
+      ],
+      "static_ldl": 189,
+      "static_stl": 286,
+      "wg_waits": 144,
+      "gmma": 144
+    },
+    "q/three_16_single112": {
+      "source_sha256": "1a4e5855fb5f131ef198cd9773dfe990fc35bfc0315426757de5e75956cf17b1",
+      "cubin_sha256": "1d22475b18bd8cbf12850bb80c07d9911e01fd263eac33d60e88ab56c6f5f923",
+      "stack_store_load": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "static_ldl": 0,
+      "static_stl": 0,
+      "wg_waits": 24,
+      "gmma": 96
+    },
+    "q/three_24_single112": {
+      "source_sha256": "dcab1ce00a42bde0c2e395cd34c711ed4223833a26cdcd99c0a1823c148cd640",
+      "cubin_sha256": "a0d35d784ac9995f82707c329c827938f609f06404b4637c7e1d0156c9f61e73",
+      "stack_store_load": [
+        [
+          48,
+          136,
+          136
+        ]
+      ],
+      "static_ldl": 34,
+      "static_stl": 34,
+      "wg_waits": 36,
+      "gmma": 144
+    }
+  },
+  "selection": "The first two use four output bands with paired K16 and four stages. The next two use three stages without moving conversion. The last two split the register budget 32/112 and wait after each K16 without deferring decode. Final deferred four-band conversion and explicit fences are verified separately in w2_sass.json.",
+  "physical_h200": false
+}

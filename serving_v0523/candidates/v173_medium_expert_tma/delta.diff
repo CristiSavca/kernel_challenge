@@ -1,0 +1,223 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+index cfad8f1..d029130 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+@@ -7,6 +7,7 @@ using namespace muse_route_pair;
+ 
+ // An entire warp owns one compact list. Negative IDs and other experts do
+ // not contribute. The published count bounds all accesses on graph replay.
++template <bool PadSparse = false>
+ __global__ void plan_rows(const int32_t* ids, int32_t* plan, uint32_t slots) {
+   const uint32_t lane = threadIdx.x, expert = blockIdx.x;
+   int32_t* list = plan + size_t(expert) * (slots + 1);
+@@ -18,6 +19,9 @@ __global__ void plan_rows(const int32_t* ids, int32_t* plan, uint32_t slots) {
+     if (live) list[1 + count + __popc(mask & ((1u << lane) - 1))] = index;
+     count += __popc(mask);
+   }
++  if constexpr (PadSparse) {
++    if (lane >= count && lane < kRows && lane < slots) list[1 + lane] = -1;
++  }
+   if (lane == 0) list[0] = count;
+ }
+ 
+@@ -98,11 +102,14 @@ SGL_DEVICE void project_rows(const Projection& p, uint32_t expert, const int32_t
+   }
+ }
+ 
+-template <bool Gate>
++template <bool Gate, bool SkipSparse = false>
+ __global__ __launch_bounds__(32 * kWarps) void projection(const __grid_constant__ Projection p, uint32_t stride) {
+   const uint32_t expert = blockIdx.y;
+   const int32_t* list = p.plan + size_t(expert) * stride;
+   const uint32_t rows = list[0];
++  if constexpr (SkipSparse) {
++    if (rows <= kRows) return;
++  }
+   const uint32_t column = (blockIdx.x * kWarps + threadIdx.x / 32) * 64;
+   // W13 owns both gate and up accumulators. A 16-row cap keeps its register
+   // footprint close to W2's 32-row case even when few expert rows are live.
+@@ -128,6 +135,18 @@ struct MuseMediumRoutePair {
+                   tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
+                   tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
+                   tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan) {
++    run_with<false>([](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
++      using namespace muse_medium_route_pair;
++      host::LaunchKernel(dim3(up.output_width / (64 * kWarps), experts), 32 * kWarps, dev)(projection<true>, up, stride);
++      host::LaunchKernel(dim3(out.output_width / (64 * kWarps), experts), 32 * kWarps, dev)(projection<false>, out, stride);
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan);
++  }
++
++  template <bool PadSparse, class Launcher>
++  static void run_with(const Launcher& launch, tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan) {
+     using namespace host;
+     using namespace muse_medium_route_pair;
+     auto m = SymbolicSize{"tokens"}, h = SymbolicSize{"hidden"}, top = SymbolicSize{"top_k"};
+@@ -156,7 +175,7 @@ struct MuseMediumRoutePair {
+                  && wg.unwrap() == 4 * inner && wd.unwrap() == 2 * hidden, "incompatible expert banks");
+     auto* work = static_cast<int32_t*>(plan.data_ptr());
+     LaunchKernel(uint32_t(experts), 32, dev.unwrap())(
+-        plan_rows, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots));
++        plan_rows<PadSparse>, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots));
+     const Projection up{
+         static_cast<const bf16_t*>(inputs.data_ptr()), static_cast<bf16_t*>(active.data_ptr()),
+         {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
+@@ -165,10 +184,7 @@ struct MuseMediumRoutePair {
+         static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
+         {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
+         static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
+-    LaunchKernel(dim3(inner / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
+-        projection<true>, up, uint32_t(slots + 1));
+-    LaunchKernel(dim3(hidden / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
+-        projection<false>, out, uint32_t(slots + 1));
++    launch(up, out, uint32_t(experts), uint32_t(slots + 1), dev.unwrap());
+   }
+ };
+ }  // namespace sglang
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+index c0d4c4d..231ba91 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+@@ -1,4 +1,4 @@
+-#include "expert_route_pair.cuh"
++#include "expert_medium_route_pair.cuh"
+ #include <cuda.h>
+ #include <cudaTypedefs.h>
+ #include <cstring>
+@@ -127,13 +127,18 @@ SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Ga
+   }
+ }
+ 
+-template <bool Gate>
++template <bool Gate, bool ExpertList = false>
+ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+-    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps) {
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps, uint32_t stride = 0) {
+   constexpr uint32_t stages = Gate ? 2 : 3;
+   __shared__ StreamTile<Gate> ring[stages];
+   __shared__ uint64_t full[stages], empty[stages];
+-  const uint32_t jobs = p.plan[0];
++  const uint32_t jobs = ExpertList ? gridDim.y : uint32_t(p.plan[0]);
++  if constexpr (ExpertList) {
++    // The companion grid handles the whole expert if it has more than one eight-row tile.
++    const uint32_t rows = p.plan[size_t(blockIdx.y) * stride];
++    if (rows == 0 || rows > kRows) return;
++  }
+   if (blockIdx.y >= jobs) return;
+   const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+   if (threadIdx.x < stages) {
+@@ -146,8 +151,8 @@ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+   const uint32_t column = blockIdx.x * 128, chunks = p.input_width / (16 * kKSteps);
+   uint32_t sequence = 0;
+   for (uint32_t j = blockIdx.y; j < jobs; j += gridDim.y) {
+-    const int32_t* job = p.plan + 1 + j * (kRows + 1);
+-    const uint32_t expert = job[0];
++    const int32_t* job = ExpertList ? p.plan + size_t(j) * stride : p.plan + 1 + j * (kRows + 1);
++    const uint32_t expert = ExpertList ? j : uint32_t(job[0]);
+     if (warp == kChannelWarps) {
+       const int32_t slot = lane < kRows ? job[1 + lane] : -1;
+       const uint32_t live = __popc(__ballot_sync(0xffffffffu, slot >= 0));
+@@ -197,7 +202,7 @@ inline void launch_stream(const Projection& p, const BankMaps& maps, uint32_t gr
+   const uint32_t columns = p.output_width / 128;
+   const uint32_t lanes = resident / columns;
+   if (groups < lanes) {
+-    host::LaunchKernel(dim3(columns, std::min(bound, lanes)), 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate>, p, maps);
++    host::LaunchKernel(dim3(columns, std::min(bound, lanes)), 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate>, p, maps, 0u);
+   } else {
+     host::LaunchKernel(dim3(columns, groups), 32 * kChannelWarps, dev)(tensor_projection<Gate>, p, maps);
+   }
+@@ -233,6 +238,18 @@ inline void check_map_storage(tvm::ffi::TensorView maps) {
+   host::TensorMatcher({int64_t(2 * sizeof(BankMaps) + 2 * sizeof(uint32_t))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(maps);
+ }
+ 
++template <bool Gate>
++inline void launch_medium(const Projection& p, const BankMaps& maps, uint32_t experts, uint32_t stride, DLDevice dev) {
++  const dim3 grid(p.output_width / 128, experts);
++  static_assert(kWarps * 64 == 128);
++  if (aligned_packed_projection(p) && stride > kRows) {
++    host::LaunchKernel(grid, 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate, true>, p, maps, stride);
++    host::LaunchKernel(grid, 32 * kWarps, dev)(muse_medium_route_pair::projection<Gate, true>, p, stride);
++  } else {
++    host::LaunchKernel(grid, 32 * kWarps, dev)(muse_medium_route_pair::projection<Gate>, p, stride);
++  }
++}
++
+ }  // namespace muse_tma_route
+ 
+ struct MuseTmaRoutePair {
+@@ -251,6 +268,21 @@ struct MuseTmaRoutePair {
+     return true;
+   }
+ 
++  static void run_medium(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan,
++                  tvm::ffi::TensorView maps) {
++    using namespace muse_tma_route;
++    check_map_storage(maps);
++    BankMaps encoded[2];
++    std::memcpy(encoded, maps.data_ptr(), sizeof(encoded));
++    MuseMediumRoutePair::run_with<true>([&](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
++      launch_medium<true>(up, encoded[0], experts, stride, dev);
++      launch_medium<false>(out, encoded[1], experts, stride, dev);
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan);
++  }
++
+   static void run(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
+                   tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
+                   tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 2b63bc5..df3fc2f 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -44,7 +44,11 @@ def _tma_route_pair_module():
+         return load_jit(
+             "muse_tma_route_pair",
+             cuda_files=["muse_spark/expert_tma_route_pair.cuh"],
+-            cuda_wrappers=[("prepare", "MuseTmaRoutePair::prepare"), ("run", "MuseTmaRoutePair::run")],
++            cuda_wrappers=[
++                ("prepare", "MuseTmaRoutePair::prepare"),
++                ("run", "MuseTmaRoutePair::run"),
++                ("run_medium", "MuseTmaRoutePair::run_medium"),
++            ],
+             extra_cuda_cflags=get_activation_cuda_cflags(),
+         )
+     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+@@ -309,12 +313,20 @@ def humming_expert_outputs(
+         activations = hidden_states.new_empty((slots, inner))
+         outputs = hidden_states.new_empty((slots, hidden_size))
+         experts = layer.num_local_experts
++        route = getattr(layer, "humming_route_maps", None)
++        maps_valid = route is not None and route[2] == tuple((b.data_ptr(), b.shape) for b in (
++            layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale,
++        ))
+         if medium:
+             layout = local_ids.new_empty((experts, slots + 1))
+-            _medium_route_pair_module().run(
++            if maps_valid:
++                launch, extra = route[0].run_medium, (route[1],)
++            else:
++                launch, extra = _medium_route_pair_module().run, ()
++            launch(
+                 hidden_states, local_ids, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
+                 layer.w13_global_scale, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
+-                layer.w2_global_scale, activations, outputs, layout,
++                layer.w2_global_scale, activations, outputs, layout, *extra,
+             )
+             return outputs.view(num_tokens, topk, hidden_size), local_ids
+         used = min(experts, slots)
+@@ -324,10 +336,7 @@ def humming_expert_outputs(
+         plan = local_ids.new_empty(1 + 9 * max_tiles)
+         expected = (slots * experts + layer.global_num_experts - 1) // layer.global_num_experts
+         groups = max(1, min(used, expected))
+-        route = getattr(layer, "humming_route_maps", None)
+-        if route is not None and route[2] == tuple((b.data_ptr(), b.shape) for b in (
+-            layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale,
+-        )):
++        if maps_valid:
+             dispatch, extra = route[0], (route[1],)
+         else:
+             dispatch, extra = _route_pair_module(), ()

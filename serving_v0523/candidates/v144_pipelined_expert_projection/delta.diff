@@ -1,0 +1,104 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index aecdc40..1501956 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -32,17 +32,28 @@ struct Bank {
+   const uint8_t* scale;
+ };
+ 
+-SGL_DEVICE void contract(
+-    float4 (&out)[4], const Bank bank, size_t base, uint32_t low_values, uint32_t high_values) {
++using Words = AlignedVector<uint32_t, 4>;
++using ScaleWords = AlignedVector<uint32_t, 2>;
++
++struct Fragment {
++  Words w;
++  ScaleWords scales;
++};
++
++SGL_DEVICE Fragment fetch_fragment(const Bank bank, size_t base) {
+   const uint32_t lane = threadIdx.x % 32;
+-  using Words = AlignedVector<uint32_t, 4>;
+-  using Scales = AlignedVector<uint16_t, 4>;
+-  const auto w = *reinterpret_cast<const Words*>(bank.weight + 2 * base + lane * 4);
+-  const auto s = *reinterpret_cast<const Scales*>(bank.scale + base + (lane / 4) * 8);
++  return {*reinterpret_cast<const Words*>(bank.weight + 2 * base + lane * 4),
++          *reinterpret_cast<const ScaleWords*>(bank.scale + base + (lane / 4) * 8)};
++}
++
++SGL_DEVICE void contract(float4 (&out)[4], const Fragment& frag, uint32_t low_values, uint32_t high_values) {
++  const auto& w = frag.w;
++  const auto& scales = frag.scales;
+ #pragma unroll
+   for (uint32_t part = 0; part < 4; ++part) {
+-    uint32_t low = broadcast_scale(s[part] & 255);
+-    uint32_t high = broadcast_scale(s[part] >> 8);
++    uint32_t packed = scales[part / 2] >> (16 * (part % 2));
++    uint32_t low = broadcast_scale(packed & 255);
++    uint32_t high = broadcast_scale((packed >> 8) & 255);
+     uint32_t a0 = operand_pair(w[part], low, 0), a1 = operand_pair(w[part], high, 1);
+     uint32_t a2 = operand_pair(w[part], low, 2), a3 = operand_pair(w[part], high, 3);
+     auto& d = out[part];
+@@ -108,6 +119,23 @@ struct Projection {
+   uint32_t top_k;
+ };
+ 
++struct Slice {
++  Fragment first, second;
++  uint32_t lo, hi;
++};
++
++template <bool Gate>
++SGL_DEVICE Slice fetch_slice(const Projection& p, const bf16_t* input, bool live, size_t base, uint32_t k) {
++  Slice t{};
++  t.first = fetch_fragment(p.bank, base);
++  if constexpr (Gate) t.second = fetch_fragment(p.bank, base + p.output_width);
++  if (live) {
++    t.lo = *reinterpret_cast<const uint32_t*>(input + k);
++    t.hi = *reinterpret_cast<const uint32_t*>(input + k + 8);
++  }
++  return t;
++}
++
+ template <bool Gate>
+ SGL_DEVICE void project(const Projection& p, const int32_t* job, uint32_t column) {
+   const uint32_t lane = threadIdx.x % 32;
+@@ -117,15 +145,29 @@ SGL_DEVICE void project(const Projection& p, const int32_t* job, uint32_t column
+   const bf16_t* input = p.inputs + size_t(input_row) * p.input_width + (lane % 4) * 2;
+   const uint32_t stored_width = Gate ? 2 * p.output_width : p.output_width;
+   float4 first[4] = {}, second[4] = {};
+-  for (uint32_t k = 0; k < p.input_width; k += 16) {
+-    uint32_t lo = 0, hi = 0;
+-    if (input_slot >= 0) {
+-      lo = *reinterpret_cast<const uint32_t*>(input + k);
+-      hi = *reinterpret_cast<const uint32_t*>(input + k + 8);
+-    }
+-    const size_t base = (size_t(expert) * (p.input_width / 16) + k / 16) * stored_width + column;
+-    contract(first, p.bank, base, lo, hi);
+-    if constexpr (Gate) contract(second, p.bank, base + p.output_width, lo, hi);
++  // The host validates both K dimensions as positive multiples of 128.
++  // Issue successor loads before consuming the current packed weights.
++  constexpr uint32_t ahead = Gate ? 1 : 2;
++  const uint32_t tiles = p.input_width / 16;
++  const size_t start = size_t(expert) * tiles * stored_width + column;
++  Slice window[ahead];
++#pragma unroll
++  for (uint32_t i = 0; i < ahead; ++i)
++    window[i] = fetch_slice<Gate>(p, input, input_slot >= 0, start + size_t(i) * stored_width, 16 * i);
++  for (uint32_t next = ahead; next < tiles; ++next) {
++    const Slice future = fetch_slice<Gate>(p, input, input_slot >= 0, start + size_t(next) * stored_width, 16 * next);
++    const Slice& cur = window[0];
++    contract(first, cur.first, cur.lo, cur.hi);
++    if constexpr (Gate) contract(second, cur.second, cur.lo, cur.hi);
++#pragma unroll
++    for (uint32_t i = 1; i < ahead; ++i) window[i - 1] = window[i];
++    window[ahead - 1] = future;
++  }
++#pragma unroll
++  for (uint32_t i = 0; i < ahead; ++i) {
++    const Slice& cur = window[i];
++    contract(first, cur.first, cur.lo, cur.hi);
++    if constexpr (Gate) contract(second, cur.second, cur.lo, cur.hi);
+   }
+   const float scale = cast<float>(p.global[expert]);
+ #pragma unroll

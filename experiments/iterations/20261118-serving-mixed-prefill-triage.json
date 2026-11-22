@@ -1,0 +1,67 @@
+{
+  "source": "experiments/modal_node/20261113T204343Z-bench",
+  "parent": "V41 with 24 GB replica HiCache",
+  "rows": [
+    {
+      "concurrency": 1,
+      "prefills": 54,
+      "with_existing_decode": 0,
+      "existing_request_prefill_pairs": 0,
+      "output_tokens": 9724,
+      "percent_output_in_one_token_mixed": 0.0,
+      "implied_percent_if_four_correct": 0.0,
+      "time_fraction": {
+        "all_before_first_token": 0.49386,
+        "all_cold": 0.32675,
+        "all_after_first_token": 0.50612,
+        "mixed": 0.0
+      }
+    },
+    {
+      "concurrency": 4,
+      "prefills": 127,
+      "with_existing_decode": 112,
+      "existing_request_prefill_pairs": 271,
+      "output_tokens": 21774,
+      "percent_output_in_one_token_mixed": 1.24,
+      "implied_percent_if_four_correct": 4.98,
+      "time_fraction": {
+        "all_before_first_token": 0.51546,
+        "all_cold": 0.49679,
+        "mixed": 0.23377,
+        "all_after_first_token": 0.25076
+      }
+    },
+    {
+      "concurrency": 16,
+      "prefills": 241,
+      "with_existing_decode": 238,
+      "existing_request_prefill_pairs": 2769,
+      "output_tokens": 45027,
+      "percent_output_in_one_token_mixed": 6.15,
+      "implied_percent_if_four_correct": 24.6,
+      "time_fraction": {
+        "all_before_first_token": 0.64631,
+        "all_cold": 0.64631,
+        "mixed": 0.28601,
+        "all_after_first_token": 0.06768
+      }
+    },
+    {
+      "concurrency": 32,
+      "prefills": 351,
+      "with_existing_decode": 347,
+      "existing_request_prefill_pairs": 7405,
+      "output_tokens": 94370,
+      "percent_output_in_one_token_mixed": 7.85,
+      "implied_percent_if_four_correct": 31.39,
+      "time_fraction": {
+        "all_before_first_token": 0.69893,
+        "all_cold": 0.69893,
+        "mixed": 0.27825,
+        "all_after_first_token": 0.02282
+      }
+    }
+  ],
+  "assumptions": "Historical admissions fixed. Four correct is a scenario from V64 means. Client timing includes queue and service; physical overlap and speedup unmeasured."
+}

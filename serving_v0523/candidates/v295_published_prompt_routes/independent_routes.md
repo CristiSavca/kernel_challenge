@@ -1,0 +1,7 @@
+# Independent distributed route-publication replay
+
+Across 276 TP4/TP8 rank calls, the staged model entry preserved all 861,584 route score/ID pairs and 7,813,888 BF16 activation words. The 108 accepted new-path calls used one publication barrier each and zero route or vote gathers. The 22 empty local receivers still participated. Score sentinels included negative zero and a quiet NaN with a nonzero payload. [Results by case and source hashes](independent_routes.json)
+
+On 24 one-rank hook vetoes all peers gathered the original scores, IDs and activations. On another 24 calls, uniform int64 IDs or a single-rank FP32 tensor subclass caused both route gathers followed by the legacy grouped publication. The tests also cover noncontiguous scores and IDs, ragged padding, capacity overflow, short prompts, and a one-rank allocation failure that disables extended or all peer storage. Each fallback retained its original wire dtype. [Distributed test](independent_routes.py)
+
+The staged SP model, peer startup, publication, stable sort and grouped-input routines execute with real Gloo processes and mapped CPU slabs. Readers pause at different points before packet and activation loads. The modeled final reduction adds no inter-rank synchronization, so successive calls can overlap. GPU streams, Triton inversion and Humming arithmetic are host substitutes. Two independent executions reproduced the same receipt.

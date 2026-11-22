@@ -1,0 +1,139 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+index a893ad7..b8dd290 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -16,19 +16,21 @@ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>
+                 kRegsBKDim == 1 && final_regs_c_index() == 0 && kSwizzleBytes == 128);
+   static_assert(sizeof(regs_b[0]) == 8 * sizeof(uint32_t));
+   CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {
+-    // The last two iterations retain the vendor's ordering at shared-stage release.
++    // Only the late-release W2 pipeline may keep the last pair in flight.
++#ifndef MUSE_PAIR_LAST_K_SLICES
+     if (iteration >= 2) {
+       Base::run(stage, iteration);
+       return;
+     }
++#endif
+     const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
+         + stage * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
+     auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
+     wgmma_fence();
+     PRAGMA_UNROLL
+     for (int j = 0; j < 2; ++j)
+-      MmaOpClass::fma(desc, regs_b[iteration][j][0], regs_c[0][j][0], true);
+-    if (iteration == 1) {
++      MmaOpClass::fma(desc, regs_b[iteration % 2][j][0], regs_c[0][j][0], true);
++    if (iteration % 2 == 1) {
+       wgmma_commit();
+       wgmma_wait<0>();
+       // Keep both register-source fragments alive through the async group's
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+index 1ccbc18..a7a653f 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -1,5 +1,6 @@
+ """Group two ordered BF16 WGMMA slices inside the pinned Hopper grouped decode pipeline."""
+ 
++import hashlib
+ import json
+ import logging
+ import subprocess
+@@ -10,7 +11,7 @@ from pathlib import Path
+ import torch
+ 
+ 
+-def append_pair(kernel):
++def append_pair(kernel, both_pairs=False):
+     from sglang.kernels import jit
+ 
+     width = kernel.block_shape[0]
+@@ -20,16 +21,38 @@ def append_pair(kernel):
+             or not kernel.use_warp_spec or kernel.use_stream_k or kernel.use_tma_c):
+         raise ValueError("unsupported grouped matrix pipeline")
+     header = Path(jit.__file__).parent / "csrc/muse_spark/grouped_decode_mma_pair.cuh"
++    if both_pairs:
++        import humming
++
++        if (width not in (8, 16, 24) or not (kernel.use_tma_a and kernel.use_tma_b and kernel.use_tma_bs)
++                or not kernel.use_mbarrier or kernel.multi_cast_size_a != 1 or kernel.multi_cast_size_b != 1):
++            raise ValueError("unsupported grouped decode stage protocol")
++        path = Path(humming.__path__[0]) / "include/humming/kernel/humming_ws.cuh"
++        loop = path.read_text()
++        if hashlib.sha256(loop.encode()).hexdigest() != "6a148cc29b81d4009066667c347d9091a8a138009f7884226e9969a6936e2899":
++            raise ValueError("unsupported grouped Humming loop")
++        # Every math worker releases its shared A tile after the last pair drains.
++        # The next-stage wait is safe while this tile is held: the four-stage
++        # producer primes three stages and refills two stages ahead of this wait.
++        loop = loop.replace("              consumer.arrive(stage_id);\n", "")
++        loop = loop.replace("            mma.transform_b(\n",
++                            "            if (warp_iter_id + 1 == Ctx::kWarpIters) consumer.arrive(stage_id);\n"
++                            "            mma.transform_b(\n")
++        prefetch = "s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);"
++        loop = loop.replace(prefetch, "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch)
++        kernel.code = kernel.code.replace("#include <humming/kernel/humming_ws.cuh>", loop.replace("#pragma once", "", 1))
++        kernel.code += "\n#define MUSE_PAIR_LAST_K_SLICES\n"
+     kernel.code += f"\n#define MUSE_OVERLAP_M {width}\n" + header.read_text()
+ 
+ 
+-def check_pair_code(compiler, kernel):
++def check_pair_code(compiler, kernel, both_pairs=False):
+     tool = compiler._get_env()["binaries"].get("cuobjdump")
+     if not tool:
+         raise RuntimeError("CUDA disassembler unavailable for grouped matrix pipeline")
+     code = subprocess.check_output([tool, "-sass", kernel.kernel_filename], text=True)
+     opcode = f"HGMMA.64x{kernel.block_shape[0]}x16.F32.BF16"
+-    if code.count(opcode) != 32 or code.count("WARPGROUP.DEPBAR.LE") != 12 or "UTMALDG.3D" not in code:
++    drains = 8 if both_pairs else 12
++    if code.count(opcode) != 32 or code.count("WARPGROUP.DEPBAR.LE") != drains or "UTMALDG.3D" not in code:
+         raise RuntimeError("grouped matrix pipeline compiled with unsupported instruction schedule")
+ 
+ 
+@@ -40,19 +63,24 @@ def _prepare_down(context, meta, compute, tuning):
+     from humming.kernel.humming import HummingKernel
+ 
+     class GroupedDecodePairDownKernel(HummingKernel):
++        both_pairs = False
++
+         @staticmethod
+         def _get_compiler():
+             return NVCCCompiler
+ 
+         def prepare(self):
+-            append_pair(self)
++            append_pair(self, self.both_pairs)
+             KernelRuntime.prepare(self)
+ 
+         def load_cubin(self):
+             if not self.cubin_loaded:
+-                check_pair_code(NVCCCompiler, self)
++                check_pair_code(NVCCCompiler, self, self.both_pairs)
+                 HummingKernel.load_cubin(self)
+ 
++    class GroupedDecodeFullPairDownKernel(GroupedDecodePairDownKernel):
++        both_pairs = True
++
+     config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     config.pop("sublayer_name", None)
+     required = {
+@@ -65,13 +93,14 @@ def _prepare_down(context, meta, compute, tuning):
+                                            "use_fused_e8m0_scale", "input_scale_group_size",
+                                            "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
+         return None
+-    try:
+-        kernel = GroupedDecodePairDownKernel(**config)
+-        kernel.check_context()
+-        return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+-    except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+-        logging.getLogger(__name__).warning("Using ordinary grouped down projection: %s", exc)
+-        return None
++    for variant in (GroupedDecodeFullPairDownKernel, GroupedDecodePairDownKernel):
++        try:
++            kernel = variant(**config)
++            kernel.check_context()
++            return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
++        except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++            logging.getLogger(__name__).warning("Grouped down projection %s unavailable: %s", variant.__name__, exc)
++    return None
+ 
+ 
+ def prepare_down(meta, compute, tunings):

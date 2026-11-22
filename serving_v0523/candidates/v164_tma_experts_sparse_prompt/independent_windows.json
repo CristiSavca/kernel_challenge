@@ -1,0 +1,76 @@
+{
+  "torch": "2.5.1",
+  "sources": {
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "3436c296dd6ae26b554d9acdc786020b4091514aa7667ec780d2c1f849bcf965",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "363d59823a32a9615befa53ef05a2ac963a82d254328e660ed002c5653e97e8b",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py": "7e5c1d60796d85aaf68dcf614b2fe36e52398267799eb0dcef157142cf96846e"
+  },
+  "shape": [
+    16384,
+    8
+  ],
+  "ep": 8,
+  "live_slots_per_window_cap": 18432,
+  "cases": [
+    {
+      "routing": "all_to_one",
+      "local_routes": 131072,
+      "rows_received": 16384,
+      "transport_group_width": 0,
+      "routes_by_window": [
+        18432,
+        18432,
+        18432,
+        18432,
+        18432,
+        18432,
+        18432,
+        2048
+      ]
+    },
+    {
+      "routing": "near_hot_with_gaps",
+      "local_routes": 98304,
+      "rows_received": 12288,
+      "transport_group_width": 8,
+      "routes_by_window": [
+        18432,
+        18432,
+        18432,
+        18432,
+        18432,
+        6144
+      ]
+    },
+    {
+      "routing": "at_capacity",
+      "local_routes": 18432,
+      "rows_received": 2304,
+      "transport_group_width": 8,
+      "routes_by_window": [
+        18432
+      ]
+    },
+    {
+      "routing": "one_over",
+      "local_routes": 18433,
+      "rows_received": 2305,
+      "transport_group_width": 8,
+      "routes_by_window": [
+        18305,
+        128
+      ]
+    },
+    {
+      "routing": "empty_bank",
+      "local_routes": 0,
+      "rows_received": 0,
+      "transport_group_width": 0,
+      "routes_by_window": [
+        0
+      ]
+    }
+  ],
+  "bitwise_output_elements_compared": 3932160,
+  "scope": "Native window, grouped adapter, sorting, remap and finalizer arguments. CPU surrogate GEMM and scaling/finalization. No hardware timing."
+}

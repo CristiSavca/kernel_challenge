@@ -1,0 +1,115 @@
+{
+  "base_tree": "f9966bf0dfca287d58d8d24ea2d055b3c2162702",
+  "base_patch": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+  "source_sha256": {
+    "python/sglang/srt/models/muse_spark.py": "f6783aeed6d62d3d84d108f1b66f1d1b10597102d0dfbfd270d0b6088db0bb42",
+    "python/sglang/srt/layers/layernorm_sp.py": "58452b3fb33aca00f1720b4f90a1cfddf01bb31e7d6d801c21dda6ce2861e359"
+  },
+  "public_F32_elements": 130039296,
+  "cpu_gloo": {
+    "2": {
+      "gathers": 18,
+      "reductions": 6,
+      "paired_rank_calls": 6,
+      "matched_BF16": 329744,
+      "owner_projection_rows_including_padding": 164872
+    },
+    "4": {
+      "gathers": 36,
+      "reductions": 12,
+      "paired_rank_calls": 12,
+      "matched_BF16": 329760,
+      "owner_projection_rows_including_padding": 164880
+    },
+    "8": {
+      "gathers": 72,
+      "reductions": 24,
+      "paired_rank_calls": 24,
+      "matched_BF16": 329792,
+      "owner_projection_rows_including_padding": 164896
+    }
+  },
+  "full_shape_arithmetic": {
+    "owner_rows": 2048,
+    "pool_flops": 137438953472,
+    "unpool_flops": 137438953472,
+    "router_flops": 17179869184
+  },
+  "rank_layer_cold_weight_bytes_avoided": 124780544,
+  "rank_layer_receive_bytes": {
+    "pool_and_router_input_gather": 234881024,
+    "pool_owner_transpose": 14680064,
+    "router_logits_owner_transpose": 1835008,
+    "unpool_owner_transpose": 29360128,
+    "conditional_unpool_input_gather": 117440512
+  },
+  "nominal_HBM_saved_microseconds_at_4_8_TBps": 25.995946666666665,
+  "transfer_us_optimistic_900_GBs": [
+    311.95136,
+    442.4408177777778
+  ],
+  "route_top8_counterexample": [
+    {
+      "two_factors": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "high_only": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "two_factors": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8
+      ],
+      "high_only": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "rank_compute_ratio_remove_low_only": 1.0303030303030303,
+  "projector_control_rows": [
+    1,
+    8,
+    16,
+    32,
+    128,
+    256
+  ],
+  "archived_target_5pct_per_layer_ms": {
+    "16": 1.6879942151459308,
+    "32": 1.558778306784437
+  },
+  "scored_results": {
+    "V64": 1.4119,
+    "V68_matched_check_16": 17512.9
+  },
+  "physical_V250": false
+}

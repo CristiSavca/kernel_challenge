@@ -1,0 +1,58 @@
+{
+  "observed_utc": "2026-11-19T03:21:45.593687+00:00",
+  "candidate": "V247",
+  "target_vs_stock": 4,
+  "measured_incumbent": {
+    "candidate": "V64",
+    "score": 1.4119,
+    "job": "abd217baf0ed49fd"
+  },
+  "pending_hardware": [
+    "stock output agreement",
+    "time to first token",
+    "peak GPU memory",
+    "four-load speed"
+  ],
+  "exports": {
+    "V242": {
+      "parent": "V241",
+      "bytes": 399067,
+      "tree": "5eec8bf696414867b3d6e18fde8389ecda7a5358",
+      "patch_sha256": "51550e155265ffc2a7a6ba97c1512e4243168071963cfcad95f0c959cce0874b",
+      "path": "serving_v0523/candidates/v242_coalesced_prompt_routing/patch.diff"
+    },
+    "V246": {
+      "parent": "V241",
+      "bytes": 400003,
+      "tree": "d560b45b905a55d083186c8fd366910eedd05e28",
+      "patch_sha256": "f8ec0e68057b0a63fe67f659cb2d3e1cd9832b3d6198c2e889d1e90290245dd2",
+      "path": "serving_v0523/candidates/v246_direct_mixed_prompt_storage/patch.diff"
+    },
+    "V247": {
+      "parent": "V241",
+      "bytes": 401616,
+      "tree": "0f51d90866886150d3ec712cdcb965271c7cd5ed",
+      "patch_sha256": "91f9e78ff697d73a6bc60d27f2a9360cc7fcb653cb5d6b2ccc1ea3ea87c52159",
+      "path": "serving_v0523/candidates/v247_coalesced_serving_decode/patch.diff"
+    }
+  },
+  "studies": {
+    "V243": "serving_v0523/candidates/v243_draft_prefix_coverage/README.md",
+    "V244": "serving_v0523/candidates/v244_cold_prompt_scaling/README.md",
+    "V245": "serving_v0523/candidates/v245_closed_loop_prompt_order/README.md"
+  },
+  "judge": "serving_v0523/candidates/v247_coalesced_serving_decode/judge_observation.json",
+  "evidence": {
+    "integrated_numerical": "serving_v0523/candidates/v247_coalesced_serving_decode/independent_host.md",
+    "lifetime": "serving_v0523/candidates/v247_coalesced_serving_decode/independent_lifetime.json",
+    "workspace": "serving_v0523/candidates/v247_coalesced_serving_decode/validation.json",
+    "launch_flags": "serving_v0523/candidates/v247_coalesced_serving_decode/flags.json",
+    "server_resolution": "serving_v0523/candidates/v247_coalesced_serving_decode/server_resolution.json"
+  },
+  "hypotheses": [
+    "Coalescing route and consent reduces 186 collective calls to 62 across eligible cold layers at the cost of local packing.",
+    "Direct destination writes remove up to 128 MiB logical copies per eligible single-prompt mixed pass per GPU.",
+    "Old private draft values can still be visible after target SWA restoration; the omit-write variant is incorrect.",
+    "Simple prompt ordering had a maximum 1.033 percent modeled gain over FCFS in this replay."
+  ]
+}

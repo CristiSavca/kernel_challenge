@@ -1,0 +1,324 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/routing.cuh b/python/sglang/kernels/jit/csrc/muse_spark/routing.cuh
+index 8255489..d4b83b5 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/routing.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/routing.cuh
+@@ -73,6 +73,7 @@ struct RoutingTrait {
+ 
+ struct RoutingParams {
+   const float* __restrict__ gating_output;
++  const float* __restrict__ residual;
+   const float* __restrict__ bias;
+   float* __restrict__ topk_weights;
+   int32_t* __restrict__ topk_ids;
+@@ -99,7 +100,7 @@ SGL_DEVICE int32_t pack_id_weight(int32_t expert_id, float weight) {
+   return (expert_id << 16) | static_cast<int32_t>(bits);
+ }
+ 
+-template <typename Trait, bool kUsePDL>
++template <typename Trait, bool kUsePDL, bool kSplit>
+ __global__ void routing_kernel(const RoutingParams __grid_constant__ params) {
+   using namespace device;
+   constexpr int kEPL = Trait::kExpertsPerLane;
+@@ -132,7 +133,18 @@ __global__ void routing_kernel(const RoutingParams __grid_constant__ params) {
+   for (int v = 0; v < Trait::kVecsPerLane; ++v) {
+     const int base = v * kGroupExperts + lane * 4;
+     float4 g = make_float4(kNegInf, kNegInf, kNegInf, kNegInf);
+-    if (base < params.num_experts) g = *reinterpret_cast<const float4*>(row + base);
++    if (base < params.num_experts) {
++      g = *reinterpret_cast<const float4*>(row + base);
++      if constexpr (kSplit) {
++        const auto* residual_row = params.residual + static_cast<int64_t>(token) * params.stride_gm;
++        const auto r = *reinterpret_cast<const float4*>(residual_row + base);
++        // Match the standalone PyTorch FP32 add, including subnormals.
++        asm("add.rn.f32 %0, %0, %1;" : "+f"(g.x) : "f"(r.x));
++        asm("add.rn.f32 %0, %0, %1;" : "+f"(g.y) : "f"(r.y));
++        asm("add.rn.f32 %0, %0, %1;" : "+f"(g.z) : "f"(r.z));
++        asm("add.rn.f32 %0, %0, %1;" : "+f"(g.w) : "f"(r.w));
++      }
++    }
+     score[v * 4 + 0] = g.x;
+     score[v * 4 + 1] = g.y;
+     score[v * 4 + 2] = g.z;
+@@ -274,8 +286,8 @@ __global__ void routing_kernel(const RoutingParams __grid_constant__ params) {
+ 
+ }  // namespace muse_spark
+ 
+-template <int kTopK, int kExpertsPerLane, int kNormMode, int kWarpsPerBlock, bool kUsePDL>
+-void fused_muse_spark_routing(
++template <int kTopK, int kExpertsPerLane, int kNormMode, int kWarpsPerBlock, bool kUsePDL, bool kSplit>
++void launch_muse_spark_routing(
+     tvm::ffi::TensorView gating_output,                        // [T, E] fp32
+     tvm::ffi::TensorView bias,                                 // [E] fp32
+     tvm::ffi::TensorView topk_weights,                         // [T, K] fp32 (out)
+@@ -285,7 +297,8 @@ void fused_muse_spark_routing(
+     tvm::ffi::Optional<tvm::ffi::TensorView> num_valid_tokens,
+     double router_output_multiplier,
+     double route_scale,
+-    double division_eps) {
++    double division_eps,
++    tvm::ffi::Optional<tvm::ffi::TensorView> residual) {
+   using namespace host;
+   using Trait = muse_spark::RoutingTrait<kTopK, kExpertsPerLane, kNormMode, kWarpsPerBlock>;
+ 
+@@ -314,6 +327,7 @@ void fused_muse_spark_routing(
+ 
+   muse_spark::RoutingParams params{
+       .gating_output = static_cast<const float*>(gating_output.data_ptr()),
++      .residual = nullptr,
+       .bias = static_cast<const float*>(bias.data_ptr()),
+       .topk_weights = static_cast<float*>(topk_weights.data_ptr()),
+       .topk_ids = static_cast<int32_t*>(topk_ids.data_ptr()),
+@@ -331,6 +345,13 @@ void fused_muse_spark_routing(
+       .division_eps = static_cast<float>(division_eps),
+   };
+ 
++  if constexpr (kSplit) {
++    const auto& r = residual.value();
++    TensorMatcher({T, E}).with_dtype<fp32_t>().with_device(device_).verify(r);
++    RuntimeCheck(r.stride(0) == gating_output.stride(0) && r.stride(1) == 1, "split logit strides mismatch");
++    RuntimeCheck(reinterpret_cast<uintptr_t>(r.data_ptr()) % alignof(float4) == 0, "split logits require float4 alignment");
++    params.residual = static_cast<const float*>(r.data_ptr());
++  }
+   if (packed_topk_ids.has_value()) {
+     const auto& packed = packed_topk_ids.value();
+     TensorMatcher({T, K}).with_dtype<int32_t>().with_device(device_).verify(packed);
+@@ -353,7 +374,24 @@ void fused_muse_spark_routing(
+ 
+   const dim3 grid(static_cast<unsigned>((num_tokens + kWarpsPerBlock - 1) / kWarpsPerBlock));
+   LaunchKernel(grid, kWarpsPerBlock * device::kWarpThreads, device, 0)
+-      .enable_pdl(kUsePDL)(muse_spark::routing_kernel<Trait, kUsePDL>, params);
++      .enable_pdl(kUsePDL)(muse_spark::routing_kernel<Trait, kUsePDL, kSplit>, params);
++}
++
++template <int kTopK, int kExpertsPerLane, int kNormMode, int kWarpsPerBlock, bool kUsePDL>
++void fused_muse_spark_routing(
++    tvm::ffi::TensorView gating_output,                        // [T, E] fp32
++    tvm::ffi::TensorView bias,                                 // [E] fp32
++    tvm::ffi::TensorView topk_weights,                         // [T, K] fp32 (out)
++    tvm::ffi::TensorView topk_ids,                             // [T, K] int32 (out)
++    tvm::ffi::Optional<tvm::ffi::TensorView> packed_topk_ids,  // [T, K] int32 (out)
++    tvm::ffi::Optional<tvm::ffi::TensorView> local_expert_mapping,
++    tvm::ffi::Optional<tvm::ffi::TensorView> num_valid_tokens,
++    double router_output_multiplier,
++    double route_scale,
++    double division_eps) {
++  launch_muse_spark_routing<kTopK, kExpertsPerLane, kNormMode, kWarpsPerBlock, kUsePDL, false>(
++      gating_output, bias, topk_weights, topk_ids, packed_topk_ids, local_expert_mapping, num_valid_tokens,
++      router_output_multiplier, route_scale, division_eps, {});
+ }
+ 
+ }  // namespace sglang
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_routing.py b/python/sglang/kernels/ops/moe/muse_spark_routing.py
+index 3bdfc60..fb07fb8 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_routing.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_routing.py
+@@ -762,6 +762,59 @@ class FusedMuseSparkRouting(BaseFusedOp):
+             and self.router_score_normalization in ("sigmoid", "softmax")
+         )
+ 
++    def split_logits_module(self, gate, hidden, topk):
++        """Use deferred addition only when the ordinary, unobserved call selects JIT."""
++        from torch.nn.modules import module as nn_module
++        from torch.utils._python_dispatch import is_in_torch_dispatch_mode
++
++        from sglang.kernels import fused_op, kernel_api_logging
++        from sglang.kernels.ops.moe.muse_spark_routing_jit import (
++            _NORMALIZATION_MODES,
++            _experts_per_lane,
++            _split_module,
++            _warps_per_block,
++        )
++
++        if (
++            not hidden.is_cuda
++            or torch.is_grad_enabled()
++            or torch.compiler.is_compiling()
++            or self.is_torch_compile
++            or self._compiled_call_impl is not None
++            or is_in_torch_dispatch_mode()
++            or torch.overrides._get_current_function_mode() is not None
++            or torch.are_deterministic_algorithms_enabled()
++            or type(hidden) is not torch.Tensor
++            or fused_op.get_fused_op_backend() is not None
++            or fused_op._trace_enabled
++            or kernel_api_logging._KERNEL_API_LOG_LEVEL
++            or nn_module._global_forward_pre_hooks
++            or nn_module._global_forward_hooks
++            or nn_module._global_backward_pre_hooks
++            or nn_module._global_backward_hooks
++            or self._forward_pre_hooks or self._forward_hooks
++            or self._backward_pre_hooks or self._backward_hooks
++            or gate._forward_pre_hooks or gate._forward_hooks
++            or gate._backward_pre_hooks or gate._backward_hooks
++            or any(name in vars(self) for name in ("forward", "forward_jit", "backend_eligible"))
++            or "forward_split2" in vars(gate)
++        ):
++            return None
++        method = self._forward_method or self._resolve_forward_method()
++        if (
++            getattr(method, "__func__", None) is not BaseFusedOp._forward_backend_dynamic
++            or self._dynamic_backend_candidates[:1] != (KernelBackend.JIT,)
++            # JIT eligibility depends only on the expert-axis width, top-k and normalization.
++            or not self.backend_eligible(KernelBackend.JIT, None, self.expert_bias, topk, True, True)
++        ):
++            return None
++        return _split_module(
++            topk,
++            _experts_per_lane(self.expert_bias.numel()),
++            _NORMALIZATION_MODES[self.router_score_normalization],
++            _warps_per_block(hidden.shape[0]),
++        )
++
+     def forward_jit(
+         self,
+         hidden_states: torch.Tensor,
+@@ -769,6 +822,9 @@ class FusedMuseSparkRouting(BaseFusedOp):
+         topk: int,
+         renormalize: bool,
+         want_packed: bool = False,
++        *,
++        split_module=None,
++        residual=None,
+     ):
+         """Fused JIT CUDA kernel implementation."""
+         assert renormalize, "MuseSpark routing requires renormalize=True"
+@@ -800,6 +856,8 @@ class FusedMuseSparkRouting(BaseFusedOp):
+             local_expert_mapping=self.local_expert_mapping,
+             num_valid_tokens=self.num_valid_tokens,
+             packed_topk_ids=packed,
++            split_module=split_module,
++            residual=residual,
+         )
+         if want_packed:
+             return topk_weights, topk_ids, packed
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_routing_jit.py b/python/sglang/kernels/ops/moe/muse_spark_routing_jit.py
+index a7d1bc0..b0fc7b8 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_routing_jit.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_routing_jit.py
+@@ -11,6 +11,7 @@ for the sigmoid path; see ``routing.cuh``.
+ 
+ from __future__ import annotations
+ 
++import logging
+ from typing import TYPE_CHECKING, Optional, Tuple
+ 
+ import torch
+@@ -52,6 +53,20 @@ def _jit_module(
+     )
+ 
+ 
++@cache_once
++def _split_module(topk: int, experts_per_lane: int, norm_mode: int, warps: int):
++    args = make_cpp_args(topk, experts_per_lane, norm_mode, warps, is_arch_support_pdl(), True)
++    try:
++        return load_jit(
++            "muse_spark_routing_split", *args,
++            cuda_files=["muse_spark/routing.cuh"],
++            cuda_wrappers=[("fused_muse_spark_routing", f"launch_muse_spark_routing<{args}>")],
++        )
++    except (OSError, RuntimeError) as error:
++        logging.getLogger(__name__).warning("Using materialized Muse router logits: %s", error)
++        return None
++
++
+ def _experts_per_lane(num_experts: int) -> int:
+     per_lane = max(4, -(-num_experts // 32))
+     return -(-per_lane // 4) * 4
+@@ -70,6 +85,9 @@ def fused_muse_spark_routing_jit(
+     local_expert_mapping: Optional[torch.Tensor] = None,  # [num_experts] int32
+     num_valid_tokens: Optional[torch.Tensor] = None,  # [1] int32, device scalar
+     packed_topk_ids: Optional[torch.Tensor] = None,  # [num_tokens, topk] int32
++    *,
++    split_module=None,
++    residual: Optional[torch.Tensor] = None,
+ ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+     assert gating_output.dim() == 2 and gating_output.is_contiguous()
+     assert gating_output.dtype == torch.float32
+@@ -93,7 +111,7 @@ def fused_muse_spark_routing_jit(
+         packed_topk_ids[:num_tokens, :topk] if packed_topk_ids is not None else None
+     )
+ 
+-    module = _jit_module(
++    module = split_module if split_module is not None else _jit_module(
+         topk,
+         _experts_per_lane(num_experts),
+         norm_mode,
+@@ -114,5 +132,6 @@ def fused_muse_spark_routing_jit(
+         float(
+             router_score_division_eps if router_score_division_eps is not None else 0.0
+         ),
++        *((residual,) if split_module is not None else ()),
+     )
+     return topk_weights_view, topk_ids_view, packed_view
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 1b2d47b..c3ca821 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -238,12 +238,16 @@ class MuseSpark1xRouter(nn.Module):
+         self._split2_lo = lo.t().contiguous()
+         self._split2_key = key
+ 
+-    def forward_split2(self, hidden_states: torch.Tensor) -> torch.Tensor:
++    def _split2_parts(self, hidden_states: torch.Tensor):
+         self._build_split2()
+         x = hidden_states.to(torch.bfloat16)
+         acc = torch.mm(x, self._split2_hi, out_dtype=torch.float32)
+-        acc += torch.mm(x, self._split2_lo, out_dtype=torch.float32)
+-        return acc
++        low = torch.mm(x, self._split2_lo, out_dtype=torch.float32)
++        return acc, low
++
++    def forward_split2(self, hidden_states: torch.Tensor) -> torch.Tensor:
++        high, low = self._split2_parts(hidden_states)
++        return high.add_(low)
+ 
+     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+         # Decode-sized FP32 logits: one CuTe GEMV instead of cuBLAS split-K + reduce.
+@@ -830,14 +834,30 @@ class MuseSpark1xMoE(nn.Module):
+             if use_side_stream
+             else contextlib.nullcontext()
+         ):
+-            router_logits = (
+-                self.gate.forward_split2(hidden_states)
+-                if use_split2
+-                else self.gate(router_input)
+-            )
+-            topk_scores, topk_ids, packed_topk_ids = self._routing_op()(
+-                None, router_logits, self.top_k, True, want_packed=True
+-            )
++            module = None
++            if (
++                use_split2 and (not sp_active or self.sp_replicate_expert_input)
++                and type(self.gate) is MuseSpark1xRouter
++            ):
++                routing = self._routing_op()
++                if type(routing) is FusedMuseSparkRouting:
++                    module = routing.split_logits_module(self.gate, hidden_states, self.top_k)
++            if module is None:
++                router_logits = (
++                    self.gate.forward_split2(hidden_states)
++                    if use_split2
++                    else self.gate(router_input)
++                )
++                topk_scores, topk_ids, packed_topk_ids = self._routing_op()(
++                    None, router_logits, self.top_k, True, want_packed=True
++                )
++            else:
++                high, low = self.gate._split2_parts(hidden_states)
++                topk_scores, topk_ids, packed_topk_ids = routing.forward_jit(
++                    None, high, self.top_k, True, want_packed=True, split_module=module, residual=low
++                )
++                del high, low
++                router_logits = None
+         if use_side_stream:
+             main_stream.wait_stream(side_stream)
+         if use_side_stream and not torch.cuda.is_current_stream_capturing():
+@@ -893,7 +913,7 @@ class MuseSpark1xMoE(nn.Module):
+         expert_input: torch.Tensor,
+         topk_scores: torch.Tensor,
+         topk_ids: torch.Tensor,
+-        router_logits: torch.Tensor,
++        router_logits: Optional[torch.Tensor],
+     ) -> torch.Tensor:
+         """Return combined source-token shards, before the nonlinear FFN tail."""
+         if self.pre_expert_norm is not None:

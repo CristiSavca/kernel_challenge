@@ -1,0 +1,45 @@
+diff --git a/python/sglang/kernels/ops/memory/allocator.py b/python/sglang/kernels/ops/memory/allocator.py
+index 704d845..659081e 100644
+--- a/python/sglang/kernels/ops/memory/allocator.py
++++ b/python/sglang/kernels/ops/memory/allocator.py
+@@ -121,6 +121,7 @@ def alloc_extend_kernel(
+     out_indices,
+     bs_upper: tl.constexpr,
+     page_size: tl.constexpr,
++    page_block: tl.constexpr = None,
+ ):
+     pid = tl.program_id(0)
+ 
+@@ -153,7 +154,7 @@ def alloc_extend_kernel(
+     )
+     # Only the vector extent needs to be a power of two. The two partial-page
+     # stores below mask against the number of actual tokens in the page.
+-    offset_one_page = tl.arange(0, triton.next_power_of_2(page_size))
++    offset_one_page = tl.arange(0, page_size if page_block is None else page_block)
+     tl.store(
+         out_indices + output_start_loc + offset_one_page,
+         last_loc + 1 + offset_one_page,
+diff --git a/python/sglang/srt/mem_cache/allocator/paged.py b/python/sglang/srt/mem_cache/allocator/paged.py
+index 792d63b..5664973 100755
+--- a/python/sglang/srt/mem_cache/allocator/paged.py
++++ b/python/sglang/srt/mem_cache/allocator/paged.py
+@@ -251,6 +251,7 @@ class PagedTokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
+                 out_indices,
+                 next_power_of_2(bs),
+                 self.page_size,
++                next_power_of_2(self.page_size),
+             )
+         else:
+             alloc_extend_naive(
+diff --git a/python/sglang/srt/mem_cache/allocator/unified_sub_pool.py b/python/sglang/srt/mem_cache/allocator/unified_sub_pool.py
+index 90bd1fc..7fd6307 100644
+--- a/python/sglang/srt/mem_cache/allocator/unified_sub_pool.py
++++ b/python/sglang/srt/mem_cache/allocator/unified_sub_pool.py
+@@ -1247,6 +1247,7 @@ class MultiEndedAllocator(BaseTokenToKVPoolAllocator):
+                     out_indices,
+                     next_power_of_2(bs),
+                     self.page_size,
++                    next_power_of_2(self.page_size),
+                 )
+ 
+             # Bind the consumed virtual pages to fresh physical pages here. The

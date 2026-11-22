@@ -1,0 +1,775 @@
+{
+  "tree": "37088c0b5ac55d1e22516be62bb9b535ab374f0c",
+  "source_sha256": {
+    "python/sglang/srt/mem_cache/pool_host/mha.py": "2925e14ff059b6bc6d329c314f5203ee560b472737a123cb9bc3811b0f47036f",
+    "python/sglang/srt/mem_cache/pool_host/common.py": "2caf201d94f632f016fdb89208b8f82ab3e5a8c2f580f1baf6c2770a8e178d79",
+    "python/sglang/srt/mem_cache/pool_host/base.py": "b6b9c3a30bbbc10b36741829a0cc2bfc1b2731e4880e50cc9d0fb47e9f5e6628",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py": "5c29d2865810b8d16a2758662ab6a1e532ac0c31076a5fa56525ed546ea02cd1",
+    "python/sglang/srt/mem_cache/l2_transfer.py": "eec2986abda098392f0873375d76d21e25a2d428a295f644ad4dd446b06c13f3",
+    "python/sglang/kernels/ops/kvcache/hicache.py": "f9bb96ab516e8d75d5990c65986b95f9a90c1b6ff9109a311172c4f4e568a0b9",
+    "python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh": "1bf38dbeb6168fa8d07468bae88cb29fbcb0edd34a7bd61aa02157376d8018c2",
+    "python/sglang/kernels/jit/csrc/kvcacheio/relayout.cuh": "ad9a4084a50c7646506d1842e6adcb62916d0d828bcf937bee0bf9332fa62c75"
+  },
+  "native_slices": {
+    "gather_sha256": "aaf00dc4c51637fc2ea4e3675c3dafef7376c3cdc51f26611cc598cc630058ba",
+    "dma_commands_sha256": "dc2be22b45004cfdf06ffef2078bc4e6e3a94a46bf3799a235a927c88a9ea135"
+  },
+  "compared_bytes": 453394944,
+  "second_pool_failure_no_retry": 1,
+  "cases": [
+    {
+      "case": "cold",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 16384,
+          "layers": 16,
+          "capacity": 16695,
+          "runs": [
+            [
+              3,
+              2051
+            ],
+            [
+              2051,
+              4099
+            ],
+            [
+              4099,
+              6147
+            ],
+            [
+              6147,
+              8195
+            ],
+            [
+              8195,
+              10243
+            ],
+            [
+              10243,
+              12291
+            ],
+            [
+              12291,
+              14339
+            ],
+            [
+              14339,
+              16387
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 67108864
+        },
+        {
+          "name": "swa",
+          "rows": 2048,
+          "layers": 46,
+          "capacity": 2359,
+          "runs": [
+            [
+              3,
+              715
+            ],
+            [
+              715,
+              1427
+            ],
+            [
+              1427,
+              2051
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 24117248
+        },
+        {
+          "name": "draft",
+          "rows": 16384,
+          "layers": 5,
+          "capacity": 16695,
+          "runs": [
+            [
+              3,
+              3279
+            ],
+            [
+              3279,
+              6555
+            ],
+            [
+              6555,
+              9831
+            ],
+            [
+              9831,
+              13107
+            ],
+            [
+              13107,
+              16383
+            ],
+            [
+              16383,
+              16387
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 41943040
+        }
+      ]
+    },
+    {
+      "case": "swa heavy",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 257,
+          "layers": 16,
+          "capacity": 568,
+          "runs": [
+            [
+              3,
+              260
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 1052672
+        },
+        {
+          "name": "swa",
+          "rows": 16384,
+          "layers": 46,
+          "capacity": 16695,
+          "runs": [
+            [
+              3,
+              715
+            ],
+            [
+              715,
+              1427
+            ],
+            [
+              1427,
+              2139
+            ],
+            [
+              2139,
+              2851
+            ],
+            [
+              2851,
+              3563
+            ],
+            [
+              3563,
+              4275
+            ],
+            [
+              4275,
+              4987
+            ],
+            [
+              4987,
+              5699
+            ],
+            [
+              5699,
+              6411
+            ],
+            [
+              6411,
+              7123
+            ],
+            [
+              7123,
+              7835
+            ],
+            [
+              7835,
+              8547
+            ],
+            [
+              8547,
+              9259
+            ],
+            [
+              9259,
+              9971
+            ],
+            [
+              9971,
+              10683
+            ],
+            [
+              10683,
+              11395
+            ],
+            [
+              11395,
+              12107
+            ],
+            [
+              12107,
+              12819
+            ],
+            [
+              12819,
+              13531
+            ],
+            [
+              13531,
+              14243
+            ],
+            [
+              14243,
+              14955
+            ],
+            [
+              14955,
+              15667
+            ],
+            [
+              15667,
+              16379
+            ],
+            [
+              16379,
+              16387
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 192937984
+        },
+        {
+          "name": "draft",
+          "rows": 257,
+          "layers": 5,
+          "capacity": 568,
+          "runs": [
+            [
+              3,
+              260
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 657920
+        }
+      ]
+    },
+    {
+      "case": "shuffled runs",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 257,
+          "layers": 16,
+          "capacity": 568,
+          "runs": [
+            [
+              143,
+              260
+            ],
+            [
+              3,
+              143
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 1052672
+        },
+        {
+          "name": "swa",
+          "rows": 257,
+          "layers": 46,
+          "capacity": 568,
+          "runs": [
+            [
+              143,
+              260
+            ],
+            [
+              3,
+              143
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 3026432
+        },
+        {
+          "name": "draft",
+          "rows": 257,
+          "layers": 5,
+          "capacity": 568,
+          "runs": [
+            [
+              143,
+              260
+            ],
+            [
+              3,
+              143
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 657920
+        }
+      ]
+    },
+    {
+      "case": "registration cuts",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 513,
+          "layers": 16,
+          "capacity": 824,
+          "runs": [
+            [
+              3,
+              71
+            ],
+            [
+              71,
+              105
+            ],
+            [
+              105,
+              516
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 2101248
+        },
+        {
+          "name": "swa",
+          "rows": 513,
+          "layers": 46,
+          "capacity": 824,
+          "runs": [
+            [
+              3,
+              71
+            ],
+            [
+              71,
+              105
+            ],
+            [
+              105,
+              516
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 6041088
+        },
+        {
+          "name": "draft",
+          "rows": 513,
+          "layers": 5,
+          "capacity": 824,
+          "runs": [
+            [
+              3,
+              71
+            ],
+            [
+              71,
+              105
+            ],
+            [
+              105,
+              516
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 1313280
+        }
+      ]
+    },
+    {
+      "case": "partial and duplicate",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 515,
+          "layers": 16,
+          "capacity": 826,
+          "runs": [
+            [
+              3,
+              133
+            ],
+            [
+              6,
+              141
+            ],
+            [
+              268,
+              518
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 2109440
+        },
+        {
+          "name": "swa",
+          "rows": 515,
+          "layers": 46,
+          "capacity": 826,
+          "runs": [
+            [
+              3,
+              133
+            ],
+            [
+              6,
+              141
+            ],
+            [
+              268,
+              518
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 6064640
+        },
+        {
+          "name": "draft",
+          "rows": 515,
+          "layers": 5,
+          "capacity": 826,
+          "runs": [
+            [
+              3,
+              133
+            ],
+            [
+              6,
+              141
+            ],
+            [
+              268,
+              518
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 1318400
+        }
+      ]
+    },
+    {
+      "case": "mapped fallback",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 257,
+          "layers": 16,
+          "capacity": 528,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 257,
+          "layers": 46,
+          "capacity": 528,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 257,
+          "layers": 5,
+          "capacity": 528,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "small",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 63,
+          "layers": 16,
+          "capacity": 374,
+          "runs": [],
+          "mapped": 0,
+          "staged": 1,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 63,
+          "layers": 46,
+          "capacity": 374,
+          "runs": [],
+          "mapped": 0,
+          "staged": 1,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 63,
+          "layers": 5,
+          "capacity": 374,
+          "runs": [],
+          "mapped": 0,
+          "staged": 1,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "legacy fallback",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 129,
+          "layers": 16,
+          "capacity": 440,
+          "runs": [],
+          "mapped": 0,
+          "staged": 3,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 129,
+          "layers": 46,
+          "capacity": 440,
+          "runs": [],
+          "mapped": 0,
+          "staged": 3,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 129,
+          "layers": 5,
+          "capacity": 440,
+          "runs": [],
+          "mapped": 0,
+          "staged": 3,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "int32 source",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 262,
+          "layers": 16,
+          "capacity": 573,
+          "runs": [
+            [
+              3,
+              265
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 1073152
+        },
+        {
+          "name": "swa",
+          "rows": 262,
+          "layers": 46,
+          "capacity": 573,
+          "runs": [
+            [
+              3,
+              265
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 3085312
+        },
+        {
+          "name": "draft",
+          "rows": 262,
+          "layers": 5,
+          "capacity": 573,
+          "runs": [
+            [
+              3,
+              265
+            ]
+          ],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 670720
+        }
+      ]
+    },
+    {
+      "case": "allocation failure",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 260,
+          "layers": 16,
+          "capacity": 571,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 260,
+          "layers": 46,
+          "capacity": 571,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 260,
+          "layers": 5,
+          "capacity": 571,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "unregistered",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 256,
+          "layers": 16,
+          "capacity": 567,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 256,
+          "layers": 46,
+          "capacity": 567,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 256,
+          "layers": 5,
+          "capacity": 567,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "malformed registration",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 250,
+          "layers": 16,
+          "capacity": 561,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 250,
+          "layers": 46,
+          "capacity": 561,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 250,
+          "layers": 5,
+          "capacity": 561,
+          "runs": [],
+          "mapped": 1,
+          "staged": 0,
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "case": "empty",
+      "pools": [
+        {
+          "name": "full",
+          "rows": 0,
+          "layers": 16,
+          "capacity": 311,
+          "runs": [],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "swa",
+          "rows": 0,
+          "layers": 46,
+          "capacity": 311,
+          "runs": [],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 0
+        },
+        {
+          "name": "draft",
+          "rows": 0,
+          "layers": 5,
+          "capacity": 311,
+          "runs": [],
+          "mapped": 0,
+          "staged": 0,
+          "bytes": 0
+        }
+      ]
+    }
+  ],
+  "scope": "Native CPU hybrid control, index move, D2H/H2D submission, native event/lease ordering, MHA fast/fallback and wrapper. Compiled native gather loops and both actual DMA commands with a host memory runtime. Streams and device addresses simulated."
+}

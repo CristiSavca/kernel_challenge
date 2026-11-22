@@ -1,0 +1,220 @@
+{
+  "recorded_utc": "2026-11-19T01:18:46.102617+00:00",
+  "objective": "4x four-load stock-normalized serving throughput",
+  "best_official": {
+    "job": "abd217baf0ed49fd",
+    "candidate": "V64",
+    "score": 1.4119,
+    "concurrencies": [
+      1,
+      4,
+      16,
+      32
+    ],
+    "gpu_memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    }
+  },
+  "candidate": "V219",
+  "exports": {
+    "217": {
+      "patch": "serving_v0523/candidates/v217_captured_verify_context/patch.diff",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "tree": "16db87b83d36e5c6521051277190e8e0af0997fe",
+      "bytes": 336636,
+      "patch_sha256": "acc0939a4eb64e0845785a0ede282798443e1b1ef616d49b6851050166a8fe84",
+      "delta_sha256": "756ecd04f83b785d7a4ec59bb187a235d0f8f7e35f39939d4bba9a22fa200a55"
+    },
+    "218": {
+      "patch": "serving_v0523/candidates/v218_sliding_verify_tile_transport/patch.diff",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "tree": "943ab2021e45f8ca3bb4d59d8268fea5a50c4812",
+      "bytes": 327697,
+      "patch_sha256": "5cc601aca850e0afc3b7e21d567f21ca10f6a104ee1ab9f2c3b6188b166eebde",
+      "delta_sha256": "efdd58c6eae3210b13cc4daee77f286b1ed1117523decdc0cd611ff2e2f46311"
+    },
+    "219": {
+      "patch": "serving_v0523/candidates/v219_verify_graph_sliding_tiles/patch.diff",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "tree": "2cc74717bd297a9f0c22275d3b3f6e3af97f0623",
+      "bytes": 341945,
+      "patch_sha256": "a053e233a6dc32e42258525e66e386414e5675fdbf0032a9cad56e4753c7bc64",
+      "delta_sha256": "efdd58c6eae3210b13cc4daee77f286b1ed1117523decdc0cd611ff2e2f46311"
+    }
+  },
+  "strict_donor_orders": true,
+  "flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": "",
+    "--speculative-dflash-mixed-prefill": ""
+  },
+  "candidate_paths": 49,
+  "cold_FC_weight_bytes_per_GPU": {
+    "v215": 671088640,
+    "v120b": 83886080,
+    "v217": 83886080
+  },
+  "capture_objects": {
+    "v215_distinct_raw": 188743680,
+    "v217_unique_raw_workspace": 20971520,
+    "v217_local_weight": 83886080,
+    "v217_distinct_local_fc_outputs": 4718592,
+    "v217_total": 109576192,
+    "v217_minus_v215": -79167488
+  },
+  "runtime_cpu_votes_per_step": 0,
+  "rank_geometry": [
+    {
+      "users": 1,
+      "verify_rows": 8,
+      "v215_fc_gflop_per_rank": 5.36870912,
+      "v217_fc_gflop_per_rank": 0.67108864,
+      "allgather_gathered_output_bytes": 131072,
+      "ring_receive_bytes": 114688
+    },
+    {
+      "users": 4,
+      "verify_rows": 32,
+      "v215_fc_gflop_per_rank": 21.47483648,
+      "v217_fc_gflop_per_rank": 2.68435456,
+      "allgather_gathered_output_bytes": 524288,
+      "ring_receive_bytes": 458752
+    },
+    {
+      "users": 16,
+      "verify_rows": 128,
+      "v215_fc_gflop_per_rank": 85.89934592,
+      "v217_fc_gflop_per_rank": 10.73741824,
+      "allgather_gathered_output_bytes": 2097152,
+      "ring_receive_bytes": 1835008
+    },
+    {
+      "users": 32,
+      "verify_rows": 256,
+      "v215_fc_gflop_per_rank": 171.79869184,
+      "v217_fc_gflop_per_rank": 21.47483648,
+      "allgather_gathered_output_bytes": 4194304,
+      "ring_receive_bytes": 3670016
+    }
+  ],
+  "sliding_attention": {
+    "compiler_cases": 22,
+    "interpreter": {
+      "expired_prefixes": 52,
+      "refreshed_certificates": 613,
+      "translated_page_ids": 52343,
+      "zero_query_rows": 6,
+      "verifier_rounds": 24,
+      "TMA_loads": 1396,
+      "fp32_partial_and_lse_words": 430560,
+      "bf16_output_words": 227328,
+      "dense_reference_words": 3456,
+      "fragmented_tiles": 137
+    },
+    "actual_graph_methods": {
+      "metadata_launches": 8,
+      "full_layer": 128,
+      "sliding_layer": 368,
+      "fallback_cases": 32,
+      "descriptor_cases": 24
+    },
+    "window_left": 2047,
+    "layers": 46,
+    "replay_report": "serving_v0523/candidates/v218_sliding_verify_tile_transport/independent_geometry.json"
+  },
+  "joined": {
+    "input_witness": "f42ad704427f22648ef19dcb4014eff9eb0b106a35b59da9a53ec370aeadd864",
+    "compared_bf16_values": 215040,
+    "gloo_rank_cases": 12,
+    "full_width": {
+      "source_sha256": "75f5703e9b7d106a6d19805b35324b1099c6c6f3c8d37b95052d8f1daf9b31a9",
+      "input_witness_sha256": "f42ad704427f22648ef19dcb4014eff9eb0b106a35b59da9a53ec370aeadd864",
+      "weight_shape": [
+        8192,
+        40960
+      ],
+      "ranks": 8,
+      "verify_rows": 8,
+      "fc_elements": 65536,
+      "normalized_elements": 65536,
+      "normalized_sha256": "f4bca5173b5c5e6fe5fcfa16cccb278fde83eee70f66755f98fbcd1ae4efc652",
+      "device": "CPU",
+      "torch_version": "2.5.1",
+      "scope": "Full BF16 matrix and production capture/finish math. Channel gather emulated on one host."
+    },
+    "scope": "Production host graph and FC paths on CPU; Gloo rank exchange, CPU interpreter TMA and synthetic model weights."
+  },
+  "cli_parse_permutations": 720,
+  "negative_results": {
+    "v216": {
+      "finding": "No repeated expert weight sweep at one request. In a skewed standalone 256-row census the separate measured kernel already reads within 32.03 MiB of compulsory packed weights.",
+      "report": "serving_v0523/candidates/v216_decode_weight_multicast_feasibility/README.md"
+    },
+    "v220": {
+      "finding": "Using only previously realized per-request credit enabled zero additional mixed continuations in the archived prompt/cohort reconstructions.",
+      "fixed_cohort_pairs": 1256,
+      "report": "serving_v0523/candidates/v220_causal_prompt_bucket_credit/README.md"
+    }
+  },
+  "judge": {
+    "recorded_utc": "2026-11-19T01:18:46.102617+00:00",
+    "read_between_utc": [
+      "2026-11-19T01:12:00+00:00",
+      "2026-11-19T01:18:46.102617+00:00"
+    ],
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4
+      }
+    },
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "v219_submitted": false,
+    "existing_v215_worker_pid": 29600,
+    "existing_worker_exclusive_lock_held": true,
+    "submission_during_this_iteration": false
+  },
+  "unverified": [
+    "H200 output agreement",
+    "peak GPU memory",
+    "time to first token at each load",
+    "four-load stock-normalized throughput"
+  ],
+  "reproduction": "serving_v0523/candidates/v219_verify_graph_sliding_tiles/README.md"
+}

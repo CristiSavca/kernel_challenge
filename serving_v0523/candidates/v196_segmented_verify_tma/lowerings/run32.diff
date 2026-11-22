@@ -1,0 +1,35 @@
+--- paged_verify_attention.py
++++ run32.py
+@@ -118,7 +118,7 @@
+ 
+ 
+ @triton.jit
+-def _tile_origin_mask(Origins, start, end, limit):
++def _tile_mask(Origins, start, end, limit):
+     offset = tl.arange(0, 32)
+     live = start + offset < end
+     origin = tl.load(Origins + start + offset, live, other=-1)
+@@ -131,20 +131,10 @@
+     # A four-tile run feeds multiple stages of the dedicated tensor-map load pipeline.
+     offset = tl.arange(0, 32)
+     cursor = start
+-    mask = _tile_origin_mask(Origins, cursor, end, limit)
++    mask = _tile_mask(Origins, cursor, end, limit)
+     direct = (mask & 15) == 15
+-    if direct:
+-        while (mask == 0xFFFFFFFF) & (cursor + 32 < end):
+-            cursor += 32
+-            mask = _tile_origin_mask(Origins, cursor, end, limit)
+-        marks = mask ^ tl.full((), 0xFFFFFFFF, tl.uint32)
+-    else:
+-        marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
+-        while (marks == 0) & (cursor + 32 < end):
+-            # Revisit the trailing three bits so a run crossing this mask edge is found.
+-            cursor += 29
+-            mask = _tile_origin_mask(Origins, cursor, end, limit)
+-            marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
++    starts = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
++    marks = tl.where(direct, ~mask, starts)
+     offset_is_marked = ((marks >> offset.to(tl.uint32)) & 1) != 0
+     count = tl.min(tl.where(offset_is_marked, offset, 32), 0)
+     return tl.minimum(cursor + count, end), direct

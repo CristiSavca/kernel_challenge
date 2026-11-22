@@ -1,0 +1,55 @@
+{
+  "candidate": "V141",
+  "parent": "V139",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_tree": "baa2a58bc9d944ec0c1241b2e673ad212cc48057",
+  "tree": "fa79385948a1220e83d5cf998c5fcd6904a39d24",
+  "parent_sha256": "c4428099805f991512ff14783368efdada1985b6a4b15c039a17aa54ac4782ed",
+  "scored_anchor_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "patch_sha256": "dacec92848e669b47532fb53738c869f89efdfdf538a5a12415a20b98c3532a4",
+  "delta_sha256": "f4a9d262c0fbdccc0b380d79d4e87105933a38596847602d1ec21191a5e8ca8c",
+  "bytes": 95064,
+  "delta_bytes": 13208,
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py"
+  ],
+  "source_hashes": {
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh": "9144ddd801de08cc36cf431c1b4db10694e91a623dda81789ab51d8002fbc23f",
+    "python/sglang/srt/environ.py": "7ea6f26f4dd21ff0b9733a99c88e76697a3a190c4c02b0d425952d10e4e57ce7",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "4692e5e97a7e88ce7f32f76fc70a8df02ad90f95e2d4306ec1922900bd66e032"
+  },
+  "python_compiled": 13,
+  "fixed_flag_patterns": 76,
+  "strict_full_delta_forward_reverse_tree": true,
+  "official_export": "okc serve diff .",
+  "physical_H200": false,
+  "independent_plan_cases": 850,
+  "host_preparation_cases": 72,
+  "host_dispatch_cases": 81
+}

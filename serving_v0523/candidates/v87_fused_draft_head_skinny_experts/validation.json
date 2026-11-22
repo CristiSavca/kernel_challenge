@@ -1,0 +1,67 @@
+{
+  "patch_sha256": "c04ffda8c63ad2ac672b41f74bd7ba11f3e171abd501410a1bcc58ac24142684",
+  "pinned_sglang": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "bytes": 186779,
+  "files": 32,
+  "python_sources_compiled": 28,
+  "max_added_line_bytes": 118,
+  "template_fixed_patterns": 76,
+  "flag_overrides": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-tree": "",
+    "--speculative-dflash-tp-context-projection": "",
+    "--speculative-dflash-tp-conv-projection": "",
+    "--speculative-dflash-compact-context": "",
+    "--speculative-dflash-fused-candidate-head": ""
+  },
+  "official_export_equals_git": true,
+  "base_forward_and_reverse_apply": true,
+  "final_file_blobs_verified": 32,
+  "parents": {
+    "v84a_routed_decode_committed_context": "9e3ed9204b56015d69420d220375c4d2bddeb7e32f8b92ca3442fd6dcd1acecd",
+    "v85a_bounded_vocabulary_tiles": "6195317d73a3bb21d5a94a9d46da86294b883269544932996fa179b2188f17ee",
+    "v86_skinny_expert_gate_up": "139ce6796500f569511d7c1c0750ef14e8c2a492f855f9b910d9806e297e26e7"
+  },
+  "delta_sha256": {
+    "v85a_bounded_vocabulary_tiles": "837ffa2959c551a78eafd6fd1afaabdf778e5dd9763b8451fd12c965e5748a52",
+    "v86_skinny_expert_gate_up": "4e52b13a09556729fb2fc360dcebb2a241a653fac999e5e0bbb9aeae75226bb1"
+  },
+  "h200_execution": false,
+  "measured_speedup": null,
+  "triton_sm90_specializations": 46,
+  "triton_version": "3.8.0",
+  "assembler": "12.9.86",
+  "collective_nvcc": {
+    "target": "sm_90",
+    "tp": 8,
+    "pdl": true,
+    "BF16_all_gather_widths": [
+      4096,
+      8192
+    ],
+    "BF16_all_reduce_entries": [
+      "run",
+      "run_workspace_"
+    ],
+    "ffi": "0.1.11",
+    "compiled_object_sha256": "6bc6c7d2867e2a1ebc337b8be8b0cfef8a7a48c72e5c974a3041b3412b939ac5"
+  },
+  "cpu_harnesses": [
+    85,
+    86,
+    70,
+    81,
+    82,
+    83
+  ],
+  "compiler_receipt": "sm90_triton.json",
+  "cpu_triton_interpreter": {
+    "version": "3.8.0",
+    "tree_accept_layouts": 120,
+    "head_layouts": 27,
+    "head_dot": "FP16 operands representing exact integers; BF16 score packing. Independent CPU interpreter BF16 dot control returned 17246978000 for a product of 384. CUDA BF16 matrix execution remains unverified."
+  }
+}

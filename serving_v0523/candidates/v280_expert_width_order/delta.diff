@@ -1,0 +1,154 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/prompt_width_order.cuh b/python/sglang/kernels/jit/csrc/muse_spark/prompt_width_order.cuh
+new file mode 100644
+index 0000000..e9b5e9d
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/prompt_width_order.cuh
+@@ -0,0 +1,50 @@
++#include <humming/utils/all.cuh>
++
++// One record per lane gives every warp an O(1) lookup for the current tile.
++CUDA_INLINE uint4 *muse_width_intervals() {
++  __shared__ uint4 intervals[32];
++  return intervals;
++}
++
++template <class Ctx>
++CUDA_INLINE void muse_init_width_order(Ctx &ctx) {
++  static_assert(Ctx::kNumExperts <= 32 && Ctx::BlockShape::M == 256);
++  static_assert(Ctx::kIsGroupedContiguousGemm && !Ctx::kUseTmaC && !Ctx::kUseStreamK);
++  const uint32_t lane = threadIdx.x & 31;
++  const uint32_t rows = lane < Ctx::kNumExperts ? ctx.smem.expert_tokens[lane] : 0;
++  const uint32_t remainder = rows % 256;
++  const uint32_t full = rows / 256 + (remainder > 224);
++  const uint32_t tail = remainder == 0 || remainder > 224 ? 0 : (remainder <= 32 ? 1 : (remainder <= 128 ? 2 : 3));
++  const uint32_t count = full + (tail != 0);
++  uint32_t prefix = count;
++  #pragma unroll
++  for (uint32_t step = 1; step < 32; step *= 2) {
++    uint32_t other = __shfl_up_sync(0xffffffff, prefix, step);
++    if (lane >= step) prefix += other;
++  }
++  const uint32_t first = lane & ~3u;
++  const bool ascending = (lane & 4) != 0;
++  const uint32_t base = __shfl_sync(0xffffffff, prefix - count, first);
++  uint32_t first_full = base, tail_id = base;
++  #pragma unroll
++  for (uint32_t j = 0; j < 4; ++j) {
++    const uint32_t peer = first + j;
++    const uint32_t peer_full = __shfl_sync(0xffffffff, full, peer);
++    const uint32_t peer_tail = __shfl_sync(0xffffffff, tail, peer);
++    first_full += (peer < lane ? peer_full : 0) + (ascending && peer_tail != 0);
++    tail_id += ascending ? 0 : peer_full;
++    if (peer_tail && (peer_tail == tail ? peer < lane : (ascending ? peer_tail < tail : peer_tail > tail))) ++tail_id;
++  }
++  muse_width_intervals()[lane] = make_uint4(first_full, first_full + full, tail ? tail_id : ~0u, prefix - count);
++}
++
++template <class Ctx>
++CUDA_INLINE void muse_seek_width(Ctx &ctx, uint32_t &tile, uint32_t &expert, uint32_t &offset, uint32_t &end) {
++  const uint4 interval = muse_width_intervals()[threadIdx.x & 31];
++  const uint32_t owners = __ballot_sync(0xffffffff, (tile >= interval.x && tile < interval.y) || tile == interval.z);
++  expert = __ffs(owners) - 1;
++  const uint32_t local = tile == interval.z ? interval.y - interval.x : tile - interval.x;
++  offset = ctx.smem.expert_offset[expert] + 256 * __shfl_sync(0xffffffff, local, expert);
++  end = ctx.smem.expert_offset[expert] + ctx.smem.expert_tokens[expert];
++  tile = __shfl_sync(0xffffffff, interval.w + local, expert);
++}
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index 2d7755d..ac76fa0 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -130,2 +130,3 @@ def _prepare(context, meta, compute, tuning):
+         residual_tiles = False
++        width_order = False
+ 
+@@ -137,2 +138,6 @@ def _prepare(context, meta, compute, tuning):
+             adapt_prompt_weights(self)
++            if self.width_order:
++                from sglang.srt.layers.muse_spark.prompt_width_order import adapt_width_order
++
++                adapt_width_order(self)
+             if self.residual_tiles:
+@@ -175,2 +180,5 @@ def _prepare(context, meta, compute, tuning):
+ 
++    class OrderedPromptWeightPipeline(WidePromptWeightPipeline):
++        width_order = True
++
+     cfg = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+@@ -198,5 +206,6 @@ def _prepare(context, meta, compute, tuning):
+     wide_grid = None
++    ordered = None
+     for variant, config in choices:
+         # Combine adjacent pair jobs only when the original CTA grid can be matched.
+-        if config.get("multi_cast_size_a") == 4 and (wide_grid is None or wide_grid[1] % 4):
++        if config.get("multi_cast_size_a") == 4 and wide_grid is None:
+             continue
+@@ -209,7 +218,23 @@ def _prepare(context, meta, compute, tuning):
+                     wide_grid = [kernel.kernel_id, capacity]
+-                elif capacity >= wide_grid[1]:
++                elif capacity >= wide_grid[1] and wide_grid[1] % 4 == 0:
+                     wide_grid[0] = kernel.kernel_id
++                elif kernel.num_experts <= 32 and capacity >= wide_grid[1] - 4:
++                    # At most one extra equal-duration grid wave for the bounded row interval.
++                    variant_ordered = OrderedPromptWeightPipeline(**config)
++                    variant_ordered.check_context()
++                    pair = wide_grid[1]
++                    grid = min(_cluster_grid(variant_ordered, sms), pair - pair % 4)
++                    if 0 < pair - grid <= 4 and grid > 0:
++                        tile_limit = pair * grid // ((kernel.shape_n // 128) * (pair - grid))
++                        upper = 256 * (tile_limit - kernel.num_experts + 1)
++                        if upper > 0:
++                            ordered = [variant_ordered.kernel_id, grid], upper
+                 continue
+             if wide_grid is not None:
+-                return _prompt_grid_ranges(kernel.num_experts, [kernel.kernel_id, 0], wide_grid)
++                ranges = _prompt_grid_ranges(kernel.num_experts, [kernel.kernel_id, 0], wide_grid)
++                if ordered is not None:
++                    from sglang.srt.layers.muse_spark.prompt_width_order import bounded_width_ranges
++
++                    return bounded_width_ranges(ranges, wide_grid, ordered)
++                return ranges
+             return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_width_order.py b/python/sglang/srt/layers/muse_spark/prompt_width_order.py
+new file mode 100644
+index 0000000..25897f9
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/prompt_width_order.py
+@@ -0,0 +1,37 @@
++"""Order grouped prompt W2 residual tiles in bounded expert cohorts."""
++from hashlib import sha256
++from pathlib import Path
++
++
++def adapt_width_order(kernel):
++    import humming
++    from sglang.kernels import jit
++
++    vendor = Path(humming.__path__[0]) / "include/humming/scheduler.cuh"
++    scheduler = vendor.read_text()
++    if sha256(scheduler.encode()).hexdigest() != "24443b74d10ac799d805d2ffc840503142696f744a1b3882379c55a6efc1f2e2":
++        raise ValueError("unsupported grouped prompt scheduler")
++    helper = Path(jit.__file__).parent / "csrc/muse_spark/prompt_width_order.cuh"
++    marker = "if (threadIdx.x == 0) ctx.smem.total_m_blocks[0] = m_blocks;"
++    scheduler = scheduler.replace(marker, marker + "\n        muse_init_width_order(ctx);")
++    scheduler = scheduler.replace("if (has_next_block) fetch_moe_group_block();",
++        "if (has_next_block) muse_seek_width(ctx, m_block_id, expert_id, m_offset, current_shape_m);")
++    kernel.code = kernel.code.replace("#include <humming/scheduler.cuh>",
++        helper.read_text() + "\n" + scheduler.replace("#pragma once", "", 1))
++    # The interval table precedes StageStorage, whose A operand declares 1024-byte alignment.
++    kernel.code = kernel.code.replace("extern __shared__ __align__(128)", "extern __shared__ __align__(1024)")
++
++
++def bounded_width_ranges(ranges, pair, ordered):
++    import torch
++
++    choice, upper = ordered
++    result = []
++    for lo, hi, kernel, grid in ranges.reshape(-1, 4).tolist():
++        if [kernel, grid] == pair and lo < upper:
++            stop = min(hi, upper)
++            result.extend((lo, stop, *choice))
++            lo = stop
++        if lo < hi:
++            result.extend((lo, hi, kernel, grid))
++    return torch.tensor(result, dtype=torch.int64, device="cpu")

@@ -1,0 +1,135 @@
+{
+  "tree": "673ac11b38d2419c523293d9ba7825f931587c7a",
+  "source_sha256": {
+    "python/sglang/srt/mem_cache/pool_host/base.py": "b6b9c3a30bbbc10b36741829a0cc2bfc1b2731e4880e50cc9d0fb47e9f5e6628",
+    "python/sglang/srt/mem_cache/l2_transfer.py": "eec2986abda098392f0873375d76d21e25a2d428a295f644ad4dd446b06c13f3",
+    "python/sglang/kernels/ops/kvcache/hicache.py": "f26aa62750f30ae9ce7a49ced671407daa97e3334288f8d335d51d666c5cc97d",
+    "python/sglang/kernels/jit/csrc/kvcacheio/hicache.cuh": "a5ba675a076689051c27c88cc2a9aa87eed2b0948cab064c67aced698eaa6e92",
+    "python/sglang/srt/mem_cache/pool_host/mha.py": "86aa2b2e609d35a3318aa7f3a55e2521329da356de4c485c51f76c75d6684a9e",
+    "python/sglang/srt/mem_cache/pool_host/common.py": "b33ac0608174dd16c9f71475c4ccaeabe53a8bfc2821d9326dfd667b40fd43ef"
+  },
+  "mapping": {
+    "identity": true,
+    "translated": true,
+    "discontinuous": false,
+    "gap": false,
+    "overlap": false,
+    "short": false,
+    "empty": false,
+    "missing": false,
+    "unmapped": false,
+    "no registration": false
+  },
+  "cases": [
+    {
+      "case": "ascending",
+      "rows": 16384,
+      "layers": 16,
+      "execution": "mapped",
+      "operator_calls": 1,
+      "checked_host_bytes": 67137536,
+      "checked_device_bytes": 8192
+    },
+    {
+      "case": "gaps",
+      "rows": 513,
+      "layers": 46,
+      "execution": "mapped",
+      "operator_calls": 1,
+      "checked_host_bytes": 12164608,
+      "checked_device_bytes": 23552
+    },
+    {
+      "case": "ascending",
+      "rows": 769,
+      "layers": 5,
+      "execution": "mapped",
+      "operator_calls": 1,
+      "checked_host_bytes": 1986560,
+      "checked_device_bytes": 5120
+    },
+    {
+      "case": "descending",
+      "rows": 130,
+      "layers": 4,
+      "execution": "staged",
+      "operator_calls": 3,
+      "checked_host_bytes": 140288,
+      "checked_device_bytes": 2048
+    },
+    {
+      "case": "duplicate",
+      "rows": 181,
+      "layers": 3,
+      "execution": "staged",
+      "operator_calls": 3,
+      "checked_host_bytes": 144384,
+      "checked_device_bytes": 1536
+    },
+    {
+      "case": "ascending",
+      "rows": 127,
+      "layers": 3,
+      "execution": "staged",
+      "operator_calls": 2,
+      "checked_host_bytes": 102912,
+      "checked_device_bytes": 1536
+    },
+    {
+      "case": "ascending",
+      "rows": 128,
+      "layers": 3,
+      "execution": "mapped",
+      "operator_calls": 1,
+      "checked_host_bytes": 103680,
+      "checked_device_bytes": 1536
+    },
+    {
+      "case": "mapping refused",
+      "rows": 257,
+      "layers": 2,
+      "execution": "staged",
+      "operator_calls": 5,
+      "checked_host_bytes": 135168,
+      "checked_device_bytes": 1024
+    },
+    {
+      "case": "strided",
+      "rows": 129,
+      "layers": 4,
+      "execution": "staged",
+      "operator_calls": 3,
+      "checked_host_bytes": 139264,
+      "checked_device_bytes": 2048
+    },
+    {
+      "case": "mixed dtype",
+      "rows": 128,
+      "layers": 3,
+      "execution": "staged",
+      "operator_calls": 2,
+      "checked_host_bytes": 103680,
+      "checked_device_bytes": 1536
+    },
+    {
+      "case": "layer_first",
+      "rows": 513,
+      "layers": 3,
+      "execution": "native layer-first",
+      "operator_calls": 1,
+      "checked_host_bytes": 399360,
+      "checked_device_bytes": 1536
+    },
+    {
+      "case": "ascending",
+      "rows": 0,
+      "layers": 3,
+      "execution": "staged",
+      "operator_calls": 0,
+      "checked_host_bytes": 5376,
+      "checked_device_bytes": 0
+    }
+  ],
+  "checked_bytes": 82612480,
+  "scope": "Native transfer and MHA pool dispatch, staged slicing, per-layer restoration, CPU stand-ins for streams and CUDA launches."
+}

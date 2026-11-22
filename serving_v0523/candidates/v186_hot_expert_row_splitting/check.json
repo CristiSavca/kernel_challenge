@@ -1,0 +1,372 @@
+{
+  "archived_physical": {
+    "h200_timed_rank_counts": [
+      [
+        1,
+        0
+      ],
+      [
+        8,
+        10
+      ],
+      [
+        32,
+        33
+      ],
+      [
+        64,
+        66
+      ],
+      [
+        128,
+        128
+      ],
+      [
+        256,
+        252
+      ],
+      [
+        512,
+        492
+      ],
+      [
+        753,
+        725
+      ],
+      [
+        2048,
+        2001
+      ],
+      [
+        3012,
+        2986
+      ],
+      [
+        4096,
+        3996
+      ],
+      [
+        8192,
+        8223
+      ],
+      [
+        12288,
+        12046
+      ],
+      [
+        16384,
+        16224
+      ]
+    ],
+    "h200_16k": [
+      {
+        "source": "experiments/modal_serving/20261113T045613Z/result.json",
+        "routes": 16224,
+        "stock_us": 7393.98,
+        "dense384_us": null,
+        "isolated_bf16_us": 2649.8
+      },
+      {
+        "source": "experiments/modal_serving/20261113T052120Z/result.json",
+        "routes": 16224,
+        "stock_us": 7206.02,
+        "dense384_us": null,
+        "isolated_bf16_us": 2646.1
+      },
+      {
+        "source": "experiments/modal_serving/20261113T055610Z/result.json",
+        "routes": 16224,
+        "stock_us": 7231.04,
+        "dense384_us": null,
+        "isolated_bf16_us": 2642.8
+      },
+      {
+        "source": "experiments/modal_serving/20261113T065259Z/result.json",
+        "routes": 16224,
+        "stock_us": 7187.94,
+        "dense384_us": 5831.04,
+        "isolated_bf16_us": 2697.9
+      }
+    ],
+    "h200_graph_replay": [
+      {
+        "source": "experiments/modal_serving/20261113T065259Z/result.json",
+        "file_sha256": "6c8f79b19ce25129ab3e1895001904ab49305519eda839579b3cb861f67b1af9",
+        "trials": [
+          {
+            "local_routes": 16336,
+            "replay_equals_eager": true,
+            "finite": true
+          },
+          {
+            "local_routes": 16391,
+            "replay_equals_eager": true,
+            "finite": true
+          },
+          {
+            "local_routes": 30697,
+            "replay_equals_eager": true,
+            "finite": true
+          }
+        ]
+      }
+    ],
+    "hot_fraction_of_mean": 1.87359619140625,
+    "some_other_rank_at_most": 14339,
+    "forced_hot_expert_at_least": 4096,
+    "ordinary_checked_all_rank_histograms": 0
+  },
+  "cost_assumptions": {
+    "rows_per_tile": 176,
+    "owner_ns_per_issued_row": 165,
+    "helper_ns_per_issued_row": 165,
+    "link_bytes_per_ns": 225,
+    "launch_ns_per_move": 30000,
+    "global_planning_ns": 100000,
+    "minimum_saving_ns": 50000,
+    "weight_bytes": 28311560,
+    "hidden": 4096,
+    "intermediate": 4096,
+    "helper_workspace_bytes": 33554432
+  },
+  "budgets_bytes": [
+    268435456,
+    268435456,
+    268435456,
+    268435456,
+    268435456,
+    268435456,
+    268435456,
+    268435456
+  ],
+  "scenarios": {
+    "observed_rank_even_peers": {
+      "moves": [
+        {
+          "owner": 0,
+          "helper": 1,
+          "expert": 0,
+          "begin": 0,
+          "end": 4544
+        },
+        {
+          "owner": 0,
+          "helper": 2,
+          "expert": 1,
+          "begin": 0,
+          "end": 4544
+        }
+      ],
+      "moved_rows": 9088,
+      "max_routes": 30697,
+      "projected_expert_component_ms": 5.02351,
+      "original_expert_component_ms": 5.45952,
+      "ratio": 1.08679,
+      "max_reserved_mib": 236.639,
+      "total_wire_mib": 196.139
+    },
+    "observed_rank_hidden_hot_peer": {
+      "moves": [],
+      "moved_rows": 0,
+      "max_routes": 38000,
+      "projected_expert_component_ms": 6.50496,
+      "original_expert_component_ms": 6.50496,
+      "ratio": 1.0,
+      "max_reserved_mib": 0.0,
+      "total_wire_mib": 0.0
+    },
+    "uniform": {
+      "moves": [],
+      "moved_rows": 0,
+      "max_routes": 16524,
+      "projected_expert_component_ms": 3.07824,
+      "original_expert_component_ms": 3.07824,
+      "ratio": 1.0,
+      "max_reserved_mib": 0.0,
+      "total_wire_mib": 0.0
+    },
+    "four_local": {
+      "moves": [
+        {
+          "owner": 0,
+          "helper": 1,
+          "expert": 9,
+          "begin": 0,
+          "end": 2144
+        },
+        {
+          "owner": 0,
+          "helper": 2,
+          "expert": 27,
+          "begin": 0,
+          "end": 1977
+        },
+        {
+          "owner": 0,
+          "helper": 3,
+          "expert": 0,
+          "begin": 0,
+          "end": 1982
+        },
+        {
+          "owner": 0,
+          "helper": 4,
+          "expert": 28,
+          "begin": 0,
+          "end": 1985
+        },
+        {
+          "owner": 0,
+          "helper": 5,
+          "expert": 10,
+          "begin": 0,
+          "end": 1998
+        },
+        {
+          "owner": 0,
+          "helper": 6,
+          "expert": 29,
+          "begin": 0,
+          "end": 2008
+        },
+        {
+          "owner": 0,
+          "helper": 7,
+          "expert": 30,
+          "begin": 0,
+          "end": 2016
+        }
+      ],
+      "moved_rows": 14110,
+      "max_routes": 65536,
+      "projected_expert_component_ms": 10.93127,
+      "original_expert_component_ms": 11.1804,
+      "ratio": 1.02279,
+      "max_reserved_mib": 220.899,
+      "total_wire_mib": 409.684
+    },
+    "single_hot": {
+      "moves": [
+        {
+          "owner": 0,
+          "helper": 1,
+          "expert": 0,
+          "begin": 11440,
+          "end": 16384
+        },
+        {
+          "owner": 0,
+          "helper": 2,
+          "expert": 0,
+          "begin": 6512,
+          "end": 11440
+        }
+      ],
+      "moved_rows": 9872,
+      "max_routes": 30371,
+      "projected_expert_component_ms": 4.90642,
+      "original_expert_component_ms": 5.43048,
+      "ratio": 1.10681,
+      "max_reserved_mib": 252.276,
+      "total_wire_mib": 208.401
+    },
+    "same_four_striped": {
+      "moves": [],
+      "moved_rows": 0,
+      "max_routes": 16624,
+      "projected_expert_component_ms": 3.0492,
+      "original_expert_component_ms": 3.0492,
+      "ratio": 1.0,
+      "max_reserved_mib": 0.0,
+      "total_wire_mib": 0.0
+    },
+    "all_disjoint_equal": {
+      "moves": [],
+      "moved_rows": 0,
+      "max_routes": 16384,
+      "projected_expert_component_ms": 2.78784,
+      "original_expert_component_ms": 2.78784,
+      "ratio": 1.0,
+      "max_reserved_mib": 0.0,
+      "total_wire_mib": 0.0
+    }
+  },
+  "synthetic_completion_sensitivity": {
+    "100GBps_102ns": {
+      "rows": 0,
+      "ratio": 1.0,
+      "single_bank_net_saving_row_threshold": null
+    },
+    "100GBps_165ns": {
+      "rows": 0,
+      "ratio": 1.0,
+      "single_bank_net_saving_row_threshold": 313116
+    },
+    "100GBps_359ns": {
+      "rows": 9088,
+      "ratio": 1.09888,
+      "single_bank_net_saving_row_threshold": 1606
+    },
+    "100GBps_443ns": {
+      "rows": 13632,
+      "ratio": 1.14631,
+      "single_bank_net_saving_row_threshold": 1123
+    },
+    "225GBps_102ns": {
+      "rows": 0,
+      "ratio": 1.0,
+      "single_bank_net_saving_row_threshold": 5353
+    },
+    "225GBps_165ns": {
+      "rows": 9088,
+      "ratio": 1.08679,
+      "single_bank_net_saving_row_threshold": 1692
+    },
+    "225GBps_359ns": {
+      "rows": 13632,
+      "ratio": 1.28146,
+      "single_bank_net_saving_row_threshold": 545
+    },
+    "225GBps_443ns": {
+      "rows": 13632,
+      "ratio": 1.32373,
+      "single_bank_net_saving_row_threshold": 422
+    },
+    "450GBps_102ns": {
+      "rows": 9088,
+      "ratio": 1.10347,
+      "single_bank_net_saving_row_threshold": 1418
+    },
+    "450GBps_165ns": {
+      "rows": 13632,
+      "ratio": 1.23562,
+      "single_bank_net_saving_row_threshold": 723
+    },
+    "450GBps_359ns": {
+      "rows": 13280,
+      "ratio": 1.38588,
+      "single_bank_net_saving_row_threshold": 289
+    },
+    "450GBps_443ns": {
+      "rows": 13104,
+      "ratio": 1.41372,
+      "single_bank_net_saving_row_threshold": 229
+    }
+  },
+  "slot_return_cpu": {
+    "cases": 60,
+    "valid_slots": 349968,
+    "moved_slots": 18673,
+    "positive": 24
+  },
+  "floating_boundaries": {
+    "native_BF16_rows_returned_to_original_owner": true,
+    "hardware_kernel_reassociation_tested": false
+  },
+  "host_python_planning_median_us": {
+    "all_disjoint_equal": 59.5,
+    "observed_rank_even_peers": 2854.6,
+    "single_hot": 2278.6,
+    "four_local": 7817.4
+  }
+}

@@ -1,0 +1,146 @@
+diff --git a/python/sglang/srt/layers/communication/sp_ring_qkv.py b/python/sglang/srt/layers/communication/sp_ring_qkv.py
+new file mode 100644
+index 0000000..2371593
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_ring_qkv.py
+@@ -0,0 +1,101 @@
++"""Overlap a sequence-parallel Hopper QKV projection with a ring of token shards."""
++
++import torch
++from torch.nn import functional as F
++
++from sglang.srt.runtime_context import get_exec, get_parallel
++from sglang.srt.utils.custom_op import register_custom_op
++
++
++def ring_qkv_eligible(rows, channels, size):
++    # Amortize launch and weight reload costs across reasonably tall GEMMs.
++    return rows >= 512 and rows * size >= 2 * channels
++
++
++def enable_ring_qkv(linears, group):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
++
++    if group.world_size < 4 or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return
++    comm = group.pynccl_comm
++    ready = (
++        comm is not None
++        and comm.available
++        and get_parallel().attn_tp_group.ranks == group.ranks
++        and torch.cuda.get_device_capability(comm.device)[0] == 9
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not is_batch_invariant_mode_enabled()
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and all(
++            type(fc.quant_method) is UnquantizedLinearMethod
++            and "apply" not in vars(fc.quant_method)
++            and fc.bias is None
++            and not fc.gather_output
++            and fc.weight.device == comm.device
++            and fc.weight.dtype == torch.bfloat16
++            and fc.weight.ndim == 2
++            and fc.weight.is_contiguous()
++            and not fc.weight.requires_grad
++            for fc in linears
++        )
++    )
++    # All peers must enter the same P2P operations, including during warmup.
++    status = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if not status.item():
++        return
++    group.sp_qkv_transfer_stream = torch.cuda.Stream(device=comm.device)
++    probe = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
++    with comm.change_state(enable=True):
++        _exchange(comm, group, probe, torch.empty_like(probe))
++    for fc in linears:
++        fc._sp_ring_qkv = True
++
++
++def _exchange(comm, group, source, destination):
++    rank, size = group.rank_in_group, group.world_size
++    comm.group_start()
++    try:
++        comm.send(source, (rank + 1) % size)
++        comm.recv(destination, (rank - 1) % size)
++    finally:
++        comm.group_end()
++
++
++def _ring_shape(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
++    return local.new_empty((local.shape[0] * size, weight.shape[0]))
++
++
++@register_custom_op(fake_impl=_ring_shape)
++def ring_qkv(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool) -> torch.Tensor:
++    from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++    group = get_parallel().tp_group
++    comm = group.pynccl_comm
++    compute = torch.cuda.current_stream(local.device)
++    transfer = group.sp_qkv_transfer_stream
++    rows = local.shape[0]
++    buffers = local.new_empty((2, *local.shape))
++    output = local.new_empty((size * rows, weight.shape[0]))
++    project = bf16_gemm_dispatch if dispatch else F.linear
++    owner, current = group.rank_in_group, local
++    with comm.change_state(enable=True):
++        for hop in range(size):
++            if hop + 1 < size:
++                incoming = buffers[hop % 2]
++                # Free the previous reader of the destination before recycling it.
++                # This fence leaves the upcoming local projection off the send path.
++                transfer.wait_stream(compute)
++                with torch.cuda.stream(transfer):
++                    _exchange(comm, group, current, incoming)
++            output.narrow(0, owner * rows, rows).copy_(project(current, weight, None))
++            if hop + 1 < size:
++                # The next projection consumes this receive. Joining each exchange
++                # also keeps side-stream references inside the lifetime of the op.
++                compute.wait_stream(transfer)
++                owner, current = (owner - 1) % size, incoming
++    return output
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index ea02720..d480a8c 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -239,6 +239,17 @@ def column_parallel_g_matmul(
+     tile-gated all-gather; other models retain their existing implementation.
+     """
+     num_tokens = sp_num_tokens()
++    if getattr(linear, "_sp_ring_qkv", False) and bias is None and input_parallel.dtype == torch.bfloat16:
++        from sglang.srt.layers.communication.sp_ring_qkv import ring_qkv, ring_qkv_eligible
++        from sglang.srt.layers.quantization.unquant import get_bf16_gemm_backend
++
++        size = get_parallel().tp_group.world_size
++        if ring_qkv_eligible(input_parallel.shape[0], linear.weight.shape[0], size):
++            backend = get_bf16_gemm_backend()
++            return ring_qkv(
++                input_parallel.contiguous(), linear.weight, size,
++                backend.is_cutedsl() or backend.is_gemv(),
++            )[:num_tokens]
+     if sp_fused_matmul_eligible(linear):
+         if getattr(linear, "_sp_use_cutlass", False):
+             from sglang.kernels.ops.communication.sp_collective_gemm import (
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 395a5d8..34b1341 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1189,6 +1189,12 @@ class MuseSpark1xModel(nn.Module):
+             # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
+             backend = get_moe_runner_backend()
+             replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            if replicate_expert_input:
++                from sglang.srt.layers.communication.sp_ring_qkv import enable_ring_qkv
++
++                enable_ring_qkv(
++                    [layer.self_attn.qkv_proj for layer in self.layers], get_parallel().tp_group
++                )
+             moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]

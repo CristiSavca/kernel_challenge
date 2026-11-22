@@ -1,0 +1,156 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+index ca60fc5..13758cf 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -57,6 +57,40 @@ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>
+     }
+   }
+ };
++#ifdef MUSE_FULL_K_STAGE
++// Hold all four K16 operands until the last tensor operation completes.
++struct MuseFullStageMma : MuseOverlapMma {
++  using MuseOverlapMma::MuseOverlapMma;
++  static_assert(bands == 2 && MuseOverlapCtx::BlockShape::M == 8);
++  typename MmaOpClass::BRegisters held[4][2];
++  CUDA_INLINE void run(uint32_t stage_id, uint32_t iteration) {
++    const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
++        + stage_id * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
++    auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
++    PRAGMA_UNROLL
++    for (unsigned j = 0; j < 2; ++j)
++      PRAGMA_UNROLL
++      for (unsigned i = 0; i < 4; ++i) held[iteration][j][i] = regs_b[iteration % 2][j][0][i];
++    wgmma_fence();
++    PRAGMA_UNROLL
++    for (unsigned j = 0; j < 2; ++j)
++      MmaOpClass::fma(desc, held[iteration][j], regs_c[0][j][0], true);
++    if (iteration == 3) {
++      wgmma_commit();
++      wgmma_wait<0>();
++      PRAGMA_UNROLL
++      for (unsigned k = 0; k < 4; ++k)
++        PRAGMA_UNROLL
++        for (unsigned j = 0; j < 2; ++j)
++          PRAGMA_UNROLL
++          for (unsigned i = 0; i < 4; ++i) warpgroup_fence_operand(held[k][j][i]);
++    }
++  }
++};
++using MuseSelectedMma = MuseFullStageMma;
++#else
++using MuseSelectedMma = MuseOverlapMma;
++#endif
+ template <> struct MmaSelector<MmaType::WGMMA, MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>> {
+-  using Type = MuseOverlapMma;
++  using Type = MuseSelectedMma;
+ };
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index f5d21ed..932e977 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -62,7 +62,8 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             if self.live_reduction:
+                 from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
+ 
+-                valid = has_live_decode_isa(assembly, self.block_shape[0], bands=self.warp_shape[1] // 16)
++                valid = has_live_decode_isa(assembly, self.block_shape[0], bands=self.warp_shape[1] // 16,
++                                            full_stage=getattr(self, "full_stage", False))
+             if self.residual_tiles:
+                 from sglang.srt.layers.muse_spark.residual_prompt_mma import has_residual_isa
+ 
+@@ -116,6 +117,9 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     class LiveDecodeGateUpKernel(GroupedDecodeFullPairGateUpKernel):
+         live_reduction = True
+ 
++    class FullStageDecodeGateUpKernel(LiveDecodeGateUpKernel):
++        full_stage = True
++
+     config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     config.pop("sublayer_name", None)
+     required = {
+@@ -142,6 +146,8 @@ def _compile(context, meta, compute, tuning, prompt=False):
+         variants = (GroupedDecodeGateUpKernel,)
+     else:
+         variants = (LiveDecodeGateUpKernel, GroupedDecodeFullPairGateUpKernel, GroupedDecodeGateUpKernel)
++    if not prompt and block == (8, 256, 128):
++        variants = (FullStageDecodeGateUpKernel, *variants)
+     for variant in variants:
+         try:
+             kernel = variant(**config)
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+index 3f1d6d6..5abf8ec 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -31,10 +31,15 @@ def enable_full_pair(kernel):
+                         "            mma.transform_b(\n")
+     prefetch = "s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);"
+     loop = loop.replace(prefetch, "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch)
+-    if kernel.warp_shape[1] == 64:
++    full_stage = getattr(kernel, "full_stage", False)
++    if full_stage and (tuple(kernel.warp_shape) != (8, 32, 64) or kernel.num_stages != 4
++                       or kernel.num_ctas_per_sm != 1):
++        raise ValueError("unsupported complete decode stage")
++    if kernel.warp_shape[1] == 64 or full_stage:
+         # 512 math lanes at 112 registers plus 128 loader lanes at 32 exactly
+         # consume the original 61,440-register CTA pool.
+         loop = loop.replace("? 40 : 24;", "? 32 : 24;").replace("? 96 : 232;", "? 112 : 232;")
++    if kernel.warp_shape[1] == 64 or (full_stage and kernel.block_shape[2] == 128):
+         guarded = "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch
+         loop = loop.replace(guarded, "").replace("            mma.transform_b(", "            " + guarded + "\n            mma.transform_b(")
+     include = "#include <humming/kernel/humming_ws.cuh>"
+@@ -42,6 +47,8 @@ def enable_full_pair(kernel):
+         raise ValueError("unsupported grouped Humming source include")
+     kernel.code = kernel.code.replace(include, loop.replace("#pragma once", "", 1))
+     kernel.code += "\n#define MUSE_PAIR_LAST_K_SLICES\n"
++    if full_stage:
++        kernel.code += "\n#define MUSE_FULL_K_STAGE\n"
+ 
+ 
+ def append_pair(kernel, both_pairs=False):
+@@ -71,7 +78,8 @@ def check_pair_code(compiler, kernel, both_pairs=False):
+     if getattr(kernel, "live_reduction", False):
+         from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
+ 
+-        valid = has_live_decode_isa(code, kernel.block_shape[0], bands=kernel.warp_shape[1] // 16, stages=kernel.num_stages)
++        valid = has_live_decode_isa(code, kernel.block_shape[0], bands=kernel.warp_shape[1] // 16, stages=kernel.num_stages,
++                                    full_stage=getattr(kernel, "full_stage", False))
+     if not valid or "UTMALDG.3D" not in code:
+         raise RuntimeError("grouped matrix pipeline compiled with unsupported instruction schedule")
+ 
+@@ -109,6 +117,9 @@ def _prepare_down(context, meta, compute, tuning):
+     class LiveDecodeDownKernel(GroupedDecodeFullPairDownKernel):
+         live_reduction = True
+ 
++    class FullStageDecodeDownKernel(LiveDecodeDownKernel):
++        full_stage = True
++
+     config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     config.pop("sublayer_name", None)
+     required = {
+@@ -128,6 +139,8 @@ def _prepare_down(context, meta, compute, tuning):
+             and config.get("num_ctas_per_sm", 1) == 1):
+         wide = config | {"block_shape": (m, 256, 256), "warp_shape": (m, 64, 64), "num_stages": 3}
+         variants.insert(0, (LiveDecodeDownKernel, wide))
++    if tuple(config["block_shape"]) == (8, 128, 256):
++        variants.insert(0, (FullStageDecodeDownKernel, config))
+     for variant, geometry in variants:
+         try:
+             kernel = variant(**geometry)
+diff --git a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+index 114b26d..e5ab6ea 100644
+--- a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
++++ b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+@@ -28,9 +28,10 @@ def bind_live_decode_reduce(kernel):
+         adapt_residual_tiles(kernel, paired=True, decode_width=kernel.block_shape[0])
+ 
+ 
+-def has_live_decode_isa(assembly, width, *, bands=2, stages=4):
+-    if bands == 4 and re.search(r"\b(?:LDL|STL)\b", assembly):
++def has_live_decode_isa(assembly, width, *, bands=2, stages=4, full_stage=False):
++    if (full_stage or bands == 4) and re.search(r"\b(?:LDL|STL)\b", assembly):
+         return False
++    waits = 1 if full_stage else (4 if bands == 4 else 2)
+     widths = range(8, width + 1, 8)
+     return (all(assembly.count(f"HGMMA.64x{w}x16.F32.BF16") == 4 * stages * bands for w in widths)
+-            and assembly.count("WARPGROUP.DEPBAR.LE") == (4 if bands == 4 else 2) * stages * len(widths))
++            and assembly.count("WARPGROUP.DEPBAR.LE") == waits * stages * len(widths))

@@ -1,0 +1,228 @@
+{
+  "phase": {
+    "backend_writes": 6,
+    "full_dense": 2,
+    "new_physical_kv_bytes": 538624,
+    "fused_writes": 2,
+    "target_with_both_certificates": 4,
+    "window_dense": 2,
+    "pinned_forward_modes": true,
+    "production_model_and_fa_wrapper": true,
+    "device_math": "host stand-ins for projections, norm, store and FA3"
+  },
+  "expert": {
+    "startup_cases": 72,
+    "dispatch_cases": 81,
+    "branches": {
+      "empty": 9,
+      "tiny": 4,
+      "indexed": 60,
+      "medium": 8
+    },
+    "independent_jit_states": [
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        true
+      ],
+      [
+        true,
+        false
+      ],
+      [
+        true,
+        true
+      ]
+    ],
+    "physical_gpu": false
+  },
+  "warp": {
+    "header_sha256": "901a1c8ebfe37ed4a67586ad8766e27daa7d783a22f51097d35c13078896c43e",
+    "production_warp_execution": true,
+    "cases": [
+      {
+        "hidden": 128,
+        "intermediate": 128,
+        "tokens": 7,
+        "topk": 3,
+        "experts": 2,
+        "groups": 1,
+        "tiles": 0,
+        "live_routes": 0,
+        "active_bf16": 0,
+        "output_bf16": 0,
+        "preserved_inactive": 5376,
+        "preserved_input": 896
+      },
+      {
+        "hidden": 256,
+        "intermediate": 128,
+        "tokens": 11,
+        "topk": 3,
+        "experts": 4,
+        "groups": 1,
+        "tiles": 5,
+        "live_routes": 21,
+        "active_bf16": 2688,
+        "output_bf16": 5376,
+        "preserved_inactive": 4608,
+        "preserved_input": 2816
+      },
+      {
+        "hidden": 128,
+        "intermediate": 512,
+        "tokens": 19,
+        "topk": 2,
+        "experts": 3,
+        "groups": 2,
+        "tiles": 5,
+        "live_routes": 38,
+        "active_bf16": 19456,
+        "output_bf16": 4864,
+        "preserved_inactive": 0,
+        "preserved_input": 2432
+      },
+      {
+        "hidden": 512,
+        "intermediate": 256,
+        "tokens": 8,
+        "topk": 8,
+        "experts": 3,
+        "groups": 2,
+        "tiles": 5,
+        "live_routes": 34,
+        "active_bf16": 8704,
+        "output_bf16": 17408,
+        "preserved_inactive": 23040,
+        "preserved_input": 4096
+      },
+      {
+        "hidden": 384,
+        "intermediate": 640,
+        "tokens": 9,
+        "topk": 5,
+        "experts": 3,
+        "groups": 3,
+        "tiles": 6,
+        "live_routes": 41,
+        "active_bf16": 26240,
+        "output_bf16": 15744,
+        "preserved_inactive": 4096,
+        "preserved_input": 3456
+      },
+      {
+        "hidden": 4096,
+        "intermediate": 4096,
+        "tokens": 2,
+        "topk": 2,
+        "experts": 1,
+        "groups": 1,
+        "tiles": 1,
+        "live_routes": 1,
+        "active_bf16": 4096,
+        "output_bf16": 4096,
+        "preserved_inactive": 24576,
+        "preserved_input": 8192
+      }
+    ],
+    "ascending_k_cancellation": [
+      {
+        "split_sensitivity_example": 2,
+        "gate_activation": 0.0,
+        "down_output": 5.4424162954092026e-09,
+        "serial_down": 5.4424162954092026e-09
+      },
+      {
+        "split_sensitivity_example": 4,
+        "gate_activation": 0.0,
+        "down_output": 5.4424162954092026e-09,
+        "serial_down": 5.4424162954092026e-09
+      }
+    ],
+    "physical_hardware": false
+  },
+  "window": {
+    "wrapper_pairs": 72,
+    "dense_calls": 12,
+    "physical_kv_bytes": 57103104,
+    "fp32_reference_outputs": 16128,
+    "consumer_stream_registrations": 3,
+    "fallback_calls": 60,
+    "fixture_cases": [
+      "one_long",
+      "one_first",
+      "equal_visible_ragged",
+      "ragged_original_k",
+      "unequal_visible",
+      "pending",
+      "padding",
+      "old_table",
+      "old_lens",
+      "old_cuq",
+      "changed_cuq",
+      "changed_lens",
+      "changed_table",
+      "wrong_window",
+      "fragment",
+      "wrong_pitch",
+      "unbacked",
+      "capture",
+      "compiled",
+      "determinism",
+      "lse",
+      "sinks",
+      "full",
+      "no_window"
+    ],
+    "inherited_full_and_fallback": {
+      "startup_predicates": 4096,
+      "pair_cases": 63,
+      "compared_fp8_bytes": 19411200,
+      "attention_output_scalars": 10368,
+      "routes": {
+        "dense": "dense",
+        "dense_gap": "dense",
+        "coarse": "coarse",
+        "tail_fragment": "stock",
+        "shared_key": "coarse",
+        "not_ready": "stock",
+        "padded": "stock",
+        "graph": "stock",
+        "compile": "stock",
+        "swa": "stock",
+        "lse": "stock",
+        "sinks": "stock",
+        "no_certificate": "stock",
+        "stale_table": "stock",
+        "stale_lengths": "stock",
+        "mut_table": "stock",
+        "mut_lengths": "stock",
+        "deterministic": "stock",
+        "out_bounds": "stock",
+        "odd_pitch": "stock",
+        "offset": "dense"
+      },
+      "late_request_slot_reuse_checked": true,
+      "torch": "2.5.1",
+      "native_h200_fa3": false
+    },
+    "provider": "Host PyTorch plus pinned FA3 ABI; reference math, no GPU",
+    "parent_tree": "350f90b8b4c92e4ae6dad2155a510f1763c5d27b",
+    "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+    "backend_sha256": "10173e8f2867dd09caf2fc61fb60161a73dfb92887377b3d72f5d711effd2ea0"
+  },
+  "verify": {
+    "torch": "2.5.1",
+    "selected_physical_paths": 36,
+    "guarded_native_fallbacks": 558,
+    "full_swa_vmm_failure_and_publication": true,
+    "distinct_full_swa_bounds": [
+      366,
+      92
+    ],
+    "release_source_sha256": "10173e8f2867dd09caf2fc61fb60161a73dfb92887377b3d72f5d711effd2ea0"
+  }
+}

@@ -1,0 +1,212 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index c176f60..bfb94b8 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2023,6 +2023,7 @@ class Envs:
+     # ===================================================================
+     # Muse Spark
+     # ===================================================================
++    SGLANG_ENABLE_MUSE_SPARK_DECODE_COLUMN_GATHER = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+diff --git a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+index be859b4..8f64512 100644
+--- a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
++++ b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+@@ -69,3 +69,73 @@ def gemm_ag(
+     if out is None:
+         out = torch.empty(x.shape[0], weight.shape[0], dtype=x.dtype, device=x.device)
+     return all_gather(comm, local, out, b, c)
++
++
++def can_capture_decode_columns(target, runner):
++    """Agree once per capture epoch on the loaded weights, hooks and replicated input layout."""
++    from torch.nn.modules import module as hooks
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import FullCudaGraphBackend
++    from sglang.srt.runtime_context import get_exec, get_parallel
++
++    parallel = get_parallel()
++    if parallel.tp_size not in (4, 8):
++        return False
++    group = parallel.tp_group
++    if group is None or not torch.distributed.is_initialized() or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return False
++    body = getattr(getattr(target, "model", None), "language_model", None)
++    layers = [layer.mlp for layer in getattr(body, "layers", ()) if getattr(layer, "is_moe_layer", False)]
++    def has_forward_override(module):
++        if "forward" not in vars(module):
++            return False
++        method = module.forward
++        return getattr(method, "__self__", None) is not module or getattr(method, "__func__", None) is not type(module).forward
++
++    eligible = (
++        envs.SGLANG_ENABLE_MUSE_SPARK_DECODE_COLUMN_GATHER.get()
++        and torch.cuda.is_available() and torch.cuda.get_device_capability()[0] == 9
++        and type(runner.backend) is FullCudaGraphBackend
++        and (runner.capture_forward_mode.is_decode() or runner.capture_forward_mode.is_target_verify())
++        and not runner.enable_pdmux and not runner.enable_two_batch_overlap and not runner.ragged_verify_mode
++        and not runner.enable_torch_compile and not runner.model_runner.is_draft_worker
++        and runner.model_runner.lora_manager is None
++        and not runner.model_runner.capture_head_hooks and not runner.model_runner.capture_tail_hooks
++        and parallel.tp_size == parallel.moe_ep_size == parallel.attn_tp_size == group.world_size
++        and parallel.moe_tp_size == parallel.attn_cp_size == parallel.attn_dcp_size == 1
++        and not parallel.attn_dp_enabled and group.ranks == parallel.attn_tp_group.ranks
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not is_batch_invariant_mode_enabled() and not torch.are_deterministic_algorithms_enabled()
++        and not torch.is_autocast_enabled("cuda") and not target.training
++        and not hooks._global_forward_hooks and not hooks._global_forward_pre_hooks
++        and not any(m._forward_hooks or m._forward_pre_hooks or has_forward_override(m)
++                    or getattr(m, "_compiled_call_impl", None) is not None for m in target.modules())
++        and bool(layers) and all(
++            layer.nvfp4_checkpoint and type(linear) is torch.nn.Linear and linear.bias is None
++            and linear.weight.is_cuda and linear.weight.dtype == torch.bfloat16
++            and linear.weight.is_contiguous() and not linear.weight.requires_grad
++            and linear.weight.shape == (linear.out_features, linear.in_features)
++            and linear.out_features % (128 * group.world_size) == 0
++            for layer in layers for linear in (layer.pre_expert_proj, layer.post_expert_proj)
++        )
++    )
++    vote = torch.tensor(int(eligible), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    return bool(vote.item())
++
++
++def try_decode_column_gather(group, x, weight):
++    """Project full K over disjoint output columns, then concatenate in TP rank order."""
++    from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++    rows, features = x.shape
++    # The saved weight reads trade K elements for M replicated output elements.
++    # Leave bandwidth margin for NVLink and the rank-major to row-major copy.
++    if rows == 0 or 16 * rows > features:
++        return None
++    columns = weight.shape[0] // group.world_size
++    local_weight = weight.narrow(0, group.rank_in_group * columns, columns)
++    local = bf16_gemm_dispatch(x, local_weight, None)
++    return group.all_gather(local.contiguous(), dim=-1)
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 9b60eb6..3e681f3 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -836,6 +836,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # Shared raw tap matrix for serialized target verification graphs.
+     dflash_verify_raw_buffer: Optional[torch.Tensor] = None
+     dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
++    muse_decode_column_gather: bool = False
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+diff --git a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+index a9ab8a2..638d40e 100644
+--- a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+@@ -1260,6 +1260,8 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         # Warm up + autotune kernels once before capture (run-once across the
+         # decode + prefill runners; see BaseRunner.warmup).
+         self.warmup()
++        prepare_columns = getattr(self.model_runner.model, "can_capture_decode_columns", None)
++        self._capture_muse_columns = prepare_columns(self) if prepare_columns is not None else False
+         verify_fc = getattr(self.model_runner, "dflash_verify_fc_graph", None)
+         self._verify_fc_capture = verify_fc.prepare_capture(self) if verify_fc is not None else None
+         # warmup() may disable torch.compile for a model whose _can_torch_compile
+@@ -1394,6 +1396,7 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+             bs, stream_idx=stream_idx, num_tokens=num_tokens
+         )
+ 
++        forward_batch.muse_decode_column_gather = getattr(self, "_capture_muse_columns", False)
+         verify_fc = getattr(self, "_verify_fc_capture", None)
+         if verify_fc is not None:
+             forward_batch.dflash_verify_raw_buffer = verify_fc.raw[:num_tokens]
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index b094462..ca4dade 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -58,6 +58,7 @@ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+     reserve_projection_workspace,
++    try_decode_column_gather,
+ )
+ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.moe import get_moe_runner_backend
+@@ -714,16 +715,23 @@ class MuseSpark1xMoE(nn.Module):
+                 )
+                 ar_workspace.fallback_logged = True
+             ar_workspace = None
++        column_group = (
++            get_parallel().tp_group
++            if decode_or_verify and getattr(forward_batch, "muse_decode_column_gather", False)
++            and not getattr(get_forward(), "sp_active", False) else None
++        )
+         output = self._forward_experts(
+             hidden_states,
+             router_input,
+             ar_workspace=ar_workspace,
+-            grouped_decode=decode_or_verify,
++            grouped_decode=decode_or_verify, column_group=column_group,
++        )
++        return self._reduce_and_unpool(
++            output, already_reduced=ar_workspace is not None, column_group=column_group,
+         )
+-        return self._reduce_and_unpool(output, already_reduced=ar_workspace is not None)
+ 
+     def _reduce_and_unpool(
+-        self, output: torch.Tensor, *, already_reduced: bool = False
++        self, output: torch.Tensor, *, already_reduced: bool = False, column_group=None
+     ) -> torch.Tensor:
+         # Expert TP already reduced across ranks, before its post-expert norm.
+         if (
+@@ -745,6 +753,10 @@ class MuseSpark1xMoE(nn.Module):
+                 if self._defers_unpool_gather(comm, output.shape[0]):
+                     return gemm_local(comm, output, self.post_expert_proj.weight)
+                 return gemm_ag(comm, output, self.post_expert_proj.weight)
++            if column_group is not None:
++                projected = try_decode_column_gather(column_group, output, self.post_expert_proj.weight)
++                if projected is not None:
++                    return projected
+             output = bf16_gemm_dispatch(output, self.post_expert_proj.weight, None)
+         return output
+ 
+@@ -785,6 +797,7 @@ class MuseSpark1xMoE(nn.Module):
+         *,
+         ar_workspace=None,
+         grouped_decode: bool = False,
++        column_group=None,
+     ) -> torch.Tensor:
+         if hidden_states.shape[0] == 0:
+             return hidden_states.new_zeros((0, self.expert_hidden_size))
+@@ -832,9 +845,15 @@ class MuseSpark1xMoE(nn.Module):
+             ):
+                 expert_input = gemm_ag(comm, hidden_states, self.pre_expert_proj.weight)
+             else:
+-                expert_input = bf16_gemm_dispatch(
+-                    hidden_states, self.pre_expert_proj.weight, None
+-                )
++                expert_input = None
++                if column_group is not None:
++                    expert_input = try_decode_column_gather(
++                        column_group, hidden_states, self.pre_expert_proj.weight,
++                    )
++                if expert_input is None:
++                    expert_input = bf16_gemm_dispatch(
++                        hidden_states, self.pre_expert_proj.weight, None
++                    )
+         if prepare_early:
+             prepared_input = self.experts.prepare_input(
+                 expert_input, self.pre_expert_norm
+@@ -1444,6 +1463,11 @@ class MuseSparkTextForCausalLM(nn.Module):
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
+ 
++    def can_capture_decode_columns(self, runner):
++        from sglang.srt.layers.communication.muse_spark_gemm_ag import can_capture_decode_columns
++
++        return can_capture_decode_columns(self, runner)
++
+     def set_dflash_layers_to_capture(self, layer_ids: List[int]) -> None:
+         """Capture the residual stream after each listed decoder layer.
+ 

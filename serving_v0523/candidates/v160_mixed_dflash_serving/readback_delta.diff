@@ -1,0 +1,63 @@
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index cfbd93bb0caa5779820b77172dbc41caa9cdb142..246d9032d314908b35c4fbdc0b297f5b68ecdc46 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -18,7 +18,25 @@ from sglang.srt.speculative.dflash_mixed_graph_admission import (
+ )
+ 
+ 
+-def _prepare_views(worker, prompt, decode, proposal):
++def start_mixed_prefix_readback(decode_batch):
++    """Queue a bounded copy of resolved lengths before drafting on the same stream."""
++    base = decode_batch.seq_lens
++    if (decode_batch.seq_lens_cpu is not None or base is None or not base.is_cuda
++            or base.dtype != torch.int64 or base.shape != (len(decode_batch.reqs),)
++            or not decode_batch.reqs):
++        return None
++    stream = torch.cuda.current_stream(base.device)
++    host = torch.empty(base.shape, dtype=base.dtype, device="cpu", pin_memory=True)
++    # Retain any cross-stream source allocation through the copy. ATen's
++    # nonblocking copy records the host allocation on this stream as well.
++    base.record_stream(stream)
++    host.copy_(base, non_blocking=True)
++    ready = torch.cuda.Event()
++    ready.record(stream)
++    return base, host, ready
++
++
++def _prepare_views(worker, prompt, decode, proposal, prefix_readback=None):
+     """Read the two resolved batches. No target or distributed model work occurs here."""
+     runner = worker.target_worker.model_runner
+     if (not worker.is_current_decode_proposal(decode, proposal)
+@@ -69,7 +87,15 @@ def _prepare_views(worker, prompt, decode, proposal):
+     base = proposal.prefix_lens
+     host_base = proposal.prefix_lens_cpu
+     if host_base is None:
+-        host_base = base.to("cpu")
++        if prefix_readback is None:
++            host_base = base.to("cpu")
++        else:
++            source, host_base, ready = prefix_readback
++            if (source is not base or host_base.device.type != "cpu"
++                    or host_base.shape != (t,) or host_base.dtype != base.dtype
++                    or not host_base.is_pinned()):
++                return None
++            ready.synchronize()
+     if host_base.shape != (t,) or host_base.device.type != "cpu":
+         return None
+     tail_prefixes = host_base.tolist()
+@@ -133,10 +159,12 @@ def _prepare_views(worker, prompt, decode, proposal):
+     return plan, signature, prompt_fb, mixed_fb
+ 
+ 
+-def try_forward_proposed_mixed(worker, prompt_batch, decode_batch, proposal, *, on_publish=None):
++def try_forward_proposed_mixed(
++    worker, prompt_batch, decode_batch, proposal, *, on_publish=None, prefix_readback=None,
++):
+     """All TP ranks participate. None leaves the original proposal available for standalone verify."""
+     try:
+-        views = _prepare_views(worker, prompt_batch, decode_batch, proposal)
++        views = _prepare_views(worker, prompt_batch, decode_batch, proposal, prefix_readback=prefix_readback)
+     except (ValueError, NotImplementedError):
+         # Unsupported pre-target metadata can be declined locally. Every rank
+         # still votes before entering the target or either cohort's sampler.

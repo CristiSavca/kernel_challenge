@@ -1,0 +1,98 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+index d08c8e0..d8ebc2a 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+@@ -17,6 +17,7 @@ struct Params {
+   const int32_t* offsets;
+   uint32_t hidden;
+   uint32_t intermediate;
++  uint32_t experts;
+ };
+ 
+ SGL_DEVICE uint32_t broadcast_scale(uint32_t byte) {
+@@ -52,14 +53,12 @@ SGL_DEVICE void accumulate(float4& acc, uint32_t word, uint32_t scales, uint32_t
+       : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1));
+ }
+ 
+-__global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant__ Params p) {
+-  const uint32_t expert = blockIdx.y;
++SGL_DEVICE void project_tile(const Params& p, uint32_t expert, uint32_t column) {
+   const uint32_t first = p.offsets[expert];
+   const uint32_t end = p.offsets[expert + 1];
+   if (first == end) return;
+   const uint32_t lane = threadIdx.x % 32;
+   const uint32_t warp = threadIdx.x / 32;
+-  const uint32_t column = blockIdx.x * kWidth;
+   const uint32_t groups = p.hidden / 16;
+   const uint32_t width = p.intermediate * 2;
+   const float global = cast<float>(p.globals[expert]);
+@@ -128,6 +127,25 @@ __global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant_
+   }
+ }
+ 
++__global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant__ Params p) {
++  project_tile(p, blockIdx.y, blockIdx.x * kWidth);
++}
++
++__global__ __launch_bounds__(32 * kWarps) void run_active_kernel(const __grid_constant__ Params p) {
++  // Every warp reads the same small offset table. Each lane represents an expert.
++  // Rank within the ballot assigns consecutive work ordinals to nonempty experts.
++  const uint32_t lane = threadIdx.x % 32;
++  const bool active = lane < p.experts && p.offsets[lane] != p.offsets[lane + 1];
++  const uint32_t mask = __ballot_sync(0xffffffffu, active);
++  const uint32_t rank = __popc(mask & ((1u << lane) - 1u));
++  const uint32_t count = __popc(mask);
++  for (uint32_t ordinal = blockIdx.y; ordinal < count; ordinal += gridDim.y) {
++    const uint32_t owner = __ballot_sync(0xffffffffu, active && rank == ordinal);
++    const uint32_t expert = __ffs(owner) - 1;
++    project_tile(p, expert, blockIdx.x * kWidth);
++  }
++}
++
+ }  // namespace muse_skinny_gate_up
+ 
+ struct MuseSkinnyGateUp {
+@@ -137,7 +155,8 @@ struct MuseSkinnyGateUp {
+       tvm::ffi::TensorView weights,
+       tvm::ffi::TensorView scales,
+       tvm::ffi::TensorView globals,
+-      tvm::ffi::TensorView offsets) {
++      tvm::ffi::TensorView offsets,
++      int64_t expected_local_routes) {
+     using namespace host;
+     using namespace muse_skinny_gate_up;
+     auto rows = SymbolicSize{"routes"}, hidden = SymbolicSize{"hidden"}, inner = SymbolicSize{"intermediate"};
+@@ -166,9 +185,18 @@ struct MuseSkinnyGateUp {
+         .offsets = static_cast<const int32_t*>(offsets.data_ptr()),
+         .hidden = static_cast<uint32_t>(hidden.unwrap()),
+         .intermediate = static_cast<uint32_t>(inner.unwrap()),
++        .experts = static_cast<uint32_t>(experts.unwrap()),
+     };
+-    const dim3 grid(static_cast<uint32_t>(inner.unwrap() / kWidth), static_cast<uint32_t>(experts.unwrap()));
+-    LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_kernel, params);
++    const uint32_t bands = params.intermediate / kWidth;
++    // Allow two work groups per expected local route. Skew only adds iterations
++    // over the live mask; the bound controls launch size, never expert coverage.
++    if (params.experts <= 32 && expected_local_routes > 0 && expected_local_routes <= (params.experts - 1) / 2) {
++      const dim3 grid(bands, static_cast<uint32_t>(expected_local_routes) * 2);
++      LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_active_kernel, params);
++    } else {
++      const dim3 grid(bands, params.experts);
++      LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_kernel, params);
++    }
+   }
+ };
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 3370d23..d396891 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -572,7 +572,7 @@ def humming_grouped_decode_outputs(
+     if skinny_gate_up:
+         _skinny_gate_up_module().run(
+             inputs, activations, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
+-            layer.w13_global_scale, offsets,
++            layer.w13_global_scale, offsets, estimated_local_routes,
+         )
+         projections = (("w2", activations, outputs),)
+     else:

@@ -1,0 +1,54 @@
+{
+  "patch_sha256": "06ab5d1589ea8030947eeba6c78c361c4b072a0aef9fd08219356302b0ae1c35",
+  "delta_sha256": "1d8a6cda8cdc00c90f6ef0f6227d44f962c60d6232e635400e21adfaf603ab46",
+  "rules_flag_snapshot_sha256": "e785a3a27ec07b48b20572c44b6a554121d335bd6e89a6e46dc34bedc020f1be",
+  "launch_flags": {
+    "--swa-full-tokens-ratio": "0.25",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--enable-layernorm-sp": "",
+    "--page-size": "160",
+    "--chunked-prefill-size": "16320",
+    "--max-prefill-tokens": "16320",
+    "--cuda-graph-max-bs-prefill": "16384",
+    "--speculative-dflash-sp-prefill-context": "",
+    "--speculative-dflash-direct-prefix-kv": "",
+    "--speculative-dflash-parallel-verify-context": ""
+  },
+  "fixed_patterns": 76,
+  "flag_pattern_pairs_checked": 836,
+  "violations": [],
+  "unchanged_parent_flags": 9,
+  "new_flags": [
+    "--speculative-dflash-direct-prefix-kv",
+    "--speculative-dflash-parallel-verify-context"
+  ],
+  "files": 20,
+  "patch_bytes": 96445,
+  "max_added_line_bytes": 121,
+  "projection_per_rank": [
+    {
+      "rows": 128,
+      "one_pass_weight_bytes_before": 671088640,
+      "one_pass_weight_bytes_after": 83886080,
+      "projection_flops_before": 85899345920,
+      "projection_flops_after": 10737418240,
+      "ideal_ring_bytes_per_direction": 1835008,
+      "full_output_bytes": 2097152,
+      "additional_transient_bytes_over_one_full_output": 2359296,
+      "possible_live_local_rankmajor_channelmajor_bytes": 4456448
+    },
+    {
+      "rows": 256,
+      "one_pass_weight_bytes_before": 671088640,
+      "one_pass_weight_bytes_after": 83886080,
+      "projection_flops_before": 171798691840,
+      "projection_flops_after": 21474836480,
+      "ideal_ring_bytes_per_direction": 3670016,
+      "full_output_bytes": 4194304,
+      "additional_transient_bytes_over_one_full_output": 4718592,
+      "possible_live_local_rankmajor_channelmajor_bytes": 8912896
+    }
+  ],
+  "physical_h200_measurements": null
+}

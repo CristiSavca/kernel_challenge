@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "pairs": 70,
+  "by_producer": {
+    "base": 7,
+    "eager": 7,
+    "mixed": 7,
+    "observer": 7,
+    "override": 7,
+    "processor_hook": 7,
+    "unit": 7,
+    "zero": 7,
+    "no_scale": 7,
+    "subnormal": 7
+  },
+  "candidate": "V237",
+  "candidate_patch": "3523359b53eb4f9ee237fa328e9db09257060eef6f741434f8bf2727b1f7b9b5",
+  "tree": "1e152d2b2b2e0e553812f8400fa4f3b6ce9c1ff2",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_patch": "24042d5c31aa592580bb675c1c221cc3150b6e5da753ec90b1e9b1fc1dc60453",
+  "rows_retained": 8,
+  "capture_rows": 12,
+  "sources": {
+    "V235": {
+      "layers/logits_processor.py": "ac35cba4f9792ced000c9fc515681950e4fd2f88a64ef524d7f16221fa3311d2",
+      "model_executor/runner/decode_cuda_graph_runner.py": "a0a04bdacecdb20024b3970303ce488fe454e7e7355118effaf36f1a8e07bc64",
+      "speculative/dflash_worker_v2.py": "edab535dc0f53b758eabcb6deb5ef79755bf24b5e54e50e5036c34ba06a56698",
+      "layers/dflash_context_projection.py": "75f5703e9b7d106a6d19805b35324b1099c6c6f3c8d37b95052d8f1daf9b31a9"
+    },
+    "candidate": {
+      "layers/logits_processor.py": "3e4edd7904765005eac61e269c37c8acc7cc0a67e87ee394cc772e70c199d7d0",
+      "model_executor/runner/decode_cuda_graph_runner.py": "a0a04bdacecdb20024b3970303ce488fe454e7e7355118effaf36f1a8e07bc64",
+      "speculative/dflash_worker_v2.py": "83abc451fb3e753d4bf5f1320a0453190186d18af9b65b262ca8318cd63d2d47",
+      "layers/dflash_context_projection.py": "75f5703e9b7d106a6d19805b35324b1099c6c6f3c8d37b95052d8f1daf9b31a9"
+    }
+  },
+  "scope": "CPU execution of gated workspace allocation, pinned processor, full-graph output slicer and the actual DFLASH verification consumer block. Mock TP transport, CPU softcap/winner and simulated hardware capability."
+}

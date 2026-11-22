@@ -1,0 +1,353 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh b/python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh
+new file mode 100644
+index 0000000..628f484
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh
+@@ -0,0 +1,119 @@
++#include <sgl_kernel/tensor.h>
++#include <sgl_kernel/utils.h>
++#include <sgl_kernel/runtime.cuh>
++#include <sgl_kernel/type.cuh>
++#include <sgl_kernel/vec.cuh>
++#include <bit>
++#include <cstdint>
++
++namespace sglang {
++namespace ranked_pool {
++
++using namespace device;
++using Vec = AlignedVector<bf16_t, 4>;
++constexpr int kThreads = 128;
++
++struct Params {
++  const bf16_t* packed;
++  const bf16_t* gain;
++  const int32_t* row_map;
++  bf16_t* staging;
++  int rows;
++  int vectors;
++  int shard_vectors;
++  int shard_shift;
++  int topk;
++  float epsilon;
++};
++
++SGL_DEVICE Vec read_vector(const Params& p, int token, int column) {
++  const int rank = column >> p.shard_shift;
++  const int offset = ((rank * p.rows + token) << p.shard_shift) + (column & (p.shard_vectors - 1));
++  return load_as<Vec>(p.packed, offset);
++}
++
++__global__ __launch_bounds__(kThreads) void normalize_to_routes(const __grid_constant__ Params p) {
++  const int token = blockIdx.x;
++  const int tid = threadIdx.x;
++  const int lane = tid % 32;
++  const int warp = tid / 32;
++
++  // Keep ATen's vectorized BF16 RMS order: four channels per lane,
++  // four warps per token, then a descending tree across lanes and warps.
++  float sum = 0.0f;
++  for (int column = tid; column < p.vectors; column += kThreads) {
++    const Vec x = read_vector(p, token, column);
++#pragma unroll
++    for (int j = 0; j < 4; ++j) {
++      const float value = cast<float>(x[j]);
++      sum = __fmaf_rn(value, value, sum);
++    }
++  }
++#pragma unroll
++  for (int step = 16; step > 0; step /= 2) {
++    sum = __fadd_rn(sum, __shfl_down_sync(0xffffffff, sum, step));
++  }
++
++  __shared__ float warp_sums[4];
++  if (lane == 0) warp_sums[warp] = sum;
++  __syncthreads();
++  if (tid == 0) {
++    const float even = __fadd_rn(warp_sums[0], warp_sums[2]);
++    const float odd = __fadd_rn(warp_sums[1], warp_sums[3]);
++    const float mean = __fdiv_rn(__fadd_rn(even, odd), float(4 * p.vectors));
++    warp_sums[0] = rsqrtf(__fadd_rn(mean, p.epsilon));
++  }
++  __syncthreads();
++  const float rstd = warp_sums[0];
++  for (int column = tid; column < p.vectors; column += kThreads) {
++    const Vec x = read_vector(p, token, column);
++    const Vec gain = load_as<Vec>(p.gain, column);
++    Vec y;
++#pragma unroll
++    for (int j = 0; j < 4; ++j) {
++      const float normalized = __fmul_rn(rstd, cast<float>(x[j]));
++      y[j] = cast<bf16_t>(__fmul_rn(cast<float>(gain[j]), normalized));
++    }
++    for (int slot = 0; slot < p.topk; ++slot) {
++      const int row = p.row_map[token * p.topk + slot];
++      if (row >= 0) store_as<Vec>(p.staging, y, row * p.vectors + column);
++    }
++  }
++}
++
++}  // namespace ranked_pool
++
++struct MuseRankedPoolNorm {
++  static void run(tvm::ffi::TensorView packed, tvm::ffi::TensorView gain, tvm::ffi::TensorView row_map,
++                  tvm::ffi::TensorView staging, double epsilon) {
++    using namespace host;
++    using namespace ranked_pool;
++    auto ranks = SymbolicSize{"ranks"};
++    auto rows = SymbolicSize{"rows"};
++    auto stripe = SymbolicSize{"stripe"};
++    auto width = SymbolicSize{"width"};
++    auto topk = SymbolicSize{"topk"};
++    auto slots = SymbolicSize{"slots"};
++    auto device = SymbolicDevice{};
++    device.set_options<kDLCUDA>();
++    TensorMatcher({ranks, rows, stripe}).with_dtype<bf16_t>().with_device(device).verify(packed);
++    TensorMatcher({width}).with_dtype<bf16_t>().with_device(device).verify(gain);
++    TensorMatcher({rows, topk}).with_dtype<int32_t>().with_device(device).verify(row_map);
++    TensorMatcher({slots, width}).with_dtype<bf16_t>().with_device(device).verify(staging);
++    const int64_t hidden = width.unwrap(), tokens = rows.unwrap(), routes = topk.unwrap();
++    RuntimeCheck(hidden == ranks.unwrap() * stripe.unwrap() && stripe.unwrap() % 4 == 0, "invalid column partition");
++    const auto shard_vectors = static_cast<uint32_t>(stripe.unwrap() / 4);
++    RuntimeCheck(std::has_single_bit(shard_vectors), "unsupported ranked column width");
++    RuntimeCheck(tokens * routes == slots.unwrap() && tokens > 0 && routes > 0, "invalid expert row map");
++    RuntimeCheck(hidden <= (1 << 24) && hidden * slots.unwrap() < INT32_MAX, "unsupported pool size");
++    RuntimeCheck(reinterpret_cast<uintptr_t>(packed.data_ptr()) % alignof(Vec) == 0 &&
++                     reinterpret_cast<uintptr_t>(gain.data_ptr()) % alignof(Vec) == 0 &&
++                     reinterpret_cast<uintptr_t>(staging.data_ptr()) % alignof(Vec) == 0,
++                 "ranked normalization requires aligned feature vectors");
++    const Params p{static_cast<const bf16_t*>(packed.data_ptr()), static_cast<const bf16_t*>(gain.data_ptr()),
++                   static_cast<const int32_t*>(row_map.data_ptr()), static_cast<bf16_t*>(staging.data_ptr()),
++                   int(tokens), int(hidden / 4), int(shard_vectors), std::countr_zero(shard_vectors), int(routes), float(epsilon)};
++    LaunchKernel(static_cast<uint32_t>(tokens), kThreads, device.unwrap())(normalize_to_routes, p);
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+index d954d6f..f76e642 100644
+--- a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
++++ b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+@@ -82,2 +82,3 @@ def can_capture_decode_columns(target, runner):
+ 
++    runner._capture_muse_ranked_pool = False
+     parallel = get_parallel()
+@@ -127,5 +128,12 @@ def can_capture_decode_columns(target, runner):
+     )
+-    vote = torch.tensor(int(eligible), dtype=torch.int32, device="cpu")
++    ranked_pool = eligible and all(layer.can_capture_ranked_pool() for layer in layers)
++    if ranked_pool:
++        from sglang.srt.layers.muse_spark.muse_spark_humming_moe import _ranked_pool_module
++
++        ranked_pool = _ranked_pool_module() is not None
++    vote = torch.tensor([eligible, ranked_pool], dtype=torch.int32, device="cpu")
+     torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
+-    return bool(vote.item())
++    columns, ranked_pool = vote.tolist()
++    runner._capture_muse_ranked_pool = bool(ranked_pool)
++    return bool(columns)
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 10dc6ab..70975ed 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -579,2 +579,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         grouped_decode: bool = False,
++        ranked_pool: bool = False,
+     ) -> torch.Tensor:
+@@ -591,3 +592,16 @@ class MuseSpark1xFp4Experts(nn.Module):
+             )
+-        if pre_expert_norm is not None:
++        ranked_staging = None
++        if ranked_pool:
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import prepare_ranked_pool
++
++            packed = hidden_states
++            ranks, tokens, stripe = packed.shape
++            if grouped_decode and self._post_expert_norm is post_expert_norm and self._post_expert_norm_weight is not None:
++                ranked_staging = prepare_ranked_pool(self, packed, topk_ids, pre_expert_norm)
++            if ranked_staging is None:
++                hidden_states = packed.transpose(0, 1).reshape(tokens, ranks * stripe)
++            else:
++                # This view supplies allocations and shape checks; W13 reads the staged rows.
++                hidden_states = packed.view(tokens, ranks * stripe)
++        if pre_expert_norm is not None and ranked_staging is None:
+             hidden_states = pre_expert_norm(hidden_states)
+@@ -609,3 +623,4 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 values, row_map, local_topk_ids = humming_grouped_decode_outputs(
+-                    self, hidden_states, topk_ids
++                    self, hidden_states, topk_ids,
++                    **({"ranked_staging": ranked_staging} if ranked_staging is not None else {}),
+                 )
+@@ -750,2 +765,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         grouped_decode: bool = False,
++        ranked_pool: bool = False,
+     ) -> torch.Tensor:
+@@ -759,2 +775,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 grouped_decode=grouped_decode,
++                **({"ranked_pool": True} if ranked_pool else {}),
+             )
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 5cfab39..a0d8c33 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -265,2 +265,41 @@ def humming_decode_eligible(
+ 
++@cache_once
++def _ranked_pool_module():
++    try:
++        return load_jit(
++            "muse_ranked_pool_norm",
++            cuda_files=["muse_spark/ranked_pool_norm.cuh"],
++            cuda_wrappers=[("run", "MuseRankedPoolNorm::run")],
++            extra_cuda_cflags=["--ftz=false", "--prec-div=true", "--prec-sqrt=true"],
++        )
++    except (ImportError, OSError, RuntimeError):
++        return None
++
++
++def prepare_ranked_pool(layer, packed, topk_ids, norm):
++    from sglang.srt.layers.muse_spark.muse_spark_layers import MuseSpark1xRMSNorm
++
++    ranks, tokens, stripe = packed.shape
++    width = ranks * stripe
++    if (
++        type(norm) is not MuseSpark1xRMSNorm or ranks not in (4, 8) or stripe < 4 or stripe & (stripe - 1)
++        or tokens == 0 or norm.hidden_size != width or not packed.is_cuda or not packed.is_contiguous()
++        or packed.data_ptr() % 8 or "_get_effective_weight" in vars(norm)
++        or topk_ids.ndim != 2 or topk_ids.shape[0] != tokens or width > (1 << 24)
++        or topk_ids.numel() * width >= (1 << 31)
++        or not humming_decode_eligible(layer, packed.view(tokens, width), topk_ids)
++    ):
++        return None
++    # Same-dtype aligned BF16 selects ATen's 4-wide vectorized CUDA RMS kernel.
++    # An uncached gain may invoke user code or need an additional device operation.
++    gain = norm._frozen_weight if norm.zero_centered_gamma else norm.weight
++    if (
++        gain is None or gain.dtype != packed.dtype or gain.device != packed.device
++        or gain.shape != (width,) or not gain.is_contiguous() or gain.data_ptr() % 8
++    ):
++        return None
++    module = _ranked_pool_module()
++    return (module, packed, gain, norm.eps) if module is not None else None
++
++
+ def humming_grouped_decode_outputs(
+@@ -269,2 +308,4 @@ def humming_grouped_decode_outputs(
+     topk_ids: torch.Tensor,
++    *,
++    ranked_staging=None,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+@@ -301,14 +342,18 @@ def humming_grouped_decode_outputs(
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    _gather_grouped_decode[(min(slots, 128),)](
+-        hidden_states,
+-        row_keys,
+-        offsets,
+-        inputs,
+-        slots,
+-        TOPK=topk,
+-        HIDDEN=hidden_size,
+-        SLOT_SPAN=span,
+-        BLOCK=triton.next_power_of_2(hidden_size),
+-        num_warps=8 if hidden_size >= 4096 else 4,
+-    )
++    if ranked_staging is not None:
++        module, packed, gain, epsilon = ranked_staging
++        module.run(packed, gain, row_map, inputs, epsilon)
++    else:
++        _gather_grouped_decode[(min(slots, 128),)](
++            hidden_states,
++            row_keys,
++            offsets,
++            inputs,
++            slots,
++            TOPK=topk,
++            HIDDEN=hidden_size,
++            SLOT_SPAN=span,
++            BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if hidden_size >= 4096 else 4,
++        )
+ 
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 3e681f3..515efd6 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -839,2 +839,3 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     muse_decode_column_gather: bool = False
++    muse_ranked_pool: bool = False
+ 
+diff --git a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+index 638d40e..3804e45 100644
+--- a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+@@ -1262,2 +1262,3 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         self.warmup()
++        self._capture_muse_ranked_pool = False
+         prepare_columns = getattr(self.model_runner.model, "can_capture_decode_columns", None)
+@@ -1399,2 +1400,3 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         forward_batch.muse_decode_column_gather = getattr(self, "_capture_muse_columns", False)
++        forward_batch.muse_ranked_pool = getattr(self, "_capture_muse_ranked_pool", False)
+         verify_fc = getattr(self, "_verify_fc_capture", None)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 9ac9ae3..3d26afa 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -733,2 +733,3 @@ class MuseSpark1xMoE(nn.Module):
+             grouped_decode=decode_or_verify, column_group=column_group,
++            **({"ranked_pool": True} if getattr(forward_batch, "muse_ranked_pool", False) else {}),
+         )
+@@ -801,2 +802,35 @@ class MuseSpark1xMoE(nn.Module):
+ 
++    def can_capture_ranked_pool(self):
++        from sglang.kernels import fused_op
++
++        norm, experts = self.pre_expert_norm, self.experts
++        routing = getattr(self, "_fused_routing_op", None)
++        if (
++            not self.nvfp4_checkpoint or type(experts) is not MuseSpark1xFp4Experts
++            or not experts.use_w4a16 or not experts.use_humming or not experts.humming_decode_tunings
++            or experts._post_expert_norm is not experts.post_expert_norm or experts._post_expert_norm_weight is None
++            or type(norm) is not MuseSpark1xRMSNorm or "_get_effective_weight" in vars(norm)
++            or any(name in vars(self) for name in ("_forward_tp", "_forward_experts", "_routing_op"))
++            or "_forward_w4a16" in vars(experts)
++            or type(self.gate) is not MuseSpark1xRouter or type(routing) is not FusedMuseSparkRouting
++            or routing.is_torch_compile or routing.sol_topk_out is not None
++            or routing.expert_bias is not self.gate.e_score_correction_bias
++            or "forward_split2" in vars(self.gate) or "_build_split2" in vars(self.gate)
++            or fused_op.get_fused_op_backend() is not None or fused_op._trace_enabled
++            or getattr(routing._forward_method, "__self__", None) is not routing
++            or getattr(routing._forward_method, "__func__", None) is not fused_op.BaseFusedOp._forward_backend_dynamic
++            or any(name.startswith("forward_") or name in ("backend_eligible", "_auto_backend_candidates", "_platform_method", "_defined_method")
++                   for name in vars(routing))
++            or get_global_experts_capturer() is not None or torch.is_grad_enabled()
++            or torch._C._is_torch_function_mode_enabled() or torch._C._len_torch_dispatch_stack()
++            or torch.version.git_version != "5c4886908584029761b579af026dcfb627c84070"
++        ):
++            return False
++        gain = norm._frozen_weight if norm.zero_centered_gamma else norm.weight
++        return (
++            gain is not None and type(gain) in (torch.Tensor, nn.Parameter)
++            and gain.is_cuda and gain.dtype == torch.bfloat16 and gain.shape == (norm.hidden_size,)
++            and gain.is_contiguous() and gain.data_ptr() % 8 == 0
++        )
++
+     def _forward_experts(
+@@ -809,2 +843,3 @@ class MuseSpark1xMoE(nn.Module):
+         column_group=None,
++        ranked_pool: bool = False,
+     ) -> torch.Tensor:
+@@ -836,2 +871,3 @@ class MuseSpark1xMoE(nn.Module):
+         prepared_input = None
++        use_ranked_pool = False
+         use_side_stream = not _is_cpu and torch.cuda.is_available()
+@@ -859,4 +895,5 @@ class MuseSpark1xMoE(nn.Module):
+                     expert_input = try_decode_column_gather(
+-                        column_group, hidden_states, self.pre_expert_proj.weight,
++                        column_group, hidden_states, self.pre_expert_proj.weight, rank_major=ranked_pool,
+                     )
++                    use_ranked_pool = ranked_pool and expert_input is not None
+                 if expert_input is None:
+@@ -918,2 +955,3 @@ class MuseSpark1xMoE(nn.Module):
+                 grouped_decode=grouped_decode,
++                **({"ranked_pool": True} if use_ranked_pool else {}),
+             )

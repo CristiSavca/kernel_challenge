@@ -1,0 +1,329 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 3c692f567fb0ad25b67ed5c941ad2b758a4f603e..b1976307bffa348790ea43ad587712e5809d554b 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -542,6 +542,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         input_row_map=None,
+         local_route_count=None,
+         window_token_count=None,
++        expert_counts=None,
+     ) -> None:
+         from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+             compact_prefill_and_combine,
+@@ -552,6 +553,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             compact_prefill_and_combine(
+                 self, hidden_states, local_topk_ids, topk_scores, output,
+                 input_row_map=input_row_map, local_route_count=local_route_count, window_token_count=window_token_count,
++                expert_counts=expert_counts,
+             )
+             return
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 2b63bc5b5d939e493bb35aeecffa88090e3eaab1..a624ab2c0be1fa3b971ca121e451fc76d3742755 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -103,6 +103,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     params = {}
+     tunings = {}
+     grouped_tunings = {}
++    grouped_metas = {}
+     route_pair = (
+         envs.SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR.get()
+         and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
+@@ -189,6 +190,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         grouped = HummingMethod.get_default_tuning_configs(
+             layer, gemm_type=GemmType.GROUPED_CONTIGUOUS, sublayer_name=name
+         )[-1][2]
++        grouped_metas[name] = meta.to_str()
+         grouped_tunings[name] = json.dumps(
+             grouped | {"use_stream_k": False, "use_tma_c": False}
+         )
+@@ -208,6 +210,16 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         and layer.hidden_size <= layer.intermediate_size_per_partition
+     ):
+         layer.humming_prefill_silu = _prefill_scaled_silu_module()
++    layer.humming_prefill_tiles = None
++    if layer.humming_prefill_silu is not None:
++        from sglang.srt.layers.muse_spark.prefill_expert_tiles import prepare_tile_widths
++        from sglang.srt.runtime_context import get_parallel
++
++        if get_parallel().muse_sparse_prompt_exchange:
++            layer.humming_prefill_tiles = prepare_tile_widths(
++                grouped_metas, grouped_tunings, _GROUPED_COMPUTE,
++                layer.hidden_size, layer.intermediate_size_per_partition, layer.gate_up_proj.device,
++            )
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+     for name in ("gate_up_proj", "down_proj"):
+@@ -406,6 +418,7 @@ def humming_grouped_expert_outputs(
+     *,
+     input_row_map=None,
+     local_route_count=None,
++    expert_counts=None,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     """Return mapped BF16 rows; known live counts defer the W2 scale to finalization."""
+     from humming.layer import HummingMethod
+@@ -414,13 +427,21 @@ def humming_grouped_expert_outputs(
+ 
+     _, hidden_size = hidden_states.shape
+     topk = local_ids.shape[1]
+-    route_experts, slots = local_ids.flatten().sort(stable=True)
+-    experts = torch.arange(
+-        layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
+-    )
+-    offsets = torch.searchsorted(route_experts, experts, out_int32=True)
+     known_routes = live_routes if live_routes is not None else local_route_count
+-    first_local = offsets[0].item() if known_routes is None else slots.numel() - known_routes
++    plan = None
++    if expert_counts and known_routes == sum(expert_counts):
++        from sglang.srt.layers.muse_spark.prefill_expert_tiles import choose_tiles, sort_tile_cohorts
++
++        plan = choose_tiles(layer.humming_prefill_tiles, expert_counts)
++    if plan is None:
++        route_experts, slots = local_ids.flatten().sort(stable=True)
++        experts = torch.arange(layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device)
++        offsets = torch.searchsorted(route_experts, experts, out_int32=True)
++        first_local = offsets[0].item() if known_routes is None else slots.numel() - known_routes
++        runs = [(0, slots.numel() - first_local, offsets - first_local, layer.humming_grouped_tunings)]
++    else:
++        route_experts, slots, runs = sort_tile_cohorts(local_ids, plan, layer.humming_prefill_tiles)
++        first_local = slots.numel() - known_routes
+     num_routes = slots.numel() - first_local
+     if num_routes == 0:
+         return hidden_states.new_empty((0, hidden_size)), local_ids
+@@ -437,7 +458,8 @@ def humming_grouped_expert_outputs(
+     route_experts = route_experts[first_local:]
+     if live_routes is None:
+         route_experts = route_experts.long()
+-    offsets = offsets - first_local
++    if len(runs) > 1:
++        route_experts.remainder_(layer.num_local_experts)
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     arena = hidden_states.new_empty(num_routes * output_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+@@ -453,15 +475,16 @@ def humming_grouped_expert_outputs(
+         ("w13", inputs, gate_up),
+         ("w2", activations, outputs),
+     ):
+-        HummingMethod.forward_layer(
+-            layer,
+-            inputs=source,
+-            outputs=destination,
+-            expert_layout=offsets,
+-            compute_config=_GROUPED_COMPUTE,
+-            tuning_config=layer.humming_grouped_tunings[name],
+-            sublayer_name=name,
+-        )
++        for begin, end, offsets, tunings in runs:
++            HummingMethod.forward_layer(
++                layer,
++                inputs=source[begin:end],
++                outputs=destination[begin:end],
++                expert_layout=offsets,
++                compute_config=_GROUPED_COMPUTE,
++                tuning_config=tunings[name],
++                sublayer_name=name,
++            )
+         if live_routes is not None:
+             if name == "w13":
+                 layer.humming_prefill_silu.run(
+@@ -512,7 +535,7 @@ def _compact_prefill_windows(local_ids, local_experts, global_experts, local_rou
+ 
+ 
+ def compact_prefill_and_combine(
+-    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None, window_token_count=None
++    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None, window_token_count=None, expert_counts=None
+ ):
+     from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
+         fused_post_expert_norm_weighted_sum,
+@@ -528,6 +551,7 @@ def compact_prefill_and_combine(
+         values, mapped = humming_grouped_expert_outputs(
+             layer, hidden_states[begin:end] if input_row_map is None else hidden_states,
+             ids, live, input_row_map=None if input_row_map is None else input_row_map[begin:end],
++            expert_counts=expert_counts if begin == 0 and end == local_ids.shape[0] else None,
+         )
+         fused_post_expert_norm_weighted_sum(
+             values,
+diff --git a/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py b/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e84f5d83b2c151a05adff8d74fd62f06a83ae5d
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py
+@@ -0,0 +1,111 @@
++"""Use narrower full-K grouped projections when the observed route counts allow it."""
++
++import json
++import logging
++import subprocess
++from functools import lru_cache
++from itertools import accumulate
++
++import torch
++
++
++@lru_cache(maxsize=128)
++def _prepare_cohort_variant(context, meta, compute, tuning):
++    # The vendor stores successful kernels per CUDA context. Also cache a
++    # failed optional build so later layers can immediately use their parent.
++    from humming.kernel.humming import HummingKernel
++
++    try:
++        HummingKernel.prepare_kernels(meta, compute, tuning)
++    except (ValueError, AssertionError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Grouped prefill tile unavailable: %s", exc)
++        return False
++    return True
++
++
++def prepare_tile_widths(metas, tunings, compute, hidden, intermediate, device):
++    from humming.kernel.humming import HummingKernel
++
++    configs = {name: json.loads(value) for name, value in tunings.items()}
++    base = configs["w13"]["block_shape"][0]
++    if any(
++        config["block_shape"][0] != base or config["warp_shape"][0] != base
++        or not config.get("use_warp_spec") or not config.get("use_tma")
++        or config.get("num_ctas_per_sm", 1) != 1 or config.get("num_sms", 0)
++        for config in configs.values()
++    ):
++        return None
++    bands = (2 * intermediate // configs["w13"]["block_shape"][1], hidden // configs["w2"]["block_shape"][1])
++    sms = torch.cuda.get_device_properties(device).multi_processor_count
++    widths = {base: tunings}
++    context = HummingKernel.current_context()
++    # Keep N/K, stages, warp count, accumulation and epilogue unchanged.
++    for width in sorted({8 * ((3 * base + 16) // 32), 8 * ((7 * base + 32) // 64)}):
++        if not 64 <= width < base or width % 8:
++            continue
++        variants = {}
++        for name, config in configs.items():
++            updated = config.copy()
++            for key in ("block_shape", "warp_shape"):
++                updated[key] = [width, *config[key][1:]]
++            variants[name] = json.dumps(updated)
++        if all(_prepare_cohort_variant(context, metas[name], compute, tuning) for name, tuning in variants.items()):
++            widths[width] = variants
++    return (widths, bands, sms) if len(widths) > 1 else None
++
++
++def choose_tiles(state, counts):
++    if not state or not counts or not any(counts):
++        return None
++    widths, bands, sms = state
++    base = max(widths)
++    tiles = [(n + base - 1) // base for n in counts]
++    total = sum(tiles)
++
++    def waves(n):
++        return sum((n * bands_per_projection + sms - 1) // sms for bands_per_projection in bands)
++
++    best = base * waves(total)
++    choice = None
++    for width in sorted(widths):
++        if width == base:
++            continue
++        # Preserve the number of packed weight-tile reads for every expert.
++        narrow = [n <= t * width for n, t in zip(counts, tiles)]
++        first = sum(t for t, use in zip(tiles, narrow) if use)
++        cost = width * waves(first) + base * waves(total - first)
++        if first and first != total:
++            # Price one extra resident wave per projection for a second launch.
++            cost += width * len(bands)
++        if cost < best:
++            best, choice = cost, (width, narrow)
++    if choice is None:
++        return None
++    width, narrow = choice
++    narrow_rows = sum(n for n, use in zip(counts, narrow) if use)
++    groups = [(width, 0, narrow_rows)]
++    if narrow_rows == sum(counts):
++        return groups, [list(accumulate(counts, initial=0))]
++    groups.append((base, narrow_rows, sum(counts)))
++    experts = len(counts)
++    keys = [-1, *(i if use else experts + i for i, use in enumerate(narrow))]
++    offsets = [
++        list(accumulate((n if use == selected else 0 for n, use in zip(counts, narrow)), initial=0))
++        for selected in (True, False)
++    ]
++    return groups, [keys, *offsets]
++
++
++def sort_tile_cohorts(ids, plan, state):
++    groups, table = plan
++    meta = torch.tensor(table, device="cpu", dtype=torch.int32).to(ids.device, non_blocking=True)
++    keys = ids.reshape(-1)
++    if len(groups) > 1:
++        keys = meta[0].index_select(0, keys.long() + 1)
++    sorted_keys, slots = keys.sort(stable=True)
++    offsets = meta[-len(groups):]
++    runs = [
++        (begin, end, offsets[index], state[0][width])
++        for index, (width, begin, end) in enumerate(groups)
++    ]
++    return sorted_keys, slots, runs
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+index b32a8a3a1438a7252a502f666017f5bf5a449bd6..e0e26f54972807d56183e913f08080dc5a694b51 100644
+--- a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -114,23 +114,36 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+     # Advertise actual local ownership, including remapped experts. A hook or
+     # unsupported local bank on any rank votes the entire exchange back to dense.
+     local = torch.zeros(padded_rows + 1, dtype=torch.uint8, device=shard.device)
+-    local_routes = local.new_zeros((), dtype=torch.int32)
++    route_counts = local.new_zeros(1, dtype=torch.int32)
++    histogram = False
+     if eligible:
+         local_ids = local_humming_expert_ids(experts, ids)
+         owned_slots = local_ids >= 0
+         local[:tokens] = owned_slots.any(dim=1)
+         local[-1] = 1
+-        local_routes = owned_slots.sum(dtype=torch.int32)
++        # FP32 exactly represents all integer bin counts at this bound; fixed
++        # endpoints avoid a range-discovery sync. The first bin is nonlocal.
++        histogram = (
++            bool(getattr(experts, "humming_prefill_tiles", None))
++            and experts.num_local_experts < (1 << 20) and local_ids.numel() <= (1 << 24)
++        )
++        if histogram:
++            n = experts.num_local_experts
++            route_counts = torch.histc(local_ids.float(), bins=n + 1, min=-1.5, max=n - 0.5)[1:].to(torch.int32)
++        else:
++            route_counts = owned_slots.sum(dtype=torch.int32).reshape(1)
+     all_masks = local.new_empty((group.world_size, local.numel()))
+     group.all_gather_into_tensor(all_masks, local[None, :])
+     needs = all_masks[:, :padded_rows]
+     # One small device-to-host fence for the votes and every variable split.
+     counts = needs.reshape(group.world_size, group.world_size, shard.shape[0]).sum(-1, dtype=torch.int32).T
+-    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), local_routes.view(1))).tolist()
++    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), route_counts)).tolist()
+     size = group.world_size
+     counts = [descriptor[i * size:(i + 1) * size] for i in range(size)]
+-    local_route_count = descriptor[-1]
+-    width = _group_width(counts, padded_rows) if all(descriptor[size * size:-1]) else 0
++    controls = size * size + size
++    expert_counts = descriptor[controls:] if histogram else None
++    local_route_count = sum(descriptor[controls:])
++    width = _group_width(counts, padded_rows) if all(descriptor[size * size:controls]) else 0
+     if width:
+         inputs = _exchange_inputs(shard, needs, counts, width, group)
+         # The stable route sort is unaffected by dropping entirely nonlocal tokens.
+@@ -141,14 +154,17 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+         compact_scores = scores.index_select(0, live_rows)
+         # Grouped projection stages its inputs before the finalizer writes them back.
+         experts._grouped_humming_and_combine_impl(
+-            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count, window_token_count=tokens
++            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count, window_token_count=tokens,
++            expert_counts=expert_counts,
+         )
+         _return_partials(inputs, needs, counts, width, group, output)
+     else:
+         inputs = layernorm_sp.sp_exit_gather(shard, tokens)
+         if eligible:
+             partial = shard.new_empty((tokens, shard.shape[1]))
+-            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, partial, local_route_count=local_route_count)
++            experts._grouped_humming_and_combine_impl(
++                inputs, local_ids, scores, partial, local_route_count=local_route_count, expert_counts=expert_counts
++            )
+         else:
+             partial = experts(inputs, scores, ids, experts.post_expert_norm)
+         output.copy_(layernorm_sp.reduce_scatter_token_rows(partial, group))

@@ -1,0 +1,250 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh
+index fd6ee06..92ad4d8 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh
+@@ -1,4 +1,5 @@
+ #include "expert_skinny_gate_up.cuh"
++#include <cooperative_groups.h>
+ 
+ namespace sglang {
+ namespace muse_activated_down {
+@@ -57,26 +58,78 @@ SGL_DEVICE Tile locate(const Params& p, uint32_t job) {
+   return {0, 0, 0};
+ }
+ 
+-template <uint32_t Fragments>
++template <uint32_t Cluster>
++SGL_DEVICE void slab_barrier() {
++  if constexpr (Cluster == 1) {
++    __syncthreads();
++  } else {
++    cooperative_groups::this_cluster().sync();
++  }
++}
++
++template <uint32_t Fragments, uint32_t Cluster>
++SGL_DEVICE void publish_slab(const Params& p, Tile tile, uint32_t slab, float global, bf16_t* active) {
++  const auto cluster = cooperative_groups::this_cluster();
++  const uint32_t rank = cluster.block_rank();
++  // Interleave whole source warps across CTAs, so a short row tile spreads
++  // its activation work over the cluster while preserving coalesced loads.
++  constexpr uint32_t vec_size = 4;
++  using Vec = AlignedVector<bf16_t, vec_size>;
++  const uint32_t first = ((threadIdx.x / 32) * Cluster + rank) * 32 + threadIdx.x % 32;
++  for (uint32_t v = first; v < 8 * Fragments * kSlab / vec_size; v += kWarps * 32 * Cluster) {
++    const uint32_t row = v / (kSlab / vec_size);
++    const uint32_t k = v % (kSlab / vec_size) * vec_size;
++    Vec result;
++    if (row < tile.rows) {
++      const bf16_t* src = p.gate_up + size_t(tile.first + row) * (2 * p.intermediate) + slab + k;
++      Vec gates, ups;
++      gates.load(src);
++      ups.load(src + p.intermediate);
++#pragma unroll
++      for (uint32_t i = 0; i < vec_size; ++i) {
++        float gate = muse_expert_scaled_silu::scale_and_round(gates[i], global);
++        float up = muse_expert_scaled_silu::scale_and_round(ups[i], global);
++        result[i] = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate) * up);
++      }
++    } else {
++      result.fill(cast<bf16_t>(0.0f));
++    }
++    // Replicate each computed vector in every block's local shared memory.
++    // The matrix loop subsequently performs only local shared-memory loads.
++    bf16_t* dest = active + row * kStride + k;
++#pragma unroll
++    for (uint32_t peer = 0; peer < Cluster; ++peer) {
++      result.store(cluster.map_shared_rank(dest, peer));
++    }
++  }
++}
++
++template <uint32_t Fragments, uint32_t Cluster>
+ SGL_DEVICE void run_tile(const Params& p, const Tile tile, bf16_t* active) {
+   const uint32_t lane = threadIdx.x % 32;
+   const uint32_t column = blockIdx.x * kColumns + (threadIdx.x / 32) * 64;
+   const float global = cast<float>(p.gate_scales[tile.expert]);
+   const uint32_t groups = p.intermediate / 16;
+   float4 sums[4][Fragments] = {};
++  // Peers must exist before the first remote shared-memory store.
++  if constexpr (Cluster > 1) slab_barrier<Cluster>();
+   for (uint32_t slab = 0; slab < p.intermediate; slab += kSlab) {
+-    for (uint32_t i = threadIdx.x; i < 8 * Fragments * kSlab; i += 32 * kWarps) {
+-      const uint32_t row = i / kSlab, k = i % kSlab;
+-      bf16_t value = cast<bf16_t>(0.0f);
+-      if (row < tile.rows) {
+-        const bf16_t* src = p.gate_up + size_t(tile.first + row) * (2 * p.intermediate) + slab + k;
+-        float gate = muse_expert_scaled_silu::scale_and_round(src[0], global);
+-        float up = muse_expert_scaled_silu::scale_and_round(src[p.intermediate], global);
+-        value = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate) * up);
++    if constexpr (Cluster > 1) {
++      publish_slab<Fragments, Cluster>(p, tile, slab, global, active);
++    } else {
++      for (uint32_t i = threadIdx.x; i < 8 * Fragments * kSlab; i += 32 * kWarps) {
++        const uint32_t row = i / kSlab, k = i % kSlab;
++        bf16_t value = cast<bf16_t>(0.0f);
++        if (row < tile.rows) {
++          const bf16_t* src = p.gate_up + size_t(tile.first + row) * (2 * p.intermediate) + slab + k;
++          float gate = muse_expert_scaled_silu::scale_and_round(src[0], global);
++          float up = muse_expert_scaled_silu::scale_and_round(src[p.intermediate], global);
++          value = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate) * up);
++        }
++        active[row * kStride + k] = value;
+       }
+-      active[row * kStride + k] = value;
+     }
+-    __syncthreads();
++    slab_barrier<Cluster>();
+     for (uint32_t k = 0; k < kSlab; k += 16) {
+       const size_t base = (size_t(tile.expert) * groups + (slab + k) / 16) * p.hidden + column;
+       using Words = AlignedVector<uint32_t, 4>;
+@@ -107,7 +160,7 @@ SGL_DEVICE void run_tile(const Params& p, const Tile tile, bf16_t* active) {
+         }
+       }
+     }
+-    __syncthreads();
++    slab_barrier<Cluster>();
+   }
+ #pragma unroll
+   for (uint32_t part = 0; part < 4; ++part) {
+@@ -125,28 +178,68 @@ SGL_DEVICE void run_tile(const Params& p, const Tile tile, bf16_t* active) {
+   }
+ }
+ 
++template <uint32_t Cluster>
+ __global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant__ Params p) {
+   __shared__ __align__(16) bf16_t active[kRows * kStride];
+   const Tile tile = locate(p, blockIdx.y);
+   if (tile.rows > 16) {
+-    run_tile<4>(p, tile, active);
++    run_tile<4, Cluster>(p, tile, active);
+   } else if (tile.rows > 8) {
+-    run_tile<2>(p, tile, active);
++    run_tile<2, Cluster>(p, tile, active);
+   } else if (tile.rows > 0) {
+-    run_tile<1>(p, tile, active);
++    run_tile<1, Cluster>(p, tile, active);
+   }
+ }
+ 
+ }  // namespace muse_activated_down
+ 
+ struct MuseActivatedDown {
++  template <uint32_t Cluster>
++  static bool fits(uint32_t bands) {
++    using namespace muse_activated_down;
++    if (bands % Cluster) return false;
++    cudaLaunchAttribute attr{};
++    attr.id = cudaLaunchAttributeClusterDimension;
++    attr.val.clusterDim = {Cluster, 1, 1};
++    cudaLaunchConfig_t cfg{};
++    cfg.gridDim = dim3(bands, 1, 1);
++    cfg.blockDim = dim3(32 * kWarps, 1, 1);
++    cfg.attrs = &attr;
++    cfg.numAttrs = 1;
++    int resident = 0;
++    auto status = cudaOccupancyMaxActiveClusters(&resident, run_kernel<Cluster>, &cfg);
++    if (status == cudaErrorInvalidValue || status == cudaErrorInvalidConfiguration ||
++        status == cudaErrorInvalidClusterSize || status == cudaErrorLaunchOutOfResources || status == cudaErrorNotSupported) {
++      // A smaller legal cluster (including the one-CTA kernel) remains available.
++      (void)cudaGetLastError();
++      return false;
++    }
++    CHECK_CUDA(status);
++    return resident > 0;
++  }
++
++  static int64_t cluster_width(int64_t device, int64_t hidden) {
++    using namespace muse_activated_down;
++    int current = -1, supported = 0;
++    CHECK_CUDA(cudaGetDevice(&current));
++    if (current != device || hidden <= 0 || hidden % kColumns) return 1;
++    CHECK_CUDA(cudaDeviceGetAttribute(&supported, cudaDevAttrClusterLaunch, current));
++    if (!supported) return 1;
++    const uint32_t bands = static_cast<uint32_t>(hidden / kColumns);
++    if (fits<8>(bands)) return 8;
++    if (fits<4>(bands)) return 4;
++    if (fits<2>(bands)) return 2;
++    return 1;
++  }
++
+   static void run(
+       tvm::ffi::TensorView gate_up,
+       tvm::ffi::TensorView output,
+       tvm::ffi::TensorView weights,
+       tvm::ffi::TensorView scales,
+       tvm::ffi::TensorView gate_scales,
+-      tvm::ffi::TensorView offsets) {
++      tvm::ffi::TensorView offsets,
++      int64_t cluster) {
+     using namespace host;
+     using namespace muse_activated_down;
+     auto rows = SymbolicSize{"routes"}, n = SymbolicSize{"hidden"}, gates = SymbolicSize{"gate_up"};
+@@ -177,7 +270,17 @@ struct MuseActivatedDown {
+     const auto slots = static_cast<uint32_t>(rows.unwrap());
+     const auto first_tiles = std::min(slots, p.experts);
+     const dim3 grid(p.hidden / kColumns, first_tiles + (slots - first_tiles) / kRows);
+-    LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_kernel, p);
++    RuntimeCheck((cluster == 1 || cluster == 2 || cluster == 4 || cluster == 8) && grid.x % cluster == 0,
++                 "incompatible W2 cluster dimensions");
++    auto launch = LaunchKernel(grid, 32 * kWarps, dev.unwrap());
++    if (cluster == 1) {
++      launch(run_kernel<1>, p);
++    } else {
++      launch.enable_cluster(dim3(static_cast<uint32_t>(cluster), 1, 1));
++      if (cluster == 8) launch(run_kernel<8>, p);
++      else if (cluster == 4) launch(run_kernel<4>, p);
++      else launch(run_kernel<2>, p);
++    }
+   }
+ };
+ 
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 5d8b327..d07cf24 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2030,6 +2030,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_ROUTED_NORM = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_SKINNY_GATE_UP = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_ACTIVATED_DOWN = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_DOWN_CLUSTER = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index d4898d7..a18df83 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -55,7 +55,10 @@ def _activated_down_module():
+         return load_jit(
+             "muse_activated_down",
+             cuda_files=["muse_spark/expert_activated_down.cuh"],
+-            cuda_wrappers=[("run", "MuseActivatedDown::run")],
++            cuda_wrappers=[
++                ("run", "MuseActivatedDown::run"),
++                ("cluster_width", "MuseActivatedDown::cluster_width"),
++            ],
+             extra_cuda_cflags=get_activation_cuda_cflags(),
+         )
+     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+@@ -243,6 +246,11 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+                 and tensors["weight_scale"].is_contiguous()
+                 and _activated_down_module() is not None
+             )
++            layer.humming_down_cluster = 1
++            if layer.humming_activated_down and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_DOWN_CLUSTER.get():
++                # The occupancy probe runs at model load. Graph replay launches
++                # a fixed legal cluster for every tile of this layer.
++                layer.humming_down_cluster = _activated_down_module().cluster_width(packed.get_device(), n)
+         params[meta.weight_name] = tensors["weight"]
+         params[meta.weight_scale_name] = tensors["weight_scale"]
+         # Stock Marlin collapses the gate/up global scales to the gate value
+@@ -633,7 +641,7 @@ def humming_grouped_decode_outputs(
+         if name == "w13" and activated_down:
+             _activated_down_module().run(
+                 gate_up, outputs, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
+-                layer.w13_global_scale, offsets,
++                layer.w13_global_scale, offsets, layer.humming_down_cluster,
+             )
+         elif name == "w13":
+             _expert_scaled_silu_module().run(

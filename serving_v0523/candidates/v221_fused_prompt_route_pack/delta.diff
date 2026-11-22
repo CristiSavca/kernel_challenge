@@ -1,0 +1,67 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 6c87d12..5cfab39 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -469,6 +469,31 @@ def humming_expert_outputs(
+     return outputs.view(num_tokens, topk, hidden_size), local_ids
+ 
+ 
++@triton.jit
++def _pack_prompt_routes(
++    Hidden, Slots, Inputs, RowMap,
++    first_local, num_routes, num_slots, hidden_row_stride, hidden_col_stride,
++    TOPK: tl.constexpr, HIDDEN: tl.constexpr, BLOCK_H: tl.constexpr, BLOCK_MAP: tl.constexpr,
++):
++    program = tl.program_id(0)
++    if program < num_routes:
++        slot = tl.load(Slots + first_local + program)
++        token = slot.to(tl.int64) // TOPK
++        row = program.to(tl.int64)
++        for start in range(0, HIDDEN, BLOCK_H):
++            cols = start + tl.arange(0, BLOCK_H)
++            values = tl.load(Hidden + token * hidden_row_stride + cols.to(tl.int64) * hidden_col_stride,
++                             mask=cols < HIDDEN, other=0)
++            tl.store(Inputs + row * HIDDEN + cols, values, mask=cols < HIDDEN)
++    else:
++        # Argsort is a permutation of all original slots. Each map entry has exactly one writer.
++        positions = (program - num_routes).to(tl.int64) * BLOCK_MAP + tl.arange(0, BLOCK_MAP)
++        valid = positions < num_slots
++        slots = tl.load(Slots + positions, mask=valid, other=0)
++        rows = tl.where(positions < first_local, -1, positions - first_local)
++        tl.store(RowMap + slots, rows, mask=valid)
++
++
+ def humming_grouped_expert_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+@@ -504,13 +529,16 @@ def humming_grouped_expert_outputs(
+     ):
+         return humming_expert_outputs(layer, hidden_states, local_ids)
+ 
+-    slots = slots[first_local:]
+     route_experts = route_experts[first_local:]
+     offsets = offsets - first_local
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+-    torch.index_select(
+-        hidden_states, 0, torch.div(slots, topk, rounding_mode="floor"), out=inputs
++    mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
++    map_block = 256
++    _pack_prompt_routes[(num_routes + triton.cdiv(slots.numel(), map_block),)](
++        hidden_states, slots, inputs, mapped_rows, first_local, num_routes, slots.numel(),
++        hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
++        BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
+     )
+     activations = None
+     if getattr(layer, "humming_prompt_gate_up", None) is not None:
+@@ -550,10 +578,4 @@ def humming_grouped_expert_outputs(
+         if name == "w13":
+             silu_and_mul(gate_up, activations)
+ 
+-    mapped_rows = torch.full_like(local_ids, -1)
+-    mapped_rows.view(-1).index_copy_(
+-        0,
+-        slots,
+-        torch.arange(num_routes, dtype=mapped_rows.dtype, device=mapped_rows.device),
+-    )
+     return outputs, mapped_rows

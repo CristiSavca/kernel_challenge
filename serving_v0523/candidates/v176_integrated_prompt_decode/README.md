@@ -1,0 +1,27 @@
+# V176 integrated prompt and decode candidate
+
+V176 combines the V174 Hopper expert kernels, V172 verification schedules, V171 sequence-parallel prompt projection and V169 grouped prompt tiles on the V168 serving tree. The official export is 195,416 bytes across 29 files. Its SHA-256 is `08e5e126fe79b5fb37e706a8cbf8c8fdc449ef6794500200928f350462c44eb6` and its Git tree is `f1ed4dd4f1d567819e193b8c437717424ace0e9d`. [Full patch](patch.diff) · [Delta from V168](delta.diff) · [Validation and exact launch flags](validation.json)
+
+| Phase | Change | Evidence |
+| --- | --- | --- |
+| Medium-density expert decode | One Hopper grid handles short and long expert lists in each projection. Its producer warp stages a weight panel and active inputs for eight consumer warps. | Four expert launches become two compared with V173. Under uniform routing at 32 users the model saves 34.87 MiB of BF16 activation loads per projection per rank. The kernels use the same number of packed weight sweeps. [Machine code and route models](../v174_multirow_expert_tma/README.md) |
+| Target verification attention | Full and sliding-window attention each share their own scheduler preparation within one verification. | 62 preparations become two on eligible calls. The next model invocation refreshes both. [Schedule checks](../v172_streamed_experts_verify_schedule/README.md) |
+| Long-prompt draft context and output head | Each token owner applies the full projection and norm. Eligible output heads gather the rows needed by the original selection. | The two logical all-gather outputs fall from 1,536 to 256.125 MiB per rank for a single 16,384-token sequence at TP8. [Prompt projection and fallbacks](../v171_prompt_endpoint_context/README.md) |
+| Long-prompt experts | The live routed counts select narrower precompiled Humming tiles where they reduce padding. | Modeled grouped-expert row work falls 18.9% at 12,288 rows and 1.8% at 16,384, assuming uniform routing. [Tile selection and compiler](../v169_grouped_expert_tile_cohorts/README.md) |
+
+## Validation
+
+The integrated tree reproduced the four component fixtures. These include 2,515,968 live BF16 projection values, 47,108,096 FP8 cache-byte checks and 1,732,880 in-place BF16 prompt-expert output values. The exact gate/up and down sources compiled for SM90 and SM90a without spills. The CPU phase-switch replay exercised 324 prompt forwards and 27 verifications across TP2, TP4 and TP8, including recovery after nine injected decoder exceptions. It checked logits, prompt outputs and schedule lifetime through the native Muse outer method. The CUDA and FA3 device work in this replay uses host substitutes. [Component comparisons](components.json) · [Phase-switch results](phase.json) · [Independent compiler and numerical review](../v174_multirow_expert_tma/independent_review.md)
+
+The patch applies and reverses against the published v0.5.23 pin. The seven flags passed its 76 denied-pattern checks. Registration was exercised against the real CLI helpers in 32 parses and the previous positional constructor signatures were checked. The cold-start replay exercised the ordinary and optional Humming initialization paths. GPU construction, kernel execution, numerical agreement, output length, TTFT, peak memory and the end-to-end score require an official H200 check. V64 used 1.9 GB above stock against the 2.0 GB allowance. [Export and rule validation](validation.json) · [Compatibility and memory](independent_review.md) · [Cold-start replay](independent_startup_runtime.json) · [Published serving rules](https://openkernelchallenge.dev/api/v1/serving)
+
+## Score and private comparison
+
+V64's measured four-load score is 1.4119×. Reaching 4× calls for another 2.833× across the four stock interactivity points. V68's private 16-user H200 result was 17,512.9 tokens/s/GPU against V64's 17,349.9 on a different node. The same-node stock-normalized estimates were 1.424× and 1.412× respectively. V176 has no physical timing. Its combined prompt and decode paths address separate portions of serving time, so the component work reductions cannot be multiplied to estimate its score. [Scored V64](../../runs/abd217baf0ed49fd.json) · [Private V64](../../runs/ac89fddc4ee147ab.json) · [Private V68](../../runs/04b01f958aa5487c.json) · [Four-load score and client-trace sensitivity](independent_frontier.md)
+
+The conditional November 20 private comparison is V176 at 16 users against a passing 16-user V163 ancestor. Their patches and flag sets differ, so the comparison measures the complete configuration. It requires a confirmed November 19 alternate selection instead of V168, two failed controls, confirmed first and second November 20 checks, and exactly one remaining private check. The standby was armed with all seven earlier waiters active and zero quota consumed. [Conditional plan](../../runs/nov20_v176_runner.plan.json) · [Activation](../../runs/nov20_v176_runner.launch.json)
+
+## Reproduction
+
+Use an isolated SGLang checkout at `297e54fd105e974cdf401e5b4d20253a22c16f90` and apply the complete export. Pass that checkout to `verify.py` to rebuild the integration from the preserved donors and compare the resulting tree against the official export. Run `phase_cycle.py` with Python 3.12, PyTorch 2.5.1 and Gloo for the prompt-to-verify checks. The registration and startup fixtures record their pinned dependencies alongside their results. [Rebuild](assemble.py) · [Verify the patch](verify.py) · [Run the distributed phase replay](phase_cycle.py)
+

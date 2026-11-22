@@ -1,0 +1,43 @@
+{
+  "basis": "Symbolic causal key/query pairs for full attention and a 2048-token window, with equal query-head counts. These are not GPU timings.",
+  "cases": [
+    {
+      "q": 16384,
+      "prefix": 0,
+      "score_pairs_full_per_head_per_layer": 134225920,
+      "score_pairs_swa_per_head_per_layer": 31458304,
+      "swa_share_among_16_full_and_46_swa_at_equal_q_head_count": 0.4025602444817553
+    },
+    {
+      "q": 74160,
+      "prefix": 0,
+      "score_pairs_full_per_head_per_layer": 2749889880,
+      "score_pairs_swa_per_head_per_layer": 149783552,
+      "swa_share_among_16_full_and_46_swa_at_equal_q_head_count": 0.13539548188105102
+    },
+    {
+      "q": 16384,
+      "prefix": 65536,
+      "score_pairs_full_per_head_per_layer": 1207967744,
+      "score_pairs_swa_per_head_per_layer": 33554432,
+      "swa_share_among_16_full_and_46_swa_at_equal_q_head_count": 0.07395451947774645
+    },
+    {
+      "q": 753,
+      "prefix": 74160,
+      "score_pairs_full_per_head_per_layer": 56126361,
+      "score_pairs_swa_per_head_per_layer": 1542144,
+      "swa_share_among_16_full_and_46_swa_at_equal_q_head_count": 0.07321106621075536
+    }
+  ],
+  "per_rank_kv_heads": 2,
+  "head_dim": 64,
+  "capture_16384_q_capacity_bytes_at_batch": {
+    "1": 4849408,
+    "4": 6618112,
+    "16": 13692928,
+    "32": 23126016
+  },
+  "active_suffix_kv_bytes_one_16384_q_after_long_prefix": 4718336,
+  "scratch_cap_bytes": 50331648
+}

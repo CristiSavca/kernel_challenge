@@ -1,0 +1,73 @@
+{
+  "source": "experiments/iterations/20261104-moe-hardware-profile-recovered.json",
+  "source_sha256": "0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7",
+  "NCU_policy": {
+    "replay_mode": "kernel",
+    "cache_control": "all",
+    "clock_control": "none",
+    "graph_profiling": "node",
+    "profile_from_start": "off",
+    "launch_count": 2,
+    "requested_pass_count": null,
+    "pass_count_policy": "NCU chooses passes for the fixed metric list; actual counts required; no collection retry",
+    "scope": "standalone MoE only; not decoder routing, decoder PDL, or benchmark speedup",
+    "ordinary_timing_limitation": "Collected with profiling disabled inside an NCU-injected process; not independent benchmark evidence",
+    "cache_limitation": "NCU cache-control all flushes caches on replay; distinct from the ordinary read sweep and official benchmark conditions",
+    "interpretation_limit": "Low bandwidth and aggregate stall percentages do not establish a removable critical path or justify a shared-dequant rewrite; no source-PC attribution is collected"
+  },
+  "scope": "Observed archived rank-local histogram; source-accounted Humming work. The timed profile belongs to another implementation with its own cache-flushed traffic.",
+  "cases": [
+    {
+      "rows": 32,
+      "local_routes": 39,
+      "active_experts": 16,
+      "V211_width": 8,
+      "native_tiles": 16,
+      "MMA_rows": [
+        128,
+        128
+      ],
+      "row_arithmetic_reduction_percent": 0.0,
+      "V211_V213_partial_shared_mib": [
+        20.0,
+        7.5
+      ],
+      "nominal_Humming_requested_weights_MiB": 432,
+      "measured_different_kernel": "void okc::moe_fused<(bool)1>(okc::Params)",
+      "measured_dram_read_bytes": 456964352,
+      "measured_dram_write_bytes": 3375872,
+      "measured_time_us": 128.576,
+      "measured_percent_dram_peak": 74.43,
+      "measured_tensor_active_percent": 11.22,
+      "measured_barrier_stall_percent": 7.49,
+      "ideal_same_measured_traffic_us": 95.90421333333333,
+      "conditional_same_traffic_ratio": 1.3406710250894782
+    },
+    {
+      "rows": 256,
+      "local_routes": 354,
+      "active_experts": 26,
+      "V211_width": 24,
+      "native_tiles": 33,
+      "MMA_rows": [
+        792,
+        456
+      ],
+      "row_arithmetic_reduction_percent": 42.42424242424242,
+      "V211_V213_partial_shared_mib": [
+        123.75,
+        57.1875
+      ],
+      "nominal_Humming_requested_weights_MiB": 891,
+      "measured_different_kernel": "void okc::moe_fused<(bool)1>(okc::Params)",
+      "measured_dram_read_bytes": 769691136,
+      "measured_dram_write_bytes": 4264192,
+      "measured_time_us": 214.304,
+      "measured_percent_dram_peak": 75.06,
+      "measured_tensor_active_percent": 23.71,
+      "measured_barrier_stall_percent": 4.89,
+      "ideal_same_measured_traffic_us": 161.24069333333333,
+      "conditional_same_traffic_ratio": 1.3290937639232843
+    }
+  ]
+}

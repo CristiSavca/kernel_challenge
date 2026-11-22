@@ -1,0 +1,9 @@
+# V85a contiguous vocabulary tails
+
+V85a retains V85’s full BF16 vocabulary projection and single tensor-parallel candidate gather. Each GPU program reads 128 contiguous vocabulary weight rows. If the final tile would overrun the weight tensor, it shifts back until its last row is the final vocabulary row. It excludes every overlapping candidate already covered by the previous tile. The host bounds the two input strides, both output indexes and the grid height before dispatch. Other shapes use the dense local path and participate in the same gather.
+
+At 112 draft rows, hidden width 8,192 and K=16, the SM90 assembler reports 242 registers and zero spill traffic for the 25,256-row shard. V85 used 255 registers and spilled 12 bytes and reloaded 24 bytes per thread. For the 32,768-row specialization, register use fell from 255 to 82. All 16 projection and merge specializations assembled without spills. These compiler measurements do not predict end-to-end speed. [SM90 receipt](sm90_aot.json).
+
+The component delta applies to the original V84 source so its independent changes remain reproducible. Its full export includes V84’s known target-attention compiler failure. The integrated V87 applies the V85a component to the repaired V84a source. Use the V85 flag `--flag speculative-dflash-fused-candidate-head` on top of V84’s flags for the combined check.
+
+CPU validation executed the production arithmetic and tile-selection source over all 65,536 BF16 encodings and 48 projection cases. It also exercised 60 PyTorch rank invocations and 14 launch and address boundaries. The full-model H200 run must establish accepted throughput, agreement on all turns, output lengths, peak memory and TTFT. [Validation receipt](validation.json), [V85 execution fixture](../v85_fused_draft_vocabulary_head/cpu_check.py), [launch fixture](cpu_guards.py), [official rules](https://openkernelchallenge.dev/rules).

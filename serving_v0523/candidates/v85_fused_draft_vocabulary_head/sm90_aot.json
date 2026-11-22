@@ -1,0 +1,456 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab25256-k4",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 25256,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 4,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "909c5631cb2d5018fd62679793f893655eaea814d2470ba06b33d6f472b4e47d",
+      "cubin_bytes": 115792,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "24 bytes stack frame, 20 bytes spill stores, 36 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers, 24 bytes cumulative stack size"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab25256-k4",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 792,
+        "TOP": 4,
+        "BLOCK": 1024
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "68bb2c4675eea5954b473798ea76b197df4591d4022728c20f31a94792ee4d9c",
+      "cubin_bytes": 36680,
+      "shared_bytes": 512,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab32768-k4",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 32768,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 4,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "1174e5f47d71d5447df617e89736d74bf33a2e29db2826f2c2bd743034c4200b",
+      "cubin_bytes": 108880,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab32768-k4",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 1024,
+        "TOP": 4,
+        "BLOCK": 1024
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "6ca2a91522e080811134aba355df4baefdadf78c39837c31bea7be66a0d04a04",
+      "cubin_bytes": 35784,
+      "shared_bytes": 512,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab25256-k8",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 25256,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 8,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "7579b80b63e869e191683e32628b90232ad3d9e17faf872bbaa5ed19cd86c0e3",
+      "cubin_bytes": 135120,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "24 bytes stack frame, 20 bytes spill stores, 40 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers, 24 bytes cumulative stack size"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab25256-k8",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 1584,
+        "TOP": 8,
+        "BLOCK": 2048
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "780a5e7adc9e00c2c1159c5339e2bc97d530934360e2f47d81605d63c44b65af",
+      "cubin_bytes": 79944,
+      "shared_bytes": 1024,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab32768-k8",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 32768,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 8,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "a01655a2da22d2ec079f325adf613241cfb741361a124da49d70aabe1d9bcbf7",
+      "cubin_bytes": 128592,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab32768-k8",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 2048,
+        "TOP": 8,
+        "BLOCK": 2048
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "c67cd0130a3f2c3d809ecf182020c12845942827272f473c6bd9d0a69a2c8d65",
+      "cubin_bytes": 81608,
+      "shared_bytes": 1024,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 38 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab25256-k16",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 25256,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 16,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "8b82d4923ce2c3bb92665babd6dfd53d84c35f88082f9c7e7f2b53033127dca4",
+      "cubin_bytes": 156496,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "16 bytes stack frame, 12 bytes spill stores, 24 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers, 16 bytes cumulative stack size"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab25256-k16",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 3168,
+        "TOP": 16,
+        "BLOCK": 4096
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "8191cf2cb3648d4facca089e30e06f5965ca0d170709a408197e306bf930663c",
+      "cubin_bytes": 179784,
+      "shared_bytes": 2048,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 43 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab32768-k16",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 32768,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 16,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "00bc07161d6469214818a89d5fdda13d3b64a7f3721c557a5dbb21e32d169aec",
+      "cubin_bytes": 150736,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab32768-k16",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 4096,
+        "TOP": 16,
+        "BLOCK": 4096
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "146f626890e6e5863ff51e17a8e4ec31ac4c355ce5a3e90862faf5181c153cf4",
+      "cubin_bytes": 185160,
+      "shared_bytes": 2048,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 43 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab25256-k32",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 25256,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 32,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "f9d1efe2e40075b7e970c6c2c17181bc38a3ef04152fc5fe57505a2cdc127af6",
+      "cubin_bytes": 168144,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "24 bytes stack frame, 20 bytes spill stores, 36 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers, 24 bytes cumulative stack size"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab25256-k32",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 6336,
+        "TOP": 32,
+        "BLOCK": 8192
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "bf372bfa8deff4700a7ca51ab58ef1c7f80d02ba7636535687f3736a1cbaad84",
+      "cubin_bytes": 405320,
+      "shared_bytes": 4096,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 95 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_project_tiles",
+      "label": "vocab32768-k32",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*i32"
+      ],
+      "constants": {
+        "M": 112,
+        "N": 32768,
+        "H": 8192,
+        "HS": 8192,
+        "WS": 8192,
+        "TOP": 32,
+        "BM": 16,
+        "BN": 128,
+        "BK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "935917164fcbdae8834b0f77d5161a7ee3d762b136609c4b37d965d8f8bebec8",
+      "cubin_bytes": 162128,
+      "shared_bytes": 18432,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 255 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/speculative/dflash_candidate_head.py",
+      "kernel": "_merge_tiles",
+      "label": "vocab32768-k32",
+      "types": [
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "OFFSET": 32768,
+        "COUNT": 8192,
+        "TOP": 32,
+        "BLOCK": 8192
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "source_sha256": "6d3b42e1361a2e44b5212efb2cbde83c07bfc3e2fd0f703007a64dc553b38a28",
+      "cubin_sha256": "abab079712138d75e45d6d1e45b7eda4347ffd9893e4b900b23f5c777f691bc3",
+      "cubin_bytes": 423112,
+      "shared_bytes": 4096,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 80 registers, used 1 barriers"
+      ]
+    }
+  ]
+}

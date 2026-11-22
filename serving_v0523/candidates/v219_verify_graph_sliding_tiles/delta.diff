@@ -1,0 +1,245 @@
+diff --git a/python/sglang/kernels/ops/attention/metadata.py b/python/sglang/kernels/ops/attention/metadata.py
+index 9a3f61c..280c448 100644
+--- a/python/sglang/kernels/ops/attention/metadata.py
++++ b/python/sglang/kernels/ops/attention/metadata.py
+@@ -226,6 +226,10 @@ def _fused_decode_metadata_kernel(
+     WINDOW_LEFT: tl.constexpr,
+     origins=None,
+     ORIGIN_STRIDE: tl.constexpr = 0,
++    swa_origins=None,
++    SWA_ORIGIN_STRIDE: tl.constexpr = 0,
++    SWA_WINDOW: tl.constexpr = -1,
++    VERIFY_WIDTH: tl.constexpr = 0,
+ ):
+     pid_b = tl.program_id(0)
+     pid_c = tl.program_id(1)
+@@ -310,6 +314,22 @@ def _fused_decode_metadata_kernel(
+             mask=store_mask,
+             cache_modifier=".cg",
+         )
++        if swa_origins is not None:
++            tl.static_assert(PAGE_SIZE == 1 and WINDOW_LEFT < 0 and VERIFY_WIDTH > 0)
++            # Index from the first tile of the widest live query window for this row.
++            first_visible = tl.maximum(seq_len + SEQ_LEN_DELTA - VERIFY_WIDTH - SWA_WINDOW, 0)
++            first_tile = first_visible // 64
++            if col_start + BLOCK_COLS > first_tile * 64:
++                lanes = tl.reshape(swa_pages.to(tl.int64) - cols % 64, (BLOCK_COLS // 64, 64))
++                swa_lo = tl.min(lanes, 1)
++                swa_hi = tl.max(lanes, 1)
++                swa_tiles = pid_c * (BLOCK_COLS // 64) + tl.arange(0, BLOCK_COLS // 64)
++                swa_valid = (swa_lo == swa_hi) & (swa_lo > 0) & (swa_lo <= 2147483647 - 63)
++                swa_valid &= (swa_tiles * 64 >= first_visible) & ((swa_tiles + 1) * 64 <= num_live_pages)
++                local_tile = swa_tiles - first_tile
++                tl.store(swa_origins + pid_b * SWA_ORIGIN_STRIDE + local_tile,
++                         tl.where(swa_valid, swa_lo, -1).to(tl.int32),
++                         (local_tile >= 0) & (swa_tiles * 64 < num_live_pages))
+ 
+ 
+ @triton.jit
+@@ -540,6 +560,9 @@ def normal_decode_set_metadata(
+     zero_tail: bool = False,
+     window_left: int = -1,
+     origins: Optional[torch.Tensor] = None,
++    swa_origins: Optional[torch.Tensor] = None,
++    swa_window: int = -1,
++    verify_width: int = 0,
+ ):
+     """Fill sequence lengths, their prefix sum and page tables in one launch.
+ 
+@@ -581,6 +604,14 @@ def normal_decode_set_metadata(
+         assert origins.shape == (batch_size, triton.cdiv(max_seq_pages, 128))
+         assert origins.dtype == torch.int32 and origins.stride(1) == 1
+         origin_args = dict(origins=origins, ORIGIN_STRIDE=origins.stride(0))
++    if swa_origins is not None:
++        assert page_size == 1 and not skip_page_table and window_left < 0 and swa_page_table is not None
++        assert swa_window >= 0 and verify_width > 0
++        columns = triton.cdiv(min(max_seq_pages, swa_window + verify_width + 63), 64)
++        assert swa_origins.shape == (batch_size, columns)
++        assert swa_origins.dtype == torch.int32 and swa_origins.stride(1) == 1
++        origin_args.update(swa_origins=swa_origins, SWA_ORIGIN_STRIDE=swa_origins.stride(0),
++                           SWA_WINDOW=swa_window, VERIFY_WIDTH=verify_width)
+     grid = (
+         (1, 1)
+         if skip_page_table or max_seq_pages == 0
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 5f71fa1..0a3d17b 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -75,7 +75,7 @@ def _accumulate_tiles(
+     V_PAGE: tl.constexpr, V_TOKEN: tl.constexpr, V_HEAD: tl.constexpr,
+     WINDOW_LEFT: tl.constexpr, TILE_N: tl.constexpr, TILE_M: tl.constexpr,
+     D: tl.constexpr, ORIGIN_STRIDE: tl.constexpr, DIRECT: tl.constexpr,
+-    InitialMax=None, InitialSum=None, InitialAcc=None,
++    InitialMax=None, InitialSum=None, InitialAcc=None, origin_base=0,
+ ):
+     if InitialMax is None:
+         row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
+@@ -90,7 +90,7 @@ def _accumulate_tiles(
+             # The first tile can straddle already freed SWA rows.
+             live &= tokens >= tl.maximum(length - q_length - WINDOW_LEFT, 0)
+         if DIRECT:
+-            origin = tl.load(Origins + request * ORIGIN_STRIDE + tile)
++            origin = tl.load(Origins + request * ORIGIN_STRIDE + (tile - origin_base))
+             keys = tl.trans(KDesc.load([origin, kv_head * D]))
+             values = VDesc.load([origin, kv_head * D]).to(tl.bfloat16)
+         else:
+@@ -150,6 +150,24 @@ def _next_tile_run(Origins, start, end, limit):
+     return tl.minimum(cursor + count, end), direct
+ 
+ 
++@triton.jit
++def _window_tile_run(Row, start, end, first_live, length, origin_base, limit, TILE_N: tl.constexpr):
++    # A tensor-map load is unmasked. Handle both possibly partial boundary tiles by index.
++    if (start * TILE_N < first_live) | ((start + 1) * TILE_N > length):
++        stop = start + 1
++        direct = tl.full((), False, tl.int1)
++    else:
++        # Inspect at most one warp of certificates. Limit fragmented runs to this chunk.
++        chunk_end = tl.minimum(tl.minimum(start + 32, end), length // TILE_N)
++        mask = _tile_origin_mask(Row, start - origin_base, chunk_end - origin_base, limit)
++        direct = (mask & 1) != 0
++        changes = tl.where(direct, mask ^ tl.full((), 0xFFFFFFFF, tl.uint32), mask)
++        lanes = tl.arange(0, 32)
++        count = tl.min(tl.where(((changes >> lanes.to(tl.uint32)) & 1) != 0, lanes, 32), 0)
++        stop = tl.minimum(start + count, chunk_end)
++    return stop, direct
++
++
+ @triton.jit
+ def _partition_attention(
+     Q,
+@@ -232,8 +250,17 @@ def _partition_attention(
+                 row_sum = tl.zeros((TILE_M,), tl.float32)
+                 acc = tl.zeros((TILE_M, D), tl.float32)
+                 cursor = tile_start
++                origin_base = 0
++                if WINDOW_LEFT >= 0:
++                    origin_base = tl.maximum(length - MAX_Q - WINDOW_LEFT, 0) // TILE_N
+                 while cursor < tile_end:
+-                    if tile_end - tile_start <= 32:
++                    if WINDOW_LEFT >= 0:
++                        stop, direct = _window_tile_run(
++                            Origins + request * ORIGIN_STRIDE, cursor, tile_end,
++                            tl.maximum(length - q_length - WINDOW_LEFT, 0), length,
++                            origin_base, CAPACITY - TILE_N, TILE_N,
++                        )
++                    elif tile_end - tile_start <= 32:
+                         # One warp vote covers the entire short intersection.
+                         lanes = cursor + tl.arange(0, 32)
+                         live_lanes = lanes < tile_end
+@@ -250,7 +277,7 @@ def _partition_attention(
+                             K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,
+                             length, q_length, q_positions, q_live, query, dims, scale,
+                             PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True, row_max, row_sum, acc,
++                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True, row_max, row_sum, acc, origin_base,
+                         )
+                     else:
+                         row_max, row_sum, acc = _accumulate_tiles(
+@@ -341,14 +368,22 @@ def _merge_partitions(
+     tl.store(Out + q_row * D + dims, output)
+ 
+ 
+-def _direct_tile_args(k, v, page_table, origins, window_left, tile_n):
+-    if origins is None or TensorDescriptor is None or window_left >= 0 or tile_n != 128:
++def _direct_tile_args(k, v, page_table, origins, window_left, tile_n, max_q=0):
++    if origins is None or TensorDescriptor is None:
+         return {}
++    if window_left < 0:
++        if tile_n != 128:
++            return {}
++        span = page_table.shape[1]
++    else:
++        if tile_n != 64 or max_q < 1:
++            return {}
++        span = min(page_table.shape[1], window_left + max_q + tile_n - 1)
+     slots, page_size, heads, dim = k.shape
+     if (
+         page_size != 1 or dim != 64 or k.dtype != torch.float8_e4m3fn
+-        or not 128 <= slots < 2 ** 31 or heads * dim >= 2 ** 31
+-        or origins.shape != (page_table.shape[0], triton.cdiv(page_table.shape[1], 128))
++        or not tile_n <= slots < 2 ** 31 or heads * dim >= 2 ** 31
++        or origins.shape != (page_table.shape[0], triton.cdiv(span, tile_n))
+         or origins.dtype != torch.int32 or origins.stride(1) != 1 or origins.device != k.device
+         or not k.is_cuda or v.device != k.device or v.dtype != k.dtype or v.shape != k.shape
+         or torch.compiler.is_compiling()
+@@ -428,7 +463,7 @@ def paged_verify_attention(
+     ks_strides = k_descale.stride() if k_descale is not None else (0, 0)
+     vs_strides = v_descale.stride() if v_descale is not None else (0, 0)
+     block_batch = triton.next_power_of_2(batch)
+-    direct = _direct_tile_args(k, v, page_table, origins, window_left, tile_n)
++    direct = _direct_tile_args(k, v, page_table, origins, window_left, tile_n, max_q)
+     _partition_attention[(partitions, kv_heads)](
+         q,
+         k,
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 86b807d..ced7a15 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -137,6 +137,7 @@ class FlashAttentionMetadata:
+     swa_spec_metadata: Optional[FlashAttentionMetadata] = None
+     # Per-128-row physical origins for the full target verify page table.
+     verify_tile_origins: torch.Tensor = None
++    swa_verify_tile_origins: torch.Tensor = None
+ 
+ 
+ class FlashAttentionBackend(AttentionBackend):
+@@ -1934,6 +1935,15 @@ class FlashAttentionBackend(AttentionBackend):
+                     and layer.logit_cap == 0.0
+                     and kwargs.keys() <= {"k_descale", "v_descale"}
+                 ):
++                    origins = None
++                    if window_size[0] < 0 and page_table is metadata.page_table:
++                        origins = getattr(metadata, "verify_tile_origins", None)
++                    elif (
++                        page_table is not None and page_table is metadata.swa_page_table
++                        and window_size[0] == self.sliding_window_size
++                        and max_seqlen_q == self.speculative_num_draft_tokens
++                    ):
++                        origins = getattr(metadata, "swa_verify_tile_origins", None)
+                     result = paged_verify_attention(
+                         query,
+                         key_cache,
+@@ -1948,9 +1958,7 @@ class FlashAttentionBackend(AttentionBackend):
+                         v_descale=fa_v_descale,
+                         out=_fa_out,
+                         num_sms=self._hopper_verify_sms,
+-                        **({"origins": metadata.verify_tile_origins}
+-                           if window_size[0] < 0 and page_table is metadata.page_table
+-                           and getattr(metadata, "verify_tile_origins", None) is not None else {}),
++                        **({"origins": origins} if origins is not None else {}),
+                     )
+                 if result is None:
+                     if direct_prompt_kv is not None:
+@@ -2765,6 +2773,12 @@ class FlashAttentionBackend(AttentionBackend):
+                 self.target_verify_metadata["verify_tile_origins"] = torch.full(
+                     (max_bs, (max_verify_pages + 127) // 128), -1, dtype=torch.int32, device=self.device,
+                 )
++                if self.use_sliding_window_kv_pool and self.sliding_window_size is not None and self.sliding_window_size >= 0:
++                    span = self.sliding_window_size + self.speculative_num_draft_tokens + 63
++                    columns = (min(max_verify_pages, span) + 63) // 64
++                    self.target_verify_metadata["swa_verify_tile_origins"] = torch.full(
++                        (max_bs, columns), -1, dtype=torch.int32, device=self.device,
++                    )
+ 
+             # topk<=1 never extracts the mask; both metadata paths gate on topk > 1.
+             self._verify_mask = maybe_create_verify_mask(
+@@ -3030,6 +3044,8 @@ class FlashAttentionBackend(AttentionBackend):
+                 metadata.page_table = self.target_verify_metadata["page_table"][:bs, :]
+                 if "verify_tile_origins" in self.target_verify_metadata:
+                     metadata.verify_tile_origins = self.target_verify_metadata["verify_tile_origins"][:bs]
++                if "swa_verify_tile_origins" in self.target_verify_metadata:
++                    metadata.swa_verify_tile_origins = self.target_verify_metadata["swa_verify_tile_origins"][:bs]
+                 if self.use_sliding_window_kv_pool:
+                     metadata.swa_page_table = self.target_verify_metadata[
+                         "swa_page_table"
+@@ -3214,6 +3230,9 @@ class FlashAttentionBackend(AttentionBackend):
+             window_left=window_left,
+             **({"origins": metadata.verify_tile_origins}
+                if getattr(metadata, "verify_tile_origins", None) is not None else {}),
++            **({"swa_origins": metadata.swa_verify_tile_origins, "swa_window": self.sliding_window_size,
++                "verify_width": self.speculative_num_draft_tokens}
++               if getattr(metadata, "swa_verify_tile_origins", None) is not None else {}),
+         )
+         if translated:
+             # The plan's table reaches `cache_seqlens_int32`, which the kernels

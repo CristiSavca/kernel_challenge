@@ -1,0 +1,44 @@
+{
+  "patch_sha256": "c2c29a0e560ce5ef257819222b94bf4c162a0806d503e5408701e1bdad134099",
+  "header_sha256": "56f291cae8cb8528c875017ee0b49ed0adad5371ba73fef039860a9238936fee",
+  "cases": [
+    {
+      "width": 128,
+      "shared_padding_128B": 1,
+      "cases": 256,
+      "live_bf16": 769280,
+      "guard_words": 344832,
+      "TMA_coordinates": 5460,
+      "duplicate_source_rows": 4552,
+      "multitile_experts": 194,
+      "partial_tiles": 292,
+      "empty_experts": 546
+    },
+    {
+      "width": 384,
+      "shared_padding_128B": 7,
+      "cases": 256,
+      "live_bf16": 2307840,
+      "guard_words": 1018112,
+      "TMA_coordinates": 5460,
+      "duplicate_source_rows": 4552,
+      "multitile_experts": 194,
+      "partial_tiles": 292,
+      "empty_experts": 546
+    },
+    {
+      "width": 4096,
+      "shared_padding_128B": 3,
+      "cases": 256,
+      "live_bf16": 24616960,
+      "guard_words": 10780672,
+      "TMA_coordinates": 5460,
+      "duplicate_source_rows": 4552,
+      "multitile_experts": 194,
+      "partial_tiles": 292,
+      "empty_experts": 546
+    }
+  ],
+  "physical_H200": false,
+  "scope": "Host-compiled production A-loader and epilogue. TMA intrinsic records addresses, WGMMA fragments are populated independently, CPU expf and software BF16 rounding."
+}

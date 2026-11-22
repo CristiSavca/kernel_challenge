@@ -1,0 +1,170 @@
+diff --git a/python/sglang/srt/layers/communication/sp_attention_return.py b/python/sglang/srt/layers/communication/sp_attention_return.py
+index 10291ab..c641fbe 100644
+--- a/python/sglang/srt/layers/communication/sp_attention_return.py
++++ b/python/sglang/srt/layers/communication/sp_attention_return.py
+@@ -3,39 +3,6 @@
+ import torch
+ 
+ 
+-def enable_striped_return(linears, group):
+-    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
+-    from sglang.srt.environ import envs
+-    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
+-    from sglang.srt.runtime_context import get_exec, get_lora
+-
+-    if group.world_size < 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
+-        return
+-    comm = group.pynccl_comm
+-    ready = (
+-        comm is not None and comm.available and torch.cuda.get_device_capability(comm.device)[0] == 9
+-        and not group.is_symmetric_memory_enabled() and not get_lora().enable_lora
+-        and not is_batch_invariant_mode_enabled() and not torch.is_autocast_enabled()
+-        and not get_exec().deterministic.enable_deterministic_inference
+-        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
+-        and not torch.are_deterministic_algorithms_enabled() and bool(linears)
+-        and all(
+-            layer.tp_group is not None and layer.tp_group.ranks == group.ranks and layer.bias is None
+-            and type(layer.quant_method) is UnquantizedLinearMethod and "apply" not in vars(layer.quant_method)
+-            and layer.weight.device == comm.device and layer.weight.dtype == torch.bfloat16
+-            and layer.weight.ndim == 2 and layer.weight.is_contiguous() and not layer.weight.requires_grad
+-            for layer in linears
+-        )
+-    )
+-    vote = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
+-    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
+-    if vote.item():
+-        stream = torch.cuda.Stream(device=comm.device)
+-        for layer in linears:
+-            layer._sp_return_stream = stream
+-            layer._sp_return_method = layer.quant_method
+-
+-
+ def striped_return_eligible(rows, width):
+     # Two large, aligned output GEMMs amortize the extra launch and local copy.
+     return width % 256 == 0 and rows >= 2048 and rows * width >= 64 * 1024 * 1024
+diff --git a/python/sglang/srt/layers/communication/sp_half_qkv.py b/python/sglang/srt/layers/communication/sp_half_qkv.py
+index 13087a2..b943a75 100644
+--- a/python/sglang/srt/layers/communication/sp_half_qkv.py
++++ b/python/sglang/srt/layers/communication/sp_half_qkv.py
+@@ -34,46 +34,61 @@ def _exchange_peer(comm, buddy, owned, remote):
+         comm.group_end()
+ 
+ 
+-def enable_half_qkv(linears, group):
++def enable_sp_attention_pipeline(qkv_linears, output_linears, group):
+     from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
+     from sglang.srt.environ import envs
+     from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
+ 
+     size = group.world_size
+-    if size < 4 or size % 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
++    if size < 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
+         return
+     comm = group.pynccl_comm
+     ready = (
+         comm is not None and comm.available and not get_lora().enable_lora
+-        and get_parallel().attn_tp_group.ranks == group.ranks
+         and torch.cuda.get_device_capability(comm.device)[0] == 9
+         and not get_exec().deterministic.enable_deterministic_inference
+         and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
+         and not is_batch_invariant_mode_enabled() and not torch.is_autocast_enabled()
+         and not torch.are_deterministic_algorithms_enabled()
+-        and all(
++    )
++
++    def dense(fc):
++        return (
+             type(fc.quant_method) is UnquantizedLinearMethod and "apply" not in vars(fc.quant_method)
+-            and fc.bias is None and not fc.gather_output and fc.weight.device == comm.device
+-            and fc.weight.dtype == torch.bfloat16 and not fc.weight.requires_grad
+-            and fc.weight.ndim == 2 and fc.weight.is_contiguous()
+-            for fc in linears
++            and fc.bias is None and fc.weight.device == comm.device and fc.weight.dtype == torch.bfloat16
++            and not fc.weight.requires_grad and fc.weight.ndim == 2 and fc.weight.is_contiguous()
+         )
++
++    qkv_ok = (
++        ready and bool(qkv_linears) and size >= 4 and size % 2 == 0
++        and get_parallel().attn_tp_group.ranks == group.ranks
++        and all(dense(fc) and not fc.gather_output for fc in qkv_linears)
++    )
++    return_ok = (
++        ready and bool(output_linears) and not group.is_symmetric_memory_enabled()
++        and all(dense(fc) and fc.tp_group is not None and fc.tp_group.ranks == group.ranks for fc in output_linears)
+     )
+-    vote = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
+-    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
+-    if not vote.item():
++    votes = torch.tensor([qkv_ok, return_ok], dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(votes, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    qkv_ok, return_ok = votes.tolist()
++    if not (qkv_ok or return_ok):
+         return
+-    # Establish these peer connections before the first graph capture.
+-    half, rank = size // 2, group.rank_in_group
+-    probe = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
+-    owned = probe.new_empty((half, 1))
+-    remote = torch.empty_like(owned)
+-    with comm.change_state(enable=True):
+-        _exchange_half(comm, rank, (rank // half) * half, probe, owned)
+-        _exchange_peer(comm, (rank + half) % size, owned, remote)
+-    group.sp_qkv_cohort_stream = torch.cuda.Stream(device=comm.device)
+-    for fc in linears:
+-        fc._sp_half_qkv = True
++    stream = torch.cuda.Stream(device=comm.device)
++    if qkv_ok:
++        half, rank = size // 2, group.rank_in_group
++        probe = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
++        owned = probe.new_empty((half, 1))
++        remote = torch.empty_like(owned)
++        with comm.change_state(enable=True):
++            _exchange_half(comm, rank, (rank // half) * half, probe, owned)
++            _exchange_peer(comm, (rank + half) % size, owned, remote)
++        group.sp_qkv_cohort_stream = stream
++        for fc in qkv_linears:
++            fc._sp_half_qkv = fc.quant_method
++    if return_ok:
++        for fc in output_linears:
++            fc._sp_return_stream = stream
++            fc._sp_return_method = fc.quant_method
+ 
+ 
+ def _half_qkv_shape(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index d7e2b61..77f4aca 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -256,9 +256,12 @@ def column_parallel_g_matmul(
+     tile-gated all-gather; other models retain their existing implementation.
+     """
+     num_tokens = sp_num_tokens()
++    method = getattr(linear, "_sp_half_qkv", None)
+     if (
+-        getattr(linear, "_sp_half_qkv", False) and bias is None
++        method is not None and linear.quant_method is method and "apply" not in vars(method) and bias is None
+         and input_parallel.dtype == torch.bfloat16 and not input_parallel.requires_grad
++        and linear.weight.dtype == input_parallel.dtype and linear.weight.device == input_parallel.device
++        and linear.weight.ndim == 2 and linear.weight.is_contiguous() and not linear.weight.requires_grad
+         and not torch.is_autocast_enabled() and not torch.are_deterministic_algorithms_enabled()
+     ):
+         from sglang.srt.layers.communication.sp_half_qkv import half_qkv, half_qkv_eligible
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index cf39dbb..aadeba8 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1249,9 +1249,13 @@ class MuseSpark1xModel(nn.Module):
+             backend = get_moe_runner_backend()
+             replicate_expert_input = backend.is_marlin() or backend.is_humming()
+             if replicate_expert_input:
+-                from sglang.srt.layers.communication.sp_half_qkv import enable_half_qkv
++                from sglang.srt.layers.communication.sp_half_qkv import enable_sp_attention_pipeline
+ 
+-                enable_half_qkv([layer.self_attn.qkv_proj for layer in self.layers], get_parallel().tp_group)
++                enable_sp_attention_pipeline(
++                    [layer.self_attn.qkv_proj for layer in self.layers],
++                    [layer.self_attn.o_proj for layer in self.layers],
++                    get_parallel().tp_group,
++                )
+             moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]

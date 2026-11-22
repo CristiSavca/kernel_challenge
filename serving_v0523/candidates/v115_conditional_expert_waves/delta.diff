@@ -1,0 +1,178 @@
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+index c51d118..1b73ab6 100644
+--- a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
++++ b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+@@ -60,6 +60,33 @@ def _pack_wave(
+         tl.store(Packed + row.to(tl.int64) * HIDDEN + col, vals, mask=col < HIDDEN)
+ 
+ 
++@triton.jit
++def _load_wave(
++    Edges, TokenBounds, Cursor, Bounds, Offsets, Interval, Active,
++    TOKENS: tl.constexpr, ROWS: tl.constexpr, EXPERTS: tl.constexpr,
++    WAVES: tl.constexpr, BLOCK: tl.constexpr, FIRST: tl.constexpr,
++):
++    if FIRST:
++        wave = 0
++    else:
++        wave = tl.load(Cursor) + 1
++    # Clamp every pointer even on the final WHILE condition update.
++    index = tl.minimum(wave, WAVES - 1)
++    col = tl.arange(0, BLOCK)
++    base = index * EXPERTS
++    bound = tl.load(Edges + base + col, mask=col <= EXPERTS, other=0)
++    last = tl.load(Edges + base + EXPERTS)
++    first_token = tl.load(TokenBounds + index)
++    end_token = tl.load(TokenBounds + index + 1)
++    tl.store(Bounds + col, bound, mask=col <= EXPERTS)
++    tl.store(Offsets + col, bound + (ROWS - last), mask=col <= EXPERTS)
++    tl.store(Interval, first_token)
++    tl.store(Interval + 1, end_token)
++    tl.store(Cursor, wave)
++    # Trailing tokens may own zero local routes and must still write their outputs.
++    tl.store(Active, (wave < WAVES) & (first_token < TOKENS))
++
++
+ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+     from humming.layer import HummingMethod
+ 
+@@ -90,9 +117,7 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+     row_map = torch.full_like(local_ids, -1)
+     output = torch.empty_like(hidden_states)
+ 
+-    for wave in range(token_bounds.numel() - 1):
+-        bounds = edges[wave * experts : (wave + 1) * experts + 1]
+-        offsets = bounds + (rows - bounds[-1:])
++    def run_wave(bounds, offsets, interval):
+         _pack_wave[(min(rows, 256),)](
+             hidden_states, sorted_bins, sorted_slots, bounds, packed, row_keys, row_map,
+             ROWS=rows, EXPERTS=experts, TOPK=topk, HIDDEN=hidden,
+@@ -116,6 +141,44 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+             eps=layer._post_expert_norm_eps, weight_first=layer._post_expert_norm_weight_first,
+             slot_row_indices=row_map, slot_expert_ids=local_ids,
+             expert_output_scales=layer.w2_global_scale, out=output,
+-            token_bounds=token_bounds[wave : wave + 2],
++            token_bounds=interval,
+         )
++    waves = token_bounds.numel() - 1
++    if waves < 4 or not getattr(layer, "humming_conditional_waves", False):
++        for wave in range(waves):
++            bounds = edges[wave * experts : (wave + 1) * experts + 1]
++            run_wave(bounds, bounds + (rows - bounds[-1:]), token_bounds[wave : wave + 2])
++        return output
++
++    # Allocate the loop-carried metadata in the parent graph. Only single-device
++    # kernels enter the body. Tensor-parallel collectives stay in the parent.
++    bounds = edges.new_empty(experts + 1)
++    offsets = torch.empty_like(bounds)
++    interval = edges.new_empty(2)
++    cursor = edges.new_empty(())
++    active = torch.empty((), dtype=torch.bool, device=edges.device)
++
++    def load_wave(first):
++        _load_wave[(1,)](
++            edges, token_bounds, cursor, bounds, offsets, interval, active,
++            TOKENS=tokens, ROWS=rows, EXPERTS=experts, WAVES=waves,
++            BLOCK=triton.next_power_of_2(experts + 1), FIRST=first, num_warps=1,
++        )
++
++    load_wave(True)
++    if torch.cuda.is_current_stream_capturing():
++        graph = torch.cuda.CUDAGraph.get_currently_capturing_graph()
++        graph.begin_capture_to_while_node(active)
++        try:
++            run_wave(bounds, offsets, interval)
++            load_wave(False)
++            graph.set_conditional_handle_for_current_node(active)
++        finally:
++            graph.end_capture_to_conditional_node()
++    else:
++        # Warm up both metadata kernels. Eager mode never reads a count back.
++        for wave in range(waves):
++            if wave:
++                load_wave(False)
++            run_wave(bounds, offsets, interval)
+     return output
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index f959e39..b7487bb 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -58,6 +58,53 @@ def _graph_prefill_ready(device, tp_group):
+     return supported
+ 
+ 
++@cache_once
++def _conditional_waves_ready(device):
++    graph_type = torch.cuda.CUDAGraph
++    methods = (
++        "get_currently_capturing_graph", "begin_capture_to_while_node",
++        "set_conditional_handle_for_current_node", "end_capture_to_conditional_node",
++    )
++    if not all(hasattr(graph_type, name) for name in methods):
++        return False
++    if torch.cuda.get_allocator_backend() != "native":
++        return False
++    version = tuple(int(part) for part in torch.version.cuda.split(".")[:2])
++    if version < (12, 4):
++        return False
++    # Exercise the device predicate once before model capture. Use an isolated
++    # stream and pool so the feature check cannot clear the model's allocator cache.
++    try:
++        with torch.cuda.device(device), torch.cuda.stream(torch.cuda.Stream(device=device)):
++            count = torch.empty((), dtype=torch.int32, device=device)
++            active = torch.empty((), dtype=torch.bool, device=device)
++            count.fill_(2)
++            torch.gt(count, 0, out=active)
++            graph = graph_type()
++            graph.capture_begin(capture_error_mode="thread_local")
++            try:
++                torch.gt(count, 0, out=active)
++                current = graph_type.get_currently_capturing_graph()
++                current.begin_capture_to_while_node(active)
++                try:
++                    count.sub_(1)
++                    torch.gt(count, 0, out=active)
++                    current.set_conditional_handle_for_current_node(active)
++                finally:
++                    current.end_capture_to_conditional_node()
++            finally:
++                graph.capture_end()
++            graph.replay()
++            if count.item() != 0:
++                return False
++            count.fill_(-1)
++            graph.replay()
++            return count.item() == -1
++    except (RuntimeError, NotImplementedError) as exc:
++        logging.getLogger(__name__).info("Using unrolled grouped expert waves: %s", exc)
++        return False
++
++
+ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     """Replace the local checkpoint bank with packed Humming weights."""
+     from humming import dtypes
+@@ -74,6 +121,9 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         _graph_prefill_ready(layer.gate_up_proj.device, get_parallel().tp_group)
+         and layer.intermediate_size_per_partition % 8 == 0
+     )
++    layer.humming_conditional_waves = (
++        layer.humming_graph_prefill and _conditional_waves_ready(layer.gate_up_proj.device)
++    )
+     input_schema = HummingInputSchema(a_dtype=dtypes.bfloat16)
+     weight_schema = HummingWeightSchema(
+         b_dtype=dtypes.float4e2m1,
+diff --git a/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py b/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
+index f8b5295..f2dd6f9 100644
+--- a/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
++++ b/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
+@@ -132,6 +132,10 @@ def graph_node_payload(node):
+         case cuda_drv.CUgraphNodeType.CU_GRAPH_NODE_TYPE_GRAPH:
+             child_graph = checkCudaErrors(cuda_drv.cuGraphChildGraphNodeGetGraph(node))
+             payload = graph_signature(child_graph)
++        case kind if kind.name == "CU_GRAPH_NODE_TYPE_CONDITIONAL":
++            # The handle and body belong to this raw graph. Two such nodes with
++            # identical outer topology cannot safely share an executable.
++            payload = (int(node),)
+         case cuda_drv.CUgraphNodeType.CU_GRAPH_NODE_TYPE_EMPTY:
+             payload = ()
+         case _:

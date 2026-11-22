@@ -1,0 +1,205 @@
+diff --git a/python/sglang/srt/mem_cache/kv_cache_configurator.py b/python/sglang/srt/mem_cache/kv_cache_configurator.py
+index 3261ab8..719a63e 100644
+--- a/python/sglang/srt/mem_cache/kv_cache_configurator.py
++++ b/python/sglang/srt/mem_cache/kv_cache_configurator.py
+@@ -2770,6 +2770,27 @@ class KVCacheConfigurator:
+             pool_cls = PageInterleaveMHATokenToKVPool
+             pool_kwargs["shard_spec"] = self.kv_shard_spec
+             pool_kwargs["shard_group"] = self.kv_shard_group
++        if (
++            self.is_draft_worker and self.memory_pool_config is not None
++            and self.memory_pool_config.dflash_private_swa and pool_cls is MHATokenToKVPool
++            and quant_method is None and self.kv_shard_rank is None
++        ):
++            # Keep the target budget conservative. Only backing and data motion
++            # follow SWA capacity; logical request positions still use full ids.
++            config = self.memory_pool_config
++            pool = SWAKVPool(
++                size=config.full_max_total_num_tokens, size_swa=config.swa_max_total_num_tokens,
++                page_size=self.pool_page_size, dtype=self.kv_cache_dtype,
++                head_num=self.model_config.get_num_kv_heads(get_parallel().attn_tp_size, 1),
++                head_dim=self.model_config.head_dim, v_head_dim=self.model_config.v_head_dim,
++                swa_attention_layer_ids=list(range(self.layer_info.num_effective_layers)),
++                full_attention_layer_ids=[], device=self.device,
++                enable_memory_saver=get_exec().features.enable_memory_saver,
++                enable_kv_cache_copy=True, post_capture_active=self.post_capture_kv_active,
++            )
++            pool.register_mapping(self.token_to_kv_pool_allocator.full_to_swa_index_mapping)
++            pool.dflash_private_swa = True
++            return pool
+         token_to_kv_pool = pool_cls(
+             max_total_num_tokens,
+             page_size=self.pool_page_size,
+diff --git a/python/sglang/srt/model_executor/pool_configurator.py b/python/sglang/srt/model_executor/pool_configurator.py
+index 5cf47c0..adb3cfb 100644
+--- a/python/sglang/srt/model_executor/pool_configurator.py
++++ b/python/sglang/srt/model_executor/pool_configurator.py
+@@ -91,6 +91,9 @@ class MemoryPoolConfig:
+     # instead of re-summing token counts; None when a user token cap is the budget.
+     unified_total_bytes: Optional[int] = None
+ 
++    # All draft layers can use the static target sliding-window addresses.
++    dflash_private_swa: bool = False
++
+     def __post_init__(self):
+         if self.max_total_num_tokens <= 0:
+             msg = "Not enough memory. Please try to increase --mem-fraction-static."
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..e18b55a 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from dataclasses import replace
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -30,8 +31,10 @@ from sglang.srt.lora.layers import unwrap_lora_layer
+ from sglang.srt.managers.schedule_batch import ScheduleBatch
+ from sglang.srt.managers.scheduler import GenerationBatchResult
+ from sglang.srt.managers.tp_worker import TpModelWorker
+-from sglang.srt.mem_cache.kv_loc_plan import KVLocPlan
++from sglang.srt.mem_cache.allocator.swa import SWATokenToKVPoolAllocator
++from sglang.srt.mem_cache.kv_loc_plan import IdSpaceKind, KVLocPlan
+ from sglang.srt.mem_cache.memory_pool import KVWriteLoc
++from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.cuda_graph_config import Backend
+ from sglang.srt.model_executor.forward_batch_info import (
+     CaptureHiddenMode,
+@@ -47,7 +50,9 @@ from sglang.srt.model_executor.runner_utils.pool import (
+ )
+ from sglang.srt.platforms import current_platform
+ from sglang.srt.runtime_context import (
++    get_disagg,
+     get_exec,
++    get_memory,
+     get_parallel,
+     get_schedule,
+     get_spec,
+@@ -662,6 +667,65 @@ class DFlashWorkerV2(BaseSpecWorker):
+             self.draft_model_runner.attn_backend,
+         )
+ 
++    def _can_share_swa_addresses(self, config, request_pool, allocator):
++        # A draft's logical mask alone says nothing about storage ownership.
++        # Limit the shared lifetime to a plain static allocator with a real
++        # full-to-SWA mapping and metadata handled by the native FA backend.
++        runner = self.draft_model_runner
++        target = self.model_runner
++        memory = get_memory()
++        parallel = get_parallel()
++        disagg = get_disagg()
++        if (
++            not is_cuda()
++            or config is None
++            or request_pool is None
++            or not config.swa_max_total_num_tokens
++            or not config.full_max_total_num_tokens
++            or config.swa_max_total_num_tokens >= config.full_max_total_num_tokens
++            or type(allocator) is not SWATokenToKVPoolAllocator
++            or allocator.swa_req_ring
++            or allocator.page_size != 1
++            or type(allocator.get_kvcache()) is not SWAKVPool
++            or target.token_to_kv_pool is not allocator.get_kvcache()
++            or request_pool is not target.req_to_token_pool
++            or runner.draft_attention_backend not in ("fa3", "fa4")
++            or runner.kv_cache_dtype != torch.bfloat16
++            or self.use_compact_draft_cache
++            or runner.is_hybrid_swa
++            or runner.use_mla_backend
++            or self._is_domino
++            or target.canary_manager is not None
++            or memory.enable_unified_memory
++            or parallel.enable_kv_cache_sharding
++            or memory.enable_unified_cache_external_linker
++            or memory.hicache_storage_backend is not None
++            or disagg.disaggregation_mode != "null"
++            or disagg.enable_pdmux
++            or target.pp_group.world_size != 1
++            or parallel.attn_dp_enabled
++            or parallel.attn_cp_size != 1
++            or parallel.attn_dcp_size != 1
++        ):
++            return False
++        target_window = target.sliding_window_size
++        if not isinstance(target_window, int) or target_window < 0:
++            return False
++        layers = getattr(self.draft_model, "layers", ())
++        if not layers or len(layers) != runner.layer_info.num_effective_layers:
++            return False
++        for idx, block in enumerate(layers):
++            layer = getattr(getattr(block, "self_attn", None), "attn", None)
++            if (
++                layer is None
++                or layer.layer_id != idx
++                or layer.is_cross_attention
++                or not isinstance(layer.sliding_window_size, int)
++                or not 0 <= layer.sliding_window_size <= target_window
++            ):
++                return False
++        return True
++
+     def alloc_memory_pool(
+         self,
+         memory_pool_config=None,
+@@ -673,6 +737,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+         # enabled, the draft worker keeps a private compact req->token table
+         # over the same global KV index space, so radix-cache/prefix-hit KV
+         # remains reusable while draft attention sees only the recent window.
++        if self._can_share_swa_addresses(
++            memory_pool_config, req_to_token_pool, token_to_kv_pool_allocator
++        ):
++            memory_pool_config = replace(memory_pool_config, dflash_private_swa=True)
+         with draft_tp_context(self.draft_parallel_layout):
+             self._draft_worker.alloc_memory_pool(
+                 memory_pool_config=memory_pool_config,
+@@ -1814,9 +1882,17 @@ class DFlashWorkerV2(BaseSpecWorker):
+         return out_tokens
+ 
+     def _draft_write_ids(self, plan: KVLocPlan) -> torch.Tensor:
+-        """The plan's write ids as the draft pool indexes them: the target's
+-        physical ids for a fused draft, the virtual ids for a private one."""
+-        return plan.write_ids(self.draft_model_runner.kv_index_translator)
++        """The plan's write ids in the draft pool's physical address space."""
++        pool = self.draft_model_runner.token_to_kv_pool
++        translator = self.draft_model_runner.kv_index_translator
++        if getattr(pool, "dflash_private_swa", False):
++            return plan.write_ids(translator, kind=IdSpaceKind.SLIDING_WINDOW)
++        return plan.write_ids(translator)
++
++    def _context_kv_pool(self):
++        # _draft_write_ids has already translated these addresses exactly once.
++        pool = self.draft_model_runner.token_to_kv_pool
++        return pool.swa_kv_pool if getattr(pool, "dflash_private_swa", False) else pool
+ 
+     def _append_target_hidden_to_draft_kv_by_loc(
+         self,
+@@ -1973,7 +2049,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     k = k.view(-1, attn.num_kv_heads, attn.head_dim)
+                     v = v.view(-1, attn.num_kv_heads, attn.head_dim)
+ 
+-                    self.draft_model_runner.token_to_kv_pool.set_kv_buffer_prefix_valid(
++                    self._context_kv_pool().set_kv_buffer_prefix_valid(
+                         attn.attn,
+                         cache_loc_2d,
+                         commit_lens,
+@@ -2028,7 +2104,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 k = attn.apply_k_rope(ctx_positions, k)
+             k = k.view(-1, attn.num_kv_heads, attn.head_dim)
+             v = v.view(-1, attn.num_kv_heads, attn.head_dim)
+-            self.draft_model_runner.token_to_kv_pool.set_kv_buffer(
++            self._context_kv_pool().set_kv_buffer(
+                 attn.attn,
+                 KVWriteLoc(ctx_cache_loc, physical=True),
+                 k,
+@@ -2046,7 +2122,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         commit_lens: Optional[torch.Tensor] = None,
+     ) -> None:
+         """Fused KV materialization using batched projection + Triton kernel."""
+-        token_to_kv_pool = self.draft_model_runner.token_to_kv_pool
++        token_to_kv_pool = self._context_kv_pool()
+         if self._fused_kv_helper is None:
+             raise RuntimeError("DFLASH fused KV helper is not initialized.")
+ 

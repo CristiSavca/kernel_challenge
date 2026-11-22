@@ -1,0 +1,379 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh
+new file mode 100644
+index 0000000..3f63c80
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh
+@@ -0,0 +1,91 @@
++#include "../elementwise/activation.cuh"
++#include <algorithm>
++
++namespace sglang {
++namespace muse_expert_prefill_scaled_silu {
++
++using namespace device;
++constexpr uint32_t kThreads = 256;
++constexpr uint32_t kVecSize = kMaxVecBytes / sizeof(bf16_t);
++using Vec = AlignedVector<bf16_t, kVecSize>;
++
++struct Params {
++  const bf16_t* gate_up;
++  bf16_t* output;
++  const int32_t* expert_ids;
++  const bf16_t* scales;
++  uint32_t rows;
++  uint32_t row_vecs;
++};
++
++SGL_DEVICE float scale_and_round(bf16_t x, float scale) {
++  const float value = cast<float>(x);
++  // The separate BF16 scale multiply preserves subnormals. The existing SiLU
++  // fast-math options below must not change this preceding rounding boundary.
++#if defined(__CUDA_ARCH__)
++  float product;
++  asm("mul.rn.f32 %0, %1, %2;" : "=f"(product) : "f"(value), "f"(scale));
++#else
++  const float product = value * scale;
++#endif
++  return cast<float>(cast<bf16_t>(product));
++}
++
++__global__ __launch_bounds__(kThreads) void run_kernel(const __grid_constant__ Params params) {
++  for (uint64_t row = blockIdx.x; row < params.rows; row += gridDim.x) {
++    const uint32_t expert = params.expert_ids[row];
++    const float scale = cast<float>(params.scales[expert]);
++    const uint64_t input_base = row * 2 * params.row_vecs;
++    const uint64_t output_base = row * params.row_vecs;
++    for (uint32_t i = threadIdx.x; i < params.row_vecs; i += blockDim.x) {
++      const auto gate = load_as<Vec>(params.gate_up, input_base + i);
++      const auto up = load_as<Vec>(params.gate_up, input_base + params.row_vecs + i);
++      Vec output;
++#pragma unroll
++      for (uint32_t j = 0; j < kVecSize; ++j) {
++        const float gate_f32 = scale_and_round(gate[j], scale);
++        const float up_f32 = scale_and_round(up[j], scale);
++        output[j] = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate_f32) * up_f32);
++      }
++      store_as<Vec>(params.output, output, output_base + i);
++    }
++  }
++}
++
++}  // namespace muse_expert_prefill_scaled_silu
++
++struct MuseExpertPrefillScaledSilu {
++  static void run(
++      tvm::ffi::TensorView gate_up,
++      tvm::ffi::TensorView output,
++      tvm::ffi::TensorView expert_ids,
++      tvm::ffi::TensorView scales) {
++    using namespace host;
++    using namespace muse_expert_prefill_scaled_silu;
++    auto rows = SymbolicSize{"routes"};
++    auto width = SymbolicSize{"width"};
++    auto double_width = SymbolicSize{"double_width"};
++    auto experts = SymbolicSize{"experts"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({rows, double_width}).with_dtype<bf16_t>().with_device(dev).verify(gate_up);
++    TensorMatcher({rows, width}).with_dtype<bf16_t>().with_device(dev).verify(output);
++    TensorMatcher({rows}).with_dtype<int32_t>().with_device(dev).verify(expert_ids);
++    TensorMatcher({experts}).with_dtype<bf16_t>().with_device(dev).verify(scales);
++    RuntimeCheck(2 * width.unwrap() == double_width.unwrap(), "invalid gate/up width");
++    RuntimeCheck(width.unwrap() % kVecSize == 0, "activation width must be vector aligned");
++    RuntimeCheck(0 < rows.unwrap() && rows.unwrap() <= INT32_MAX, "invalid route count");
++    const auto num_rows = static_cast<uint32_t>(rows.unwrap());
++    const Params params{
++        .gate_up = static_cast<const bf16_t*>(gate_up.data_ptr()),
++        .output = static_cast<bf16_t*>(output.data_ptr()),
++        .expert_ids = static_cast<const int32_t*>(expert_ids.data_ptr()),
++        .scales = static_cast<const bf16_t*>(scales.data_ptr()),
++        .rows = num_rows,
++        .row_vecs = static_cast<uint32_t>(width.unwrap() / kVecSize),
++    };
++    LaunchKernel(std::min(num_rows, 65535u), kThreads, dev.unwrap())(run_kernel, params);
++  }
++};
++
++}  // namespace sglang
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index 3e2e3c1..5ee468b 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -14,6 +14,8 @@ def _post_expert_norm_weighted_sum_kernel(
+     s_ptr,
+     out_ptr,
+     ids_ptr,
++    scale_ids_ptr,
++    expert_scales_ptr,
+     TOPK: tl.constexpr,
+     H: tl.constexpr,
+     eps,
+@@ -22,6 +24,7 @@ def _post_expert_norm_weighted_sum_kernel(
+     WEIGHT_FIRST: tl.constexpr,
+     HAS_IDS: tl.constexpr,
+     HAS_ROW_MAP: tl.constexpr,
++    HAS_EXPERT_SCALE: tl.constexpr,
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
+ ):
+@@ -47,6 +50,12 @@ def _post_expert_norm_weighted_sum_kernel(
+                 live = tl.load(ids_ptr + slot) >= 0
+         if live:
+             x = tl.load(x_ptr + base + offs, mask=mask, other=0.0).to(tl.float32)
++            if HAS_EXPERT_SCALE:
++                expert = tl.load(scale_ids_ptr + slot)
++                scale = tl.load(expert_scales_ptr + expert).to(tl.float32)
++                # Preserve the input-dtype store of the standalone multiply.
++                x = (x * scale).to(x_ptr.dtype.element_ty).to(tl.float32)
++                x = tl.where(mask, x, 0.0)
+ 
+             if APPLY_NORM:
+                 if HAS_WEIGHT and WEIGHT_FIRST:
+@@ -83,6 +92,7 @@ def fused_post_expert_norm_weighted_sum(
+     *,
+     slot_row_indices: Optional[torch.Tensor] = None,
+     out: Optional[torch.Tensor] = None,
++    expert_output_scales: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+     """Normalize and combine experts without reading inactive slots.
+ 
+@@ -92,6 +102,7 @@ def fused_post_expert_norm_weighted_sum(
+     With slot_row_indices, expert_output contains only local routes. The
+     [tokens, topk] map supplies an input row index or -1 for each slot.
+     out, when supplied, is a caller-owned contiguous [tokens, hidden] tensor.
++    With expert_output_scales, slot_expert_ids supplies each mapped row's scale ID.
+     """
+     x = expert_output.contiguous()
+     has_out = out is not None
+@@ -101,10 +112,14 @@ def fused_post_expert_norm_weighted_sum(
+             out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
+         slot_ids = slot_expert_ids
+     else:
+-        assert slot_expert_ids is None and out is not None
++        assert out is not None
++        assert slot_expert_ids is None or expert_output_scales is not None
+         tokens, topk = slot_row_indices.shape
+         _, hidden = x.shape
+         slot_ids = slot_row_indices
++    if expert_output_scales is not None:
++        assert slot_row_indices is not None and slot_expert_ids is not None
++        assert slot_expert_ids.shape == (tokens, topk)
+     if tokens == 0:
+         return out
+     if (
+@@ -137,6 +152,8 @@ def fused_post_expert_norm_weighted_sum(
+         topk_scores.contiguous(),
+         out,
+         slot_ids.contiguous() if slot_ids is not None else x,
++        slot_expert_ids.contiguous() if expert_output_scales is not None else x,
++        expert_output_scales.contiguous() if expert_output_scales is not None else x,
+         TOPK=topk,
+         H=hidden,
+         eps=eps,
+@@ -145,6 +162,7 @@ def fused_post_expert_norm_weighted_sum(
+         WEIGHT_FIRST=weight_first,
+         HAS_IDS=slot_expert_ids is not None,
+         HAS_ROW_MAP=slot_row_indices is not None,
++        HAS_EXPERT_SCALE=expert_output_scales is not None,
+         ROUND_PRODUCT=round_product,
+         BLOCK_H=block_h,
+         num_warps=8 if block_h >= 4096 else 4,
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 10eee80..428cb9b 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2024,6 +2024,7 @@ class Envs:
+     # Muse Spark
+     # ===================================================================
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_COMPACT_PREFILL = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+     SGLANG_ENABLE_MUSE_SPARK_AG_NORM_FUSION = EnvBool(True)
+     SGLANG_USE_CUSTOM_ROUTER_SUM = EnvBoolWithAlias(
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index a3479b0..4c90462 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -540,9 +540,16 @@ class MuseSpark1xFp4Experts(nn.Module):
+         output: torch.Tensor,
+     ) -> None:
+         from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++            compact_prefill_and_combine,
+             humming_grouped_expert_outputs,
+         )
+ 
++        if self.humming_prefill_silu is not None:
++            compact_prefill_and_combine(
++                self, hidden_states, local_topk_ids, topk_scores, output
++            )
++            return
++
+         values, ids = humming_grouped_expert_outputs(self, hidden_states, local_topk_ids)
+         if values.shape[0] == 0:
+             output.zero_()
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 77abcaf..54bb89c 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -3,12 +3,18 @@
+ from __future__ import annotations
+ 
+ import json
++import logging
++import subprocess
+ from typing import TYPE_CHECKING
+ 
+ import torch
+ import triton
+ import triton.language as tl
+ 
++from sglang.kernels.jit.utils import cache_once, get_activation_cuda_cflags, load_jit
++from sglang.srt.environ import envs
++from sglang.srt.runtime_context import get_exec
++
+ if TYPE_CHECKING:
+     from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
+ 
+@@ -18,6 +24,22 @@ _GROUPED_COMPUTE = json.dumps(
+ )
+ 
+ 
++@cache_once
++def _prefill_scaled_silu_module():
++    try:
++        return load_jit(
++            "muse_expert_prefill_scaled_silu",
++            cuda_files=["muse_spark/expert_prefill_scaled_silu.cuh"],
++            cuda_wrappers=[("run", "MuseExpertPrefillScaledSilu::run")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning(
++            "Using grouped Humming prefill after JIT failure: %s", exc
++        )
++        return None
++
++
+ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     """Replace the local checkpoint bank with packed Humming weights."""
+     from humming import dtypes
+@@ -108,6 +130,16 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             meta.to_str(), _GROUPED_COMPUTE, grouped_tunings[name]
+         )
+ 
++    layer.humming_prefill_silu = None
++    if (
++        envs.SGLANG_ENABLE_MUSE_SPARK_COMPACT_PREFILL.get()
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and layer.gate_up_proj.is_cuda
++        and torch.cuda.get_device_capability(layer.gate_up_proj.device) == (9, 0)
++        and layer.hidden_size <= layer.intermediate_size_per_partition
++    ):
++        layer.humming_prefill_silu = _prefill_scaled_silu_module()
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+     for name in ("gate_up_proj", "down_proj"):
+@@ -236,8 +268,9 @@ def humming_grouped_expert_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+     local_ids: torch.Tensor,
++    live_routes: int | None = None,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+-    """Return expert outputs and their original route indices for finalization."""
++    """Return mapped BF16 rows; known live counts defer the W2 scale to finalization."""
+     from humming.layer import HummingMethod
+ 
+     from sglang.kernels.ops.activation.activation import silu_and_mul
+@@ -249,7 +282,9 @@ def humming_grouped_expert_outputs(
+         layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
+     )
+     offsets = torch.searchsorted(route_experts, experts, out_int32=True)
+-    first_local = offsets[0].item()
++    first_local = (
++        offsets[0].item() if live_routes is None else slots.numel() - live_routes
++    )
+     num_routes = slots.numel() - first_local
+     if num_routes == 0:
+         return hidden_states.new_empty((0, hidden_size)), local_ids
+@@ -263,7 +298,9 @@ def humming_grouped_expert_outputs(
+         return humming_expert_outputs(layer, hidden_states, local_ids)
+ 
+     slots = slots[first_local:]
+-    route_experts = route_experts[first_local:].long()
++    route_experts = route_experts[first_local:]
++    if live_routes is None:
++        route_experts = route_experts.long()
+     offsets = offsets - first_local
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     arena = hidden_states.new_empty(num_routes * output_width)
+@@ -288,6 +325,12 @@ def humming_grouped_expert_outputs(
+             tuning_config=layer.humming_grouped_tunings[name],
+             sublayer_name=name,
+         )
++        if live_routes is not None:
++            if name == "w13":
++                layer.humming_prefill_silu.run(
++                    gate_up, activations, route_experts, layer.w13_global_scale
++                )
++            continue  # The finalizer applies the W2 scale before RMSNorm.
+         scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
+         destination.mul_(scales.unsqueeze(1))
+         if name == "w13":
+@@ -300,3 +343,56 @@ def humming_grouped_expert_outputs(
+         torch.arange(num_routes, dtype=mapped_rows.dtype, device=mapped_rows.device),
+     )
+     return outputs, mapped_rows
++
++
++def _compact_prefill_windows(local_ids, local_experts, global_experts):
++    # Take one eager host snapshot, as in the grouped path's offsets[0].item().
++    # The bound admits any single tile; uneven rank loads need no device retries.
++    tokens, topk = local_ids.shape
++    tile_tokens = 128
++    slots_per_tile = tile_tokens * topk
++    slots = tokens * topk
++    expected = (slots * local_experts + global_experts - 1) // global_experts
++    capacity = expected + max(slots_per_tile, (expected + 7) // 8)
++    mask = local_ids.reshape(-1) >= 0
++    if slots % slots_per_tile:
++        mask = torch.nn.functional.pad(mask, (0, slots_per_tile - slots % slots_per_tile))
++    counts = mask.view(-1, slots_per_tile).sum(dim=1, dtype=torch.int32).tolist()
++    start, live = 0, 0
++    for tile, count in enumerate(counts):
++        if live + count > capacity:
++            yield start, tile * tile_tokens, live
++            start, live = tile * tile_tokens, 0
++        live += count
++    if tokens:
++        yield start, tokens, live
++
++
++def compact_prefill_and_combine(layer, hidden_states, local_ids, scores, output):
++    from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
++        fused_post_expert_norm_weighted_sum,
++    )
++
++    for begin, end, live in _compact_prefill_windows(
++        local_ids, layer.num_local_experts, layer.global_num_experts
++    ):
++        if live == 0:
++            output[begin:end].zero_()
++            continue
++        ids = local_ids[begin:end]
++        values, mapped = humming_grouped_expert_outputs(
++            layer, hidden_states[begin:end], ids, live
++        )
++        fused_post_expert_norm_weighted_sum(
++            values,
++            scores[begin:end],
++            norm_weight=layer._post_expert_norm_weight,
++            eps=layer._post_expert_norm_eps,
++            weight_first=layer._post_expert_norm_weight_first,
++            slot_expert_ids=ids,
++            slot_row_indices=mapped,
++            expert_output_scales=layer.w2_global_scale,
++            out=output[begin:end],
++        )
++        # Release the arena before sizing the next rank-local window.
++        del values, mapped

@@ -1,0 +1,172 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index b829764..394a7fb 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2027,6 +2027,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_A_MULTICAST = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_ROUTED_NORM = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index bb53a7a..19257be 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -587,8 +587,6 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 "outputs are mis-scaled per expert. Run this checkpoint on "
+                 "SM100+ with --moe-runner-backend flashinfer_trtllm instead."
+             )
+-        if pre_expert_norm is not None:
+-            hidden_states = pre_expert_norm(hidden_states)
+         if self._post_expert_norm is not post_expert_norm:
+             self.set_post_expert_norm(post_expert_norm)
+         if self.use_humming:
+@@ -597,6 +595,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 humming_expert_outputs,
+                 humming_grouped_decode_outputs,
+                 local_humming_expert_ids,
++                routed_norm_weight,
+             )
+ 
+             if (
+@@ -604,8 +603,12 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 and self._post_expert_norm_weight is not None
+                 and humming_decode_eligible(self, hidden_states, topk_ids)
+             ):
++                weight = routed_norm_weight(pre_expert_norm, hidden_states, topk_ids)
++                if weight is None and pre_expert_norm is not None:
++                    hidden_states = pre_expert_norm(hidden_states)
+                 values, row_map, local_topk_ids = humming_grouped_decode_outputs(
+-                    self, hidden_states, topk_ids
++                    self, hidden_states, topk_ids, weight,
++                    pre_expert_norm.eps if weight is not None else 0.0,
+                 )
+                 return fused_post_expert_norm_weighted_sum(
+                     values,
+@@ -618,6 +621,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+                     out=(output_tensor if output_tensor is not None else torch.empty_like(hidden_states)),
+                     expert_output_scales=self.w2_global_scale,
+                 )
++        if pre_expert_norm is not None:
++            hidden_states = pre_expert_norm(hidden_states)
++        if self.use_humming:
+             local_topk_ids = local_humming_expert_ids(self, topk_ids)
+             if (
+                 self._post_expert_norm_weight is not None
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 19cceed..b6ccf6c 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -357,6 +357,83 @@ def _stage_grouped_decode(
+         tl.store(output + (first + rows)[:, None] * HIDDEN + width[None, :], x, mask=mask)
+ 
+ 
++@triton.jit
++def _stage_token_routes(
++    ids_ptr, map_ptr, x_ptr, weight_ptr, local_ptr, offsets_ptr, keys_ptr, rows_ptr,
++    out_ptr, eps, SLOTS: tl.constexpr, GLOBAL: tl.constexpr, EXPERTS: tl.constexpr,
++    HAS_MAP: tl.constexpr, TOPK: tl.constexpr, K_TILE: tl.constexpr, HIDDEN: tl.constexpr,
++    SPAN: tl.constexpr, BUCKETS: tl.constexpr, WIDTH: tl.constexpr,
++):
++    token = tl.program_id(0)
++    all_slots = tl.arange(0, SPAN)
++    ids = tl.load(ids_ptr + all_slots, all_slots < SLOTS, other=-1)
++    valid = (ids >= 0) & (ids < GLOBAL)
++    if HAS_MAP:
++        ids = tl.load(map_ptr + ids, valid, other=-1)
++    else:
++        ids = tl.where(valid, ids, -1)
++    ids = ids.to(tl.int32)
++    # Bin zero contains all remote and padding rows. Subtract the padding to
++    # leave the same live suffix that the grouped GEMMs and finalizer consume.
++    bucket = tl.where((ids >= 0) & (ids < EXPERTS), ids + 1, 0)
++    starts = tl.cumsum(tl.histogram(bucket, BUCKETS), 0) - (SPAN - SLOTS)
++    if token == 0:
++        bins = tl.arange(0, BUCKETS)
++        tl.store(offsets_ptr + bins, starts, bins <= EXPERTS)
++    before = tl.histogram(tl.where(all_slots < token * TOPK, bucket, 0), BUCKETS)
++    lanes = tl.arange(0, K_TILE)
++    slot = token * TOPK + lanes
++    expert = tl.gather(ids, tl.minimum(slot, SPAN - 1), 0)
++    live = (lanes < TOPK) & (expert >= 0) & (expert < EXPERTS)
++    safe = tl.where(live, expert, 0)
++    # Preserve relative order even when a token routes twice to one expert.
++    duplicate = (expert[:, None] == expert[None, :]) & (lanes[:, None] > lanes[None, :])
++    row = tl.gather(starts, safe, 0) + tl.gather(before, safe + 1, 0)
++    row += tl.sum(duplicate.to(tl.int32), 1)
++    tl.store(local_ptr + slot, expert, lanes < TOPK)
++    tl.store(rows_ptr + slot, tl.where(live, row, -1), lanes < TOPK)
++    tl.store(keys_ptr + row, (expert + 1) * SPAN + slot, live)
++    if tl.sum(live.to(tl.int32), 0) > 0:
++        h = tl.arange(0, WIDTH)
++        x = tl.load(x_ptr + token * HIDDEN + h, h < HIDDEN, other=0).to(tl.float32)
++        gamma = tl.load(weight_ptr + h, h < HIDDEN, other=0).to(tl.float32)
++        inverse = tl.rsqrt(tl.sum(x * x, 0) / HIDDEN + eps)
++        normed = ((x * inverse) * gamma).to(out_ptr.dtype.element_ty)
++        for lane in tl.static_range(TOPK):
++            dst = tl.max(tl.where(live & (lanes == lane), row, -1), 0)
++            if dst >= 0:
++                tl.store(out_ptr + dst * HIDDEN + h, normed, h < HIDDEN)
++
++
++def routed_norm_weight(norm, hidden_states, topk_ids):
++    from sglang.srt.layers.muse_spark.muse_spark_layers import MuseSpark1xRMSNorm
++
++    if (
++        type(norm) is not MuseSpark1xRMSNorm
++        or norm._forward_hooks
++        or norm._forward_pre_hooks
++        or torch.nn.modules.module._global_forward_hooks
++        or torch.nn.modules.module._global_forward_pre_hooks
++        or not envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_ROUTED_NORM.get()
++        or not envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get()
++        or not 1 <= topk_ids.shape[1] <= 8
++        or hidden_states.shape[0] != topk_ids.shape[0]
++        or hidden_states.shape[1] != norm.hidden_size
++        or not 1 <= norm.hidden_size <= 8192
++    ):
++        return None
++    weight = norm._get_effective_weight()
++    if (
++        weight is None
++        or weight.shape != (norm.hidden_size,)
++        or weight.device != hidden_states.device
++        or weight.dtype not in (torch.bfloat16, torch.float32)
++        or not weight.is_contiguous()
++    ):
++        return None
++    return weight
++
++
+ def humming_decode_eligible(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+@@ -378,6 +455,8 @@ def humming_grouped_decode_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+     topk_ids: torch.Tensor,
++    norm_weight=None,
++    norm_eps=0.0,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+     """Run local grouped GEMMs with a device-built suffix and static addresses."""
+     from humming.layer import HummingMethod
+@@ -399,7 +478,16 @@ def humming_grouped_decode_outputs(
+     gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
+     activations = staging[: slots * intermediate].view(slots, intermediate)
+     outputs = arena[: slots * hidden_size].view(slots, hidden_size)
+-    if hidden_size <= 8192 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get():
++    if norm_weight is not None:
++        _stage_token_routes[(hidden_states.shape[0],)](
++            topk_ids, expert_map if expert_map is not None else topk_ids,
++            hidden_states, norm_weight, local_ids, offsets, row_keys, row_map,
++            inputs, norm_eps, slots, layer.global_num_experts, experts, expert_map is not None,
++            topk, triton.next_power_of_2(topk), hidden_size, span,
++            triton.next_power_of_2(experts + 1), triton.next_power_of_2(hidden_size),
++            num_warps=8,
++        )
++    elif hidden_size <= 8192 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get():
+         tile = min(span, 128)
+         _stage_grouped_decode[(experts, triton.cdiv(slots, tile))](
+             topk_ids, expert_map if expert_map is not None else topk_ids,

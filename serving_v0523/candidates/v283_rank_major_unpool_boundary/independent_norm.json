@@ -1,0 +1,183 @@
+{
+  "source_hashes": {
+    "native": "c227348c4d705183d377ac623a62b1ed6957eb8832fb0508f4ac99f1aa3cb0c8",
+    "candidate": "42858366360128a74fb4509f0551ea3d243dedbc222b855aaf14fd953007df35",
+    "native_dispatch": "76bd0c26ed4d3cf87126619c72a56de908dea0ea1b2c69f6e5ada47318035cbe",
+    "candidate_dispatch": "62c2761407787f1d2d06ecb83769b9623f3d29cff843c1a463ab419934fcc496"
+  },
+  "hidden_size": 8192,
+  "token_counts": [
+    1,
+    8,
+    128,
+    191,
+    192,
+    256
+  ],
+  "ranks": [
+    1,
+    4,
+    8
+  ],
+  "mode_cases": 72,
+  "BF16_and_FP32_words": 5160960,
+  "cases_by_thread_count": {
+    "256": 48,
+    "512": 24
+  },
+  "fallbacks": [
+    [
+      8,
+      4,
+      0,
+      "OSError"
+    ],
+    [
+      8,
+      8,
+      0,
+      "OSError"
+    ],
+    [
+      8,
+      4,
+      1,
+      "RuntimeError"
+    ],
+    [
+      8,
+      8,
+      1,
+      "RuntimeError"
+    ],
+    [
+      192,
+      4,
+      0,
+      "OSError"
+    ],
+    [
+      192,
+      8,
+      0,
+      "OSError"
+    ],
+    [
+      192,
+      4,
+      1,
+      "RuntimeError"
+    ],
+    [
+      192,
+      8,
+      1,
+      "RuntimeError"
+    ]
+  ],
+  "cluster_fallbacks": [
+    {
+      "rows": 8,
+      "ranks": 4,
+      "capability": 9,
+      "explicit_cluster": 2,
+      "original_module_key": [
+        8192,
+        256,
+        true,
+        2
+      ]
+    },
+    {
+      "rows": 16,
+      "ranks": 8,
+      "capability": 9,
+      "explicit_cluster": 4,
+      "original_module_key": [
+        8192,
+        256,
+        true,
+        4
+      ]
+    },
+    {
+      "rows": 32,
+      "ranks": 4,
+      "capability": 9,
+      "explicit_cluster": 8,
+      "original_module_key": [
+        8192,
+        128,
+        true,
+        8
+      ]
+    },
+    {
+      "rows": 64,
+      "ranks": 8,
+      "capability": 9,
+      "explicit_cluster": 16,
+      "original_module_key": [
+        8192,
+        64,
+        true,
+        16
+      ]
+    },
+    {
+      "rows": 8,
+      "ranks": 8,
+      "capability": 10,
+      "explicit_cluster": null,
+      "original_module_key": [
+        8192,
+        64,
+        true,
+        16
+      ]
+    },
+    {
+      "rows": 16,
+      "ranks": 4,
+      "capability": 10,
+      "explicit_cluster": null,
+      "original_module_key": [
+        8192,
+        128,
+        true,
+        8
+      ]
+    },
+    {
+      "rows": 32,
+      "ranks": 8,
+      "capability": 10,
+      "explicit_cluster": null,
+      "original_module_key": [
+        8192,
+        256,
+        true,
+        4
+      ]
+    },
+    {
+      "rows": 64,
+      "ranks": 4,
+      "capability": 10,
+      "explicit_cluster": null,
+      "original_module_key": [
+        8192,
+        256,
+        true,
+        2
+      ]
+    }
+  ],
+  "cluster_validation_errors": [
+    "cluster kernel requires FP32 pre-norm input",
+    "launch_config only applies to cluster_size=1",
+    "cluster_size must be one of (1, 2, 4, 8, 16)"
+  ],
+  "circularly_shifted_shard_negative_control_words_changed": 97803,
+  "scope": "Identical compiled production C++ before/after bodies. A host coroutine per CUDA thread reproduces the two CTA reductions using the pinned Hopper XOR tree. Native square root, BF16 conversion, memory primitives and PDL are emulated, so this compares layout and operation/order using one host floating-point implementation. No GPU or H200 absolute-output claim."
+}

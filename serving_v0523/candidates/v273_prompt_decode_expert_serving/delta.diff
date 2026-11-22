@@ -1,0 +1,769 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+index 1278068..06bdfce 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+@@ -17,2 +17,23 @@ static_assert(MuseGateCtx::kIsGroupedContiguousGemm && MuseGateCtx::kUseTmaB &&
+ 
++#if !defined(MUSE_GATE_PROMPT) && MUSE_GATE_M == 8
++// The same eight-row TMA box can cover the original token matrix for every expert.
++template <> class G2SMemoryLoaderA<MuseGateCtx> {
++  MuseGateCtx& ctx;
++  const CUtensorMap* map;
++  uint32_t row, col;
++ public:
++  CUDA_INLINE G2SMemoryLoaderA(MuseGateCtx& c) : ctx(c), map(static_cast<const CUtensorMap*>(c.params.a)) {}
++  CUDA_INLINE void seek(uint32_t, uint32_t k_tile, uint32_t, uint32_t offset) {
++    row = (ctx.params.top_k >> 16) ? 0 : offset;
++    col = k_tile * kMuseGateK;
++  }
++  template <bool Advance = true>
++  CUDA_INLINE void load(int4* dest, void* bar, uint32_t = 0) {
++    const auto line = ctx.load_thread_id();
++    if (line < 2) tma_load_2d(map, dest + line * MUSE_GATE_M * 8, bar, col + line * 64, row);
++    if constexpr (Advance) col += kMuseGateK;
++  }
++};
++#endif
++
+ template <bool Weight>
+@@ -81,3 +102,3 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+     // The grouped ABI has no indexed top-k. Its scalar parameter carries the packed-key shift.
+-    scale = __bfloat162float(scales[(uint32_t(ctx.params.expert_ids_ptr[start]) >> ctx.params.top_k) - 1]);
++    scale = __bfloat162float(scales[(uint32_t(ctx.params.expert_ids_ptr[start]) >> (ctx.params.top_k & 0xffff)) - 1]);
+ #endif
+@@ -90,4 +111,12 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+       if (row >= live) continue;
+-      auto gate = fragment(s, col);
+-      auto up = fragment(s + 2 * MUSE_GATE_M, col);
++      uint32_t source = s;
++#if !defined(MUSE_GATE_PROMPT) && MUSE_GATE_M == 8
++      const uint32_t token_shift = ctx.params.top_k >> 16;
++      if (token_shift) {
++        const uint32_t mask = (1u << (ctx.params.top_k & 0xffff)) - 1;
++        source = s - row + ((ctx.params.expert_ids_ptr[start + row] & mask) >> token_shift);
++      }
++#endif
++      auto gate = fragment(source, col);
++      auto up = fragment(source + 2 * MUSE_GATE_M, col);
+       auto* g = reinterpret_cast<__nv_bfloat16*>(&gate);
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+index 8e2929b..c51b310 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -56,3 +56,4 @@ struct MuseDecodeGateUp {
+     dev.set_options<kDLCUDA>();
+-    TensorMatcher({rows, k}).with_dtype<bf16_t>().with_device(dev).verify(input);
++    auto tokens = SymbolicSize{"input rows"};
++    TensorMatcher({tokens, k}).with_dtype<bf16_t>().with_device(dev).verify(input);
+     TensorMatcher({rows, i}).with_dtype<bf16_t>().with_device(dev).verify(output);
+@@ -65,4 +66,12 @@ struct MuseDecodeGateUp {
+ 
++    const bool direct = tokens.unwrap() != rows.unwrap();
++    uint32_t token_shift = 0;
++    if (direct) {
++      if (Prompt || tile != 8 || tokens.unwrap() <= 0 || tokens.unwrap() > tile || rows.unwrap() % tokens.unwrap()) return false;
++      auto routes = rows.unwrap() / tokens.unwrap();
++      if (routes < 2 || (routes & (routes - 1))) return false;
++      for (; routes > 1; routes >>= 1) ++token_shift;
++    }
+     CUtensorMap a{};
+-    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(rows.unwrap())}, stride[] = {2 * dims[0]};
++    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(tokens.unwrap())}, stride[] = {2 * dims[0]};
+     const cuuint32_t box[] = {64, uint32_t(tile)}, step[] = {1, 1};
+@@ -78,2 +87,4 @@ struct MuseDecodeGateUp {
+     for (uint32_t bits = m - 1; bits; bits >>= 1) ++key_shift;
++    // Low bits describe packed keys. The high field selects source-token rows in the epilogue.
++    key_shift |= token_shift << 16;
+     bool int64_layout = false;
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+index 66373ad..a6cf159 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+@@ -27,2 +27,6 @@ struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
+     live = end - start;
++    // A token-major eight-row W13 tile may select any lane, even for one live route.
++    if constexpr (Block::M == 8 && groups == 2) {
++      if (this->ctx.params.top_k >> 16) live = Block::M;
++    }
+   }
+@@ -74 +78,49 @@ struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
+ };
++
++// The first warp builds one shared prefix of expert tile starts per CTA.
++template<class Ctx> struct MuseWarpSchedule {
++  using Block = typename Ctx::BlockShape;
++  using Shape = typename Ctx::ProblemShape;
++  static_assert(Ctx::kIsGroupedContiguousGemm && Ctx::kNumExperts == 32 && Ctx::kMultiCastSize == 1);
++  static_assert(!Ctx::kUseTmaC && !Ctx::kUseStreamK && Ctx::kUseWarpSpec);
++  static constexpr uint32_t cols = Shape::N / Block::N, k_block_id = 0, slice_count = 1, slice_id = 0, locks_offset = 0;
++  Ctx &ctx;
++  uint32_t job = blockIdx.x;
++  uint32_t expert_id, m_block_id, n_block_id, m_offset, current_shape_m, slice_iters;
++
++  CUDA_INLINE MuseWarpSchedule(Ctx &ctx) : ctx(ctx) {
++    unsigned lane = threadIdx.x;
++    if (lane < 32) {
++      unsigned start = ctx.params.expert_layout_ptr[lane << ctx.params.use_int64_expert_layout];
++      unsigned end = __shfl_down_sync(~0u, start, 1);
++      if (lane == 31) end = ctx.params.shape_m;
++      unsigned tiles = CEIL_DIV(end - start, Block::M);
++      unsigned prefix = tiles;
++      #pragma unroll
++      for (int d = 1; d < 32; d *= 2) {
++        unsigned prev = __shfl_up_sync(~0u, prefix, d);
++        if (lane >= d) prefix += prev;
++      }
++      ctx.smem.expert_offset[lane] = start;
++      ctx.smem.expert_tokens[lane] = prefix - tiles;
++      if (lane == 31) {
++        ctx.smem.expert_offset[32] = end;
++        ctx.smem.total_m_blocks[0] = prefix;
++      }
++    }
++    __syncthreads();
++  }
++
++  CUDA_INLINE bool get_next_block() {
++    if (job >= ctx.smem.total_m_blocks[0] * cols) return false;
++    m_block_id = job / cols;
++    n_block_id = job % cols;
++    job += gridDim.x;
++    unsigned start = ctx.smem.expert_tokens[threadIdx.x % 32];
++    expert_id = 31 - __clz(__ballot_sync(~0u, start <= m_block_id));
++    m_offset = ctx.smem.expert_offset[expert_id] + (m_block_id - __shfl_sync(~0u, start, expert_id)) * Block::M;
++    current_shape_m = ctx.smem.expert_offset[expert_id + 1];
++    slice_iters = Shape::K / Block::K;
++    return true;
++  }
++};
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+index ea45d1b..861900b 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+@@ -3,3 +3,3 @@ template <class Ctx>
+ struct alignas(128) MusePromptScaleStages {
+-  alignas(128) uint2 scales[Ctx::kNumStages][4][64];
++  alignas(128) uint2 scales[Ctx::kNumStages][4][Ctx::BlockShape::N / 4];
+ };
+@@ -21,3 +21,3 @@ CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
+   static_assert(Ctx::kNumMathThreads == 256 && Ctx::kNumLoadThreads == 128 && Ctx::kWarpIters == 4);
+-  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && Ctx::kMultiCastSize == 1);
++  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && (Ctx::kMultiCastSize == 1 || (Ctx::kMultiCastSizeA == 2 && Ctx::kMultiCastSizeB == 1)));
+   static_assert(!Ctx::kUseTmaBS && !Ctx::kUseCpAsync && Ctx::kUseTmaA && Ctx::kUseTmaB);
+@@ -26,6 +26,7 @@ CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
+   auto* dst = reinterpret_cast<uint2*>(&muse_prompt_scales(ctx).scales[stage]);
++  constexpr uint32_t sectors = Ctx::BlockShape::N / 4;
+   PRAGMA_UNROLL
+-  for (uint32_t j = 0; j < 2; ++j) {
++  for (uint32_t j = 0; j < Ctx::BlockShape::N / 128; ++j) {
+     uint32_t id = ctx.load_thread_id() + 128 * j;
+-    uint32_t w = packed[(id / 64) * row_stride + id % 64];
++    uint32_t w = packed[(id / sectors) * row_stride + id % sectors];
+     dst[id] = make_uint2(muse_scale_bits(w & 255) | (muse_scale_bits((w >> 8) & 255) << 16),
+@@ -40,2 +41,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+   uint2 scales[2];
++  static constexpr uint32_t bands = Ctx::WarpShape::N / 16;
+   using Base = Mma<Ctx, Arith>;
+@@ -52,3 +54,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+     PRAGMA_UNROLL
+-    for (uint32_t j = 0; j < 2; ++j)
++    for (uint32_t j = 0; j < bands; ++j)
+       Op::fma(desc, this->regs_b[iteration % 2][j][0], this->regs_c[0][j][0], true);
+@@ -62,3 +64,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+         PRAGMA_UNROLL
+-        for (uint32_t i = 0; i < 8; ++i) warpgroup_fence_operand(values[i]);
++        for (uint32_t i = 0; i < bands * 4; ++i) warpgroup_fence_operand(values[i]);
+       }
+@@ -68,3 +70,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+   CUDA_INLINE void transform_b(uint32_t buffer, uint32_t) {
+-    static_assert(sizeof(this->regs_b[0]) == 2 * sizeof(uint4));
++    static_assert(sizeof(this->regs_b[0]) == bands * sizeof(uint4));
+     auto* dst = reinterpret_cast<uint32_t*>(&this->regs_b[buffer]);
+@@ -72,3 +74,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+     PRAGMA_UNROLL
+-    for (uint32_t j = 0; j < 2; ++j) {
++    for (uint32_t j = 0; j < bands; ++j) {
+       dequant<typename Ctx::ElementB, typename Ctx::ElementA>(
+@@ -97,6 +99,16 @@ struct MusePromptReader : S2RMemoryPipeline<Ctx, MMA, Epilogue> {
+     uint32_t k = iter % 4;
+-    this->loader_b.load(this->ctx.smem.stages[ring].b, this->mma.template regs_qb_as_ptr<>(k % 2), k);
+-    uint32_t warp = this->ctx.n_warp_id();
+-    uint32_t index = (this->ctx.lane_id() / 4) * 2 + warp % 2 + (warp / 2) * 16;
+-    this->mma.scales[k % 2] = muse_prompt_scales(this->ctx).scales[ring][k][index];
++    const uint32_t warp = this->ctx.n_warp_id(), lane = this->ctx.lane_id();
++    auto* words = this->mma.template regs_qb_as_ptr<>(k % 2);
++    const auto& scales = muse_prompt_scales(this->ctx).scales[ring][k];
++    if constexpr (Ctx::WarpShape::N == 16) {
++      static_assert(Ctx::BlockShape::M == 256 && Ctx::BlockShape::N == 128);
++      // One 64-channel WGMMA band per warpgroup, selected from the same packed K16 bank.
++      const auto* packed = reinterpret_cast<const uint32_t*>(this->ctx.smem.stages[ring].b);
++      words[0] = packed[k * 256 + (warp / 4) * 128 + lane * 4 + warp % 4];
++      const uint2 pair = scales[(warp / 4) * 16 + (lane / 4) * 2 + (warp % 4) / 2];
++      this->mma.scales[k % 2].x = warp % 2 ? pair.y : pair.x;
++    } else {
++      this->loader_b.load(this->ctx.smem.stages[ring].b, words, k);
++      this->mma.scales[k % 2] = scales[(lane / 4) * 2 + warp % 2 + (warp / 2) * 16];
++    }
+   }
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+index d98bbf0..6071c8a 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+@@ -5,6 +5,8 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+   static_assert(Ctx::kIsGroupedContiguousGemm && Ctx::kNumMathThreads == 256 && Ctx::kWarpIters == 4);
+-  static_assert(Ctx::BlockShape::M == 176 && Ctx::BlockShape::N == 256 && Ctx::BlockShape::K == 64);
+-  static_assert(Ctx::WarpShape::M == 176 && Ctx::WarpShape::N == 32 && Ctx::WarpShape::K == 64);
++  constexpr uint32_t bands = Ctx::WarpShape::N / 16;
++  static_assert((Ctx::BlockShape::M == 176 && Ctx::BlockShape::N == 256 && bands == 2) ||
++                (Paired && Ctx::BlockShape::M == 256 && Ctx::BlockShape::N == 128 && bands == 1));
++  static_assert(Ctx::WarpShape::M == Ctx::BlockShape::M && Ctx::BlockShape::K == 64 && Ctx::WarpShape::K == 64);
+   static_assert(MMA::kSwizzleBytes == 128 && !MMA::kUsePackedKLayout && MMA::kPackedKFactor == 1);
+-  static_assert(MMA::final_regs_c_index() == 0 && sizeof(mma.regs_b[0]) == 2 * sizeof(uint4));
++  static_assert(MMA::final_regs_c_index() == 0 && sizeof(mma.regs_b[0]) == bands * sizeof(uint4));
+   uint32_t addr = cast_smem_ptr_to_uint(&mma.ctx.smem) + offsetof(Storage, stages) +
+@@ -14,3 +16,3 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+   PRAGMA_UNROLL
+-  for (uint32_t j = 0; j < 2; ++j)
++  for (uint32_t j = 0; j < bands; ++j)
+     Op::fma(desc, mma.regs_b[iter % 2][j][0], mma.regs_c[0][j][0], true);
+@@ -24,3 +26,3 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+         PRAGMA_UNROLL
+-        for (uint32_t j = 0; j < 8; ++j) warpgroup_fence_operand(values[j]);
++        for (uint32_t j = 0; j < bands * 4; ++j) warpgroup_fence_operand(values[j]);
+       }
+diff --git a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
+index 8d0b813..55c18a5 100644
+--- a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
++++ b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
+@@ -27,2 +27,29 @@ logger = logging.getLogger(__name__)
+ 
++@triton.jit
++def _gated_residual_kernel(
++    Stream, Branch, Alpha, Beta, Output, count, WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    index = tl.program_id(0).to(tl.int64) * BLOCK + tl.arange(0, BLOCK)
++    live = index < count
++    channel = index % WIDTH
++    stream = tl.load(Stream + index, mask=live, other=0)
++    # Widen BF16 exactly, including subnormal values and signed zero.
++    bits = tl.load(Branch + index, mask=live, other=0).to(tl.uint16, bitcast=True)
++    branch = (bits.to(tl.uint32) << 16).to(tl.float32, bitcast=True)
++    alpha = tl.load(Alpha + channel)
++    beta = tl.load(Beta + channel)
++    tl.store(Output + index, alpha * stream + beta * branch, mask=live)
++
++
++def gated_residual(stream, branch, alpha, beta):
++    output = torch.empty_like(stream)
++    with torch.cuda.device(stream.device):
++        _gated_residual_kernel[(triton.cdiv(stream.numel(), 512),)](
++            stream, branch, alpha, beta, output, stream.numel(), stream.shape[1], 512,
++            # Match eager FP32 multiply, multiply, add rounding.
++            enable_fp_fusion=False,
++        )
++    return output
++
++
+ def _fused_norm_residual_config(
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py b/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
+index 9cda35d..6e73604 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
+@@ -33 +33,92 @@ def pack_peer_rows(peers, row_map, inputs, shard_rows):
+     )
++
++
++@triton.jit
++def _count_route_tiles(Ids, ExpertMap, Local, Counts, slots, tiles, GLOBAL: tl.constexpr,
++                       MAP: tl.constexpr, EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    tile = tl.program_id(0)
++    slot = tile * TILE + tl.arange(0, TILE)
++    expert = tl.load(Ids + slot, slot < slots, other=-1)
++    if MAP:
++        expert = tl.load(ExpertMap + expert, (expert >= 0) & (expert < GLOBAL), other=-1)
++        tl.store(Local + slot, expert, slot < slots)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    counts = tl.histogram(bucket, BINS)
++    index = tl.arange(0, BINS)
++    # The final bin counts all live routes and supplies the existing CPU vote.
++    tl.store(Counts + index * tiles + tile, tl.where(index == EXPERTS, TILE - counts, counts), index <= EXPERTS)
++
++
++@triton.jit
++def _scan_route_tiles(Counts, Totals, tiles, SPAN: tl.constexpr):
++    expert = tl.program_id(0)
++    tile = tl.arange(0, SPAN)
++    ptr = Counts + expert * tiles + tile
++    count = tl.load(ptr, tile < tiles, other=0)
++    tl.store(ptr, tl.cumsum(count, 0) - count, tile < tiles)
++    tl.store(Totals + expert, tl.sum(count, 0))
++
++
++@triton.jit
++def _place_routes(Ids, Prefix, Totals, SortedExperts, RowMap, Offsets, slots, tiles,
++                  EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    tile = tl.program_id(0)
++    lane = tl.arange(0, TILE)
++    slot = tile * TILE + lane
++    expert = tl.load(Ids + slot, slot < slots, other=-1)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    # Use original lane as a tie breaker so equal experts retain token/slot order.
++    key = tl.sort(bucket * TILE + lane, descending=False)
++    bucket = key // TILE
++    local_counts = tl.histogram(bucket, BINS)
++    local_start = tl.cumsum(local_counts, 0) - local_counts
++    bins = tl.arange(0, BINS)
++    sizes = tl.load(Totals + bins, bins < EXPERTS, other=0)
++    start = tl.cumsum(sizes, 0) - sizes
++    before = tl.load(Prefix + bucket * tiles + tile, bucket < EXPERTS, other=0)
++    row = tl.gather(start, bucket, 0) + before + lane - tl.gather(local_start, bucket, 0)
++    original = tile * TILE + key % TILE
++    tl.store(RowMap + original, tl.where(bucket < EXPERTS, row, -1), original < slots)
++    tl.store(SortedExperts + row, bucket, bucket < EXPERTS)
++    if tile == 0:
++        tl.store(Offsets + bins, start, bins < EXPERTS)
++        tl.store(Offsets + EXPERTS, tl.sum(sizes, 0))
++
++
++def count_peer_routes(ids, layer):
++    slots = ids.numel()
++    experts = layer.num_local_experts
++    mapping = layer._expert_map
++    tile = 256
++    tiles = triton.cdiv(slots, tile)
++    if ids.dtype != torch.int32 or not ids.is_contiguous() or not 0 < experts <= 64 or not 32 <= tiles <= 2048:
++        return None
++    if mapping is None:
++        if layer.global_num_experts != experts:
++            return None
++        local_ids = ids
++    else:
++        if (mapping.dtype != torch.int32 or mapping.device != ids.device or not mapping.is_contiguous()
++                or mapping.shape != (layer.global_num_experts,)):
++            return None
++        local_ids = torch.empty_like(ids)
++    prefix = ids.new_empty((experts + 1, tiles))
++    totals = ids.new_empty(experts + 1)
++    bins = triton.next_power_of_2(experts + 1)
++    _count_route_tiles[(tiles,)](ids, mapping if mapping is not None else ids, local_ids, prefix, slots, tiles,
++                                 layer.global_num_experts, mapping is not None, experts, bins, tile)
++    _scan_route_tiles[(experts + 1,)](prefix, totals, tiles, triton.next_power_of_2(tiles))
++    return local_ids, prefix, totals
++
++
++def place_peer_routes(ids, plan, routes):
++    _, prefix, totals = plan
++    experts, tiles = totals.numel() - 1, prefix.shape[1]
++    sorted_experts = ids.new_empty(routes)
++    if not routes:
++        return sorted_experts, ids, totals
++    row_map = torch.empty_like(ids)
++    offsets = ids.new_empty(experts + 1)
++    _place_routes[(tiles,)](ids, prefix, totals, sorted_experts, row_map, offsets, ids.numel(), tiles,
++                            experts, triton.next_power_of_2(experts + 1), 256)
++    return sorted_experts, row_map, offsets
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 23e2a0b..ebd2482 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -201,3 +201,3 @@ def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+     _, handle, shared, width = kernel
+-    active = inputs.new_empty((inputs.shape[0], layer.intermediate_size_per_partition))
++    active = inputs.new_empty((keys.numel(), layer.intermediate_size_per_partition))
+     launch = launcher.run_prompt if prompt else launcher.run
+diff --git a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+index 61b45bd..9c8a44f 100644
+--- a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
++++ b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+@@ -23,2 +23,8 @@ def bind_live_decode_reduce(kernel):
+ 
++    scheduler = "using Scheduler = Scheduler<Ctx>;"
++    if kernel.code.count(scheduler) != 1:
++        raise ValueError("unsupported grouped decode scheduler")
++    kernel.code = kernel.code.replace(scheduler,
++        "using Scheduler = std::conditional_t<Ctx::kNumExperts == 32, MuseWarpSchedule<Ctx>, ::Scheduler<Ctx>>;")
++
+     if kernel.block_shape[0] > 8:
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 90e64db..4dc29bc 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -183,2 +183,13 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+ 
++@triton.jit
++def _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr):
++    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
++    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
++    if HAS_EXPERT_MAP:
++        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
++    else:
++        expert = tl.where(in_range, expert, -1)
++    return expert.to(tl.int32)
++
++
+ @triton.jit
+@@ -199,9 +210,3 @@ def _plan_grouped_decode(
+     slot = tl.arange(0, SLOT_SPAN)
+-    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
+-    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
+-    if HAS_EXPERT_MAP:
+-        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
+-    else:
+-        expert = tl.where(in_range, expert, -1)
+-    expert = expert.to(tl.int32)
++    expert = _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
+     tl.store(local_ids + slot, expert, mask=slot < slots)
+@@ -225,2 +230,30 @@ def _plan_grouped_decode(
+ 
++@triton.jit
++def _stage_grouped_decode(
++    global_ids, expert_map, local_ids, offsets, row_keys, row_map, hidden_states, output, slots,
++    EXPERTS: tl.constexpr, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr,
++    SLOT_SPAN: tl.constexpr, EXPERT_SPAN: tl.constexpr, TOPK: tl.constexpr,
++    HIDDEN: tl.constexpr, BLOCK: tl.constexpr,
++):
++    pid = tl.program_id(0)
++    if pid == 0:
++        _plan_grouped_decode(
++            global_ids, expert_map, local_ids, offsets, row_keys, row_map, slots,
++            EXPERTS, GLOBAL_EXPERTS, HAS_EXPERT_MAP, SLOT_SPAN, EXPERT_SPAN,
++        )
++    else:
++        mine = pid - 1
++        expert = _decode_route_expert(global_ids, expert_map, mine, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++        if (expert >= 0) & (expert < EXPERTS):
++            lanes = tl.arange(0, SLOT_SPAN)
++            mapped = _decode_route_expert(global_ids, expert_map, lanes, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++            # Valid keys occupy the suffix, sorted by (local expert, original slot).
++            # Count from the end, so the remote and masked prefix needs no offset read.
++            follows = (mapped < EXPERTS) & ((mapped > expert) | ((mapped == expert) & (lanes >= mine)))
++            row = slots - tl.sum(follows.to(tl.int32), 0)
++            width = tl.arange(0, BLOCK)
++            values = tl.load(hidden_states + (mine // TOPK) * HIDDEN + width, mask=width < HIDDEN, other=0)
++            tl.store(output + row * HIDDEN + width, values, mask=width < HIDDEN)
++
++
+ @triton.jit
+@@ -284,32 +317,4 @@ def humming_grouped_decode_outputs(
+     expert_map = layer._expert_map
+-    _plan_grouped_decode[(1,)](
+-        topk_ids,
+-        expert_map if expert_map is not None else topk_ids,
+-        local_ids,
+-        offsets,
+-        row_keys,
+-        row_map,
+-        slots,
+-        EXPERTS=experts,
+-        GLOBAL_EXPERTS=layer.global_num_experts,
+-        HAS_EXPERT_MAP=expert_map is not None,
+-        SLOT_SPAN=span,
+-        EXPERT_SPAN=triton.next_power_of_2(experts + 1),
+-        num_warps=4 if span <= 256 else 8,
+-    )
+     staging = hidden_states.new_empty(slots * intermediate)
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    _gather_grouped_decode[(min(slots, 128),)](
+-        hidden_states,
+-        row_keys,
+-        offsets,
+-        inputs,
+-        slots,
+-        TOPK=topk,
+-        HIDDEN=hidden_size,
+-        SLOT_SPAN=span,
+-        BLOCK=triton.next_power_of_2(hidden_size),
+-        num_warps=8 if hidden_size >= 4096 else 4,
+-    )
+-
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+@@ -320,4 +325,52 @@ def humming_grouped_decode_outputs(
+     gate_tuning = select("w13")
++    gate_state = getattr(layer, "humming_decode_gate_up", None)
++    tile = gate_state[3].get(gate_tuning) if gate_state else None
++    token_major = (
++        tile is not None and tile[3] == 8 and hidden_states.shape[0] <= 8
++        and topk > 1 and (topk & (topk - 1)) == 0
++    )
+     activations = None
+-    if getattr(layer, "humming_decode_gate_up", None) is not None:
++    if not token_major and slots <= 256 and 1024 <= hidden_size <= 4096:
++        _stage_grouped_decode[(slots + 1,)](
++            topk_ids, expert_map if expert_map is not None else topk_ids, local_ids, offsets, row_keys, row_map,
++            hidden_states, inputs, slots, EXPERTS=experts, GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None, SLOT_SPAN=span, EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            TOPK=topk, HIDDEN=hidden_size, BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if span == 256 and hidden_size > 2048 else 4,
++        )
++    else:
++        _plan_grouped_decode[(1,)](
++            topk_ids,
++            expert_map if expert_map is not None else topk_ids,
++            local_ids,
++            offsets,
++            row_keys,
++            row_map,
++            slots,
++            EXPERTS=experts,
++            GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None,
++            SLOT_SPAN=span,
++            EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            num_warps=4 if span <= 256 else 8,
++        )
++        if token_major:
++            from sglang.srt.layers.muse_spark.decode_gate_up import run_gate_up
++
++            activations = run_gate_up(layer, hidden_states, row_keys, offsets, gate_tuning)
++        if activations is None:
++            _gather_grouped_decode[(min(slots, 128),)](
++                hidden_states,
++                row_keys,
++                offsets,
++                inputs,
++                slots,
++                TOPK=topk,
++                HIDDEN=hidden_size,
++                SLOT_SPAN=span,
++                BLOCK=triton.next_power_of_2(hidden_size),
++                num_warps=8 if hidden_size >= 4096 else 4,
++            )
++
++    if activations is None and gate_state:
+         from sglang.srt.layers.muse_spark.decode_gate_up import run_gate_up
+@@ -521,8 +574,15 @@ def humming_grouped_expert_outputs(
+     topk = local_ids.shape[1]
+-    if peer_plan is None:
+-        route_experts, slots, offsets = prompt_route_order(local_ids, layer.num_local_experts)
+-        first_local = offsets[0].item()
++    mapped_rows = None
++    if peer_plan is not None and len(peer_plan) == 2:
++        workspace, (route_experts, mapped_rows, offsets) = peer_plan
++        num_routes = route_experts.numel()
+     else:
+-        workspace, route_experts, slots, offsets, first_local = peer_plan
+-    num_routes = slots.numel() - first_local
++        if peer_plan is None:
++            route_experts, slots, offsets = prompt_route_order(local_ids, layer.num_local_experts)
++            first_local = offsets[0].item()
++        else:
++            workspace, route_experts, slots, offsets, first_local = peer_plan
++        num_routes = slots.numel() - first_local
++        route_experts = route_experts[first_local:]
++        offsets = offsets - first_local
+     if num_routes == 0:
+@@ -535,3 +595,3 @@ def humming_grouped_expert_outputs(
+     output_width = max(2 * intermediate, hidden_size)
+-    if num_routes * (stage_width + output_width) > slots.numel() * (
++    if num_routes * (stage_width + output_width) > local_ids.numel() * (
+         intermediate + output_width
+@@ -540,16 +600,15 @@ def humming_grouped_expert_outputs(
+ 
+-    route_experts = route_experts[first_local:]
+-    offsets = offsets - first_local
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+-    mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
+-    map_block = 256
+-    # In the peer path, only invert the permutation here; each token owner
+-    # subsequently fills every mapped destination directly from the published shard.
+-    gather_rows = num_routes if peer_plan is None else 0
+-    _pack_prompt_routes[(gather_rows + triton.cdiv(slots.numel(), map_block),)](
+-        hidden_states, slots, inputs, mapped_rows, first_local, gather_rows, slots.numel(),
+-        hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
+-        BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
+-    )
++    if mapped_rows is None:
++        mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
++        map_block = 256
++        # In the peer path, only invert the permutation here; each token owner
++        # subsequently fills every mapped destination directly from the published shard.
++        gather_rows = num_routes if peer_plan is None else 0
++        _pack_prompt_routes[(gather_rows + triton.cdiv(slots.numel(), map_block),)](
++            hidden_states, slots, inputs, mapped_rows, first_local, gather_rows, slots.numel(),
++            hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
++            BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
++        )
+     if peer_plan is not None:
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_layers.py b/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
+index 7b72a09..6f510cc 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
+@@ -186,2 +186,20 @@ class MuseSpark1xNormPreservingResidualConnection(nn.Module):
+             alpha, beta = self._alpha, self._beta
++        if (
++            stream.is_cuda and torch.version.hip is None and self._alpha is not None
++            and not torch.is_grad_enabled() and not torch.compiler.is_compiling()
++            and not torch.are_deterministic_algorithms_enabled()
++            and torch.overrides._get_current_function_mode() is None
++            and not torch.utils._python_dispatch.is_in_torch_dispatch_mode()
++            and type(stream) is torch.Tensor and type(branch) is torch.Tensor
++            and type(alpha) is torch.Tensor and type(beta) is torch.Tensor
++            and stream.ndim == 2 and stream.dtype == torch.float32 and branch.dtype == torch.bfloat16
++            and branch.shape == stream.shape and alpha.shape == beta.shape == (1, stream.shape[1])
++            and alpha.dtype == beta.dtype == torch.float32
++            and stream.device == branch.device == alpha.device == beta.device
++            and stream.is_contiguous() and branch.is_contiguous() and alpha.is_contiguous() and beta.is_contiguous()
++            and torch.cuda.get_device_capability(stream.device)[0] >= 8
++        ):
++            from sglang.kernels.ops.layernorm.muse_spark_norm_residual import gated_residual
++
++            return gated_residual(stream, branch, alpha, beta)
+         return (alpha * stream + beta * branch.to(stream.dtype)).to(stream.dtype)
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index 75fc742..b50cd6f 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -10,3 +10,3 @@ from triton.errors import TritonError
+ 
+-from sglang.kernels.ops.moe.muse_spark_peer_pack import pack_peer_rows
++from sglang.kernels.ops.moe.muse_spark_peer_pack import count_peer_routes, pack_peer_rows, place_peer_routes
+ 
+@@ -180,12 +180,21 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+     scores, ids, votes = _gather_prompt_routes(group, scores, ids, eligible)
++    counts = None
+     if eligible:
+-        local_ids = local_humming_expert_ids(experts, ids[:tokens])
+-        sorted_experts, slots, offsets = prompt_route_order(local_ids, experts.num_local_experts)
+-        first_local = offsets[:1]
++        counts = count_peer_routes(ids[:tokens], experts)
++        if counts is None:
++            local_ids = local_humming_expert_ids(experts, ids[:tokens])
++            sorted_experts, slots, offsets = prompt_route_order(local_ids, experts.num_local_experts)
++            count = offsets[:1]
++        else:
++            local_ids = counts[0]
++            count = counts[2][-1:]
+     else:
+-        first_local = votes[:1]
+-    decision = torch.cat((votes, first_local)).tolist()
+-    del votes, first_local
++        count = votes[:1]
++    decision = torch.cat((votes, count)).tolist()
+     if all(decision[:-1]):
+-        plan = workspace, sorted_experts, slots, offsets, decision[-1]
++        if counts is None:
++            plan = workspace, sorted_experts, slots, offsets, decision[-1]
++        else:
++            grouped = place_peer_routes(local_ids, counts, decision[-1])
++            plan = workspace, grouped
+         experts._grouped_humming_and_combine_impl(shard, local_ids, scores[:tokens], output, peer_plan=plan)
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index fc5a4a6..582bf79 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -50,3 +50,60 @@ def adapt_prompt_weights(kernel):
+     kernel.code = kernel.code.replace("SMEM_SIZE = sizeof(SharedStorageType);",
+-        "SMEM_SIZE = ((sizeof(SharedStorageType) + 127) / 128 * 128) + 2048 * TuningConfig::kNumStages;")
++        "SMEM_SIZE = ((sizeof(SharedStorageType) + 127) / 128 * 128) + " + str(8 * kernel.block_shape[1]) + " * TuningConfig::kNumStages;")
++
++
++def _cluster_grid(kernel, sms):
++    """Query the current context for this image's maximum resident two-CTA clusters."""
++    from cuda.bindings import driver
++    from humming import ops
++
++    def checked(result):
++        if result[0] != 0:
++            raise RuntimeError(f"grouped prompt occupancy query failed: {result[0]}")
++        return result[1] if len(result) == 2 else None
++
++    shared = ops.get_kernel_smem_size(kernel.kernel_id)
++    module = checked(driver.cuModuleLoad(kernel.kernel_filename.encode()))
++    try:
++        func = checked(driver.cuModuleGetFunction(module, kernel.kernel_name.encode()))
++        attr = driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
++        checked(driver.cuFuncSetAttribute(func, attr, shared))
++        cluster = driver.CUlaunchAttribute()
++        cluster.id = driver.CUlaunchAttributeID.CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION
++        cluster.value.clusterDim.x, cluster.value.clusterDim.y, cluster.value.clusterDim.z = 2, 1, 1
++        config = driver.CUlaunchConfig()
++        config.gridDimX, config.gridDimY, config.gridDimZ = sms, 1, 1
++        config.blockDimX, config.blockDimY, config.blockDimZ = kernel.num_threads, 1, 1
++        config.sharedMemBytes = shared
++        config.attrs, config.numAttrs = [cluster], 1
++        active = checked(driver.cuOccupancyMaxActiveClusters(func, config))
++        if active < 1:
++            raise ValueError("no resident cluster for the prompt down projection")
++        return min(active, sms // 2) * 2
++    finally:
++        checked(driver.cuModuleUnload(module))
++
++
++def _prompt_grid_ranges(experts, narrow, wide):
++    """Group Humming's local-row intervals by their estimated number of packed weight sweeps."""
++    from math import isqrt
++
++    small_m, large_m = 176, 256
++    # Once every considered count is past the intersection, a wide tile always
++    # needs fewer sweeps. The two endpoints sample a one-standard-deviation span.
++    intersection = (small_m * large_m + large_m - small_m - 1) // (large_m - small_m)
++    limit = intersection + 2 * isqrt(intersection) + 4
++    ranges = []
++    for mean in range(1, limit + 1):
++        radius = isqrt(mean)
++        samples = (max(1, mean - radius), mean + radius)
++        def sweeps(width):
++            return sum((rows + width - 1) // width for rows in samples)
++        choice = wide if sweeps(large_m) < sweeps(small_m) else narrow
++        end = experts * mean
++        if ranges and ranges[-1][2:] == choice:
++            ranges[-1][1] = end
++        else:
++            ranges.append([ranges[-1][1] if ranges else 0, end, *choice])
++    ranges[-1][1] = 1 << 30
++    return torch.tensor(ranges, dtype=torch.int64, device="cpu").flatten()
+ 
+@@ -84,3 +141,7 @@ def _prepare(context, meta, compute, tuning):
+ 
+-                    valid = has_residual_isa(isa, 8)
++                    if self.warp_shape[1] == 16:
++                        valid = (all(isa.count(f"HGMMA.64x{w}x16.F32.BF16") == 16 for w in (32, 128, 224, 256))
++                                 and isa.count("WARPGROUP.DEPBAR.LE") == 32 and "MULTICAST" in isa)
++                    else:
++                        valid = has_residual_isa(isa, 8)
+                 if not valid or "UTMALDG.2D" not in isa or "UTMALDG.3D" not in isa:
+@@ -92,2 +153,11 @@ def _prepare(context, meta, compute, tuning):
+ 
++    class WidePromptWeightPipeline(ResidualPromptWeightPipeline):
++        def check_shape(self):
++            # The native BF16 reader handles at least 32 channels per warp.
++            # The 16-channel reader above consumes one original packed word per lane.
++            if (self.sm_version != 90 or tuple(self.block_shape) != (256, 128, 64)
++                    or tuple(self.warp_shape) != (256, 16, 64) or self.shape_n < 256 or self.shape_n % 256
++                    or self.shape_k < 64 or self.shape_k % 64):
++                raise ValueError("unsupported wide prompt tile")
++
+     cfg = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+@@ -107,8 +177,19 @@ def _prepare(context, meta, compute, tuning):
+     cfg.update(use_tma_bs=False, use_cp_async=False)
+-    for variant in (ResidualPromptWeightPipeline, PromptWeightPipeline):
++    choices = [(ResidualPromptWeightPipeline, cfg), (PromptWeightPipeline, cfg)]
++    sms = torch.cuda.get_device_properties(None).multi_processor_count
++    if sms >= 2 and sms % 2 == 0 and not cfg.get("pad_shape_n") and not cfg.get("pad_shape_k"):
++        wide = cfg | dict(block_shape=(256, 128, 64), warp_shape=(256, 16, 64), multi_cast_size_a=2)
++        choices.insert(0, (WidePromptWeightPipeline, wide))
++    wide_grid = None
++    for variant, config in choices:
+         try:
+-            kernel = variant(**cfg)
++            kernel = variant(**config)
+             kernel.check_context()
++            if variant is WidePromptWeightPipeline:
++                wide_grid = [kernel.kernel_id, _cluster_grid(kernel, sms)]
++                continue
++            if wide_grid is not None:
++                return _prompt_grid_ranges(kernel.num_experts, [kernel.kernel_id, 0], wide_grid)
+             return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+-        except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        except (AssertionError, AttributeError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+             logging.getLogger(__name__).warning("Grouped prompt down projection %s unavailable: %s", variant.__name__, exc)
+diff --git a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+index 2418a36..e2166e6 100644
+--- a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
++++ b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+@@ -36,2 +36,4 @@ def adapt_residual_tiles(kernel, paired, *, decode_width=None):
+     widths = _WIDTHS if decode_width is None else tuple(range(8, decode_width, 8))
++    if paired and decode_width is None and kernel.block_shape[0] == 256:
++        widths = (32, 128, 224)
+     for width in widths:

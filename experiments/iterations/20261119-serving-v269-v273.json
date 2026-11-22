@@ -1,0 +1,140 @@
+{
+  "objective": "Measured 3\u00d7 then 4\u00d7 on the official four-load frontier",
+  "official_incumbent": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "implementations": [
+    {
+      "candidate": "V269",
+      "parent": "V263",
+      "tree": "192e09b693c1869a770536856d184cc2c136a4d0",
+      "patch_sha256": "5ffc9ad3e70b8b27bb122e464af5aa32b3bf51f75a04780ca83e37c8576d1e17",
+      "bytes": 409283,
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V270",
+      "parent": "V256",
+      "tree": "d1867b90b2075bced09aa46f0145324a9530ac49",
+      "patch_sha256": "978808775f17ac40fc3f75a36626ec2f2c90c7da82d324d0a17f2dde5a02fa5c",
+      "bytes": 407348,
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V272",
+      "parent": "V68",
+      "tree": "b6e9b716b22b76927c95f527a62211360fac0a99",
+      "patch_sha256": "726e77358f1e4b6bbc081dd4a130b8da0f75855ee60cde36ef6cc089e8afae19",
+      "bytes": 79868,
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V273",
+      "parent": "V248",
+      "tree": "77b53f5013b8c4cf272d0bb17d9b30061b22d53c",
+      "patch_sha256": "5273a9889f2820086737169740af412644b2862f6ba1e48a5f1c3b14767b8500",
+      "bytes": 409051,
+      "strict_apply_reverse_full_delta": true
+    }
+  ],
+  "nominated_future_private_comparison": "V273",
+  "unchanged_conditional_standby": "V229/V198",
+  "focused_decode_control": "V272 against measured V68",
+  "physical_H200_this_iteration": false,
+  "combined_sources": {
+    "parent": "V248",
+    "include": [
+      257,
+      258,
+      261,
+      263,
+      269,
+      270
+    ],
+    "native_full_width_QKV_and_attention_SUM": true,
+    "reason": "V268 with both final expert changes exports to 415,765 bytes at the same context. V273 retains V248\u2019s full-width prompt QKV to fit the published 409,600-byte limit.",
+    "full_V268_plus_final_V269_V270_bytes": 415765
+  },
+  "prompt_request_model": {
+    "packed_W2_MiB_per_rank_layer": [
+      929.7858663277616,
+      716.6152807080508
+    ],
+    "conditional_peak_bandwidth_equivalent_us": 46.56782499724456,
+    "full_box_activation_MiB": [
+      2272.8098954678617,
+      2547.965442517514
+    ],
+    "incremental_DRAM_break_even_cache_miss_rate_ratio": 0.7747275601216346
+  },
+  "decode_schedule": {
+    "entry_barriers_per_CTA": [
+      3,
+      1
+    ],
+    "six_sm90a_builds_zero_spill": true,
+    "physical_speed_unknown": true
+  },
+  "V271_analysis": "v271_cold_service_envelope/audit.json",
+  "evidence": [
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/README.md",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/validation.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/decode_replay.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/model_replay.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/transition_replay.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/expert_codegen.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/prompt_kernel_replay.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/opportunity.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/judge_observation.json",
+    "serving_v0523/candidates/v273_prompt_decode_expert_serving/independent_launcher.json"
+  ],
+  "queue": {
+    "V93": {
+      "id": "75557c21595347de",
+      "status": "queued",
+      "mode": "check",
+      "users": 16
+    },
+    "V204": {
+      "id": "7fcdf9abf39b486a",
+      "status": "queued",
+      "mode": "check",
+      "users": 16
+    },
+    "V120b": {
+      "id": "a73535cda6bf4cac",
+      "status": "queued",
+      "mode": "check",
+      "users": 32
+    },
+    "V139": {
+      "id": "b013f83007d544d3",
+      "status": "queued",
+      "mode": "check",
+      "users": 4
+    }
+  },
+  "limits": {
+    "scored": {
+      "per_day": 1,
+      "used": 0,
+      "left": 1
+    },
+    "checks": {
+      "per_day": 3,
+      "used": 3,
+      "left": 0
+    }
+  },
+  "next_reset": "2026-11-20T00:00:00Z",
+  "new_submissions": 0,
+  "external_gpu_allocations": 0,
+  "host_cleanup_ledgers": {
+    "269": "serving_v0523/candidates/v269_warp_expert_schedule/host_cleanup.json",
+    "270": "serving_v0523/candidates/v270_wide_prompt_weight_reuse/host_cleanup.json",
+    "272": "serving_v0523/candidates/v272_parallel_decode_route_plan/export_cleanup.json",
+    "273": "serving_v0523/candidates/v273_prompt_decode_expert_serving/export_cleanup.json"
+  }
+}

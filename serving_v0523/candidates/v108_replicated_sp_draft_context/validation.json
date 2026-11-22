@@ -1,0 +1,104 @@
+{
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "patch_sha256": "eea21733298ddcbdb51716abe512bb3ccb5ffc814c18fc58426d7d5abcefaf17",
+  "delta_sha256": "03e46f6cecef047ef6399cef6ef014b1265d8c082a53ce0bf9e2198d60fc1284",
+  "full_tree": "f8af28cae1a8b368e102914f312f2fc5c207bdf4",
+  "bytes": 57326,
+  "paths": 14,
+  "longest_added_line_bytes": 98,
+  "compiled_python_files": 14,
+  "fixed_patterns_checked": 76,
+  "flag_overrides": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": ""
+  },
+  "delta_paths": [
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/layers/dflash_context_projection.py",
+    "python/sglang/srt/layers/logits_processor.py",
+    "python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+    "python/sglang/srt/models/muse_spark.py",
+    "python/sglang/srt/speculative/dflash_worker_v2.py"
+  ],
+  "official_export_matches_git": true,
+  "forward_reverse_and_delta_composition_verified": true,
+  "scored_parent_job": "abd217baf0ed49fd",
+  "scored_parent_frontier": {
+    "excluded": [],
+    "paired_reps": 3,
+    "points": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "score": 1.4119,
+    "ttft_ratio_limit": 2
+  },
+  "scored_parent_first_later_ttft": [
+    {
+      "concurrency": 1,
+      "cache_hit": 0.92,
+      "ttft_first_p90_s": 5.419,
+      "ttft_later_p90_s": 0.175,
+      "acceptance": 4
+    },
+    {
+      "concurrency": 4,
+      "cache_hit": 0.92,
+      "ttft_first_p90_s": 12.952,
+      "ttft_later_p90_s": 0.211,
+      "acceptance": 4
+    },
+    {
+      "concurrency": 16,
+      "cache_hit": 0.92,
+      "ttft_first_p90_s": 50.063,
+      "ttft_later_p90_s": 0.265,
+      "acceptance": 4
+    },
+    {
+      "concurrency": 32,
+      "cache_hit": 0.92,
+      "ttft_first_p90_s": 110,
+      "ttft_later_p90_s": 0.696,
+      "acceptance": 4.2
+    }
+  ],
+  "scored_parent_gpu_memory": {
+    "limit_gb": 2,
+    "over_stock_gb": 1.9
+  },
+  "h200_execution": false,
+  "submitted": false
+}

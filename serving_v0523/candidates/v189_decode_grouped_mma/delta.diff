@@ -1,0 +1,185 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+new file mode 100644
+index 0000000..4474de0
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -0,0 +1,43 @@
++using MuseOverlapCtx = KernelContext<MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>,
++    Shape<MUSE_OVERLAP_M, 128, 256>, Shape<MUSE_OVERLAP_M, 32, 64>, Shape<0, 0, 0>,
++    BFloat16, Float4E2M1, BFloat16, Float8E4M3, LayerConfig, ComputeConfig, TuningConfig>;
++
++// Humming 0.1.12's BF16 grouped geometry has two independent output bands
++// per warpgroup and four K16 slices per shared stage. Consecutive operations
++// on the same FP32 accumulators retain their HGMMA program order.
++struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>> {
++  using Base = WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>>;
++  using Base::Base;
++  static_assert(kWarpIters == 4 && !kUsePackedKLayout && kPackedKFactor == 1 &&
++                kRegsBKDim == 1 && final_regs_c_index() == 0 && kSwizzleBytes == 128);
++  static_assert(sizeof(regs_b[0]) == 8 * sizeof(uint32_t));
++  CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {
++    // The last two iterations retain the vendor's ordering at shared-stage release.
++    if (iteration >= 2) {
++      Base::run(stage, iteration);
++      return;
++    }
++    const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
++        + stage * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
++    auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
++    wgmma_fence();
++    PRAGMA_UNROLL
++    for (int j = 0; j < 2; ++j)
++      MmaOpClass::fma(desc, regs_b[iteration][j][0], regs_c[0][j][0], true);
++    if (iteration == 1) {
++      wgmma_commit();
++      wgmma_wait<0>();
++      // Keep both register-source fragments alive through the async group's
++      // completion, including the first fragment's four-word halves.
++      PRAGMA_UNROLL
++      for (uint32_t b = 0; b < 2; ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&regs_b[b]);
++        PRAGMA_UNROLL
++        for (uint32_t i = 0; i < 8; ++i) warpgroup_fence_operand(values[i]);
++      }
++    }
++  }
++};
++template <> struct MmaSelector<MmaType::WGMMA, MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>> {
++  using Type = MuseOverlapMma;
++};
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+new file mode 100644
+index 0000000..1ccbc18
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -0,0 +1,95 @@
++"""Group two ordered BF16 WGMMA slices inside the pinned Hopper grouped decode pipeline."""
++
++import json
++import logging
++import subprocess
++from functools import lru_cache
++from importlib.metadata import PackageNotFoundError, version
++from pathlib import Path
++
++import torch
++
++
++def append_pair(kernel):
++    from sglang.kernels import jit
++
++    width = kernel.block_shape[0]
++    if (kernel.sm_version != 90 or tuple(kernel.block_shape[1:]) != (128, 256)
++            or tuple(kernel.warp_shape) != (width, 32, 64) or kernel.num_stages != 4
++            or kernel.num_threads != 640 or kernel.num_math_threads != 512
++            or not kernel.use_warp_spec or kernel.use_stream_k or kernel.use_tma_c):
++        raise ValueError("unsupported grouped matrix pipeline")
++    header = Path(jit.__file__).parent / "csrc/muse_spark/grouped_decode_mma_pair.cuh"
++    kernel.code += f"\n#define MUSE_OVERLAP_M {width}\n" + header.read_text()
++
++
++def check_pair_code(compiler, kernel):
++    tool = compiler._get_env()["binaries"].get("cuobjdump")
++    if not tool:
++        raise RuntimeError("CUDA disassembler unavailable for grouped matrix pipeline")
++    code = subprocess.check_output([tool, "-sass", kernel.kernel_filename], text=True)
++    opcode = f"HGMMA.64x{kernel.block_shape[0]}x16.F32.BF16"
++    if code.count(opcode) != 32 or code.count("WARPGROUP.DEPBAR.LE") != 12 or "UTMALDG.3D" not in code:
++        raise RuntimeError("grouped matrix pipeline compiled with unsupported instruction schedule")
++
++
++@lru_cache(maxsize=128)
++def _prepare_down(context, meta, compute, tuning):
++    from humming.jit.compiler import NVCCCompiler
++    from humming.jit.runtime import KernelRuntime
++    from humming.kernel.humming import HummingKernel
++
++    class GroupedDecodePairDownKernel(HummingKernel):
++        @staticmethod
++        def _get_compiler():
++            return NVCCCompiler
++
++        def prepare(self):
++            append_pair(self)
++            KernelRuntime.prepare(self)
++
++        def load_cubin(self):
++            if not self.cubin_loaded:
++                check_pair_code(NVCCCompiler, self)
++                HummingKernel.load_cubin(self)
++
++    config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
++    config.pop("sublayer_name", None)
++    required = {
++        "gemm_type": "grouped_contiguous", "mma_type": "wgmma", "use_f16_accum": False,
++        "a_dtype": "bfloat16", "b_dtype": "float4e2m1", "c_dtype": "bfloat16", "bs_dtype": "float8e4m3",
++        "weight_scale_group_size": 16, "weight_scale_type": "group", "weight_scale_2_type": "none",
++    }
++    if (config.pop("num_sms", 0) or any(config.get(k) != v for k, v in required.items())
++            or any(config.get(k) for k in ("has_bias", "has_zero_point", "use_packed_k_layout",
++                                           "use_fused_e8m0_scale", "input_scale_group_size",
++                                           "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
++        return None
++    try:
++        kernel = GroupedDecodePairDownKernel(**config)
++        kernel.check_context()
++        return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
++    except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped down projection: %s", exc)
++        return None
++
++
++def prepare_down(meta, compute, tunings):
++    from humming.kernel.humming import HummingKernel
++
++    try:
++        if version("humming-kernels") != "0.1.12":
++            return {}
++        context = HummingKernel.current_context()
++        return {tuning: _prepare_down(context, meta, compute, tuning) for _, tuning in tunings}
++    except (PackageNotFoundError, AssertionError, RuntimeError, OSError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped decode down projection: %s", exc)
++        return {}
++
++
++def run_down(config, layer, inputs, outputs, offsets):
++    from humming import ops
++
++    ops.launch_kernel(configs=config, inputs=inputs, outputs=outputs, expert_layout=offsets,
++                      weight=layer.w2_weight, weight_scale=layer.w2_weight_scale,
++                      locks=getattr(layer, "locks", None))
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 22eb1ba..872934b 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -55,6 +55,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     tunings = {}
+     grouped_tunings = {}
+     decode_tunings = {}
++    layer.humming_decode_down = {}
+     for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
+         packed = getattr(layer, checkpoint_name)
+         scales = getattr(layer, f"{checkpoint_name}_weight_scale")
+@@ -141,6 +142,10 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             )
+             for _, tuning in decode_tunings[name]:
+                 HummingKernel.prepare_kernels(meta.to_str(), _GROUPED_COMPUTE, tuning)
++            if name == "w2" and torch.cuda.get_device_capability(packed.device) == (9, 0):
++                from sglang.srt.layers.muse_spark.decode_mma_pair import prepare_down
++
++                layer.humming_decode_down = prepare_down(meta.to_str(), _GROUPED_COMPUTE, decode_tunings[name])
+ 
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+@@ -298,6 +303,11 @@ def humming_grouped_decode_outputs(
+             for maximum, config in layer.humming_decode_tunings[name]
+             if estimated_local_routes <= maximum
+         )
++        down = getattr(layer, "humming_decode_down", {}).get(tuning) if name == "w2" else None
++        if down is not None:
++            from sglang.srt.layers.muse_spark.decode_mma_pair import run_down
++            run_down(down, layer, source, destination, offsets)
++            continue
+         HummingMethod.forward_layer(
+             layer,
+             inputs=source,

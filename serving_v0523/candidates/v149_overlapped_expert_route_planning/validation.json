@@ -1,0 +1,98 @@
+{
+  "candidate": "V149",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "patch_sha256": "3d95c2a024218660f942a0801e9e5e4778ef9d6fe694aac23fe89772e03718e5",
+  "delta_sha256": "46ec93090f192263f01f3cc755e82795f908d7c86e4677ca081a8a86d193b754",
+  "tree": "00965b3a8bdc611f45d8a0ec383ee944f2b9aa0e",
+  "bytes": 48957,
+  "delta_bytes": 11443,
+  "paths": [
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "source_sha256": {
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py": "63dde98015c2c45bd1d005f5eadb12f1178474074c07d96e4e303b7f4b0920f6",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py": "88b9faea81ea66234c1e23a7a27ad923d7e971159960e36b2b173897b2ee7860",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py": "3ef59b493317862cf483268f46b4c6aab115b73e9a5da1da16727134a965b86e",
+    "python/sglang/srt/layers/layernorm_sp.py": "58452b3fb33aca00f1720b4f90a1cfddf01bb31e7d6d801c21dda6ce2861e359",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "c81d8ff39e5a2e8e6da7cc8c005b796d396baa2fa798466e76eaf8a1d62b1ceb",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "6a4a59e7dbc92cb96a2cc335f098d63540572db26006ac9d367401ba6461008b",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py": "bf52d6563eb27343740cfa1851ce9dbf56c2e94edbda2c018ef45f3066e151d3",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py": "0a8dcfcce5976b75cfa4947502e4a6e58f8c6b5bd3169ce801dfeaadfd651415",
+    "python/sglang/srt/models/muse_spark.py": "5d4d29a8de680619c796a6a93c898f6d6d8295181c6d6babc9c4a8f5b0848edd"
+  },
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "fixed_flag_patterns": 76,
+  "maximum_added_line_bytes": 108,
+  "python_compiled": 9,
+  "strict_forward_reverse": true,
+  "official_export": "okc serve diff .",
+  "physical_H200": false,
+  "judge_submitted": false,
+  "scored_parent_memory_GB_over_stock": 1.9,
+  "scored_parent_frontier": 1.4119,
+  "geometry": [
+    {
+      "tokens": 4096,
+      "eligible": false,
+      "pooled_BF16_bytes": 33554432,
+      "pooled_gather_remote_bytes_per_rank": 29360128,
+      "expert_return_BF16_bytes": 33554432,
+      "score_and_id_gather_remote_bytes_per_rank": 229376,
+      "planned_local_ids_sorted_experts_int32_plus_int64_slots_and_offsets_bytes": 524420,
+      "illustrative_gather_ms_at_100_200_400_GB_s": [
+        0.2936,
+        0.1468,
+        0.0734
+      ]
+    },
+    {
+      "tokens": 8192,
+      "eligible": true,
+      "pooled_BF16_bytes": 67108864,
+      "pooled_gather_remote_bytes_per_rank": 58720256,
+      "expert_return_BF16_bytes": 67108864,
+      "score_and_id_gather_remote_bytes_per_rank": 458752,
+      "planned_local_ids_sorted_experts_int32_plus_int64_slots_and_offsets_bytes": 1048708,
+      "illustrative_gather_ms_at_100_200_400_GB_s": [
+        0.5872,
+        0.2936,
+        0.1468
+      ]
+    },
+    {
+      "tokens": 16384,
+      "eligible": true,
+      "pooled_BF16_bytes": 134217728,
+      "pooled_gather_remote_bytes_per_rank": 117440512,
+      "expert_return_BF16_bytes": 134217728,
+      "score_and_id_gather_remote_bytes_per_rank": 917504,
+      "planned_local_ids_sorted_experts_int32_plus_int64_slots_and_offsets_bytes": 2097284,
+      "illustrative_gather_ms_at_100_200_400_GB_s": [
+        1.1744,
+        0.5872,
+        0.2936
+      ]
+    }
+  ]
+}

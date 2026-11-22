@@ -1,0 +1,339 @@
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..5e7b535 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -552,5 +552,6 @@ POSITIONAL_FIELD_ORDER = (
+     "enable_return_aux_hidden_states",
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
++    "muse_sparse_prompt_exchange",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/parallel.py b/python/sglang/srt/arg_groups/fields/parallel.py
+index 9bd0b1c..7dfdc42 100644
+--- a/python/sglang/srt/arg_groups/fields/parallel.py
++++ b/python/sglang/srt/arg_groups/fields/parallel.py
+@@ -239,6 +239,10 @@ class Parallel(msgspec.Struct):
+         bool,
+         "Shard dense MLP weights across the attention TP group under DP attention.",
+     ] = False
++    muse_sparse_prompt_exchange: A[
++        bool,
++        "Send pooled sequence-parallel prompt rows only to ranks owning one of their routed Muse experts.",
++    ] = False
+     enable_layernorm_sp: A[
+         bool,
+         "Enable Megatron-style sequence parallelism (arXiv:2205.05198) for the "
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 4c90462..36911de 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -58,7 +58,7 @@ _NVFP4_PER_TOKEN_SCALE_INV = 1.0 / (448.0 * 6.0)
+ _MARLIN_SHAPE_ALIGNMENT = 64
+ _MARLIN_BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
+ # Amortize the routing sort, materialization, and graph break on larger batches.
+-_HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT = 256
++HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT = 256
+ 
+ 
+ def _resolve_moe_runner_backend():
+@@ -538,6 +538,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+         local_topk_ids: torch.Tensor,
+         topk_scores: torch.Tensor,
+         output: torch.Tensor,
++        *,
++        input_row_map=None,
++        local_route_count=None,
+     ) -> None:
+         from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+             compact_prefill_and_combine,
+@@ -546,11 +549,15 @@ class MuseSpark1xFp4Experts(nn.Module):
+ 
+         if self.humming_prefill_silu is not None:
+             compact_prefill_and_combine(
+-                self, hidden_states, local_topk_ids, topk_scores, output
++                self, hidden_states, local_topk_ids, topk_scores, output,
++                input_row_map=input_row_map, local_route_count=local_route_count,
+             )
+             return
+ 
+-        values, ids = humming_grouped_expert_outputs(self, hidden_states, local_topk_ids)
++        values, ids = humming_grouped_expert_outputs(
++            self, hidden_states, local_topk_ids,
++            input_row_map=input_row_map, local_route_count=local_route_count,
++        )
+         if values.shape[0] == 0:
+             output.zero_()
+             return
+@@ -606,7 +613,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 self._post_expert_norm_weight is not None
+                 and hidden_states.dtype == torch.bfloat16
+                 and topk_ids.numel()
+-                >= self.global_num_experts * _HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++                >= self.global_num_experts * HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
+                 and not torch.compiler.is_compiling()
+                 and (
+                     not torch.cuda.is_current_stream_capturing()
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 196e76d..a97bccd 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -402,6 +402,9 @@ def humming_grouped_expert_outputs(
+     hidden_states: torch.Tensor,
+     local_ids: torch.Tensor,
+     live_routes: int | None = None,
++    *,
++    input_row_map=None,
++    local_route_count=None,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     """Return mapped BF16 rows; known live counts defer the W2 scale to finalization."""
+     from humming.layer import HummingMethod
+@@ -415,9 +418,8 @@ def humming_grouped_expert_outputs(
+         layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
+     )
+     offsets = torch.searchsorted(route_experts, experts, out_int32=True)
+-    first_local = (
+-        offsets[0].item() if live_routes is None else slots.numel() - live_routes
+-    )
++    known_routes = live_routes if live_routes is not None else local_route_count
++    first_local = offsets[0].item() if known_routes is None else slots.numel() - known_routes
+     num_routes = slots.numel() - first_local
+     if num_routes == 0:
+         return hidden_states.new_empty((0, hidden_size)), local_ids
+@@ -441,9 +443,10 @@ def humming_grouped_expert_outputs(
+     gate_up = arena[: num_routes * 2 * intermediate].view(num_routes, 2 * intermediate)
+     activations = staging[: num_routes * intermediate].view(num_routes, intermediate)
+     outputs = arena[: num_routes * hidden_size].view(num_routes, hidden_size)
+-    torch.index_select(
+-        hidden_states, 0, torch.div(slots, topk, rounding_mode="floor"), out=inputs
+-    )
++    source_rows = torch.div(slots, topk, rounding_mode="floor")
++    if input_row_map is not None:
++        source_rows = input_row_map.index_select(0, source_rows)
++    torch.index_select(hidden_states, 0, source_rows, out=inputs)
+ 
+     for name, source, destination in (
+         ("w13", inputs, gate_up),
+@@ -478,7 +481,7 @@ def humming_grouped_expert_outputs(
+     return outputs, mapped_rows
+ 
+ 
+-def _compact_prefill_windows(local_ids, local_experts, global_experts):
++def _compact_prefill_windows(local_ids, local_experts, global_experts, local_route_count=None):
+     # Take one eager host snapshot, as in the grouped path's offsets[0].item().
+     # The bound admits any single tile; uneven rank loads need no device retries.
+     tokens, topk = local_ids.shape
+@@ -487,6 +490,10 @@ def _compact_prefill_windows(local_ids, local_experts, global_experts):
+     slots = tokens * topk
+     expected = (slots * local_experts + global_experts - 1) // global_experts
+     capacity = expected + max(slots_per_tile, (expected + 7) // 8)
++    if local_route_count is not None and local_route_count <= capacity:
++        if tokens:
++            yield 0, tokens, local_route_count
++        return
+     mask = local_ids.reshape(-1) >= 0
+     if slots % slots_per_tile:
+         mask = torch.nn.functional.pad(mask, (0, slots_per_tile - slots % slots_per_tile))
+@@ -501,20 +508,23 @@ def _compact_prefill_windows(local_ids, local_experts, global_experts):
+         yield start, tokens, live
+ 
+ 
+-def compact_prefill_and_combine(layer, hidden_states, local_ids, scores, output):
++def compact_prefill_and_combine(
++    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None
++):
+     from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
+         fused_post_expert_norm_weighted_sum,
+     )
+ 
+     for begin, end, live in _compact_prefill_windows(
+-        local_ids, layer.num_local_experts, layer.global_num_experts
++        local_ids, layer.num_local_experts, layer.global_num_experts, local_route_count
+     ):
+         if live == 0:
+             output[begin:end].zero_()
+             continue
+         ids = local_ids[begin:end]
+         values, mapped = humming_grouped_expert_outputs(
+-            layer, hidden_states[begin:end], ids, live
++            layer, hidden_states[begin:end] if input_row_map is None else hidden_states,
++            ids, live, input_row_map=None if input_row_map is None else input_row_map[begin:end],
+         )
+         fused_post_expert_norm_weighted_sum(
+             values,
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+new file mode 100644
+index 0000000..8a3cd79
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -0,0 +1,120 @@
++"""Exchange sequence-parallel prompt rows needed by each local Humming expert bank."""
++
++import torch
++import torch.distributed as dist
++from torch import nn
++
++from sglang.srt.layers import layernorm_sp
++from sglang.srt.layers.muse_spark.muse_spark_humming_moe import local_humming_expert_ids
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import eager_on_graph
++
++
++def _group_width(counts, padded_rows):
++    """Choose the widest exchange whose activation buffers fit one dense gather."""
++    size = len(counts)
++    incoming = [sum(source[rank] for source in counts) for rank in range(size)]
++    remote = sum(incoming) - sum(counts[rank][rank] for rank in range(size))
++    if remote >= padded_rows * (size - 1):
++        return 0
++    width = size
++    while width:
++        fits = all(
++            incoming[src] + sum(counts[src][first:first + width]) <= padded_rows
++            for src in range(size) for first in range(0, size, width)
++        )
++        if fits:
++            return width
++        width //= 2
++    return 0
++
++
++def _exchange_inputs(shard, needs, counts, width, group):
++    size, rank = group.world_size, group.rank_in_group
++    shard_rows, hidden = shard.shape
++    first_row = rank * shard_rows
++    receive_splits = [source[rank] for source in counts]
++    received = shard.new_empty((sum(receive_splits), hidden))
++    empty = received[:0]
++    capacity = max(sum(counts[rank][i:i + width]) for i in range(0, size, width))
++    send_buffer = shard.new_empty((capacity, hidden))
++    for first in range(0, size, width):
++        last = min(first + width, size)
++        # Flatten destination first, then source-token order within each destination.
++        send_mask = needs[first:last, first_row:first_row + shard_rows].reshape(-1)
++        send_splits = [n if first <= i < last else 0 for i, n in enumerate(counts[rank])]
++        ends = torch.cumsum(send_mask, dim=0, dtype=torch.int32)
++        ordinals = torch.arange(1, 1 + sum(send_splits), dtype=torch.int32, device=shard.device)
++        positions = torch.searchsorted(ends, ordinals).remainder_(shard_rows)
++        packed = send_buffer[:positions.numel()]
++        torch.index_select(shard, 0, positions, out=packed)
++        active = first <= rank < last
++        dist.all_to_all_single(
++            received if active else empty, packed, receive_splits if active else [0] * size,
++            send_splits, group=group.device_group,
++        )
++        # The synchronous collective orders the next pack on the caller's stream.
++        # All destination groups reuse the same backing allocation.
++    # Inputs arrived in global token order with the remote-only rows removed.
++    return received, torch.cumsum(needs[rank], dim=0, dtype=torch.int32) - 1
++
++
++def _local_grouped_eligible(experts, shard):
++    from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++
++    return (
++        type(experts) is MuseSpark1xFp4Experts
++        and experts.use_w4a16 and experts.use_humming
++        and experts._post_expert_norm_weight is not None
++        and experts._post_expert_norm is experts.post_expert_norm
++        and 0 < shard.shape[1] <= experts.intermediate_size_per_partition
++        and shard.dtype == torch.bfloat16 and shard.is_cuda
++        and torch.cuda.get_device_capability(shard.device)[0] == 9
++        and "forward" not in vars(experts)
++        and getattr(experts, "_compiled_call_impl", None) is None
++        and not (experts._forward_hooks or experts._forward_pre_hooks)
++        and not (nn.modules.module._global_forward_hooks or nn.modules.module._global_forward_pre_hooks)
++    )
++
++
++def _prompt_experts_into(experts, shard, scores, ids, group, output):
++    tokens = ids.shape[0]
++    padded_rows = shard.shape[0] * group.world_size
++    eligible = _local_grouped_eligible(experts, shard)
++    # Advertise actual local ownership, including remapped experts. A hook or
++    # unsupported local bank on any rank votes the entire exchange back to dense.
++    local = torch.zeros(padded_rows + 1, dtype=torch.uint8, device=shard.device)
++    local_routes = local.new_zeros((), dtype=torch.int32)
++    if eligible:
++        local_ids = local_humming_expert_ids(experts, ids)
++        owned_slots = local_ids >= 0
++        local[:tokens] = owned_slots.any(dim=1)
++        local[-1] = 1
++        local_routes = owned_slots.sum(dtype=torch.int32)
++    all_masks = local.new_empty((group.world_size, local.numel()))
++    group.all_gather_into_tensor(all_masks, local[None, :])
++    needs = all_masks[:, :padded_rows]
++    # One small device-to-host fence for the votes and every variable split.
++    counts = needs.reshape(group.world_size, group.world_size, shard.shape[0]).sum(-1, dtype=torch.int32).T
++    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), local_routes.view(1))).tolist()
++    size = group.world_size
++    counts = [descriptor[i * size:(i + 1) * size] for i in range(size)]
++    local_route_count = descriptor[-1]
++    width = _group_width(counts, padded_rows) if all(descriptor[size * size:-1]) else 0
++    if width:
++        inputs, row_map = _exchange_inputs(shard, needs, counts, width, group)
++        experts._grouped_humming_and_combine_impl(
++            inputs, local_ids, scores, output, input_row_map=row_map, local_route_count=local_route_count
++        )
++    else:
++        inputs = layernorm_sp.sp_exit_gather(shard, tokens)
++        if eligible:
++            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, output, local_route_count=local_route_count)
++        else:
++            output.copy_(experts(inputs, scores, ids, experts.post_expert_norm))
++
++
++def _capture_stub(experts, shard, scores, ids, group, output):
++    output.zero_()
++
++
++prompt_experts_into = eager_on_graph(True, capture_stub=_capture_stub)(_prompt_experts_into)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 46a283f..d8338bf 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -73,7 +73,10 @@ from sglang.srt.layers.linear import (
+ from sglang.srt.layers.logits_processor import LogitsProcessor as OSSLogitsProcessor
+ from sglang.srt.layers.moe.topk import StandardTopKOutput
+ from sglang.srt.layers.muse_spark.muse_spark_bf16_moe import MuseSpark1xBf16Experts
+-from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import (
++    HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT,
++    MuseSpark1xFp4Experts,
++)
+ from sglang.srt.layers.muse_spark.muse_spark_layers import (
+     MuseSpark1xNormPreservingResidualConnection,
+     MuseSpark1xRMSNorm,
+@@ -91,6 +94,7 @@ from sglang.srt.layers.vocab_parallel_embedding import (
+     get_embedding_tp_kwargs,
+ )
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import is_in_breakable_cuda_graph
+ from sglang.srt.model_executor.forward_context import (
+     get_attn_backend,
+     get_token_to_kv_pool,
+@@ -946,7 +950,24 @@ class MuseSpark1xMoE(nn.Module):
+     ) -> torch.Tensor:
+         """Share pooled rows, run local EP experts, and return this TP token shard."""
+         num_tokens = layernorm_sp.sp_num_tokens()
+-        tp_group = get_parallel().tp_group
++        parallel = get_parallel()
++        tp_group = parallel.tp_group
++        if (
++            parallel.muse_sparse_prompt_exchange
++            and get_moe_runner_backend().is_humming()
++            and expert_input.is_cuda
++            and tp_group.world_size > 1
++            and num_tokens * self.top_k >= self.num_experts * HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++            and not torch.compiler.is_compiling()
++            and (not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph())
++        ):
++            from sglang.srt.layers.muse_spark.sparse_prompt_exchange import prompt_experts_into
++
++            scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
++            ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
++            output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
++            prompt_experts_into(self.experts, expert_input, scores, ids, tp_group, output)
++            return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
+         inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)
+         scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+         ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)

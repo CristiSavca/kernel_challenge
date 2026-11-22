@@ -1,0 +1,49 @@
+{
+  "source_sha256": "497cd4d1cc9a3f98407cab0644bfffbbb90e7219e8658d902683ff171c6de677",
+  "pinned_pytorch": "5c4886908584029761b579af026dcfb627c84070",
+  "source": {
+    "buffer": {
+      "path": "torch/csrc/distributed/c10d/symm_mem/SymmetricMemory.cpp",
+      "sha256": "7b6a6b34f4407ec2fe4cb0e96636e083dfec9c52388488a9b6b462cd963c3abb"
+    },
+    "dispatch": {
+      "path": "torch/csrc/distributed/c10d/symm_mem/CUDASymmetricMemory.cu",
+      "sha256": "156fbfd769b44022bd165225430709508ecc03d30815aab996dbba911badb6ad"
+    },
+    "barrier": {
+      "path": "torch/csrc/distributed/c10d/symm_mem/CUDASymmetricMemory-inl.cuh",
+      "sha256": "5e79fc924b57a6090a2ec51317604629ab8c90ef72ddc5ccc1a1ec1eb477bd6a"
+    },
+    "stack": {
+      "path": "aten/src/ATen/native/TensorShape.cpp",
+      "sha256": "3aef4069d68579ba5384f03a2023ff137f54781f38b0ed8fc8d5b7a2678e0f93"
+    },
+    "copy": {
+      "path": "aten/src/ATen/native/cuda/Shape.cu",
+      "sha256": "0b77347216fcec50c973fc281e970e99ea3c9a43b74b601eb4868bbeff02e34c"
+    }
+  },
+  "results": {
+    "both_stream_edges_and_barrier": {
+      "invariants": 7343,
+      "missing_order": 0
+    },
+    "entry": {
+      "invariants": 7343,
+      "missing_order": 2359
+    },
+    "exit": {
+      "invariants": 7343,
+      "missing_order": 2093
+    },
+    "barrier": {
+      "invariants": 7343,
+      "missing_order": 6123
+    },
+    "single": {
+      "invariants": 12173,
+      "missing_order": 2091
+    }
+  },
+  "scope": "Transitive closure for all GPU schedules under the supplied edges. Three caller streams per rank, one peer stream, two reused banks, publication skips, fallback and veto epochs. Omits extra ordering from local host synchronization or NCCL; missing edges in negative controls are model witnesses."
+}

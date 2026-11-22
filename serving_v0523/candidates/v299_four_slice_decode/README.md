@@ -1,0 +1,18 @@
+# V299 complete K-stage scheduling for small decode
+
+V299 lets each Hopper warpgroup issue eight matrix instructions before it waits in the native eight-row expert kernels. V297 issued four. This leaves more instructions from weight preparation available while the hardware is computing. It preserves the output channels, CTA grid, K partitions, routed experts and requested weight bytes of the parent. No new communication or kernel launch is required. An official H200 check is still needed to measure token agreement, latency and score. [Standalone serving patch](patch.diff) · [Delta from V297](delta.diff) · [Selection and fallback](startup.json)
+
+At M8, each math worker keeps the two packed BF16 source fragments for each of four K16 slices through the end of its K64 stage. Every band accumulates its original four slices in order. The worker commits and waits before telling the producer that the source stage is available again. W13 loads the next shared tile after issuing the current matrix operation. W2 retains the parent’s prefetch placement. A native M8, four-stage, single-CTA geometry, the pinned vendor loop and successful machine-code admission all gate selection. A compiler refusal restores V297’s live two-slice kernel before trying older fallbacks. The wider M16/M24 kernels retain their V297 schedule. [Production source changes](delta.diff) · [Full-stage and pair fallback tests](startup.py)
+
+| Native M8 metric | V297 W13 | V299 W13 | V297 W2 | V299 W2 |
+| --- | ---: | ---: | ---: | ---: |
+| Waits per warpgroup at K4096 | 64 | 32 | 32 | 16 |
+| Matrix instructions per four-stage loop | 32 | 32 | 32 | 32 |
+| Static instruction sites in the recurring loop | 1,142 | 1,145 | 1,142 | 1,138 |
+| Ordinary instruction sites with a matrix group outstanding | 635 | 759 | 665 | 951 |
+
+All selected M8 images compile without stack, spills or matrix serialization on SM90a. The physical register audit checks all 32 source issues in each of the two projections, including branch edges that poll the next stage while a group is outstanding. The delayed-completion CPU replay ran the submitted C++ method itself over 99 cases and checked 121,792 pending source words. Reusing the two former buffers corrupts still-pending operands and trips the oracle. The other ten compiled configurations, including alternate aligned and unaligned matrix widths, have byte-identical SASS to V297. These are static instruction counts and offline correctness controls. [Machine-code study](machine.json) · [Independent accumulator-chain and release checks](independent_chain.json) · [C++ delayed reads and alias mutation](delayed.json)
+
+On the archived eight-H200 scheduler reports, all 59 one-user observations and all 43 four-user observations were in the M8 bin. So were 10 of 21 at 16 users and 6 of 24 at 32 users. The route planner can produce no local work on individual ranks. The measured V64 one-user pass estimate is 19.69 ms. Improving its end-to-end speed by 5% would require 0.94 ms per pass, about 15.1 µs per target layer if the benefit came only from these expert kernels. Halving wait sites says nothing on its own about how much of that latency was exposed. The all-layer cold weight transfer estimate of 2.62 ms also remains. [Historical evidence and sensitivity](work.json)
+
+The public export is 408,184 bytes over 61 allowed files. Four files differ from V297. SHA-256 is `6debe5e1b2a9695441a101eee18a8ad5022b4d2dd393e3b64b023a788c980a96`. The parent and standalone patches apply and reverse on the judge’s pin under strict whitespace checks. The eight launch flags are inherited. No judge job or paid hardware was used. [Rules and reconstruction](validation.json)

@@ -1,0 +1,37 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 4ee740027a063b36a768f9bd6959199eac2c368b..c3995cdf71988576f53ab8432455fc3ceb46f388 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -100,6 +100,7 @@ def _partition_attention(
+             q_positions = prefix + q_token
+             if TreeDepths is not None:
+                 tree_base = request * MAX_Q
++                first_tree_tile = prefix // TILE_N
+                 depth = tl.load(TreeDepths + tree_base + q_token, q_live, other=0)
+                 q_positions = prefix + depth.to(tl.int32)
+                 ancestors = tl.load(
+@@ -141,14 +142,16 @@ def _partition_attention(
+                 if TreeDepths is None:
+                     visible &= tokens[None, :] <= q_positions[:, None]
+                 else:
+-                    is_node = (tokens >= prefix) & live
+-                    slot = tl.minimum(tl.maximum(tokens - prefix, 0), MAX_Q - 1)
+-                    depth = tl.load(
+-                        TreeDepths + tree_base + slot, is_node, other=0
+-                    ).to(tl.int32)
+-                    key_positions = tl.where(is_node, prefix + depth, tokens)
+-                    on_path = ((ancestors[:, None] >> slot[None, :]) & 1) != 0
+-                    visible &= (~is_node[None, :]) | on_path
++                    # Old prefix tiles contain no proposal nodes.
++                    if tile >= first_tree_tile:
++                        is_node = (tokens >= prefix) & live
++                        slot = tl.minimum(tl.maximum(tokens - prefix, 0), MAX_Q - 1)
++                        depth = tl.load(
++                            TreeDepths + tree_base + slot, is_node, other=0
++                        ).to(tl.int32)
++                        key_positions = tl.where(is_node, prefix + depth, tokens)
++                        on_path = ((ancestors[:, None] >> slot[None, :]) & 1) != 0
++                        visible &= (~is_node[None, :]) | on_path
+                 if WINDOW_LEFT >= 0:
+                     visible &= key_positions[None, :] >= (q_positions - WINDOW_LEFT)[:, None]
+                 scores = tl.where(visible, scores, float("-inf"))

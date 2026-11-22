@@ -1,0 +1,377 @@
+{
+  "tree": "f53b3f6f04851484810f87276c77079498ce1a9e",
+  "selected_source_sha256": {
+    "python/sglang/srt/layers/muse_spark/decode_mma_pair.py": "e66cb305f09c739b70dca4f4d57c7d52df0a5272294ff2b8dbbab43f8bcdf97a",
+    "python/sglang/srt/layers/muse_spark/live_decode_reduce.py": "4e6d8950c64fa6f610a30e06a168614b98c3b7e66d9357e03d60fec07a24911b",
+    "python/sglang/srt/layers/muse_spark/residual_prompt_mma.py": "deb3ccbaf8aafe104ad966d405d259680ece714a377016d866cb8cecadce188e",
+    "python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh": "710109ac66b6df08d80c216934846379bc09c5636ab7e4f68a06dad6d88f1652",
+    "python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh": "987d08bcb335689739dd756978dc1f8a3e71aec2f698f3c1f698a31f7255bbb8"
+  },
+  "compiler": "CUDA 12.9.86; sm_90a; Humming 0.1.12",
+  "cases": {
+    "w2_m8_n128": {
+      "source_sha256": "48e2ffc2fb5fe6be56eaf8d3daa692d1a76018426c78bb0f3d3f678af99b1e61",
+      "block": [
+        8,
+        128,
+        256
+      ],
+      "warp": [
+        8,
+        32,
+        64
+      ],
+      "stages": 4,
+      "smem": 91136,
+      "cubin_sha256": "70a970bdc9b4f8773b2cd0e28b4668a68550c22a96e62fe10ebb2813ada2477f",
+      "sass_sha256": "07ae4a2bcbc67a5a24781b91bd28ded7ab29f9ca73acb6cf1fdddb79ec4c733e",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1142,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 610
+        }
+      }
+    },
+    "w2_m16_n256": {
+      "source_sha256": "1b4aaf8291c3053088d91e5e9f864ffc0be2a5d6b1dd589d86215d8480121d62",
+      "block": [
+        16,
+        256,
+        256
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "stages": 3,
+      "smem": 136192,
+      "cubin_sha256": "1169885b802609c39974ccfe031d657965e67dfc38845795996b059db9fe3298",
+      "sass_sha256": "09348eeba8e448b7f38b57f018af368bafce2799169cd0bef2f6819d0cdf5dfe",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1657,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 161
+        },
+        "16": {
+          "sites": 1666,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 157
+        }
+      }
+    },
+    "w2_m16_n128": {
+      "source_sha256": "d393271cf30362f4350fdd3374a42aa8c40224e468d051e7b0726cd49b801941",
+      "block": [
+        16,
+        128,
+        256
+      ],
+      "warp": [
+        16,
+        32,
+        64
+      ],
+      "stages": 4,
+      "smem": 107520,
+      "cubin_sha256": "899958ba492f58e0bd48fab81eb327b2d00018a5a4de6e9c5cf0c0a1f0fff91b",
+      "sass_sha256": "33a4027fec6296c471d10962a90bfb3c4fccf36c24893af3ddcee0d4d23b1981",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1143,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 571
+        },
+        "16": {
+          "sites": 1145,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 708
+        }
+      }
+    },
+    "w2_m24_n256": {
+      "source_sha256": "91ee6e6deacee71eabec2c5d07f0373ad0bf3808f0ae9428b56191e1f76bf181",
+      "block": [
+        24,
+        256,
+        256
+      ],
+      "warp": [
+        24,
+        64,
+        64
+      ],
+      "stages": 3,
+      "smem": 148480,
+      "cubin_sha256": "61b69acd02e8224e86c72b89a69b163bf88988293ffdea38a8cb51a5cfd0ab29",
+      "sass_sha256": "a518a8a8dc1b538a6cdc77bab17fd4958949a21356fa3597e47984ac32e50ed7",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1665,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 172
+        },
+        "16": {
+          "sites": 1665,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 151
+        },
+        "24": {
+          "sites": 1679,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 118
+        }
+      }
+    },
+    "w2_m24_n128": {
+      "source_sha256": "21e56948ecb6911e61ab49e5b09eaf774effebe01407822bebc14ae1e7a7751f",
+      "block": [
+        24,
+        128,
+        256
+      ],
+      "warp": [
+        24,
+        32,
+        64
+      ],
+      "stages": 4,
+      "smem": 123904,
+      "cubin_sha256": "c28d97464a641f1f0ebd7b34a6828a80a813f93ddfeef0a7df4ac71af544ef0e",
+      "sass_sha256": "4a8fa37b7d7aac0b5107995c235c916ebdd37ab28a66e2898b3efbe2c1008eb8",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1156,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 543
+        },
+        "16": {
+          "sites": 1169,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 586
+        },
+        "24": {
+          "sites": 1169,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 620
+        }
+      }
+    },
+    "w2_m16_n256_d5120_k3072_e19": {
+      "source_sha256": "a269c440f79c82ee1491465a7c6c4d5c094182669cedce5e4946eaabe0bcd4cc",
+      "block": [
+        16,
+        256,
+        256
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "stages": 3,
+      "smem": 136192,
+      "cubin_sha256": "7565889278b4f977d0e8bcc1beadc6d6fec843b87c189f98a4973a947a7d2bab",
+      "sass_sha256": "5d8760c5506683a27aa37e1f589a29152cc08259ce5353b6a6c58c281e0354f3",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1657,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 161
+        },
+        "16": {
+          "sites": 1666,
+          "hgmma": 48,
+          "waits": 12,
+          "wg_arrivals": 48,
+          "math_release_at": [
+            16,
+            32,
+            48
+          ],
+          "protected_register_writes_checked": 157
+        }
+      }
+    },
+    "w2_m16_n128_d4992_k3072_e19": {
+      "source_sha256": "4659f021a650b468aa3c6a8f3b5d18a2da9ea441d31f9a439bb1f957e1373702",
+      "block": [
+        16,
+        128,
+        256
+      ],
+      "warp": [
+        16,
+        32,
+        64
+      ],
+      "stages": 4,
+      "smem": 107520,
+      "cubin_sha256": "d57c2ef19e719cb5d24cd42d4065fe33c5fbd2add28d4ba3984c839aed10061e",
+      "sass_sha256": "489368802dd0aed8cc2e92fae53d61dbbe3b3c0d940b75df2374d7c3508a6881",
+      "launch_registers": 96,
+      "no_stack_or_spills": true,
+      "no_recurrent_local_accesses": true,
+      "fp32_reduction": [
+        "FADD.FTZ"
+      ],
+      "residual_widths": {
+        "8": {
+          "sites": 1144,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 581
+        },
+        "16": {
+          "sites": 1146,
+          "hgmma": 32,
+          "waits": 8,
+          "wg_arrivals": 16,
+          "math_release_at": [
+            8,
+            16,
+            24,
+            32
+          ],
+          "protected_register_writes_checked": 701
+        }
+      }
+    }
+  },
+  "scope": "Real offline compiled candidate and narrow fallback, preserving live K reduction under the production ISA selector. No H200 timing."
+}

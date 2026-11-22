@@ -1,0 +1,230 @@
+{
+  "observed_utc": "2026-11-19T00:50:43.568800+00:00",
+  "objective": "Four-fold official throughput at stock interactivity over the load ladder",
+  "candidate": "V215",
+  "exports": {
+    "V212": {
+      "tree": "e8f6c6db1baf03be5d4e6742284d64a23ca5e878",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "patch_sha256": "29bde7114a37475fd512f0d2d01b5c43688da3cc8e07e938988dfb9cb5bbc2d6",
+      "bytes": 305032,
+      "patch": "serving_v0523/candidates/v212_mixed_paired_draft_kv/patch.diff",
+      "validation": "serving_v0523/candidates/v212_mixed_paired_draft_kv/validation.json"
+    },
+    "V213": {
+      "tree": "0cb08b65dd155026a1c48dfaabf6a48f5afe4c6c",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "patch_sha256": "6223b3cf65a3ac64ef46c45adb574621a8568e358b02c21d0815aa869f6c233f",
+      "bytes": 309957,
+      "patch": "serving_v0523/candidates/v213_live_decode_expert_reduction/patch.diff",
+      "validation": "serving_v0523/candidates/v213_live_decode_expert_reduction/validation.json"
+    },
+    "V214": {
+      "tree": "a82310679b157a49e9c881ec11cf2729de898ff5",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "patch_sha256": "9c8eaeddf344558aec76e19f801e897e9f39438b9ddc3f900e7f88a05a03840b",
+      "bytes": 314264,
+      "patch": "serving_v0523/candidates/v214_resident_peer_draft_projection/patch.diff",
+      "validation": "serving_v0523/candidates/v214_resident_peer_draft_projection/validation.json"
+    },
+    "V215": {
+      "tree": "e3803fe065ff36c7bdde740ae5b748ddb3d395a0",
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "patch_sha256": "bbf69a796f2e2ae2edb2b5d913f0e0dc799037d555c10dfe58d00eb71f7cd7b6",
+      "bytes": 322388,
+      "patch": "serving_v0523/candidates/v215_decode_reduction_paired_context/patch.diff",
+      "validation": "serving_v0523/candidates/v215_decode_reduction_paired_context/validation.json"
+    }
+  },
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": "",
+    "--speculative-dflash-mixed-prefill": ""
+  },
+  "strict_both_donor_orders": true,
+  "decode_route_histograms": [
+    {
+      "rows": 32,
+      "local_routes": 39,
+      "MMA_rows": [
+        128,
+        128
+      ],
+      "V211_V213_partial_shared_mib": [
+        20.0,
+        7.5
+      ],
+      "nominal_Humming_requested_weights_MiB": 432,
+      "row_arithmetic_reduction_percent": 0.0
+    },
+    {
+      "rows": 256,
+      "local_routes": 354,
+      "MMA_rows": [
+        792,
+        456
+      ],
+      "V211_V213_partial_shared_mib": [
+        123.75,
+        57.1875
+      ],
+      "nominal_Humming_requested_weights_MiB": 891,
+      "row_arithmetic_reduction_percent": 42.42424242424242
+    }
+  ],
+  "routing_source": "experiments/iterations/20261104-moe-hardware-profile-recovered.json",
+  "trained_or_cached_request_data": false,
+  "retained_model_weight_bytes_per_GPU": 20971520,
+  "archived_16_user_model": {
+    "live_shards": {
+      "prompt_opportunities": 142,
+      "prompt_v212_calls": 75,
+      "prompt_v214_calls": 110,
+      "prompt_v212_sent_bytes": 10330079232,
+      "prompt_v214_sent_bytes": 8422434304.0,
+      "prompt_width_2": 75,
+      "cold_primes": 1,
+      "mixed_opportunities": 99,
+      "mixed_v212_calls": 0,
+      "mixed_v214_calls": 58,
+      "mixed_v212_sent_bytes": 1247232000,
+      "mixed_v214_sent_bytes": 644336384.0,
+      "mixed_width_4": 58,
+      "prompt_width_4": 35
+    },
+    "padded_capture_shards": {
+      "prompt_opportunities": 142,
+      "prompt_v212_calls": 75,
+      "prompt_v214_calls": 110,
+      "prompt_v212_sent_bytes": 10354163712,
+      "prompt_v214_sent_bytes": 8422434304.0,
+      "prompt_width_2": 75,
+      "cold_primes": 1,
+      "mixed_opportunities": 99,
+      "mixed_v212_calls": 0,
+      "mixed_v214_calls": 58,
+      "mixed_v212_sent_bytes": 1310195712,
+      "mixed_v214_sent_bytes": 644336384.0,
+      "mixed_width_4": 58,
+      "prompt_width_4": 35
+    }
+  },
+  "correctness": {
+    "expert_reduction": {
+      "cases": 792,
+      "FP32_bit_comparisons": 1708032,
+      "linear_K_order_counterexamples": 90989
+    },
+    "bf16_gating_words": 2359296,
+    "v212_physical_cache": {
+      "cases": 84,
+      "cache_bf16_words": 1330560,
+      "untouched_slots": 6412,
+      "standalone_projection_mms_removed": 84,
+      "malformed_rejections_before_sampling_or_writes": 7
+    },
+    "v212_scale_negative_control": {
+      "v211_patch_sha256": "e8a04e873ea3dafcc84dd97c49de239b42fe389cd63dbeab4f444279c1f7d082",
+      "v211_worker_sha256": "c4e62c2d249824d59a267282e99622fb0b5c63de88f8b638d0a6ecf9a7137260",
+      "scale": 2,
+      "cache_quantization_scale": null,
+      "affected_layer": 3,
+      "v211_incorrect_physical_v_words": 330,
+      "v212_incorrect_physical_v_words": 0,
+      "v212_all_KV_words_bitwise_equal_to_sequential": 14880,
+      "producer": "With the ordinary context carrier, exact V211 initialization, mixed settlement and cache writer selected the unscaled fused path. V212 initializer selected ordinary kv_proj_only and applied the model scale."
+    },
+    "v215_connected_words": 2048,
+    "v215_gloo": {
+      "4": {
+        "comparisons": 44,
+        "rounds": 88,
+        "physical_cache_words_per_rank": 2430360,
+        "rejected_slots": 312
+      },
+      "8": {
+        "comparisons": 44,
+        "rounds": 88,
+        "physical_cache_words_per_rank": 4853400,
+        "rejected_slots": 312
+      }
+    },
+    "scope": "Final source adapters and host weighted finalizer, CPU-modeled projection kernels. Actual joined scheduler with modeled transformer body and graph/PyNCCL boundaries, real four/eight-rank Gloo."
+  },
+  "static_rules": {
+    "url": "https://openkernelchallenge.dev/api/v1/serving",
+    "paths": 47,
+    "forbidden_launch_patterns": 76,
+    "longest_added_line": 147,
+    "flag_orders": 720
+  },
+  "best_official": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "speedup": 1.4119
+  },
+  "judge": {
+    "observed_utc": "2026-11-19T00:50:43.568800+00:00",
+    "checks": {
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "users": 4
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "users": 32
+      },
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "users": 16
+      }
+    },
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "reset": "2026-11-20T00:00:00Z"
+  },
+  "submitted_v215_h200": false,
+  "standby": {
+    "mode": "private",
+    "users": 16,
+    "window_start": "2026-11-20T04:00:00+00:00",
+    "window_end_exclusive": "2026-11-20T08:00:00+00:00",
+    "eligible_only_in_existing_v198_slot": true,
+    "exact_v204_job": "7fcdf9abf39b486a",
+    "reference": "V68/16",
+    "raw_and_normalized_relative_gain_each_strictly_above": 0.0163,
+    "margin_basis": "Observed V64/16 three-repetition spread; heuristic",
+    "fallback": "V198",
+    "launch": "serving_v0523/runs/nov20_v215_runner.launch.json",
+    "other_active_nov20_workers": 8,
+    "receipt_count": 31,
+    "submission_on_arm": false
+  },
+  "hardware_pending": [
+    "token agreement",
+    "peak memory over stock",
+    "first and later TTFT per load",
+    "stock-normalized four-load score"
+  ]
+}

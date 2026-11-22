@@ -1,0 +1,315 @@
+diff --git a/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py b/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
+index 235eeca..699df82 100644
+--- a/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
++++ b/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
+@@ -14,7 +14,7 @@ attention softmax scale, so no scale is applied here.
+ 
+ from __future__ import annotations
+ 
+-from typing import Optional
++from typing import NamedTuple, Optional
+ 
+ import torch
+ import triton
+@@ -27,6 +27,19 @@ from sglang.kernels.spec import CapabilityRequirement, KernelBackend
+ FP8_E4M3_MAX = 448.0
+ 
+ 
++class VerifyFP8Store(NamedTuple):
++    key: torch.Tensor
++    value: torch.Tensor
++    slots: torch.Tensor
++    encodings: torch.Tensor
++    capacity: torch.Tensor
++
++
++def bf16_e4m3_encodings(device):
++    bits = torch.arange(65536, dtype=torch.int32, device=device).to(torch.int16)
++    return bits.view(torch.bfloat16).to(torch.float8_e4m3fn).view(torch.uint8)
++
++
+ @triton.jit
+ def _qk_rms_norm_fwd_kernel(
+     QKV,  # [T, qkv_width] source projection output
+@@ -50,7 +63,8 @@ def _qk_rms_norm_fwd_kernel(
+     HAS_KV_STORE: tl.constexpr,
+     FP8_KV_STORE: tl.constexpr,
+     USE_PDL: tl.constexpr = False,
+-    FP8_MAX: tl.constexpr = FP8_E4M3_MAX,
++    FP8_MAX: tl.constexpr = 448.0,
++    ENCODINGS=None,
+ ):
+     # One (token, head) row per lane of the block; fp32 RMS reduction over D.
+     if USE_PDL:
+@@ -76,6 +90,8 @@ def _qk_rms_norm_fwd_kernel(
+     is_k = (head >= NUM_Q_HEADS) & (head < NUM_Q_HEADS + NUM_KV_HEADS)
+     is_v = head >= NUM_Q_HEADS + NUM_KV_HEADS
+ 
++    if ENCODINGS is not None:
++        token = token.to(tl.int64)
+     src = token * stride_qkv + head * D
+     raw = tl.load(QKV + src[:, None] + cols[None, :], mask=mask, other=0.0)
+     x = raw.to(tl.float32)
+@@ -102,6 +118,27 @@ def _qk_rms_norm_fwd_kernel(
+         )
+         is_even = (cols % 2 == 0)[None, :]
+         x = tl.where(is_even, x * cos - xp * sin, xp * sin + x * cos)
++    if ENCODINGS is not None:
++        # Match the original BF16 Q/K outputs and the installed torch FP8 cast.
++        # V is an untouched slice of the projection, including its raw NaN bits.
++        bits = tl.where(is_v[:, None], raw.to(tl.uint16, bitcast=True),
++                        x.to(tl.bfloat16).to(tl.uint16, bitcast=True))
++        encoded = tl.load(ENCODINGS + bits.to(tl.int32))
++        loc = tl.load(CACHE_LOC + token, mask=row_mask, other=0).to(tl.int64)
++        # Native store_cache fails an invalid physical index in release builds.
++        loc = tl.inline_asm_elementwise(
++            asm="{ .reg .pred bad; setp.ge.u64 bad, $1, $2; @bad trap; mov.b64 $0, $1; }",
++            constraints="=l,l,l", args=[loc, tl.load(kv_capacity)],
++            dtype=tl.int64, is_pure=False, pack=1,
++        )
++        q_dst = (token * NUM_Q_HEADS + head) * D
++        kv_head = tl.where(is_v, head - NUM_Q_HEADS - NUM_KV_HEADS, head - NUM_Q_HEADS)
++        kv_dst = loc * (NUM_KV_HEADS * D) + kv_head * D
++        live = mask & (loc != 0)[:, None]
++        tl.store(Q_OUT + q_dst[:, None] + cols[None, :], encoded, mask=mask & is_q[:, None])
++        tl.store(K_CACHE + kv_dst[:, None] + cols[None, :], encoded, mask=live & is_k[:, None])
++        tl.store(V_CACHE + kv_dst[:, None] + cols[None, :], encoded, mask=live & is_v[:, None])
++        return
+     if FP8_KV_STORE:
+         x = x.to(QKV.dtype.element_ty).to(tl.float32)
+     if HAS_KV_STORE:
+@@ -327,34 +364,36 @@ class FusedQKNorm(BaseFusedOp):
+             dtype=torch.float8_e4m3fn if fp8_kv else qkv.dtype,
+             device=qkv.device,
+         )
+-        k_out = torch.empty(
++        exact = isinstance(kv_store, VerifyFP8Store)
++        k_out = None if exact else torch.empty(
+             tokens, self._num_kv_heads * d, dtype=qkv.dtype, device=qkv.device
+         )
+         has_kv = kv_store is not None
+         heads = self._num_q_heads + self._num_kv_heads * (2 if has_kv else 1)
+         n_rows = tokens * heads
+-        block_m, num_warps = _triton_config(n_rows)
++        norm_rows = tokens * (self._num_q_heads + self._num_kv_heads) if exact else n_rows
++        block_m, num_warps = _triton_config(norm_rows)
+         has_rope = positions is not None
+         pdl = {"USE_PDL": True, "launch_pdl": True} if is_arch_support_pdl() else {}
+         if has_rope:
+             assert cos_sin_cache.is_contiguous() and positions.is_contiguous()
+         if has_kv:
+-            k_cache, v_cache, cache_loc = kv_store
++            k_cache, v_cache, cache_loc = kv_store[:3]
+             assert k_cache.is_contiguous() and v_cache.is_contiguous()
+             cache_loc = cache_loc.contiguous()
+         _qk_rms_norm_fwd_kernel[(triton.cdiv(n_rows, block_m),)](
+             qkv,
+-            q_out,
+-            k_out,
++            q_out.view(torch.uint8) if exact else q_out,
++            qkv if exact else k_out,
+             positions if has_rope else qkv,
+             cos_sin_cache if has_rope else qkv,
+-            k_cache if has_kv else qkv,
+-            v_cache if has_kv else qkv,
++            (k_cache.view(torch.uint8) if exact else k_cache) if has_kv else qkv,
++            (v_cache.view(torch.uint8) if exact else v_cache) if has_kv else qkv,
+             cache_loc if has_kv else qkv,
+             self._eps,
+             qkv.stride(0),
+             n_rows,
+-            k_cache.shape[0] if has_kv else 0,
++            kv_store.capacity if exact else (k_cache.shape[0] if has_kv else 0),
+             self._num_q_heads,
+             self._num_kv_heads,
+             d,
+@@ -363,6 +402,7 @@ class FusedQKNorm(BaseFusedOp):
+             HAS_ROPE=has_rope,
+             HAS_KV_STORE=has_kv,
+             FP8_KV_STORE=fp8_kv,
++            ENCODINGS=kv_store.encodings if exact else None,
+             num_warps=num_warps,
+             **pdl,
+         )
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 0b4ecf1..0a0cb0c 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -35,7 +35,7 @@ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.radix_attention import AttentionType
+ from sglang.srt.mem_cache.kv_loc_plan import IdSpaceKind
+ from sglang.srt.mem_cache.layout.paged_view import paged_kv_view, paged_view
+-from sglang.srt.mem_cache.memory_pool import KVWriteLoc
++from sglang.srt.mem_cache.memory_pool import KVWriteLoc, MHATokenToKVPool
+ from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+ from sglang.srt.runtime_context import (
+@@ -317,6 +317,22 @@ class FlashAttentionBackend(AttentionBackend):
+         else:
+             raise ValueError(f"Invalid version: {self.fa_impl_ver=}")
+ 
++        self._muse_verify_encodings = None
++        if (
++            self.fa_impl_ver == 3 and device_capability[0] == 9
++            and self.kv_cache_dtype == torch.float8_e4m3fn and self.kv_cache_dtype_str != "auto"
++            and not self.is_draft_runner and not self.use_mla and self._kv_shard_pool is None
++            and not self.kv_index_translator.is_translating and not get_memory().enable_unified_memory
++            and not get_exec().deterministic.enable_deterministic_inference
++        ):
++            from sglang.kernels.ops.attention.muse_spark_qk_norm_rope_store import bf16_e4m3_encodings
++            pool = self.token_to_kv_pool
++            owners = (pool.full_kv_pool, pool.swa_kv_pool) if type(pool) is SWAKVPool else (pool,)
++            for owner in owners:
++                if type(owner) is MHATokenToKVPool:
++                    owner.enable_muse_verify_capacity()
++            self._muse_verify_encodings = bf16_e4m3_encodings(self.device)
++
+         self.flash_attn_varlen_func = flash_attn_varlen_func
+         self.flash_attn_with_kvcache = flash_attn_with_kvcache
+ 
+@@ -1438,6 +1454,84 @@ class FlashAttentionBackend(AttentionBackend):
+             k_rope = k_rope.to(self.kv_cache_dtype) if k_rope is not None else None
+         return q, q_rope, k_rope, k_descale, v_descale
+ 
++    def muse_verify_fp8_store(self, norm, layer, batch, qkv, positions, cos_sin):
++        from sglang.kernels.fused_op import BaseFusedOp, get_fused_op_backend
++        from sglang.kernels.ops.attention.muse_spark_qk_norm_rope_store import FusedQKNorm, VerifyFP8Store
++        from sglang.kernels.ops.kvcache.kvcache import can_use_store_cache
++        from sglang.kernels.spec import KernelBackend
++        from sglang.srt.environ import envs
++        from sglang.srt.layers.radix_attention import RadixAttention
++        from sglang.srt.model_executor.runner_utils.prefill_graph import is_in_prefill_graph_scope
++
++        table = self._muse_verify_encodings
++        if (
++            table is None or type(self) is not FlashAttentionBackend
++            or type(layer) is not RadixAttention or type(norm) is not FusedQKNorm
++            or qkv.dtype != torch.bfloat16 or qkv.device != table.device
++            or qkv.ndim != 2 or qkv.stride(1) != 1 or not qkv.shape[0]
++            or qkv.shape[1] < (norm._num_q_heads + 2 * norm._num_kv_heads) * norm._head_dim
++            or layer.head_dim > 256 or layer.head_dim != layer.v_head_dim
++            or layer.tp_k_head_num != layer.tp_v_head_num or layer.is_cross_attention
++            or layer.k_scale is not None or layer.v_scale is not None
++            or self.fa_skip_kv_cache or batch.dcp_kv_mask is not None or is_cp_active(batch)
++            or is_in_prefill_graph_scope() or envs.SGLANG_ENABLE_ASYNC_ASSERT.get()
++            or torch.are_deterministic_algorithms_enabled()
++        ):
++            return None
++        if positions is not None and (
++            positions.shape != (qkv.shape[0],) or not positions.is_contiguous()
++            or positions.dtype not in (torch.int32, torch.int64) or positions.device != qkv.device
++            or cos_sin is None or cos_sin.device != qkv.device or cos_sin.ndim != 2
++            or cos_sin.dtype != torch.float32 or cos_sin.shape[1] != norm._head_dim
++            or norm._head_dim % 2 or not cos_sin.is_contiguous()
++        ):
++            return None
++        # Change the outputs only when the ordinary QK operator dispatches to
++        # this same Triton implementation and both module boundaries are unobserved.
++        if (
++            get_fused_op_backend() is not None or norm.is_torch_compile
++            or getattr(norm._forward_method, "__func__", None) is not BaseFusedOp._forward_backend_dynamic
++            or norm._dynamic_backend_candidates[:1] != (KernelBackend.TRITON,)
++            or {"backend_eligible", "forward_triton", "_forward_triton"} & vars(norm).keys()
++            or torch.nn.modules.module._global_forward_hooks or torch.nn.modules.module._global_forward_pre_hooks
++            or any(m._forward_hooks or m._forward_pre_hooks or "forward" in vars(m)
++                   or m._compiled_call_impl is not None for m in (norm, layer))
++        ):
++            return None
++
++        pool = self.token_to_kv_pool
++        write = KVWriteLoc.for_layer(batch, layer, swa_loc=self.forward_metadata.swa_out_cache_loc)
++        owner, slots = pool, write.loc
++        if type(pool) is SWAKVPool:
++            _, sliding = pool.layers_mapping[layer.layer_id]
++            owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
++            slots = write.swa_loc if sliding else write.loc
++        if (
++            type(owner) is not MHATokenToKVPool or slots is None or owner.requires_physical_write_loc
++            or owner.is_quantized_kv_cache or owner.kv_cache_layout != "nhd"
++            or owner.dtype != torch.float8_e4m3fn or owner.store_dtype.itemsize != 1
++            or "set_kv_buffer" in vars(pool) or "set_kv_buffer" in vars(owner)
++            or "_store_kv_layer" in vars(owner)
++            or owner._muse_verify_capacity is None
++            or not can_use_store_cache(owner.row_dim, owner.v_row_dim)
++            or slots.ndim != 1 or slots.shape[0] != qkv.shape[0]
++            or not slots.is_contiguous() or slots.dtype not in (torch.int32, torch.int64)
++            or slots.device != qkv.device
++        ):
++            return None
++        key, value = pool.get_kv_buffer(layer.layer_id)
++        capacity = owner.size + owner.page_size
++        if any(
++            t.ndim != 3 or t.shape[1:] != (norm._num_kv_heads, norm._head_dim)
++            or t.dtype != torch.float8_e4m3fn or t.device != qkv.device or not t.is_contiguous()
++            or not 0 < capacity <= t.shape[0] for t in (key, value)
++        ):
++            return None
++        store = VerifyFP8Store(key.flatten(1), value.flatten(1), slots, table, owner._muse_verify_capacity)
++        if not norm.backend_eligible(KernelBackend.TRITON, qkv, positions, cos_sin, store):
++            return None
++        return store
++
+     def get_fused_kv_write_buffers(self, layer, forward_batch):
+         if (
+             self.kv_cache_dtype != torch.bfloat16
+diff --git a/python/sglang/srt/mem_cache/memory_pool.py b/python/sglang/srt/mem_cache/memory_pool.py
+index f6d0b71..0d20741 100644
+--- a/python/sglang/srt/mem_cache/memory_pool.py
++++ b/python/sglang/srt/mem_cache/memory_pool.py
+@@ -2229,6 +2229,10 @@ class MHATokenToKVPool(KVCache):
+             end_layer,
+             allocation_label,
+         )
++        # Stable physical-limit operand for opted-in FP8 verify graphs. A VMM
++        # owner initially backs only the padding page of its reserved address range.
++        self._muse_verify_slot_limit = self.page_size if post_capture_active else self.size + self.page_size
++        self._muse_verify_capacity = None
+         self.post_capture_active = post_capture_active
+         self._post_capture_owner = None
+         self.head_num = swa_head_num if swa_head_num is not None else head_num
+@@ -2716,10 +2720,24 @@ class MHATokenToKVPool(KVCache):
+         fields it needs, so the finalizer stays pool-agnostic."""
+         self._finalize_backing_tokens(config.max_total_num_tokens)
+ 
++    def enable_muse_verify_capacity(self):
++        if self._muse_verify_capacity is None:
++            self._muse_verify_capacity = torch.tensor(
++                self._muse_verify_slot_limit, device=self.device, dtype=torch.int64
++            )
++
+     def _finalize_backing_tokens(self, final_num_tokens: int) -> None:
+         """Token-count primitive shared by composite pools (e.g. SWA sub-pools)."""
+         self._post_capture_owner.finalize(final_num_tokens)
+         self.size = int(final_num_tokens)
++        self._muse_verify_slot_limit = self.size + self.page_size
++        if self._muse_verify_capacity is not None:
++            # Blocking H2D publishes the backed extent before another stream
++            # can replay a captured producer. The graph retains this same address.
++            self._muse_verify_capacity.copy_(
++                torch.tensor(self._muse_verify_slot_limit, device="cpu", dtype=torch.int64),
++                non_blocking=False,
++            )
+ 
+     @property
+     def post_capture_backed_bytes(self) -> int:
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 395a5d8..46a283f 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -424,6 +424,16 @@ class MuseSpark1xAttention(nn.Module):
+             and (self.rotary_emb is None or fuse_rope)
+             else None
+         )
++        if (kv_store is None and self._fused_qk_norm is not None
++                and forward_batch.forward_mode.is_target_verify()
++                and not torch.compiler.is_compiling()):
++            prepare_store = getattr(get_attn_backend(), "muse_verify_fp8_store", None)
++            if prepare_store is not None:
++                kv_store = prepare_store(
++                    self._fused_qk_norm, self.attn, forward_batch, qkv,
++                    positions if fuse_rope else None,
++                    self.rotary_emb.cos_sin_cache if fuse_rope else None,
++                )
+         if fuse_rope:
+             q, k = self._fused_qk_norm(
+                 qkv, positions, self.rotary_emb.cos_sin_cache, kv_store=kv_store

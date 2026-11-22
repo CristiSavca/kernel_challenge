@@ -1,0 +1,60 @@
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 8f6a861..74833a4 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -163,4 +163,4 @@ def _compile(context, meta, compute, tuning, prompt=False, multicast=False):
+                     grid = _launcher().prompt_cluster_grid(handle, shared, sms)
+-                    # Avoid trading a large fraction of concurrent output tiles for source reuse.
+-                    return (*binding, grid) if grid * 8 >= sms * 7 else None
++                    # Limit the loss in concurrently scheduled tiles to one cluster on larger GPUs.
++                    return (*binding, grid) if grid >= sms - 4 and grid * 8 >= sms * 7 else None
+                 return binding
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_multicast.py b/python/sglang/srt/layers/muse_spark/prompt_multicast.py
+index ac5772c..f428c3b 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_multicast.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_multicast.py
+@@ -5,9 +5,3 @@ from pathlib import Path
+ 
+-def protect_cluster_epilogue(kernel):
+-    import humming
+-
+-    source = Path(humming.__path__[0]) / "include/humming/memory/g2s_pipeline.cuh"
+-    header = source.read_text()
+-    if hashlib.sha256(header.encode()).hexdigest() != "479ff827ecf40b82d4685b3a104d796ef41bb643a1d9cc398feabcc77ccbd43b":
+-        raise ValueError("unsupported Humming multicast pipeline")
++def fence_cluster_epilogue(header):
+     # Root waits for one ACK from each peer after that peer has fenced its
+@@ -23,2 +17,13 @@ def protect_cluster_epilogue(kernel):
+ """ + header[end:]
++    return header
++
++
++def protect_cluster_epilogue(kernel):
++    import humming
++
++    source = Path(humming.__path__[0]) / "include/humming/memory/g2s_pipeline.cuh"
++    header = source.read_text()
++    if hashlib.sha256(header.encode()).hexdigest() != "479ff827ecf40b82d4685b3a104d796ef41bb643a1d9cc398feabcc77ccbd43b":
++        raise ValueError("unsupported Humming multicast pipeline")
++    header = fence_cluster_epilogue(header)
+     include = "#include <humming/memory/g2s_pipeline.cuh>"
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index 2d7755d..2bfec71 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -27,12 +27,5 @@ def adapt_prompt_weights(kernel):
+     if kernel.multi_cast_size_a > 1:
+-        # A multicast may reuse a peer's shared epilogue buffer only after that peer's proxy fence.
+-        transfers = transfers.replace("kNumMathThreads * factor);",
+-            "kNumMathThreads * factor + (cluster_rank == 0 && thread_id == kNumStages ? kMultiCastSize - 1 : 0));")
+-        end = transfers.index("    phases[kNumStages] ^= 1;", transfers.index("void wait_math_epilogue()"))
+-        transfers = transfers[:end] + """
+-    if (ctx.cluster_rank() && ctx.load_thread_id() == 0) {
+-      void *ready = __cluster_map_shared_rank(&ctx.smem.math_mbar[kNumStages], 0);
+-      mbarrier_arrive<true>(ready);
+-    }
+-""" + transfers[end:]
++        from sglang.srt.layers.muse_spark.prompt_multicast import fence_cluster_epilogue
++
++        transfers = fence_cluster_epilogue(transfers)
+     transfer = "loader_bs.template load<kShouldAdvance>(smem.stages[stage_id].bs, mbar_ptr);"

@@ -1,0 +1,181 @@
+{
+  "variants": {
+    "WidePromptWeightPipeline": {
+      "block": [
+        256,
+        128,
+        64
+      ],
+      "warp": [
+        256,
+        16,
+        64
+      ],
+      "multicast": 2,
+      "threads": 384,
+      "math_threads": 256,
+      "native_estimated_shared": 152576
+    },
+    "ResidualPromptWeightPipeline": {
+      "block": [
+        176,
+        256,
+        64
+      ],
+      "warp": [
+        176,
+        32,
+        64
+      ],
+      "multicast": 1,
+      "threads": 384,
+      "math_threads": 256,
+      "native_estimated_shared": 128000
+    },
+    "PromptWeightPipeline": {
+      "block": [
+        176,
+        256,
+        64
+      ],
+      "warp": [
+        176,
+        32,
+        64
+      ],
+      "multicast": 1,
+      "threads": 384,
+      "math_threads": 256,
+      "native_estimated_shared": 128000
+    }
+  },
+  "startup": [
+    {
+      "attempts": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline"
+      ],
+      "denied": [],
+      "config": [
+        0,
+        5248,
+        9,
+        0,
+        5248,
+        8704,
+        7,
+        128,
+        8704,
+        10688,
+        9,
+        0,
+        10688,
+        1073741824,
+        7,
+        128
+      ]
+    },
+    {
+      "attempts": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline"
+      ],
+      "denied": [
+        "WidePromptWeightPipeline"
+      ],
+      "config": [
+        0,
+        1073741824,
+        9,
+        0
+      ]
+    },
+    {
+      "attempts": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline",
+        "PromptWeightPipeline"
+      ],
+      "denied": [
+        "ResidualPromptWeightPipeline"
+      ],
+      "config": [
+        0,
+        5248,
+        11,
+        0,
+        5248,
+        8704,
+        7,
+        128,
+        8704,
+        10688,
+        11,
+        0,
+        10688,
+        1073741824,
+        7,
+        128
+      ]
+    },
+    {
+      "attempts": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline",
+        "PromptWeightPipeline"
+      ],
+      "denied": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline"
+      ],
+      "config": [
+        0,
+        1073741824,
+        11,
+        0
+      ]
+    },
+    {
+      "attempts": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline",
+        "PromptWeightPipeline"
+      ],
+      "denied": [
+        "WidePromptWeightPipeline",
+        "ResidualPromptWeightPipeline",
+        "PromptWeightPipeline"
+      ],
+      "config": null
+    }
+  ],
+  "odd_SM_fallback": [
+    "ResidualPromptWeightPipeline"
+  ],
+  "local_row_ranges": [
+    [
+      0,
+      5248,
+      9,
+      0
+    ],
+    [
+      5248,
+      8704,
+      7,
+      128
+    ],
+    [
+      8704,
+      10688,
+      9,
+      0
+    ],
+    [
+      10688,
+      1073741824,
+      7,
+      128
+    ]
+  ]
+}

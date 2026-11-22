@@ -1,0 +1,19 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+index b979925..6aefd5c 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+@@ -147,7 +147,13 @@ __global__ __launch_bounds__(32 * kWarps) void run_active_kernel(const __grid_co
+ }
+ 
+ // Keep the projection in its six-CTA Hopper register allocation class.
+-__global__ __launch_bounds__(32 * kWarps, 6) void run_planned_kernel(const __grid_constant__ Params p) {
++__global__
++#if defined(__NVCC__) && (__CUDACC_VER_MAJOR__ > 12 || (__CUDACC_VER_MAJOR__ == 12 && __CUDACC_VER_MINOR__ >= 4))
++__maxnreg__(80)
++#else
++__launch_bounds__(32 * kWarps, 6)
++#endif
++void run_planned_kernel(const __grid_constant__ Params p) {
+   const int32_t* plan = p.offsets + p.experts + 1;
+   const uint32_t count = plan[0];
+   for (uint32_t ordinal = blockIdx.y; ordinal < count; ordinal += gridDim.y) {

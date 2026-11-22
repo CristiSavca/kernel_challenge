@@ -1,0 +1,55 @@
+{
+  "candidate": "V237",
+  "patch_sha256": "3523359b53eb4f9ee237fa328e9db09257060eef6f741434f8bf2727b1f7b9b5",
+  "width": 8,
+  "vocab": 202048,
+  "tp": 8,
+  "per_gpu_vocab": 25256,
+  "historical_period_source": "../v140_decode_overlap_feasibility/check.json",
+  "eligible_path": "V217 sharded raw tap full-target ordinary verify graph with FP32 local vocabulary GEMM, captured eligible model scale, and greedy/unaltered worker sampling.",
+  "baseline_weight_bytes": 413794304,
+  "eligible_extra_persistent_device_bytes": 0,
+  "rows": [
+    {
+      "users": 1,
+      "verify_rows": 8,
+      "local_fp32_bytes": 808192,
+      "eligible_greedy_read_write_bytes_removed": 1616384,
+      "eligible_greedy_bytes_per_lane": 8,
+      "fallback_peak_extra_local_fp32_bytes": 808192,
+      "at_4p8TB_per_s_us": 0.3367466666666667,
+      "historical_estimated_V64_period_ms": 19.68503937007874
+    },
+    {
+      "users": 4,
+      "verify_rows": 32,
+      "local_fp32_bytes": 3232768,
+      "eligible_greedy_read_write_bytes_removed": 6465536,
+      "eligible_greedy_bytes_per_lane": 8,
+      "fallback_peak_extra_local_fp32_bytes": 3232768,
+      "at_4p8TB_per_s_us": 1.3469866666666668,
+      "historical_estimated_V64_period_ms": 35.587188612099645
+    },
+    {
+      "users": 16,
+      "verify_rows": 128,
+      "local_fp32_bytes": 12931072,
+      "eligible_greedy_read_write_bytes_removed": 25862144,
+      "eligible_greedy_bytes_per_lane": 8,
+      "fallback_peak_extra_local_fp32_bytes": 12931072,
+      "at_4p8TB_per_s_us": 5.387946666666667,
+      "historical_estimated_V64_period_ms": 79.84031936127744
+    },
+    {
+      "users": 32,
+      "verify_rows": 256,
+      "local_fp32_bytes": 25862144,
+      "eligible_greedy_read_write_bytes_removed": 51724288,
+      "eligible_greedy_bytes_per_lane": 8,
+      "fallback_peak_extra_local_fp32_bytes": 25862144,
+      "at_4p8TB_per_s_us": 10.775893333333334,
+      "historical_estimated_V64_period_ms": 96.99769053117784
+    }
+  ],
+  "limitation": "Logical HBM-equivalent scale tensor traffic. Cache residency, kernel latency, fallback allocation, concurrency and complete model speed were not measured."
+}

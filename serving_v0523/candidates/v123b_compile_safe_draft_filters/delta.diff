@@ -1,0 +1,14 @@
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index 654a6c3..0fa7ee3 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -636,6 +636,9 @@ class DFlashGroupedConv(nn.Module):
+         )
+ 
+     def _can_use_rank_major(self, hidden):
++        # A whole-model trace cannot inspect rank-local module hook overrides.
++        if torch.compiler.is_compiling():
++            return False
+         projection = self.kernel_projection
+         if type(projection) is not DFlashGatheredLinear or hidden.ndim != 2 or hidden.shape[0] == 0:
+             return False

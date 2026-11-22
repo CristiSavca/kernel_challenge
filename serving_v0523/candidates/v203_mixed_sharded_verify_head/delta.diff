@@ -1,0 +1,239 @@
+diff --git a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+index 8663c95..99ebaf4 100644
+--- a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
++++ b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+@@ -15,6 +15,7 @@ def _softcap_row_argmax_kernel(
+     col_offset,
+     softcapping_value,
+     BLOCK_SIZE: tl.constexpr,
++    FIRST_NAN: tl.constexpr = False,
+ ):
+     row = tl.program_id(0).to(tl.int64)
+     best_val = -float("inf")
+@@ -26,6 +27,10 @@ def _softcap_row_argmax_kernel(
+         x = x / softcapping_value
+         x = libdevice.tanh(x)
+         x = x * softcapping_value
++        if FIRST_NAN:
++            # A finite cap bounds every numeric result. Rank a NaN above all
++            # of them so the ordinary first-index tie rule matches torch.argmax.
++            x = tl.where(x != x, float("inf"), x)
+         x = tl.where(mask, x, -float("inf"))
+         block_val, block_idx = tl.max(
+             x, axis=0, return_indices=True, return_indices_tie_break_left=True
+@@ -37,7 +42,7 @@ def _softcap_row_argmax_kernel(
+     tl.store(out_ptr + row * 2 + 1, (best_idx + col_offset).to(tl.float32))
+ 
+ 
+-def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset):
++def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset, *, first_nan=False):
+     """Per row of a vocab shard: ``(max, first argmax + col_offset)`` of the
+     softcapped logits over the first ``valid_width`` columns, as fp32 ``[rows, 2]``."""
+     assert logits.dtype == torch.float32 and logits.stride(1) == 1
+@@ -51,6 +56,7 @@ def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset)
+         col_offset,
+         final_logit_softcapping,
+         BLOCK_SIZE=4096,
++        FIRST_NAN=first_nan,
+         num_warps=8,
+     )
+     return out
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index cfa6ce5..c7c72f9 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -361,6 +361,7 @@ class LogitsMetadata:
+     # rows (see EagleDraftExtendInput.select_index).
+     draft_extend_select_index: Optional[torch.Tensor] = None
+     mixed_verify_logits_indices: Optional[torch.Tensor] = None
++    mixed_verify_sharded_logits: bool = False
+ 
+     @classmethod
+     def from_forward_batch(cls, forward_batch: ForwardBatch):
+@@ -425,6 +426,7 @@ class LogitsMetadata:
+             mm_input_embeds=forward_batch.mm_input_embeds,
+             draft_extend_select_index=draft_extend_select_index,
+             mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
++            mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
+         )
+ 
+     def compute_dp_attention_metadata(self):
+@@ -1071,7 +1073,16 @@ class LogitsProcessor(nn.Module):
+         ):
+             if (
+                 self.defer_verify_gather
+-                and logits_metadata.forward_mode.is_target_verify()
++                and (
++                    logits_metadata.forward_mode.is_target_verify()
++                    or (
++                        logits_metadata.mixed_verify_sharded_logits
++                        and logits_metadata.mixed_verify_logits_indices is not None
++                        and torch.finfo(torch.float32).tiny <= self.final_logit_softcapping <= torch.finfo(torch.float32).max
++                        and 0 < logits.shape[1] < self.vocab_size
++                        <= logits.shape[1] * get_parallel().tp_group.world_size < 2**24
++                    )
++                )
+             ):
+                 return logits
+             return self._gather_softcap_fused(
+@@ -1158,7 +1169,7 @@ class LogitsProcessor(nn.Module):
+         """Full softcapped logits from a target-verify vocab shard."""
+         return self._gather_softcap_fused(logits, None, use_buffer=False)
+ 
+-    def deferred_argmax(self, logits: torch.Tensor) -> torch.Tensor:
++    def deferred_argmax(self, logits: torch.Tensor, *, first_nan: bool = False) -> torch.Tensor:
+         """``argmax`` of the full softcapped logits from a target-verify vocab
+         shard, gathering only each rank's row maxima. Ties resolve to the lowest
+         vocab index, as ``torch.argmax`` over the gathered row does."""
+@@ -1167,7 +1178,7 @@ class LogitsProcessor(nn.Module):
+         col_offset = group.rank_in_group * shard_width
+         valid_width = max(0, min(shard_width, self.vocab_size - col_offset))
+         local = softcap_row_argmax(
+-            logits, self.final_logit_softcapping, valid_width, col_offset
++            logits, self.final_logit_softcapping, valid_width, col_offset, first_nan=first_nan
+         )
+         gathered = torch.empty(
+             (group.world_size, num_tokens, 2), dtype=local.dtype, device=local.device
+diff --git a/python/sglang/srt/managers/tp_worker.py b/python/sglang/srt/managers/tp_worker.py
+index 65b7bb4..0275054 100644
+--- a/python/sglang/srt/managers/tp_worker.py
++++ b/python/sglang/srt/managers/tp_worker.py
+@@ -631,6 +631,7 @@ class TpModelWorker(BaseTpWorker):
+         capture_hidden_mode: Optional[CaptureHiddenMode] = None,
+         return_kv_loc_plan: bool = False,
+         mixed_verify_prompt_count: Optional[int] = None,
++        mixed_verify_sharded_logits: bool = False,
+     ) -> GenerationBatchResult:
+         # This explicit entry accepts real prompt rows followed by fully reserved
+         # DFLASH linear chains. Their caller owns prompt sampling and tail settlement.
+@@ -706,6 +707,7 @@ class TpModelWorker(BaseTpWorker):
+             )
+             if mixed_verify_prompt_count is not None:
+                 forward_batch.set_mixed_verify_rows(mixed_verify_prompt_count)
++                forward_batch.mixed_verify_sharded_logits = mixed_verify_sharded_logits
+             if folded is not None:
+                 apply_folded_extend(folded, forward_batch)
+         else:
+@@ -764,13 +766,19 @@ class TpModelWorker(BaseTpWorker):
+                 if (
+                     logits_output is None
+                     or logits_output.next_token_logits is None
+-                    or logits_output.next_token_logits.shape
+-                    != (indices.numel(), self.model_runner.model_config.vocab_size)
++                    or logits_output.next_token_logits.ndim != 2
++                    or logits_output.next_token_logits.shape[0] != indices.numel()
+                     or logits_output.hidden_states is None
+                     or logits_output.hidden_states.ndim != 2
+                     or logits_output.hidden_states.shape[0] != batch.extend_num_tokens
+                 ):
+                     raise RuntimeError("mixed target returned an incomplete logits or hidden-state layout")
++                width = logits_output.next_token_logits.shape[1]
++                vocab = self.model_runner.model_config.vocab_size
++                if width != vocab and not (
++                    mixed_verify_sharded_logits and 0 < width < vocab <= width * get_parallel().tp_group.world_size
++                ):
++                    raise RuntimeError("mixed target returned an incomplete vocabulary")
+             capture_pre_sample_logits(batch, forward_batch, logits_output)
+ 
+             if is_verify:
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 6422e15..a01653a 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -730,8 +730,6 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+ 
+     # For logits and logprobs post processing
+     next_token_logits_buffer: torch.Tensor = None
+-    # Live raw-token indices for the eager LM-head tail of a combined prompt/verify body.
+-    mixed_verify_logits_indices: Optional[torch.Tensor] = None
+     temperature: torch.Tensor = None
+     top_p: torch.Tensor = None
+ 
+@@ -831,6 +829,10 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # forward-path re-plan would clobber their metadata.
+     forward_metadata_replan_equivalent: bool = False
+ 
++    # Eager vocabulary-head layout for a combined prompt/verify body.
++    mixed_verify_logits_indices: Optional[torch.Tensor] = None
++    mixed_verify_sharded_logits: bool = False
++
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+ 
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index ca8abc2..6695f91 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2011,6 +2011,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             extend_prefix_lens=forward_batch.extend_prefix_lens,
+             extend_start_loc=forward_batch.extend_start_loc,
+             mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
++            mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index ba46fa5..539220f 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -2547,6 +2547,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 capture_hidden_mode=CaptureHiddenMode.FULL,
+                 return_kv_loc_plan=True,
+                 mixed_verify_prompt_count=p,
++                mixed_verify_sharded_logits=self._target_logits_processor is not None,
+             )
+         prompt_result, decode_result, next_input = self.settle_mixed_verify(
+             target_out=target,
+@@ -2581,6 +2582,11 @@ class DFlashWorkerV2(BaseSpecWorker):
+         output = target_out.logits_output
+         logits, hidden = output.next_token_logits, output.hidden_states
+         context_done = output.dflash_prefill_context_done
++        processor = self._target_logits_processor
++        sharded = (
++            logits is not None and logits.ndim == 2 and processor is not None
++            and processor.is_deferred_shard(logits)
++        )
+         slots = self._draft_write_ids(target_out.kv_loc_plan)
+         if (
+             prompts <= 0
+@@ -2593,7 +2599,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+             or prompt_forward_batch.seq_lens.shape != (prompts,)
+             or prompt_forward_batch.extend_seq_lens.shape != (prompts,)
+             or logits is None
+-            or logits.shape != (prompts + tail_rows, decode_sampling_info.vocab_size)
++            or logits.ndim != 2
++            or logits.shape[0] != prompts + tail_rows
++            or (not sharded and logits.shape[1] != decode_sampling_info.vocab_size)
++            or (sharded and logits.shape[1] * get_parallel().tp_group.world_size < decode_sampling_info.vocab_size)
+             or hidden is None
+             or hidden.ndim != 2
+             or hidden.shape[0] < prompt_rows + tail_rows
+@@ -2607,8 +2616,18 @@ class DFlashWorkerV2(BaseSpecWorker):
+ 
+         # ModelRunner.sample consumes only the ordinary prompt context. Verify must
+         # retain every raw target row until the native accept consumes the chain.
+-        prompt_output = LogitsProcessorOutput(next_token_logits=logits[:prompts])
+-        decode_output = LogitsProcessorOutput(next_token_logits=logits[prompts:])
++        prompt_logits = logits[:prompts]
++        tail_logits = logits[prompts:]
++        target_predict = None
++        if sharded:
++            # Preserve the ordinary prompt sampler. Greedy verification only reads
++            # each tail row's global winner after applying the native softcap.
++            prompt_logits = processor.finish_deferred_gather(prompt_logits)
++            target_predict = processor.deferred_argmax(tail_logits, first_nan=True)
++            tail_logits = None
++        prompt_output = LogitsProcessorOutput(next_token_logits=prompt_logits)
++        decode_output = LogitsProcessorOutput(next_token_logits=tail_logits)
++        del prompt_logits, tail_logits
+         prompt_ids = self.target_worker.model_runner.sample(prompt_output, prompt_forward_batch)
+         self._tp_sync.sync(SpecTpSyncSite.DFLASH_TARGET, prompt_ids)
+         _, commit_lens, bonus, out_tokens, tail_lens = self._accept_block(
+@@ -2618,6 +2637,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             draft_input=None,
+             prefix_lens=prefix_lens,
+             bs=tails,
++            target_predict=target_predict,
+         )
+         # The eligibility check excludes logprob and auxiliary consumers. Drop all
+         # vocab views here so the overlap result queue only retains sampled ids.

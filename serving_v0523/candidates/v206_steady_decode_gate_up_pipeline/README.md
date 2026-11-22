@@ -1,0 +1,24 @@
+# V206 pipelines both grouped decode expert projections on Hopper
+
+**Scheduler correction, November 19.** On the production mixed-batch entry, V202–V206 run the target outside the owner-projection context. V203–V206 also leave the sharded verification-head flag at its default. The earlier component tests enabled those features through a separate helper. Queued V204/16 measures mixed batching and expert changes with the full vocabulary gather and raw context features. V209 connects both optimizations to the production scheduler. [Scheduler replay and source](../v209_mixed_prompt_context_entry/README.md)
+
+**2026-11-19 00:03 UTC.** The judge accepted V204 at 16 users as private job `7fcdf9abf39b486a`. Its observed state was queued. V205 and V206 remain available for a matched comparison after hardware results. [Judge observation](../../runs/nov19_initial_private_jobs.json)
+
+V206 extends V205's schedule to the gate/up projection (W13) in target verification and ordinary grouped decode. For each expert, W13 projects 4,096 input channels to 8,192 gate/up channels. It uses 18 MiB of packed weights and associated scales. The down-projection (W2) uses 9 MiB. Both still read their original weights and evaluate every routed expert. [Full patch](patch.diff) · [Two-file delta over V205](delta.diff) · [Native geometry](independent_w13.json)
+
+| Per output tile, full K=4,096 | V204 waits per warpgroup | V205 | V206 |
+|---|---:|---:|---:|
+| Gate/up, W13 | 96 | 96 | 64 |
+| Down, W2 | 48 | 32 | 32 |
+
+The new W13 schedule holds the shared activation until the last matrix group using it has completed. It prepares the next operand while earlier matrix operations are in flight. All three native row tiles (8, 16 and 24) compile with 32 ordered HGMMA instructions and eight full drains per four-stage loop, 96 registers and zero spills. On the largest tile, the number of operand-preparation instructions executed during all outstanding matrix operations fell from 556 to 551 even as the number of full drains fell. Only device timing can tell whether the producer or the consumer benefits overall. [Matched machine code](sm90a.json) · [Stage lifetime review](independent_w13.md)
+
+The joined arithmetic replay followed two K-warps through their FP32 reduction and the actual packed-key, BF16-scaled SiLU writer. It matched 2,359,296 output words. Independent review checked stage reuse across 315 schedules, 784,827 interleaved events and 1,804 register destinations written while matrix operands remained live. The three supported widths also declined a missing, doubled or altered vendor include. The prompt W13 binary, the three prior W13 decode fallbacks and the W2 binaries retained their archived digests. [Joined W13 arithmetic](joined_operands.json) · [Dispatch and release review](independent_w13.json) · [Code and binary identity](identity.json) · [Loader and fallback](startup.json)
+
+A release test reached both projection wrappers through the actual model and expert dispatcher in 17 cases. Compiling, a top-eight route table over capacity, missing projection state and prompt modes selected their appropriate fallbacks. [Model entry test](entry_check.json)
+
+The cumulative source passed the published static patch and flag restrictions. All six overrides parsed in 720 orders. Host tests covered 3,600 route plans, 288 joined expert calls, and a decoder-layer replay seeded with BF16 attention output. A separate prompt-to-verification test fed finalized expert values to a synthetic head, then compared 933,750 logits across real four- and eight-rank Gloo groups. The Python namespace check detected V88's known missing import and found zero new unbound globals in V206's 37 changed Python modules. [Export and rules](validation.json) · [CLI](flags.json) · [Decode and attention](cross_phase.json) · [Joined verification](joined.json) · [Python regression](global_names.json) · [Pinned Humming import test](independent_imports.json)
+
+V206 is frozen for a matched hardware comparison. V204 took the 16-user private slot while V93 was queued. The measured V64 four-load result remains 1.4119× over stock. V205 and V206 still need H200 token agreement, memory, time to first token and serving throughput measurements. [V204 private reservation](../../runs/nov19_v204_runner.launch.json) · [V64 scored run](../../runs/abd217baf0ed49fd.json) · [Score headroom](../v195_fused_expert_affine_verify/score_headroom.md)
+
+A timing replay transferred the archived phase improvements onto V64’s four throughput and interactivity points. Across 12 combinations of real one- and four-user traces, reaching 4× required making both cold first-token latency and post-first-token output 2.455–2.456× faster when both receive the same factor. The 16- and 32-user traces each have one repetition and are held fixed in this sensitivity test. [Trace replay](phase_sensitivity.py) · [Sensitivity results](phase_sensitivity.json)

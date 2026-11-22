@@ -1,0 +1,231 @@
+--- a/serving_v0523/runs/submit_nov19_decode_checks.py
++++ b/serving_v0523/runs/submit_nov19_decode_checks.py
+@@ -95,18 +95,11 @@
+     "v125", "v125_v68_clustered_expert_mlp",
+     "3564873a4327719c83fa88a3d1eae5cf3f06d6c42b8505c45a7403a883d658d3", V68.flags,
+ )
+-V126 = Candidate(
+-    "v126", "v126_split_cluster_expert_mlp",
+-    "eeba21105433a3bc908b943eb3dfd04b1c8213f474a84d556db654c2f0670c27", V68.flags,
+-)
+-LEGACY_TREE_ALTERNATIVES = (V99, V125)
+-TREE_ALTERNATIVES = (V101b, V79a, V126)
++TREE_ALTERNATIVES = (V101b, V79a, V125)
+ CANDIDATES = (*ALTERNATIVES, *PREFILL_ALTERNATIVES, *TREE_ALTERNATIVES)
+ 
+ 
+ def check_load(candidate):
+-    if candidate == V126:
+-        return 1
+     if candidate in (V100c, V106, V111, V120, V120b):
+         return 32
+     return 4 if candidate in (V87, V89, V116, V116b) else 16
+@@ -270,14 +263,14 @@
+     state, detail = job_state(V68_JOB, V68.sha256, V68.flags, okc=okc, execute=execute)
+     if state not in ("passed", "queued", "running"):
+         return state, detail
+-    if candidate != V126:
++    if candidate != V125:
+         parent_state, detail = optional_parent_gate(runs, okc, execute)
+         if parent_state != "passed":
+             return parent_state, detail
+     if candidate not in ALTERNATIVES:
+-        # V68 validates the shared serving path. The V64 score supplies the
+-        # one-user reference for the complete candidate.
+-        fallback = V126 if state == "passed" else V79a
++        # A measured V68 control lets us isolate the expert kernel while the
++        # native-width tree comparator has yet to pass.
++        fallback = V125 if state == "passed" else V79a
+         try:
+             selected, reason = v93_choice(runs, okc, execute, V101b, fallback, pending=fallback)
+         except (OSError, subprocess.SubprocessError):
+@@ -286,8 +279,8 @@
+             selected = V79a
+         if selected != candidate:
+             return "waiting", reason
+-        if candidate == V126:
+-            return v64_gate(runs)
++        if candidate == V125:
++            return "passed", "matched V68 control passed at 16 users"
+     return "passed", reason
+ 
+ 
+@@ -302,7 +295,7 @@
+         # An old runner's V84a attempt occupies this same slot across updates.
+         lock_name, members = "nov19_prefill_alternative.lock", (*PREFILL_ALTERNATIVES, V84a)
+     else:
+-        lock_name, members = "nov19_tree_alternative.lock", (*TREE_ALTERNATIVES, *LEGACY_TREE_ALTERNATIVES)
++        lock_name, members = "nov19_tree_alternative.lock", (*TREE_ALTERNATIVES, V99)
+     # Keep alternate processes and restarts from claiming both candidates.
+     # submit_once exclusively writes its candidate's durable receipt before invoking the CLI.
+     with (runs / lock_name).open("a") as lock:
+@@ -358,10 +351,6 @@
+                 (runs / f"{prefix(legacy)}.submit.txt").exists() for legacy in LEGACY_EXPERT_ALTERNATIVES
+             ):
+                 return subprocess.CompletedProcess(command, 1, "", "earlier first-slot attempt recorded")
+-            if candidate in TREE_ALTERNATIVES and any(
+-                (runs / f"{prefix(legacy)}.submit.txt").exists() for legacy in LEGACY_TREE_ALTERNATIVES
+-            ):
+-                return subprocess.CompletedProcess(command, 1, "", "earlier third-slot attempt recorded")
+             return response
+         if command[1:3] != ["serve", "check"]:
+             raise ValueError("unexpected CLI operation")
+@@ -380,10 +369,9 @@
+         evidence["comparison_job"] = V93_JOB
+         alternatives = PREFILL_ALTERNATIVES if candidate in PREFILL_ALTERNATIVES else TREE_ALTERNATIVES
+         evidence["exclusive_alternatives"] = [c.name for c in alternatives]
+-        if candidate == V126:
++        if candidate == V125:
+             evidence.update(shared_jobs=[V68_JOB], decision_receipt=prefix(V93), decision_job=V93_JOB,
+-                            comparison_receipt=f"{V64_JOB}.json", comparison_job=V64_JOB, ancestor_check_job=V68_JOB,
+-                            comparison_scope="one-user whole-build rung")
++                            comparison_receipt=f"{V68_JOB}.json", comparison_job=V68_JOB)
+         if candidate == V102:
+             evidence.update(shared_jobs=[V68_JOB], decision_receipt=prefix(V93), decision_job=V93_JOB,
+                             comparison_receipt=f"{V64_JOB}.json", comparison_job=V64_JOB)
+@@ -412,9 +400,9 @@
+               "v64_scored_receipt": f"{V64_JOB}.json", "legacy_attempt_receipts": [prefix(V84a)],
+               "when_v93_or_v68_failed": V95.name, "when_unknown": "defer this slot"}
+     third = {"alternatives": [checks[c.name] for c in TREE_ALTERNATIVES], "decision_receipt": prefix(V93), "v93_job": V93_JOB,
+-             "when_v93_passed_and_shared_parents_eligible": V101b.name, "legacy_attempt_receipts": [prefix(c) for c in LEGACY_TREE_ALTERNATIVES],
+-             "when_v93_pending_or_failed_and_exact_v68_and_v64_passed": V126.name,
+-             "v126_ancestor_check_job": V68_JOB, "v126_one_user_reference_job": V64_JOB,
++             "when_v93_passed_and_shared_parents_eligible": V101b.name, "legacy_attempt_receipts": [prefix(V99)],
++             "when_v93_pending_or_failed_and_exact_v68_passed": V125.name,
++             "v125_comparison_job": V68_JOB,
+              "when_v68_pending_and_shared_parents_eligible": V79a.name,
+              "when_v68_passed_but_v93_unknown": "defer this slot"}
+     return {"start_utc": START.isoformat(), "end_utc": END.isoformat(), "quota_reset": RESET,
+--- a/serving_v0523/runs/test_nov19_decode_checks.py
++++ b/serving_v0523/runs/test_nov19_decode_checks.py
+@@ -23,7 +23,7 @@
+         self.on_quota = lambda: None
+         self.at = r.START
+         self.submit_result = 0
+-        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120b","v101b","v102","v126"), 1)}
++        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120b","v101b","v102","v125"), 1)}
+         self.jobs[r.V68_JOB] = {"id": r.V68_JOB, "board":"serving", "mode":"check",
+                                 "status":"queued", "result":None}
+         self.ids[r.V87.name] = r.V87_JOB
+@@ -92,13 +92,13 @@
+         self.assertEqual(checks[2]["decision_receipt"], r.prefix(r.V93))
+         self.assertEqual(checks[2]["v93_job"], r.V93_JOB)
+         self.assertEqual([(v["candidate"], v["users"]) for v in checks[2]["alternatives"]],
+-                         [("v101b", 16), ("v79a", 16), ("v126", 1)])
++                         [("v101b", 16), ("v79a", 16), ("v125", 16)])
+         self.assertEqual(checks[2]["alternatives"][0]["flags"],
+                          r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""})
+         self.assertEqual(checks[2]["alternatives"][1]["flags"], r.V76a.flags | {"--speculative-num-draft-tokens": "12"})
+         self.assertEqual([r.prefix(c) for c in r.CANDIDATES],
+                          ["v116b_nov19_check4", "v120b_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
+-                          "v101b_nov19_check16", "v79a_nov19_check16", "v126_nov19_check1"])
++                          "v101b_nov19_check16", "v79a_nov19_check16", "v125_nov19_check16"])
+         self.assertEqual(r.START.isoformat(), "2026-11-19T00:03:00+00:00")
+         self.assertEqual(r.END.hour,22)
+ 
+@@ -710,59 +710,42 @@
+             "serving_flags": r.V68.flags, "patch": {"sha256": r.V68.sha256},
+         })
+ 
+-    def test_v126_with_measured_v68_and_unresolved_v93(self):
++    def test_v125_with_measured_v68_and_unresolved_v93(self):
+         self.exact_v68()
+         for state in ("queued", "running", "failed"):
+             self.job(r.V93, state=state)
+             self.assertTrue(self.offer(r.V79a).startswith("waiting"))
+-            self.assertTrue(self.offer(r.V126).startswith("submitted"))
+-            meta = json.loads(self.receipt(r.V126).read_text().splitlines()[0])
+-            self.assertEqual((meta["users"], meta["flags"], meta["sha256"]), (1, r.V68.flags, r.V126.sha256))
+-            self.assertEqual(meta["evidence"]["comparison_job"], r.V64_JOB)
+-            self.assertEqual(meta["evidence"]["ancestor_check_job"], r.V68_JOB)
++            self.assertTrue(self.offer(r.V125).startswith("submitted"))
++            meta = json.loads(self.receipt(r.V125).read_text().splitlines()[0])
++            self.assertEqual((meta["users"], meta["flags"], meta["sha256"]), (16, r.V68.flags, r.V125.sha256))
++            self.assertEqual(meta["evidence"]["comparison_job"], r.V68_JOB)
+             self.assertEqual(meta["evidence"]["shared_jobs"], [r.V68_JOB])
+             self.assertEqual(self.offer(r.V101b), "attempt recorded")
+-            self.receipt(r.V126).unlink()
+-
+-    def test_v126_independent_of_optional_tree_parent(self):
++            self.receipt(r.V125).unlink()
++
++    def test_v125_independent_of_optional_tree_parent(self):
+         self.exact_v68()
+         self.job(r.V76a, passed=False)
+-        self.assertTrue(self.offer(r.V126).startswith("submitted"))
+-
+-    def test_v126_requires_matched_v68_and_identifiable_v93(self):
+-        self.assertTrue(self.offer(r.V126).startswith("waiting"))
++        self.assertTrue(self.offer(r.V125).startswith("submitted"))
++
++    def test_v125_requires_matched_v68_and_identifiable_v93(self):
++        self.assertTrue(self.offer(r.V125).startswith("waiting"))
+         self.exact_v68()
+         self.receipt(r.V93).write_text("ambiguous CLI")
+         for candidate in r.TREE_ALTERNATIVES:
+             self.assertTrue(self.offer(candidate).startswith("waiting"))
+         self.job(r.V93, state="queued")
+         self.jobs[r.V68_JOB]["result"]["patch"]["sha256"] = "incorrect"
+-        self.assertTrue(self.offer(r.V126).startswith("failed"))
+-        self.assertEqual(self.left, 3)
+-
+-    def test_v126_requires_scored_one_user_reference(self):
+-        self.exact_v68()
+-        self.v64_path.unlink()
+-        self.assertTrue(self.offer(r.V126).startswith("waiting"))
+-        self.assertFalse(self.receipt(r.V126).exists())
+-
+-    def test_legacy_v125_in_third_slot_including_late_receipt(self):
+-        self.exact_v68()
+-        old = self.receipt(r.V125)
+-        self.assertEqual(old.name, "v125_nov19_check16.submit.txt")
+-        self.on_quota = lambda: old.write_text("earlier third-slot attempt")
+-        self.assertEqual(self.offer(r.V126), "quota request failed")
+-        self.assertFalse(self.receipt(r.V126).exists())
+-        self.assertEqual(self.offer(r.V126), "attempt recorded")
+-        self.assertEqual(self.left, 3)
+-
+-    def test_v126_switch_after_quota(self):
++        self.assertTrue(self.offer(r.V125).startswith("failed"))
++        self.assertEqual(self.left, 3)
++
++    def test_v125_switch_after_quota(self):
+         self.exact_v68()
+         self.on_quota = lambda: self.job(r.V93)
+-        self.assertEqual(self.offer(r.V126), "quota request failed")
+-        self.assertFalse(self.receipt(r.V126).exists())
++        self.assertEqual(self.offer(r.V125), "quota request failed")
++        self.assertFalse(self.receipt(r.V125).exists())
+         self.assertTrue(self.offer(r.V101b).startswith("submitted"))
+-        self.assertEqual(self.offer(r.V126), "attempt recorded")
++        self.assertEqual(self.offer(r.V125), "attempt recorded")
+         self.assertEqual(self.left, 2)
+ 
+     def test_exact_v93_pass_selects_v101b_for_third_and_last_check(self):
+@@ -777,7 +760,7 @@
+         self.assertEqual((meta["candidate"], meta["users"], meta["flags"], meta["sha256"]),
+                          ("v101b", 16, r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""}, r.V101b.sha256))
+         self.assertEqual(meta["evidence"]["comparison_job"], r.V93_JOB)
+-        self.assertEqual(meta["evidence"]["exclusive_alternatives"], ["v101b", "v79a", "v126"])
++        self.assertEqual(meta["evidence"]["exclusive_alternatives"], ["v101b", "v79a", "v125"])
+ 
+     def test_unpassed_or_wrong_v93_keeps_wide_tree(self):
+         for state, fields in (
+@@ -819,7 +802,7 @@
+         self.job(r.V76a, passed=False)
+         for candidate in (r.V101b, r.V79a):
+             self.assertTrue(self.offer(candidate).startswith("failed"))
+-        self.assertTrue(self.offer(r.V126).startswith("waiting"))
++        self.assertTrue(self.offer(r.V125).startswith("waiting"))
+         self.assertEqual(self.left, 3)
+ 
+     def test_v93_status_failure_does_not_require_wide_tree_to_wait(self):
+@@ -940,7 +923,7 @@
+             receipt = json.loads((root / "validation.json").read_text())
+             self.assertEqual(candidate.flags, receipt[key])
+             self.assertEqual(candidate.sha256, receipt.get("patch_sha256", receipt.get("sha256")))
+-        self.assertEqual(r.plan()["checks"][2]["legacy_attempt_receipts"], [r.prefix(r.V99), r.prefix(r.V125)])
++        self.assertEqual(r.plan()["checks"][2]["legacy_attempt_receipts"], [r.prefix(r.V99)])
+ 
+ if __name__ == "__main__":
+     unittest.main()

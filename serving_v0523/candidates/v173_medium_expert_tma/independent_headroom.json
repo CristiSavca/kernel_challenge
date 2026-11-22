@@ -1,0 +1,200 @@
+{
+  "patch_sha256": "7d1bffd4526ea77fc2567479d4f569f673ba82062c342a01817c5b5562f11c4a",
+  "published_v64": {
+    "id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "rungs": [
+      {
+        "concurrency": 1,
+        "acceptance": 4,
+        "ttft_first_p90_s": 5.419,
+        "ttft_later_p90_s": 0.175
+      },
+      {
+        "concurrency": 4,
+        "acceptance": 4,
+        "ttft_first_p90_s": 12.952,
+        "ttft_later_p90_s": 0.211
+      },
+      {
+        "concurrency": 16,
+        "acceptance": 4,
+        "ttft_first_p90_s": 50.063,
+        "ttft_later_p90_s": 0.265
+      },
+      {
+        "concurrency": 32,
+        "acceptance": 4.2,
+        "ttft_first_p90_s": 110,
+        "ttft_later_p90_s": 0.696
+      }
+    ],
+    "observed_serving_expert_histogram": false
+  },
+  "nominal_layer": {
+    "grid_per_bank": [
+      32,
+      32
+    ],
+    "prior_projection_launches": 2,
+    "mixed_projection_launches": 4,
+    "additional_fast_exit_ctas": 2048,
+    "identical_routing_weight_tile_counts": true
+  },
+  "uniform_distinct_top8_synthetic": {
+    "1024": {
+      "local_experts": 32,
+      "expected_nonempty": 31.450143245733827,
+      "expected_tiny": 30.825865989980837,
+      "expected_hot": 0.6242772557529902,
+      "local_routes": 128.0,
+      "tiny_routes": 122.0464192875925,
+      "tiny_fraction_of_local_rows": 0.9534876506843164,
+      "tiny_ctas_per_bank": 986.4277116793868,
+      "hot_ctas_per_bank": 19.976872184095686,
+      "nominal_weight_sweeps_w13_w2": [
+        31.450161898084062,
+        31.450143245733827
+      ],
+      "nominal_weight_bytes_per_rank": 890402717.9603645,
+      "fraction_nominal_packed_bytes_in_tiny": 0.9801498696225035,
+      "hypothetical_equally_bandwidth_bound_pair_speedups": {
+        "1.25x_tiny": 1.2438274656598851,
+        "2.0x_tiny": 1.9610724560673458
+      },
+      "tiny_speed_needed_if_overhead_is_five_percent_of_prior_pair": 1.053754778270616,
+      "cta_capacity_equivalents_no_ceiling": {
+        "old_active_ctas_at_8_resident_per_sm": 0.9530346438101159,
+        "new_tiny_ctas_at_4_resident_per_sm": 1.868234302423081,
+        "new_hot_ctas_at_8_resident_per_sm": 0.01891749259857546
+      }
+    },
+    "2048": {
+      "local_experts": 32,
+      "expected_nonempty": 31.99055179843087,
+      "expected_tiny": 18.952441933211254,
+      "expected_hot": 13.038109865219617,
+      "local_routes": 256.0,
+      "tiny_routes": 116.52411594487049,
+      "tiny_fraction_of_local_rows": 0.45517232790965034,
+      "tiny_ctas_per_bank": 606.4781418627601,
+      "hot_ctas_per_bank": 417.21951568702775,
+      "nominal_weight_sweeps_w13_w2": [
+        32.092121608731,
+        31.990551798719043
+      ],
+      "nominal_weight_bytes_per_rank": 907619236.7299834,
+      "fraction_nominal_packed_bytes_in_tiny": 0.5911873874029858,
+      "hypothetical_equally_bandwidth_bound_pair_speedups": {
+        "1.25x_tiny": 1.1340922010869376,
+        "2.0x_tiny": 1.4196352177123026
+      },
+      "tiny_speed_needed_if_overhead_is_five_percent_of_prior_pair": 1.092389440633376,
+      "cta_capacity_equivalents_no_ceiling": {
+        "old_active_ctas_at_8_resident_per_sm": 0.9694106605585112,
+        "new_tiny_ctas_at_4_resident_per_sm": 1.1486328444370457,
+        "new_hot_ctas_at_8_resident_per_sm": 0.3950942383399884
+      }
+    }
+  },
+  "recorded_standalone_h200": {
+    "source_sha256": "0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7",
+    "different_kernel": "void okc::moe_fused<(bool)1>(okc::Params)",
+    "diagnostic_only": true,
+    "measured_traffic_time": {
+      "dram__bytes_read.sum": {
+        "value": 769691136.0,
+        "unit": "byte"
+      },
+      "dram__bytes_write.sum": {
+        "value": 4264192.0,
+        "unit": "byte"
+      },
+      "gpu__time_duration.sum": {
+        "value": 214304.0,
+        "unit": "ns"
+      },
+      "dram__throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": 75.06,
+        "unit": "%"
+      },
+      "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+        "value": 59.48,
+        "unit": "%"
+      },
+      "smsp__warps_eligible.avg.per_cycle_active": {
+        "value": 1.39,
+        "unit": "warp"
+      },
+      "sm__pipe_tensor_cycles_active.avg.pct_of_peak_sustained_active": {
+        "value": 23.71,
+        "unit": "%"
+      },
+      "smsp__warp_issue_stalled_barrier_per_warp_active.pct": {
+        "value": 4.89,
+        "unit": "%"
+      },
+      "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct": {
+        "value": 2.35,
+        "unit": "%"
+      },
+      "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct": {
+        "value": 12.81,
+        "unit": "%"
+      },
+      "smsp__warp_issue_stalled_wait_per_warp_active.pct": {
+        "value": 9.58,
+        "unit": "%"
+      }
+    },
+    "geometry": {
+      "local_experts": 32,
+      "expected_nonempty": 26,
+      "expected_tiny": 16,
+      "expected_hot": 10,
+      "local_routes": 354,
+      "tiny_routes": 59,
+      "tiny_fraction_of_local_rows": 0.16666666666666666,
+      "tiny_ctas_per_bank": 512,
+      "hot_ctas_per_bank": 320,
+      "nominal_weight_sweeps_w13_w2": [
+        38,
+        30
+      ],
+      "nominal_weight_bytes_per_rank": 1000341504,
+      "fraction_nominal_packed_bytes_in_tiny": 0.4528301886792453,
+      "hypothetical_equally_bandwidth_bound_pair_speedups": {
+        "1.25x_tiny": 1.0995850622406638,
+        "2.0x_tiny": 1.292682926829268
+      },
+      "tiny_speed_needed_if_overhead_is_five_percent_of_prior_pair": 1.1241217798594847,
+      "cta_capacity_equivalents_no_ceiling": {
+        "old_active_ctas_at_8_resident_per_sm": 0.7878787878787878,
+        "new_tiny_ctas_at_4_resident_per_sm": 0.9696969696969697,
+        "new_hot_ctas_at_8_resident_per_sm": 0.30303030303030304
+      }
+    }
+  },
+  "compiled_parent_resource_models": {
+    "w13": {
+      "tiny_inherited_registers": 47,
+      "tiny_static_shared_bytes": 41248,
+      "tiny_register_ceiling_unpartitioned": 4,
+      "medium_inherited_registers": 121,
+      "medium_register_ceiling_unpartitioned": 8
+    },
+    "w2": {
+      "tiny_inherited_registers": 47,
+      "tiny_static_shared_bytes": 34224,
+      "tiny_register_ceiling_unpartitioned": 4,
+      "medium_inherited_registers": 118,
+      "medium_register_ceiling_unpartitioned": 8
+    }
+  },
+  "caveats": [
+    "These are nominal weight sweep counts, not measured V168/V173 device traffic.",
+    "Resource models give register ceilings. Partitioning, shared memory and occupancy APIs determine achievable residency.",
+    "Fractional CTA capacity equivalents are geometric ratios, not phases of equal time.",
+    "The public diagnostic uses a generated input and a different kernel. V64 serving reports no route histogram."
+  ]
+}

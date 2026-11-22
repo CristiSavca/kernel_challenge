@@ -1,0 +1,95 @@
+{
+  "patch_sha256": "8dafee38e53c17a484217016c9f0858b9f2b9bee1969af0818552e97818d298e",
+  "bytes": 168614,
+  "files": 30,
+  "python_sources_compiled": 27,
+  "max_added_line_bytes": 107,
+  "parent_sha256": {
+    "v80": "11a1995768ccc8419fe17caea989b27352596eb533ac73ec24d7df03b5a3e9c6",
+    "v81": "b3662cea54b86f0f4b463adcf430473184be50f82e2ff2b9467b28e717671966",
+    "v82": "669689a36ae624158cf3706a061d0605eaa982cfcf62e4d16c1de6ac21e1b9d7",
+    "v83": "bae9bc7a0a26ea3aadbbef8c80cd5049e8dd078673a3986d4407e110050a9dc4"
+  },
+  "source_counts": {
+    "V80": 21,
+    "V83": 2,
+    "V82": 4,
+    "V81 and V83 env switches": 1,
+    "V81": 2
+  },
+  "source_sections": {
+    "python/sglang/kernels/jit/csrc/distributed/custom_all_reduce.cuh": "V80",
+    "python/sglang/kernels/jit/csrc/muse_spark/all_gather.cuh": "V80",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh": "V80",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py": "V80",
+    "python/sglang/kernels/ops/communication/all_reduce.py": "V80",
+    "python/sglang/kernels/ops/communication/muse_spark_all_gather.py": "V80",
+    "python/sglang/kernels/ops/communication/muse_spark_router_gather.py": "V83",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py": "V80",
+    "python/sglang/kernels/ops/speculative/dflash_committed_projection.py": "V82",
+    "python/sglang/kernels/ops/speculative/dflash_tree.py": "V80",
+    "python/sglang/srt/arg_groups/fields/spec.py": "V82",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py": "V80",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py": "V80",
+    "python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py": "V80",
+    "python/sglang/srt/environ.py": "V81 and V83 env switches",
+    "python/sglang/srt/layers/attention/flashattention_backend.py": "V80",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "V80",
+    "python/sglang/srt/layers/communication/muse_spark_workspace_reduce.py": "V80",
+    "python/sglang/srt/layers/dflash_context_projection.py": "V80",
+    "python/sglang/srt/layers/layernorm_sp.py": "V80",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "V81",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "V81",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py": "V80",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py": "V80",
+    "python/sglang/srt/mem_cache/allocation_sizing.py": "V80",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py": "V80",
+    "python/sglang/srt/models/dflash.py": "V82",
+    "python/sglang/srt/models/muse_spark.py": "V83",
+    "python/sglang/srt/speculative/dflash_info.py": "V80",
+    "python/sglang/srt/speculative/dflash_worker_v2.py": "V82"
+  },
+  "launch_flags": [
+    "--swa-full-tokens-ratio",
+    "--moe-runner-backend",
+    "--speculative-moe-runner-backend",
+    "--enable-layernorm-sp",
+    "--speculative-dflash-tree",
+    "--speculative-dflash-tp-context-projection",
+    "--speculative-dflash-tp-conv-projection",
+    "--speculative-dflash-compact-context"
+  ],
+  "template_fixed_patterns": 76,
+  "forward_reverse_apply": true,
+  "official_export": true,
+  "cuda_execution": false,
+  "combined_cpu": {
+    "v81": {
+      "route_staging": 588,
+      "bf16_values": 18442925,
+      "dispatch": 16
+    },
+    "v82": {
+      "layouts": 175,
+      "projection": 36,
+      "fallback": 19
+    },
+    "v83": {
+      "raw_words": 175808,
+      "router_cases": 16,
+      "max_abs_fp32": 5.960464477539062e-07,
+      "torch_cpu": "2.5.1"
+    },
+    "legacy": {
+      "v70_proposals": 1400,
+      "accept_slots": 9800,
+      "replay_resets": 707,
+      "attention": 72,
+      "capability": 32,
+      "v77_staging": 192,
+      "v77_finalize": 48,
+      "v78_prepare_finish": 1008,
+      "v78_load": 726
+    }
+  }
+}

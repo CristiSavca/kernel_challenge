@@ -1,0 +1,20 @@
+{
+  "v92_dense_fp8_prefill/cpu_check.py": {
+    "gather_cases": 98,
+    "live_bytes_checked": 28382976,
+    "fallback_cases": 12,
+    "h200_execution": false
+  },
+  "v64_humming_grouped_sequence_parallel/cpu_integration.py": {
+    "state": "CPU_SP_GROUPED_PASS",
+    "integration_cases": 54,
+    "actual_pre_norm_calls": 324,
+    "details": [
+      "actual SP gather entry and replicated expert methods",
+      "actual compact grouped expert adapter and caller output bridge",
+      "TP4 and TP8, original order, padded tails, balanced and rank-empty/skew routes",
+      "each rank calls pre-expert norm exactly once",
+      "modeled BF16 GEMM and finalizer; no CUDA execution"
+    ]
+  }
+}

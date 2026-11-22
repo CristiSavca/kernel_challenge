@@ -1,0 +1,5 @@
+The independent reviewer traced the pinned DFLASH2 constructor, native target projection and Full/Breakable prefill runner. The official model inherits the ordinary DFlashDraftModel projection with a contiguous replicated, unquantized BF16 linear weight and hidden normalization. The graph captures the inner layer model. Replaying it returns local taps to the eager outer model, where V108 moves the projection. Replay trimming preserves the projected-format marker before the worker normalizes the full row sequence.
+
+The helper checks both group identity and the live module, projection method, hooks, shape, dtype and deterministic settings before exchanging widths. An asymmetric preexisting or newly installed hook causes the Gloo minimum to fall back across all ranks. The test includes two further guards for late quantization settings and explicit auxiliary capture.
+
+The workload's cuBLAS GEMM choice can change with the new row count. CPU fixture equivalence, compilation, and the estimated bytes saved do not establish H200 output agreement or performance. The judge is required to measure those results.

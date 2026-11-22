@@ -1,0 +1,102 @@
+{
+  "pin": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "source_sha256": {
+    "python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py": "6ce868b66c52a9c6ff025f567c033a6bb83c43f28502024e7d0a6b37d1b36929",
+    "python/sglang/srt/distributed/device_communicators/configs/custom_all_reduce_v2.py": "eb510c72ab31df1c681e48ce2958db03f91a860ccbf152c0cfa6cbbf4495c91f",
+    "python/sglang/kernels/jit/include/sgl_kernel/distributed/communicator.cuh": "30d5c75e86e86da7ce99cd6eab85212fdbc71f83a8e3c715c4e9f2c6c1d8986f",
+    "python/sglang/kernels/jit/csrc/distributed/custom_all_reduce.cuh": "693fc6e5b73478bab41a6ea93c1636b180c0e2ddb733794d80f370efa9427c9a",
+    "python/sglang/kernels/jit/csrc/muse_spark/all_gather.cuh": "0202eed3dbcd109c6d3e44aa61fd4c8a15879a3211d900a8015a5c062fa879e6",
+    "python/sglang/kernels/jit/csrc/muse_spark/all_gather_norm_residual.cuh": "cb53a903365ac8688864c7835253ea8723d777d7ebb49b2c12ba140a6f956186",
+    "python/sglang/kernels/ops/communication/muse_spark_all_gather_norm_residual.py": "8737d08505a0a53aeda5c0ca20ad0e8ac73a8180a8d1420c4e4a6af799b44c46",
+    "python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh": "c227348c4d705183d377ac623a62b1ed6957eb8832fb0508f4ac99f1aa3cb0c8",
+    "python/sglang/srt/layers/quantization/unquant.py": "bb993843187c2c7ee12fc88fe74c20c2f0bbcbfd63686a6d40e2911927c696ae"
+  },
+  "v64_sha256": "aa6b0fecfc6180f7d34097432345352006182185f8e5c8a67091cc433ae9a479",
+  "v283_work_sha256": "582ec613893e3efb48387c716ef36707664267133ade1df1df442be10a4c92aa",
+  "signed_zero": {
+    "ordinary_residual_fp32_hex": "00000000",
+    "lamport_residual_fp32_hex": "80000000"
+  },
+  "interleavings": {
+    "both": {
+      "complete_interleavings": 16,
+      "unsafe": 0,
+      "first_unsafe": null
+    },
+    "no_publication": {
+      "complete_interleavings": 36,
+      "unsafe": 20,
+      "first_unsafe": [
+        "publish(0, 0)",
+        "read(0, 0)",
+        "publish(1, 0)",
+        "read(1, 0)",
+        "publish(0, 1)",
+        "read(0, 1)",
+        "publish(1, 1)",
+        "read(1, 1)"
+      ]
+    },
+    "no_retirement": {
+      "complete_interleavings": 24,
+      "unsafe": 8,
+      "first_unsafe": [
+        "publish(0, 0)",
+        "publish(1, 0)",
+        "read(0, 0)",
+        "publish(0, 1)",
+        "read(1, 0)",
+        "publish(1, 1)",
+        "read(0, 1)",
+        "read(1, 1)"
+      ]
+    }
+  },
+  "shapes": [
+    {
+      "users": 1,
+      "rows": 8,
+      "v283_eligible": false,
+      "branch_write_bytes_and_following_read_bytes_if_eligible": 15990784,
+      "incoming_raw_peer_bytes_if_eligible": 6995968,
+      "logical_transfer_us_at_450GBs_unidirectional": 15.546595555555555,
+      "local_read_and_write_us_at_4_8TBs": 3.3314133333333333,
+      "illustrative_V64_verify_interval_ms": 19.68503937007874,
+      "saved_us_per_boundary_for_4x_this_decode_interval": 242.0291725829353
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "v283_eligible": true,
+      "branch_write_bytes_and_following_read_bytes_if_eligible": 63963136,
+      "incoming_raw_peer_bytes_if_eligible": 27983872,
+      "logical_transfer_us_at_450GBs_unidirectional": 62.18638222222222,
+      "local_read_and_write_us_at_4_8TBs": 13.325653333333333,
+      "illustrative_V64_verify_interval_ms": 35.58718861209964,
+      "saved_us_per_boundary_for_4x_this_decode_interval": 437.5474009684381
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "v283_eligible": true,
+      "branch_write_bytes_and_following_read_bytes_if_eligible": 255852544,
+      "incoming_raw_peer_bytes_if_eligible": 111935488,
+      "logical_transfer_us_at_450GBs_unidirectional": 248.74552888888888,
+      "local_read_and_write_us_at_4_8TBs": 53.30261333333333,
+      "illustrative_V64_verify_interval_ms": 79.84031936127745,
+      "saved_us_per_boundary_for_4x_this_decode_interval": 981.6432708353784
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "v283_eligible": true,
+      "branch_write_bytes_and_following_read_bytes_if_eligible": 511705088,
+      "incoming_raw_peer_bytes_if_eligible": 223870976,
+      "logical_transfer_us_at_450GBs_unidirectional": 497.49105777777777,
+      "local_read_and_write_us_at_4_8TBs": 106.60522666666667,
+      "illustrative_V64_verify_interval_ms": 96.99769053117784,
+      "saved_us_per_boundary_for_4x_this_decode_interval": 1192.594555711203
+    }
+  ],
+  "scope": "Analytic incidence, signed-zero control and abstract lifetime enumeration. No H200 timing."
+}

@@ -1,0 +1,186 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index e120498..03e7cea 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -586,3 +586,4 @@ def humming_grouped_expert_outputs(
+     else:
+-        workspace, route_experts, slots, offsets, first_local = peer_plan
++        workspace, route_experts, slots, offsets, first_local = peer_plan[:5]
++        pack_args = {"source_norm": peer_plan[5]} if len(peer_plan) == 6 else {}
+     num_routes = slots.numel() - first_local
+@@ -590,3 +591,3 @@ def humming_grouped_expert_outputs(
+         if peer_plan is not None:
+-            workspace.pack(hidden_states, None, None)
++            workspace.pack(hidden_states, None, None, **pack_args)
+         return hidden_states.new_empty((0, hidden_size)), local_ids
+@@ -616,3 +617,3 @@ def humming_grouped_expert_outputs(
+     if peer_plan is not None:
+-        workspace.pack(hidden_states, mapped_rows, inputs)
++        workspace.pack(hidden_states, mapped_rows, inputs, **pack_args)
+     activations = None
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index a33411d..1681577 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -45,2 +45,18 @@ class PeerPromptInputs:
+             self.yes = torch.ones(4, dtype=torch.int32, device=storage.device)
++        self.norm_rows = None
++        self.norm_module = None
++        width = self.storage.shape[1]
++        if (torch.version.git_version == "5c4886908584029761b579af026dcfb627c84070"
++                and width >= 4 and width & (width - 1) == 0 and width <= (1 << 24)
++                and rows * width < (1 << 31)):
++            try:
++                from sglang.srt.layers.muse_spark.muse_spark_humming_moe import _ranked_pool_module
++
++                module = _ranked_pool_module()
++                if module is not None:
++                    # A single full-width input partition and one destination per token.
++                    self.norm_rows = torch.arange(rows, dtype=torch.int32, device=storage.device).view(-1, 1)
++                    self.norm_module = module
++            except (ImportError, OSError, RuntimeError):
++                pass
+         self.next_bank = 0
+@@ -55,3 +71,38 @@ class PeerPromptInputs:
+ 
+-    def pack(self, shard, row_map, result):
++    def source_norm(self, shard, norm):
++        from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++        from sglang.srt.layers.muse_spark.muse_spark_layers import MuseSpark1xRMSNorm
++
++        if (
++            self.norm_module is None or type(norm) is not MuseSpark1xRMSNorm or type(shard) is not torch.Tensor
++            or not shard.is_cuda or shard.ndim != 2 or not self.supports(shard, self.group)
++            or not shard.is_contiguous() or shard.data_ptr() % 8 or norm.hidden_size != shard.shape[1]
++            or "forward" in vars(norm) or "_get_effective_weight" in vars(norm)
++            or getattr(norm, "_compiled_call_impl", None) is not None or norm.training
++            or norm._forward_hooks or norm._forward_pre_hooks
++            or nn.modules.module._global_forward_hooks or nn.modules.module._global_forward_pre_hooks
++            or torch.is_grad_enabled() or torch.is_autocast_enabled("cuda") or is_batch_invariant_mode_enabled()
++            or torch._C._is_torch_function_mode_enabled() or torch._C._len_torch_dispatch_stack()
++        ):
++            return None
++        gain = norm._frozen_weight if norm.zero_centered_gamma else norm.weight
++        if (
++            norm.weight is None or type(gain) not in (torch.Tensor, nn.Parameter)
++            or gain.device != shard.device or gain.dtype != shard.dtype
++            or gain.shape != (norm.hidden_size,) or not gain.is_contiguous() or gain.data_ptr() % 8
++            or type(norm.eps) not in (int, float)
++        ):
++            return None
++        return gain, norm.eps
++
++    def store_shard(self, shard, storage, source_norm):
++        published = storage[:shard.shape[0]]
++        if source_norm is None:
++            published.copy_(shard)
++        else:
++            gain, epsilon = source_norm
++            self.norm_module.run(shard.unsqueeze(0), gain, self.norm_rows[:shard.shape[0]], published, epsilon)
++            gain.record_stream(torch.cuda.current_stream(shard.device))
++
++    def pack(self, shard, row_map, result, *, source_norm=None):
+         # Even an empty local bank publishes its shard for the other ranks.
+@@ -62,3 +113,3 @@ class PeerPromptInputs:
+                 storage, addresses = self.banks[self.next_bank]
+-                storage[:shard.shape[0]].copy_(shard)
++                self.store_shard(shard, storage, source_norm)
+                 self.handle.barrier(channel=0)
+@@ -178,3 +229,3 @@ def _local_grouped_eligible(experts, shard):
+ 
+-def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
++def _peer_experts_into(workspace, experts, shard, scores, ids, group, output, source_norm=None):
+     from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+@@ -183,2 +234,7 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+ 
++    if source_norm is not None and "_grouped_humming_and_combine_impl" in vars(experts):
++        # A helper replaced after graph capture still receives normalized rows and its original plan.
++        gain, epsilon = source_norm
++        shard = torch.nn.functional.rms_norm(shard, (shard.shape[1],), gain, epsilon)
++        source_norm = None
+     eligible = workspace.supports(shard, group) and _local_grouped_eligible(experts, shard)
+@@ -198,4 +254,9 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+         plan = workspace, sorted_experts, slots, offsets, decision[-1]
++        if source_norm is not None:
++            plan += (source_norm,)
+         experts._grouped_humming_and_combine_impl(shard, local_ids, scores, output, peer_plan=plan)
+     else:
++        if source_norm is not None:
++            gain, epsilon = source_norm
++            shard = torch.nn.functional.rms_norm(shard, (shard.shape[1],), gain, epsilon)
+         inputs = layernorm_sp.sp_exit_gather(shard, ids.shape[0])
+@@ -213,3 +274,3 @@ class _PublishedRows:
+ 
+-def _try_published_routes(workspace, experts, shard, scores, ids, group, output):
++def _try_published_routes(workspace, experts, shard, scores, ids, group, output, source_norm=None):
+     from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+@@ -239,3 +300,3 @@ def _try_published_routes(workspace, experts, shard, scores, ids, group, output)
+         if eligible:
+-            storage[:rows].copy_(shard)
++            workspace.store_shard(shard, storage, source_norm)
+             torch.cat((scores.contiguous().view(torch.int32).view(-1), ids.reshape(-1), workspace.yes), out=local)
+@@ -259,9 +320,18 @@ def _try_published_routes(workspace, experts, shard, scores, ids, group, output)
+             experts._grouped_humming_and_combine_impl(shard, local_ids, all_scores, output, peer_plan=plan)
++        elif source_norm is not None:
++            if eligible:
++                # A different rank vetoed. Preserve this rank's already normalized
++                # rows before releasing the bank to a later publication.
++                shard = storage[:rows].clone()
++            else:
++                gain, epsilon = source_norm
++                shard = torch.nn.functional.rms_norm(shard, (shard.shape[1],), gain, epsilon)
+         workspace.next_bank ^= 1
+         workspace.stream.wait_stream(caller)
+-    return accepted
++    return accepted, shard
+ 
+ 
+-def _published_experts_into(workspace, experts, shard, scores, ids, group, output):
+-    if not _try_published_routes(workspace, experts, shard, scores, ids, group, output):
++def _published_experts_into(workspace, experts, shard, scores, ids, group, output, source_norm=None):
++    accepted, shard = _try_published_routes(workspace, experts, shard, scores, ids, group, output, source_norm)
++    if not accepted:
+         # Recreate native padded tensors and route ordering before invoking any hooked expert.
+@@ -272,3 +342,3 @@ def _published_experts_into(workspace, experts, shard, scores, ids, group, outpu
+ 
+-def _capture_stub(workspace, experts, shard, scores, ids, group, output):
++def _capture_stub(workspace, experts, shard, scores, ids, group, output, source_norm=None):
+     output.zero_()
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index dba07df..efdde1c 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1021,2 +1021,10 @@ class MuseSpark1xMoE(nn.Module):
+         """Return combined source-token shards, before the nonlinear FFN tail."""
++        workspace = getattr(self, "_peer_prompt_inputs", None)
++        if (
++            self.sp_replicate_expert_input and getattr(workspace, "norm_module", None) is not None
++            and self.pre_expert_norm is not None and not torch.compiler.is_compiling()
++            and type(self) is MuseSpark1xMoE and "_forward_sp_replicated_experts" not in vars(self)
++            and type(self.experts) is MuseSpark1xFp4Experts and "_grouped_humming_and_combine_impl" not in vars(self.experts)
++        ):
++            return self._forward_sp_replicated_experts(expert_input, topk_scores, topk_ids, pre_norm=self.pre_expert_norm)
+         if self.pre_expert_norm is not None:
+@@ -1054,2 +1062,3 @@ class MuseSpark1xMoE(nn.Module):
+         topk_ids: torch.Tensor,
++        *, pre_norm=None,
+     ) -> torch.Tensor:
+@@ -1067,5 +1076,9 @@ class MuseSpark1xMoE(nn.Module):
+ 
++                source_norm = workspace.source_norm(expert_input, pre_norm) if pre_norm is not None else None
++                if pre_norm is not None and source_norm is None:
++                    expert_input = pre_norm(expert_input)
++                options = {"source_norm": source_norm} if source_norm is not None else {}
+                 output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
+                 if workspace.route_packets and num_tokens <= workspace.storage.shape[0] * tp_group.world_size:
+-                    published_experts_into(workspace, self.experts, expert_input, topk_scores, topk_ids, tp_group, output)
++                    published_experts_into(workspace, self.experts, expert_input, topk_scores, topk_ids, tp_group, output, **options)
+                 else:
+@@ -1073,4 +1086,6 @@ class MuseSpark1xMoE(nn.Module):
+                     ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
+-                    peer_experts_into(workspace, self.experts, expert_input, scores, ids, tp_group, output)
++                    peer_experts_into(workspace, self.experts, expert_input, scores, ids, tp_group, output, **options)
+                 return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++        if pre_norm is not None:
++            expert_input = pre_norm(expert_input)
+         inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)

@@ -1,0 +1,193 @@
+{
+  "objective": "Official four-load serving score of 4\u00d7",
+  "previous": "20261119-serving-v297.json",
+  "classification": "progress",
+  "observed_utc": "2026-11-19 08:15:07 UTC",
+  "incumbent": {
+    "candidate": "V64",
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "complete_passing_results": 5
+  },
+  "candidates": {
+    "V298": {
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "parent": "V68",
+      "tree": "673ac11b38d2419c523293d9ba7825f931587c7a",
+      "patch_sha256": "a42a4292015c5100d837c44a0c7001ec9a5a014926ab3680832386cbe07fdc90",
+      "bytes": 89783
+    },
+    "w2_m8_n128": {
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "parent": "V297",
+      "tree": "683a7849bb15e377458ada18af1836039dac30a3",
+      "patch_sha256": "6debe5e1b2a9695441a101eee18a8ad5022b4d2dd393e3b64b023a788c980a96",
+      "bytes": 408184
+    },
+    "V301": {
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "parent": "V297",
+      "tree": "baf703bb4f24ec6a5c5dd1fe414fa41f8bd30014",
+      "patch_sha256": "1b724ffa61029f7d7bba945e9209ff3ba4c164518c2539333582202fb402d977",
+      "bytes": 408057
+    },
+    "V302": {
+      "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+      "parent": "V299",
+      "tree": "d3cca711aa009f6a6abdd8766f82446ecb8ff6c7",
+      "patch_sha256": "31cf66cceaf45f577ddb1ce012c5694ab8063a42aefac3abee678e4c815211b1",
+      "bytes": 409489
+    }
+  },
+  "primary": "V302 combines the M8 gate/up and down projection schedule with bounded target verification. V297's wide M16/M24 kernels remain eligible.",
+  "low_load_exposure": [
+    {
+      "users": 1,
+      "M8": 59,
+      "reports": 59
+    },
+    {
+      "users": 4,
+      "M8": 43,
+      "reports": 43
+    },
+    {
+      "users": 16,
+      "M8": 10,
+      "reports": 21
+    },
+    {
+      "users": 32,
+      "M8": 6,
+      "reports": 24
+    }
+  ],
+  "correctness": {
+    "route_dispatch_cases": 56,
+    "identical_partition_intersections": 68955,
+    "interpreter_words": {
+      "fp32_words": 2263040,
+      "bf16_words": 253952,
+      "dense_words": 184320,
+      "tensor_map_loads": 824,
+      "empty_requests": 9
+    },
+    "max_abs_dense_fp64": 0.008845036226207803,
+    "expert_binary_matches": 12
+  },
+  "compile": {
+    "initial_attention_before_after_images": 54,
+    "captured_pitch_before_after_images": 48,
+    "full_capture_context": 131072,
+    "full_capture_pitch": 131088,
+    "capture_full_direct_branches": {
+      "1": [
+        30,
+        14
+      ],
+      "4": [
+        44,
+        17
+      ]
+    },
+    "sixteen_request_full_direct_spill_bytes_store_load": [
+      32,
+      44
+    ],
+    "full_direct_spills_at_16": "present in both",
+    "capacity_sensitivity_extra_paired_images": 48,
+    "virtual_reservation_source": "V41/V44 pre-capture reserve, includes sink page",
+    "physical_backing_sensitivity_source": "V68 backed counts plus sink. SASS metric comparison unchanged."
+  },
+  "timing": {
+    "one_request_previous_service_ms": {
+      "v41": 15.840522493541942,
+      "v44": 15.894988066825775
+    },
+    "one_request_attention_proxy_stock_ms": {
+      "max": 1.6429119789972901,
+      "median": 1.6172159928828478,
+      "min": 1.6046400181949139
+    },
+    "required_further_geomean_factor": 2.8330618315744744,
+    "v302_eight_h200_time": null
+  },
+  "cold_alternative": "V298 on V68. In the fully eligible 288 MiB per-rank checkpoint scenario, 98,304 staged CUDA copies become three mapped GPU kernels. Physical transfer duration and overlap remain unknown.",
+  "independent_studies": [
+    "V299 expert operand and accumulator audit",
+    "V300 historical one-user component calibration",
+    "V301 independent wrapper geometry and dense numerical attention"
+  ],
+  "pending_checks": {
+    "V93": {
+      "job_id": "75557c21595347de",
+      "status": "queued",
+      "mode": "check",
+      "users": 16,
+      "users_source": "accepted private-check receipt"
+    },
+    "V204": {
+      "job_id": "7fcdf9abf39b486a",
+      "status": "queued",
+      "mode": "check",
+      "users": 16,
+      "users_source": "accepted private-check receipt"
+    },
+    "V120b": {
+      "job_id": "a73535cda6bf4cac",
+      "status": "queued",
+      "mode": "check",
+      "users": 32,
+      "users_source": "official listing"
+    },
+    "V139": {
+      "job_id": "b013f83007d544d3",
+      "status": "queued",
+      "mode": "check",
+      "users": 4,
+      "users_source": "official listing"
+    }
+  },
+  "limits": {
+    "scored": {
+      "per_day": 1,
+      "used": 0,
+      "left": 1
+    },
+    "checks": {
+      "per_day": 3,
+      "used": 3,
+      "left": 0
+    }
+  },
+  "new_submissions": 0,
+  "paid_allocations": 0,
+  "unmeasured": [
+    "eight-H200 generated-token agreement",
+    "stock-relative peak memory",
+    "time to first token by load",
+    "throughput frontier by load",
+    "V298 real backup frequency and overlap"
+  ],
+  "evidence": {
+    "serving_v0523/candidates/v299_four_slice_decode/independent_chain.json": "6032d6813fa743f57814cd9e1a2fe89abfba06fd64c39cf91daecb9ab590e891",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/interpreter.json": "10006474fbfe76b3ba4979e07650da246dddebc0c0a56c5ff9ee83132f86663f",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/capture_sm90.json": "3f8c131597041f8768a340c220f107bec2443cd6485b1b2dad70b3480b135c03",
+    "serving_v0523/candidates/v302_decode_verify_partitions/integrated_dispatch.json": "e15035731004f1150b6616761ae5f60626f8bd5943e3e5f63ad0f8cbd15e621a",
+    "serving_v0523/candidates/v302_decode_verify_partitions/judge_observation.json": "9037cdbb01e854e0ec6a774ac19d3d42c8c4cac90815ab1da8432a8af71f3e67",
+    "serving_v0523/candidates/v298_mapped_page_first_backup/exposure.json": "dcd7a97808bbefa578c164802772264072c3338bbf597e4277cd1c7c4fe76d0c",
+    "serving_v0523/candidates/v300_verify_component_calibration/check.json": "24388cce6a506dc8c9b7cb89633171d470c29a49313e638f01509bb1d30afe64",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/capacity_sensitivity.json": "f19a07a3de1a1fb6bd0af8130546bccaab0c3ae4754a14537d9a537faa347222"
+  },
+  "cleanup_receipts": [
+    "serving_v0523/candidates/v298_mapped_page_first_backup/cleanup.json",
+    "serving_v0523/candidates/v298_mapped_page_first_backup/guest_cleanup.json",
+    "serving_v0523/candidates/v299_four_slice_decode/cleanup.json",
+    "serving_v0523/candidates/v299_four_slice_decode/guest_cleanup.json",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/capture_cleanup.json",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/export_cleanup.json",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/guest_cleanup.json",
+    "serving_v0523/candidates/v301_bounded_verify_partitions/reservation_cleanup.json",
+    "serving_v0523/candidates/v302_decode_verify_partitions/cleanup.json"
+  ]
+}

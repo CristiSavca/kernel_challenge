@@ -1,0 +1,51 @@
+{
+  "candidate": "V254",
+  "parent": "V68",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_tree": "f9966bf0dfca287d58d8d24ea2d055b3c2162702",
+  "tree": "3abcbf0e5adbe7d2685e12a1abc26dcb39f06031",
+  "parent_sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+  "patch_sha256": "024363a36b759f212e4cf2b5c722cc846c462cad50fdaf6771071f114110b52b",
+  "delta_sha256": "3fa0c56dab2f7629ce35ff2d15b1d7a2b28c4180da1d9c7899d9e17f84a34b38",
+  "bytes": 99841,
+  "delta_bytes": 15155,
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/routing.cuh",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/moe/muse_spark_routing.py",
+    "python/sglang/kernels/ops/moe/muse_spark_routing_jit.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/jit/csrc/muse_spark/routing.cuh",
+    "python/sglang/kernels/ops/moe/muse_spark_routing.py",
+    "python/sglang/kernels/ops/moe/muse_spark_routing_jit.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "forbidden_flag_patterns": 76,
+  "max_added_line_chars": 124,
+  "strict_apply_reverse_full_delta": true,
+  "official_export": "okc serve diff",
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "physical_H200": false,
+  "submitted": false
+}

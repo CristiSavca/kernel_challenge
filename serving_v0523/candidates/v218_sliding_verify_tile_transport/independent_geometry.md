@@ -1,0 +1,27 @@
+# V218 target sliding verification
+
+The pinned target has 46 sliding layers with 16 query heads, two KV heads and head dimension 64 per rank at TP8. Both the target model getter and each sliding RadixAttention layer subtract one from the 2,048-token configured window. The backend and layer therefore agree on a 2,047-token left limit. An eight-query block over a long request needs 2,055 unique keys and values, or 526,080 bytes of E4M3 KV per layer per GPU. At 16 and 32 requests the 46 sliding layers read 387.2 MB and 774.4 MB respectively. Compute, split count and logical payload still apply. [Published dimensions](../../../muse_attention_decode/TASK.md) · [Candidate delta](delta.diff)
+
+## Reachability
+
+The archived V41 H200 log shows a static SWAKVPool, 841,327 sliding tokens backed after graph capture, and target graph captures at all four scored loads. Its server info records FA3, FP8 E4M3, page one, DFLASH width eight and top-k one, TP8, and enabled decode graphs. V215’s six flags retain these settings. The pinned static allocator allocates full and SWA slots separately and writes a full-to-SWA token mapping. The backend reads the appropriate sliding bank with each layer ID. The static translator leaves the full table in logical/full slot space and the fused replay metadata kernel explicitly translates the sliding table. Ordinary target-verify capture binds a batch-sliced view of its persistent certificate tensor. Replay rewrites the live certificates using those **translated** slots, before a sliding layer binds the same table and matching window to its paged attention. The certificate store needs 34 int32 words per request, or 4,352 bytes per GPU at 32. [Archived server info](../../../experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__server_info.json) · [Allocator, capture and backing log](../../../experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__server.log) · [V215 flags](../v215_decode_reduction_paired_context/flags.json)
+
+Checking all 64 translated rows rejects interior discontinuities, sink slot zero, and partially visible boundary tiles. Each consumption checks the bank capacity again. Relative offsets count from the start of the widest possible query window. The scalar run planner matched an absolute-tile oracle over 5,056 narrow, full-width and empty rows spanning 109,264 tiles, including remapped interiors and truncated capacities. The top-level backend routes ragged verify to its existing attention implementation. Ordinary prompt, mixed EXTEND, eager metadata without certificates, and unified or sharded KV pools have no sliding descriptor entry under these guards. [Frozen patch](patch.diff) · [Scalar oracle and result](independent_geometry.json)
+
+## Allocator sensitivity
+
+The replay used all 767 archived first and subsequent prompt lengths, grouped into 91 same-turn cohorts. It reuses the pinned two-pool allocator, page-one free-list selection, full-to-SWA mapping assignment, two-block reservation sizing, and V218’s actual scalar run body. NumPy represents the CPU integer tensors and bit masks. Each modeled request starts with a freshly allocated recent prompt suffix at its original logical position. Full slots are shuffled independently of SWA slots. Later snapshots use one round of host lag, synthetic 1–7 committed rows per step, and remove finished requests. Physical judge addresses, shared-prefix cache ownership, sequence of evictions and original request interleaving were unavailable. [Reproducer](independent_geometry.py) · [Complete counts](independent_geometry.json)
+
+The table gives the percentage of **live K/V payload bytes** in certified whole tiles at 347 later snapshots. Each shuffled case starts with a randomly phased permutation of equal-size contiguous SWA runs.
+
+| Initial SWA free list | 1 user | 4 users | 16 users | 32 users |
+| --- | ---: | ---: | ---: | ---: |
+| Fresh | 96.92% | 92.46% | 92.32% | 92.33% |
+| 4,096-row runs | 96.26% | 91.45% | 90.99% | 90.99% |
+| 256-row runs | 74.57% | 70.17% | 69.47% | 69.53% |
+| 64-row runs | 6.65% | 2.58% | 2.05% | 1.96% |
+| 32-row runs | 0.00% | 0.00% | 0.00% | 0.00% |
+
+V218 groups consecutive tiles with the same transport within each request/partition. At one request all 4,634 later intersections contained a single tile. At four requests none of the direct runs reached four tiles. The 16- and 32-user fresh cases placed 94.50% and 97.17% of direct tiles in runs of at least four. At 32 users with shuffled 256-row runs the planner switched or restarted accumulation 5.74 times per intersection on average, counting each intersection’s initial run. This overhead and short runs can limit the gain. [Run counts](independent_geometry.json)
+
+The separate H200 attention challenge measured 29.31 versus 11.40 µs for a complete 16-user sliding layer under two different implementations. Across 46 layers that difference would be 0.824 ms. V68’s private serving receipt reported acceptance four and median decode rate 48 tokens/s/user, giving an illustrative 83.3 ms period. Neither measurement times V215’s sliding attention or V218’s transport. Actual dispatch coverage, GPU timing and served throughput require a matched H200 measurement. [Independent attention benchmark](../../../experiments/candidates/muse_attention_decode/profiles/87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c.c21d391dbf604bb5.json) · [Serving receipt](../../runs/04b01f958aa5487c.json)

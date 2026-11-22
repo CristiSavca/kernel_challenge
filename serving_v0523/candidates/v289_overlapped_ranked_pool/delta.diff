@@ -1,0 +1,131 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 70975ed..724d239 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -580,2 +580,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         ranked_pool: bool = False,
++        ranked_work=None,
+     ) -> torch.Tensor:
+@@ -599,3 +600,6 @@ class MuseSpark1xFp4Experts(nn.Module):
+             if grouped_decode and self._post_expert_norm is post_expert_norm and self._post_expert_norm_weight is not None:
+-                ranked_staging = prepare_ranked_pool(self, packed, topk_ids, pre_expert_norm)
++                if ranked_work is None:
++                    ranked_staging = prepare_ranked_pool(self, packed, topk_ids, pre_expert_norm)
++                else:
++                    ranked_staging = ranked_work[0]
+             if ranked_staging is None:
+@@ -625,2 +629,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+                     **({"ranked_staging": ranked_staging} if ranked_staging is not None else {}),
++                    **({"decode_plan": ranked_work[1]} if ranked_work is not None and ranked_staging is not None else {}),
+                 )
+@@ -766,2 +771,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         ranked_pool: bool = False,
++        ranked_work=None,
+     ) -> torch.Tensor:
+@@ -776,2 +782,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 **({"ranked_pool": True} if ranked_pool else {}),
++                **({"ranked_work": ranked_work} if ranked_work is not None else {}),
+             )
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index a0d8c33..929f2c2 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -304,22 +304,15 @@ def prepare_ranked_pool(layer, packed, topk_ids, norm):
+ 
+-def humming_grouped_decode_outputs(
+-    layer: MuseSpark1xFp4Experts,
+-    hidden_states: torch.Tensor,
+-    topk_ids: torch.Tensor,
+-    *,
+-    ranked_staging=None,
+-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+-    """Run local grouped GEMMs with a device-built suffix and static addresses."""
+-    from humming.layer import HummingMethod
++def allocate_decode_plan(source, rows, topk, experts):
++    local_ids = source.new_empty((rows, topk), dtype=torch.int32)
++    offsets = local_ids.new_empty(experts + 1)
++    row_keys = local_ids.new_empty(rows * topk)
++    row_map = torch.empty_like(local_ids)
++    return local_ids, offsets, row_keys, row_map
+ 
+-    hidden_size = hidden_states.shape[1]
+-    intermediate = layer.intermediate_size_per_partition
+-    topk = topk_ids.shape[1]
++
++def fill_decode_plan(layer, topk_ids, plan):
++    local_ids, offsets, row_keys, row_map = plan
++    experts = layer.num_local_experts
+     slots = topk_ids.numel()
+     span = triton.next_power_of_2(slots)
+-    experts = layer.num_local_experts
+-    local_ids = torch.empty_like(topk_ids, dtype=torch.int32)
+-    offsets = local_ids.new_empty(experts + 1)
+-    row_keys = local_ids.new_empty(slots)
+-    row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+@@ -340,2 +333,25 @@ def humming_grouped_decode_outputs(
+     )
++
++
++def humming_grouped_decode_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    topk_ids: torch.Tensor,
++    *,
++    ranked_staging=None,
++    decode_plan=None,
++) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
++    """Run local grouped GEMMs with a device-built suffix and static addresses."""
++    from humming.layer import HummingMethod
++
++    hidden_size = hidden_states.shape[1]
++    intermediate = layer.intermediate_size_per_partition
++    topk = topk_ids.shape[1]
++    slots = topk_ids.numel()
++    span = triton.next_power_of_2(slots)
++    experts = layer.num_local_experts
++    if decode_plan is None:
++        decode_plan = allocate_decode_plan(topk_ids, *topk_ids.shape, experts)
++        fill_decode_plan(layer, topk_ids, decode_plan)
++    local_ids, offsets, row_keys, row_map = decode_plan
+     staging = hidden_states.new_empty(slots * intermediate)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 3d26afa..599b631 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -875,2 +875,16 @@ class MuseSpark1xMoE(nn.Module):
+         side_stream = self._side_stream() if use_side_stream else None
++        plan_buffers = None
++        ranked_work = None
++        if (
++            ranked_pool and grouped_decode and column_group is not None and not sp_active
++            and use_side_stream and not torch.compiler.is_compiling() and torch.cuda.is_current_stream_capturing()
++        ):
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                _MAX_DECODE_SLOTS, allocate_decode_plan, fill_decode_plan, prepare_ranked_pool,
++            )
++
++            rows = hidden_states.shape[0]
++            if 0 < rows * self.top_k <= _MAX_DECODE_SLOTS:
++                # Allocate on the consuming stream before the routing stream forks.
++                plan_buffers = allocate_decode_plan(hidden_states, rows, self.top_k, self.experts.num_local_experts)
+         if use_side_stream:
+@@ -919,4 +933,14 @@ class MuseSpark1xMoE(nn.Module):
+             )
++            if (
++                use_ranked_pool and plan_buffers is not None
++                and topk_ids.shape == plan_buffers[0].shape and topk_ids.device == plan_buffers[0].device
++            ):
++                # Only inspect packed tensor metadata here. Its data arrives on the main stream.
++                staging = prepare_ranked_pool(self.experts, expert_input, topk_ids, self.pre_expert_norm)
++                if staging is not None:
++                    fill_decode_plan(self.experts, topk_ids, plan_buffers)
++                    ranked_work = staging, plan_buffers
+         if use_side_stream:
+             main_stream.wait_stream(side_stream)
++        plan_buffers = None
+         if use_side_stream and not torch.cuda.is_current_stream_capturing():
+@@ -956,2 +980,3 @@ class MuseSpark1xMoE(nn.Module):
+                 **({"ranked_pool": True} if use_ranked_pool else {}),
++                **({"ranked_work": ranked_work} if ranked_work is not None else {}),
+             )

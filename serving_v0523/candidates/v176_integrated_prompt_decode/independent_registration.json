@@ -1,0 +1,85 @@
+{
+  "tree": "f1ed4dd4f1d567819e193b8c437717424ace0e9d",
+  "patch_sha256": "08e5e126fe79b5fb37e706a8cbf8c8fdc449ef6794500200928f350462c44eb6",
+  "msgspec": "0.22.0",
+  "flagged_cli_permutations": 32,
+  "original_server_positionals": 546,
+  "relevant_native_namespace_fields_tested": 168,
+  "default_false": [
+    "muse_sparse_prompt_exchange",
+    "speculative_dflash_sp_prefill_context",
+    "speculative_dflash_share_verify_schedule"
+  ],
+  "dataclass_signatures": {
+    "ForwardBatch": {
+      "original_positional_parameters": 131,
+      "tail": [
+        "forward_metadata_replan_equivalent",
+        "_fa3_verify_schedules"
+      ]
+    },
+    "LogitsProcessorOutput": {
+      "original_positional_parameters": 24,
+      "tail": [
+        "auxiliary_device_output",
+        "dflash_prefill_context_done"
+      ]
+    }
+  },
+  "platform_matrix": {
+    "case_count": 80,
+    "accepted": 7,
+    "rejected": 73
+  },
+  "medium_hopper": {
+    "multirow_W13": {
+      "shared_bytes": 45600,
+      "registers": 53,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "multirow_W2": {
+      "shared_bytes": 35872,
+      "registers": 55,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    }
+  },
+  "optional_Humming_AOT_cubin_bytes": 312992,
+  "prompt_shared_bytes_by_tile": {
+    "8192_176.cu": 128000,
+    "4096_176.cu": 128000,
+    "8192_136.cu": 107520,
+    "4096_136.cu": 107520,
+    "8192_152.cu": 115712,
+    "4096_152.cu": 115712
+  },
+  "donor_line_comparison": {
+    "donor_operations": 825,
+    "extra_operations": 1,
+    "extra": "empty line around the appended ForwardBatch field",
+    "donors": {
+      "V168": "95816b34347ec23816b3def52e99265449ce0c8df523e0a36f587603ae57b574",
+      "V169": "3668c7c494d96d010001deb597ed68db4b0564909182b5c0936060e5b3ea4a08",
+      "V171": "6f4022bd2d3f4d2a9294bf961980bf7c1eb391f83f9dccea020c84a50befacf9",
+      "V172": "ba8bff16c3e03e8f39160812d839564d2da4e6b477a3e3579f23aaef50f7ae26",
+      "V174": "7dcbcb538043c14a0c525a9a419c1d92b25dfa23666faae109b82b4df3cd1374"
+    }
+  },
+  "pinned_direct_ForwardBatch_calls_all_keywords": 80,
+  "scored_v64_gpu_memory": {
+    "limit_gb": 2,
+    "over_stock_gb": 1.9
+  },
+  "medium_routed_tensor_bytes": {
+    "16": {
+      "bf16_activations_and_outputs": 16777216,
+      "local_int32_expert_plan": 131200
+    },
+    "32": {
+      "bf16_activations_and_outputs": 33554432,
+      "local_int32_expert_plan": 262272
+    }
+  },
+  "hardware_test": false
+}

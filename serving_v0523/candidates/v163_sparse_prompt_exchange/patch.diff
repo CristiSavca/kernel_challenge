@@ -1,0 +1,1190 @@
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index ed451fd..3e2e3c1 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -21,6 +21,7 @@ def _post_expert_norm_weighted_sum_kernel(
+     HAS_WEIGHT: tl.constexpr,
+     WEIGHT_FIRST: tl.constexpr,
+     HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr,
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
+ ):
+@@ -34,10 +35,16 @@ def _post_expert_norm_weighted_sum_kernel(
+     acc = tl.zeros([BLOCK_H], dtype=tl.float32)
+ 
+     for k in tl.static_range(TOPK):
+-        base = (tok * TOPK + k) * H
++        slot = tok * TOPK + k
+         live = True
+-        if HAS_IDS:
+-            live = tl.load(ids_ptr + tok * TOPK + k) >= 0
++        if HAS_ROW_MAP:
++            row = tl.load(ids_ptr + slot)
++            live = row >= 0
++            base = row.to(tl.int64) * H
++        else:
++            base = slot * H
++            if HAS_IDS:
++                live = tl.load(ids_ptr + slot) >= 0
+         if live:
+             x = tl.load(x_ptr + base + offs, mask=mask, other=0.0).to(tl.float32)
+ 
+@@ -55,7 +62,7 @@ def _post_expert_norm_weighted_sum_kernel(
+             else:
+                 y = x
+ 
+-            s = tl.load(s_ptr + tok * TOPK + k).to(tl.float32)
++            s = tl.load(s_ptr + slot).to(tl.float32)
+             product = y * s
+             if ROUND_PRODUCT:
+                 product = product.to(x_ptr.dtype.element_ty).to(tl.float32)
+@@ -73,18 +80,39 @@ def fused_post_expert_norm_weighted_sum(
+     apply_norm: bool = True,
+     slot_expert_ids: Optional[torch.Tensor] = None,
+     round_product: bool = False,
++    *,
++    slot_row_indices: Optional[torch.Tensor] = None,
++    out: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+     """Normalize and combine experts without reading inactive slots.
+ 
+     round_product preserves input-dtype multiplication before FP32 accumulation
+     when combining an already normalized low-precision tensor.
++
++    With slot_row_indices, expert_output contains only local routes. The
++    [tokens, topk] map supplies an input row index or -1 for each slot.
++    out, when supplied, is a caller-owned contiguous [tokens, hidden] tensor.
+     """
+     x = expert_output.contiguous()
+-    tokens, topk, hidden = x.shape
+-    out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++    has_out = out is not None
++    if slot_row_indices is None:
++        tokens, topk, hidden = x.shape
++        if out is None:
++            out = torch.empty((tokens, hidden), dtype=x.dtype, device=x.device)
++        slot_ids = slot_expert_ids
++    else:
++        assert slot_expert_ids is None and out is not None
++        tokens, topk = slot_row_indices.shape
++        _, hidden = x.shape
++        slot_ids = slot_row_indices
+     if tokens == 0:
+         return out
+-    if tokens < _MIN_TOKENS_FOR_FUSED and slot_expert_ids is None and not round_product:
++    if (
++        tokens < _MIN_TOKENS_FOR_FUSED
++        and slot_ids is None
++        and not round_product
++        and not has_out
++    ):
+         y = x
+         if apply_norm:
+             f = y.float()
+@@ -108,7 +136,7 @@ def fused_post_expert_norm_weighted_sum(
+         norm_weight.contiguous() if norm_weight is not None else x,
+         topk_scores.contiguous(),
+         out,
+-        slot_expert_ids.contiguous() if slot_expert_ids is not None else x,
++        slot_ids.contiguous() if slot_ids is not None else x,
+         TOPK=topk,
+         H=hidden,
+         eps=eps,
+@@ -116,6 +144,7 @@ def fused_post_expert_norm_weighted_sum(
+         HAS_WEIGHT=norm_weight is not None,
+         WEIGHT_FIRST=weight_first,
+         HAS_IDS=slot_expert_ids is not None,
++        HAS_ROW_MAP=slot_row_indices is not None,
+         ROUND_PRODUCT=round_product,
+         BLOCK_H=block_h,
+         num_warps=8 if block_h >= 4096 else 4,
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..5e7b535 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -552,5 +552,6 @@ POSITIONAL_FIELD_ORDER = (
+     "enable_return_aux_hidden_states",
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
++    "muse_sparse_prompt_exchange",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/parallel.py b/python/sglang/srt/arg_groups/fields/parallel.py
+index 9bd0b1c..7dfdc42 100644
+--- a/python/sglang/srt/arg_groups/fields/parallel.py
++++ b/python/sglang/srt/arg_groups/fields/parallel.py
+@@ -239,6 +239,10 @@ class Parallel(msgspec.Struct):
+         bool,
+         "Shard dense MLP weights across the attention TP group under DP attention.",
+     ] = False
++    muse_sparse_prompt_exchange: A[
++        bool,
++        "Send pooled sequence-parallel prompt rows only to ranks owning one of their routed Muse experts.",
++    ] = False
+     enable_layernorm_sp: A[
+         bool,
+         "Enable Megatron-style sequence parallelism (arXiv:2205.05198) for the "
+diff --git a/python/sglang/srt/arg_groups/layernorm_sp_hook.py b/python/sglang/srt/arg_groups/layernorm_sp_hook.py
+index 9b5da34..e85741b 100644
+--- a/python/sglang/srt/arg_groups/layernorm_sp_hook.py
++++ b/python/sglang/srt/arg_groups/layernorm_sp_hook.py
+@@ -42,6 +42,24 @@ def handle_layernorm_sp(server_args: ServerArgs) -> None:
+     if architectures and architectures[0] in ("MuseSparkForConditionalGeneration",):
+         from sglang.srt.environ import envs
+ 
++        if cfg.moe_runner_backend in ("marlin", "humming"):
++            from sglang.srt.utils.common import get_device_capability, is_cuda
++
++            if not (is_cuda() and get_device_capability() == (9, 0)):
++                raise ValueError("Muse W4A16 LayerNorm SP requires NVIDIA Hopper.")
++            if cfg.attn_cp_size != 1 or cfg.dcp_size != 1 or cfg.enable_prefill_cp:
++                raise ValueError("Muse W4A16 LayerNorm SP requires no context parallelism.")
++            if cfg.enable_attn_tp_input_scattered or cfg.enable_mixed_chunk:
++                raise ValueError(
++                    "Muse W4A16 LayerNorm SP requires ordinary prefill and unscattered TP input."
++                )
++            if (
++                cfg.enable_deterministic_inference
++                or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            ):
++                raise ValueError("Muse W4A16 LayerNorm SP requires nondeterministic collectives.")
++            return
++
+         if use_megamoe:
+             if cfg.enable_mixed_chunk:
+                 raise ValueError(
+@@ -138,13 +156,14 @@ def validate_layernorm_sp(
+             "shard across a single TP rank."
+         )
+     if is_muse_spark_architecture(architecture):
++        use_w4a16 = moe_runner_backend in ("marlin", "humming")
+         if (tp_size, ep_size) not in ((4, 4), (8, 8)):
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires TP4/EP4 or TP8/EP8; "
+                 f"got TP{tp_size}/EP{ep_size}."
+             )
+         # MegaMoE shares TRT-LLM expert weights for both BF16 and NVFP4.
+-        # The standalone FlashInfer A2A path remains restricted to NVFP4.
++        # The FlashInfer A2A and standalone W4A16 paths require NVFP4.
+         if quantization != "modelopt_fp4" and not (
+             quantization is None and enable_megamoe_for_layernorm_sp
+         ):
+@@ -159,12 +178,17 @@ def validate_layernorm_sp(
+                     "Muse MegaMoE prefill requires --moe-a2a-backend none or flashinfer; "
+                     "MegaMoE performs its own dispatch/combine and decode uses all-reduce."
+                 )
++        elif use_w4a16:
++            if moe_a2a_backend != "none":
++                raise ValueError("Muse W4A16 LayerNorm SP requires --moe-a2a-backend none.")
+         elif moe_a2a_backend != "flashinfer":
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires "
+                 "--moe-a2a-backend flashinfer."
+             )
+-        if moe_runner_backend != "flashinfer_trtllm":
++        if moe_runner_backend != "flashinfer_trtllm" and not (
++            use_w4a16 and not enable_megamoe_for_layernorm_sp
++        ):
+             raise ValueError(
+                 "Muse Spark --enable-layernorm-sp requires "
+                 "--moe-runner-backend flashinfer_trtllm."
+diff --git a/python/sglang/srt/arg_groups/muse_spark_hook.py b/python/sglang/srt/arg_groups/muse_spark_hook.py
+index 2dd159c..9d39ea6 100644
+--- a/python/sglang/srt/arg_groups/muse_spark_hook.py
++++ b/python/sglang/srt/arg_groups/muse_spark_hook.py
+@@ -16,12 +16,14 @@ MUSE_SPARK_ARCHITECTURES = ("MuseSparkForConditionalGeneration",)
+ MUSE_SPARK_CHAT_TEMPLATE_FILE = "chat_template.jinja"
+ 
+ # Graph-pool and KV-sizing switches the reference launcher (sglang_meta) sets.
++# Out-of-window SWA slots keep the generic default (freed): 46 of Muse's 62 layers
++# are sliding-window, so pinning a running request's whole context in the SWA pool
++# caps how many long requests fit at once.
+ MUSE_SPARK_ENV_DEFAULTS = (
+     (envs.SGLANG_ENABLE_CUDA_GRAPH_DEDUP, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_BORROW, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_PRECARVE, True),
+     (envs.SGLANG_ENABLE_POST_CAPTURE_KV_SIZING, True),
+-    (envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS, False),
+ )
+ 
+ 
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 132715e..ea02720 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -35,6 +35,7 @@ nothing in this module executes.
+ 
+ from __future__ import annotations
+ 
++import os
+ from typing import Optional
+ 
+ import torch
+@@ -143,6 +144,29 @@ def sp_exit_gather(hidden_states: torch.Tensor, num_tokens: int) -> torch.Tensor
+     return output[:num_tokens]
+ 
+ 
++def reduce_scatter_token_rows(full: torch.Tensor, group) -> torch.Tensor:
++    """Shard a replicated SUM while retaining accelerated all-reduce precision."""
++    num_tokens = full.shape[0]
++    padded = ceil_align(num_tokens, group.world_size)
++    # Preserve the original dispatcher on accelerator paths that may accumulate
++    # in FP32. Check unpadded metadata so tails keep the original algorithm.
++    use_all_reduce = (
++        torch.compiler.is_compiling()
++        or group.is_symmetric_memory_enabled()
++        or os.environ.get("NCCL_NVLS_ENABLE", "1") != "0"
++        or group._can_use_flashinfer_allreduce(full)
++        or group._resolve_outplace_all_reduce_method(full) not in (None, "pynccl")
++    )
++    if use_all_reduce:
++        full = group.all_reduce(full)
++    if padded != num_tokens:
++        full = torch.nn.functional.pad(full, (0, 0, 0, padded - num_tokens))
++    if use_all_reduce:
++        rows = padded // group.world_size
++        return full.narrow(0, group.rank_in_group * rows, rows)
++    return group.reduce_scatter_along_dim(full, dim=0)
++
++
+ def maybe_exit_gather(
+     *,
+     hidden_states: torch.Tensor,
+@@ -192,7 +216,8 @@ def sp_fused_matmul_eligible(linear) -> bool:
+     depends only on static layer properties and is identical across TP ranks.
+     """
+     if (
+-        not (_HAS_TORCH_SYMM_MEM_FUSED or getattr(linear, "_sp_use_cutlass", False))
++        getattr(linear, "_sp_unfused_collective", False)
++        or not (_HAS_TORCH_SYMM_MEM_FUSED or getattr(linear, "_sp_use_cutlass", False))
+         or linear.bias is not None
+     ):
+         return False
+@@ -252,6 +277,11 @@ def row_parallel_gbar_matmul(linear, input_: torch.Tensor, bias) -> torch.Tensor
+     """
+     tp_size = linear.tp_group.world_size if linear.tp_group is not None else 1
+     x = input_.contiguous()
++    if getattr(linear, "_sp_unfused_collective", False):
++        group = linear.tp_group
++        with group.use_symmetric_memory(group):
++            full = linear.quant_method.apply(linear, x, bias)
++        return reduce_scatter_token_rows(full, group)
+     num_tokens = x.shape[0]
+     padded = ceil_align(num_tokens, tp_size)
+     if padded != num_tokens:
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 41c463d..b29a9ea 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -35,6 +35,12 @@ from sglang.srt.layers.muse_spark.muse_spark_nvfp4_moe import (
+     MuseSparkNvFp4FusedMoEMethod,
+ )
+ from sglang.srt.layers.quantization.base_config import QuantizationConfig
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import (
++    eager_on_graph,
++)
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context import (
++    is_in_breakable_cuda_graph,
++)
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+ 
+ if TYPE_CHECKING:
+@@ -51,6 +57,8 @@ _NVFP4_PER_TOKEN_SCALE_INV = 1.0 / (448.0 * 6.0)
+ 
+ _MARLIN_SHAPE_ALIGNMENT = 64
+ _MARLIN_BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
++# Amortize the routing sort, materialization, and graph break on larger batches.
++HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT = 256
+ 
+ 
+ def _resolve_moe_runner_backend():
+@@ -131,8 +139,14 @@ class MuseSpark1xFp4Experts(nn.Module):
+ 
+         capability = get_device_capability() if is_cuda() else None
+         self.use_marlin = self.moe_runner_backend.is_marlin()
++        self.use_humming = self.moe_runner_backend.is_humming()
++        if self.use_humming and (
++            capability != (9, 0) or self.params_dtype != torch.bfloat16
++        ):
++            raise ValueError("Muse Humming NVFP4 requires a Hopper GPU and BF16")
++        self.use_w4a16 = self.use_marlin or self.use_humming
+         self._sm_major = capability[0] if capability is not None else 0
+-        if not self.use_marlin and capability is not None and capability < (10, 0):
++        if not self.use_w4a16 and capability is not None and capability < (10, 0):
+             raise ValueError(
+                 f"--moe-runner-backend {self.moe_runner_backend.value} needs a "
+                 f"Blackwell (SM100+) device for packed NVFP4 experts, but this "
+@@ -160,7 +174,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         self._post_expert_norm_weight_first = True
+         self._fused_finalize_op = (
+             None
+-            if self.use_marlin
++            if self.use_w4a16
+             else FusedPostExpertNormWeightedSumTRTLLM(
+                 topk=top_k, hidden_dim=hidden_size, eps=1e-8, weight_first=False
+             )
+@@ -177,7 +191,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         self.register_buffer("_expert_map", expert_map, persistent=False)
+ 
+         self.quant_method = MuseSparkNvFp4FusedMoEMethod(quant_config)
+-        if not self.use_marlin and not self.quant_method.enable_flashinfer_trtllm_moe:
++        if not self.use_w4a16 and not self.quant_method.enable_flashinfer_trtllm_moe:
+             raise ValueError(
+                 "Packed NVFP4 experts need the FlashInfer TRT-LLM MoE backend, "
+                 "which prepares the shuffled FP4 weights this forward reads. "
+@@ -192,7 +206,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             params_dtype=self.params_dtype,
+             extra_weight_attrs={},
+         )
+-        if self.use_marlin:
++        if self.use_w4a16:
+             self.w13_blockscale_swizzled = None
+             self.w2_blockscale_swizzled = None
+ 
+@@ -229,7 +243,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             weight = torch.ones(
+                 self.hidden_size,
+                 dtype=torch.bfloat16,
+-                device=self.gate_up_proj.device,
++                device=self.gate_up_proj_input_scale.device,
+             )
+         object.__setattr__(self, "_post_expert_norm", post_expert_norm)
+         self._post_expert_norm_weight = weight.detach().to(torch.bfloat16)
+@@ -267,7 +281,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         post_expert_norm: Optional[nn.Module],
+     ) -> FlashinferCombineInput:
+         """Run expert-owned SP rows and build the BF16 A2A combine payload."""
+-        if self.use_marlin:
++        if self.use_w4a16:
+             raise ValueError(
+                 "Muse Spark sequence-parallel prefill dispatches the routed "
+                 "experts through the TRT-LLM FP4 MoE runner, which needs a "
+@@ -407,11 +421,17 @@ class MuseSpark1xFp4Experts(nn.Module):
+         local_topk_ids = local_topk_ids.contiguous()
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
++        # Expected routes per local expert. Under expert parallelism only
++        # num_local_experts / global_num_experts of the routes land on this rank.
++        routes_per_expert = num_tokens * topk / self.global_num_experts
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            if routes_per_expert / block_size_m < 0.9:
+                 break
+ 
+-        if num_tokens == 1 and topk <= 32 and expert_map is None:
++        # The ids are already local, with -1 for experts on other ranks, so align
++        # over the local experts. The -1 routes form the inactive prefix that the
++        # sorted Marlin kernels skip, with or without expert parallelism.
++        if num_tokens == 1 and topk <= 32:
+             from sglang.kernels.ops.moe.moe_align_single_token import (
+                 moe_align_single_token,
+             )
+@@ -422,16 +442,11 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 )
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids,
+                 block_size_m,
+-                align_num_experts,
+-                return_inactive_prefix_count=expert_map is None,
++                self.num_local_experts,
++                return_inactive_prefix_count=True,
+             )
+ 
+         # Both aligners emit ascending block IDs with inactive blocks first;
+@@ -468,7 +483,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=topk,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens,
+             size_n=gemm1_n,
+@@ -478,7 +493,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         )
+         silu_and_mul(
+             cache1.view(-1, gemm1_n),
+@@ -504,7 +519,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=1,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens * topk,
+             size_n=size_k,
+@@ -514,10 +529,48 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         ).view(num_tokens, topk, size_k), local_topk_ids
+ 
+-    def _forward_marlin(
++    def _grouped_humming_and_combine_impl(
++        self,
++        hidden_states: torch.Tensor,
++        local_topk_ids: torch.Tensor,
++        topk_scores: torch.Tensor,
++        output: torch.Tensor,
++        *,
++        input_row_map=None,
++        local_route_count=None,
++    ) -> None:
++        from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++            humming_grouped_expert_outputs,
++        )
++
++        values, ids = humming_grouped_expert_outputs(
++            self, hidden_states, local_topk_ids, input_row_map=input_row_map, local_route_count=local_route_count
++        )
++        if values.shape[0] == 0:
++            output.zero_()
++            return
++
++        compact = values.ndim == 2
++        fused_post_expert_norm_weighted_sum(
++            values,
++            topk_scores,
++            norm_weight=self._post_expert_norm_weight,
++            eps=self._post_expert_norm_eps,
++            weight_first=self._post_expert_norm_weight_first,
++            slot_expert_ids=None if compact else ids,
++            slot_row_indices=ids if compact else None,
++            out=output,
++        )
++
++    # Graph replay fills the fixed output using the current route counts.
++    _grouped_humming_and_combine = eager_on_graph(
++        True, capture_stub=lambda *args, **kwargs: None
++    )(_grouped_humming_and_combine_impl)
++
++    def _forward_w4a16(
+         self,
+         hidden_states: torch.Tensor,
+         topk_scores: torch.Tensor,
+@@ -527,7 +580,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+     ) -> torch.Tensor:
+         if post_expert_norm is None:
+             raise ValueError(
+-                "The NVFP4 Marlin fallback requires moe_use_post_expert_norm=True. "
++                "The NVFP4 W4A16 path requires moe_use_post_expert_norm=True. "
+                 "Marlin carries one NVFP4 global scale per expert, so "
+                 "w13_weight_scale_2 is collapsed to its gate column and every "
+                 "expert output picks up a constant gain 1/r with "
+@@ -538,11 +591,40 @@ class MuseSpark1xFp4Experts(nn.Module):
+             )
+         if pre_expert_norm is not None:
+             hidden_states = pre_expert_norm(hidden_states)
+-        expert_outputs, local_topk_ids = self._marlin_expert_outputs(
+-            hidden_states, topk_scores, topk_ids
+-        )
+         if self._post_expert_norm is not post_expert_norm:
+             self.set_post_expert_norm(post_expert_norm)
++        if self.use_humming:
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                humming_expert_outputs,
++                local_humming_expert_ids,
++            )
++
++            local_topk_ids = local_humming_expert_ids(self, topk_ids)
++            if (
++                self._post_expert_norm_weight is not None
++                and hidden_states.dtype == torch.bfloat16
++                and topk_ids.numel()
++                >= self.global_num_experts * HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++                and not torch.compiler.is_compiling()
++                and (
++                    not torch.cuda.is_current_stream_capturing()
++                    or is_in_breakable_cuda_graph()
++                )
++            ):
++                output = torch.empty_like(
++                    hidden_states, memory_format=torch.contiguous_format
++                )
++                self._grouped_humming_and_combine(
++                    hidden_states, local_topk_ids, topk_scores, output
++                )
++                return output
++            expert_outputs, local_topk_ids = humming_expert_outputs(
++                self, hidden_states, local_topk_ids
++            )
++        else:
++            expert_outputs, local_topk_ids = self._marlin_expert_outputs(
++                hidden_states, topk_scores, topk_ids
++            )
+         if self._post_expert_norm_weight is not None:
+             return fused_post_expert_norm_weighted_sum(
+                 expert_outputs,
+@@ -645,8 +727,8 @@ class MuseSpark1xFp4Experts(nn.Module):
+         *,
+         ar_workspace: FinalizePushWorkspace | None = None,
+     ) -> torch.Tensor:
+-        if self.use_marlin:
+-            return self._forward_marlin(
++        if self.use_w4a16:
++            return self._forward_w4a16(
+                 hidden_states,
+                 topk_scores,
+                 topk_ids,
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+new file mode 100644
+index 0000000..f8c8670
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -0,0 +1,306 @@
++"""Humming W4A16 experts for Muse's per-route finalization."""
++
++from __future__ import annotations
++
++import json
++from typing import TYPE_CHECKING
++
++import torch
++import triton
++import triton.language as tl
++
++if TYPE_CHECKING:
++    from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++
++
++_GROUPED_COMPUTE = json.dumps(
++    {"gemm_type": "grouped_contiguous", "use_f16_accum": False}
++)
++
++
++def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
++    """Replace the local checkpoint bank with packed Humming weights."""
++    from humming import dtypes
++    from humming.config import GemmType
++    from humming.kernel.humming import HummingKernel
++    from humming.layer import HummingMethod
++    from humming.schema.humming import HummingInputSchema, HummingWeightSchema
++    from humming.transform import transform_humming_tensors
++
++    if layer.quant_config.group_size != 16:
++        raise ValueError("Muse Humming NVFP4 requires groups of 16 weight elements")
++
++    input_schema = HummingInputSchema(a_dtype=dtypes.bfloat16)
++    weight_schema = HummingWeightSchema(
++        b_dtype=dtypes.float4e2m1,
++        bs_dtype=dtypes.float8e4m3,
++        weight_scale_group_size=16,
++    )
++    params = {}
++    tunings = {}
++    grouped_tunings = {}
++    for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
++        packed = getattr(layer, checkpoint_name)
++        scales = getattr(layer, f"{checkpoint_name}_weight_scale")
++        global_scale = getattr(layer, f"{checkpoint_name}_weight_scale_2")
++        experts, n, packed_k = packed.shape
++        k = packed_k * 2
++        if n % 256 or k % 128 or experts != layer.num_local_experts:
++            raise ValueError("Muse Humming requires aligned local expert matrices")
++        if packed.dtype != torch.uint8 or scales.dtype != torch.float8_e4m3fn:
++            raise ValueError("Muse Humming requires packed E2M1 and E4M3 scales")
++        if scales.shape != (experts, n, k // 16):
++            raise ValueError("Muse Humming received an incompatible scale shape")
++
++        # Reproduce Marlin's NVFP4 BF16 operand. Its E4M3 unpack maps all
++        # subnormal scales to zero and assumes non-negative finite scales.
++        scale_bytes = scales.view(torch.uint8)
++        if (scale_bytes > 0x7E).any().item():
++            raise ValueError("Muse Humming requires non-negative finite block scales")
++        scale_bytes = scale_bytes.masked_fill(scale_bytes < 8, 0)
++
++        meta = HummingMethod.prepare_layer_meta(
++            layer,
++            shape_n=n,
++            shape_k=k,
++            weight_schema=weight_schema,
++            input_schema=input_schema,
++            num_experts=experts,
++            torch_dtype=torch.bfloat16,
++            sublayer_name=name,
++        )
++        tensors = transform_humming_tensors(
++            meta,
++            {
++                "weight": packed.view(torch.int32),
++                "weight_scale": scale_bytes.view(torch.float8_e4m3fn),
++            },
++            already_padded=True,
++        )
++        params[meta.weight_name] = tensors["weight"]
++        params[meta.weight_scale_name] = tensors["weight_scale"]
++        # Stock Marlin collapses the gate/up global scales to the gate value
++        # and multiplies after the BF16 output cast. Preserve both boundaries.
++        if name == "w13" and global_scale.ndim == 2:
++            global_scale = global_scale[:, 0]
++        if global_scale.shape != (experts,):
++            raise ValueError("Muse Humming requires one global scale per expert")
++        params[f"{name}_global_scale"] = global_scale.to(torch.bfloat16).contiguous()
++
++        # Each Stream-K slice would be rounded to BF16 before its output
++        # reduction. Keep a complete FP32 accumulation in each output tile.
++        tunings[name] = tuple(
++            (maximum, config | {"use_stream_k": False})
++            for _, maximum, config in HummingMethod.get_default_tuning_configs(
++                layer, gemm_type=GemmType.INDEXED, sublayer_name=name
++            )
++        )
++
++        grouped = HummingMethod.get_default_tuning_configs(
++            layer, gemm_type=GemmType.GROUPED_CONTIGUOUS, sublayer_name=name
++        )[-1][2]
++        grouped_tunings[name] = json.dumps(
++            grouped | {"use_stream_k": False, "use_tma_c": False}
++        )
++        # Dummy graph routes can be empty or concentrated on one EP rank.
++        # Compile the large-batch kernels while the model loads on every rank.
++        HummingKernel.prepare_kernels(
++            meta.to_str(), _GROUPED_COMPUTE, grouped_tunings[name]
++        )
++
++    for name, tensor in params.items():
++        setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
++    for name in ("gate_up_proj", "down_proj"):
++        delattr(layer, name)
++        delattr(layer, f"{name}_weight_scale")
++        delattr(layer, f"{name}_weight_scale_2")
++    layer.humming_indexed_tunings = tunings
++    layer.humming_grouped_tunings = grouped_tunings
++
++
++@triton.jit
++def _scale_live_routes(
++    values,
++    scales,
++    flat_ids,
++    sorted_ids,
++    padded,
++    slots,
++    WIDTH: tl.constexpr,
++    BLOCK: tl.constexpr,
++):
++    column = tl.arange(0, BLOCK)
++    count = tl.load(padded)
++    for position in range(tl.program_id(0), count, tl.num_programs(0)):
++        slot = tl.load(sorted_ids + position)
++        if 0 <= slot and slot < slots:
++            expert = tl.load(flat_ids + slot)
++            scale = tl.load(scales + expert).to(tl.float32)
++            offset = slot.to(tl.int64) * WIDTH + column
++            value = tl.load(values + offset, mask=column < WIDTH, other=0)
++            rounded = (value.to(tl.float32) * scale).to(tl.bfloat16)
++            tl.store(values + offset, rounded, mask=column < WIDTH)
++
++
++def local_humming_expert_ids(
++    layer: MuseSpark1xFp4Experts, topk_ids: torch.Tensor
++) -> torch.Tensor:
++    from sglang.srt.layers.moe.token_dispatcher.standard import (
++        _map_topk_ids_to_local_experts,
++    )
++
++    local_ids = topk_ids.to(torch.int32)
++    if layer._expert_map is not None:
++        local_ids = _map_topk_ids_to_local_experts(local_ids, layer._expert_map)
++    return local_ids.contiguous()
++
++
++def humming_expert_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    local_ids: torch.Tensor,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """Produce BF16 outputs for local expert slots in original route order."""
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.activation.activation import silu_and_mul
++    from sglang.srt.layers.moe.fused_moe_triton import moe_align_block_size
++
++    num_tokens, hidden_size = hidden_states.shape
++    topk = local_ids.shape[1]
++    if num_tokens == 0:
++        return hidden_states.new_empty((0, topk, hidden_size)), local_ids
++    if hidden_states.dtype != torch.bfloat16:
++        raise ValueError("Muse Humming NVFP4 expects BF16 activations")
++    flat_ids = local_ids.flatten()
++    num_slots = flat_ids.numel()
++    estimated_local_routes = max(
++        1, num_slots * layer.num_local_experts // layer.global_num_experts
++    )
++    intermediate = layer.intermediate_size_per_partition
++    activations = hidden_states.new_empty((num_slots, intermediate))
++    cache = hidden_states.new_empty((num_slots * max(2 * intermediate, hidden_size),))
++    gate_up = cache[: num_slots * 2 * intermediate].view(num_slots, 2 * intermediate)
++    outputs = cache[: num_slots * hidden_size].view(num_slots, hidden_size)
++
++    alignments = {}
++    for name, inputs, result, route_width in (
++        ("w13", hidden_states, gate_up, topk),
++        ("w2", activations, outputs, 1),
++    ):
++        tuning = next(
++            config
++            for maximum, config in layer.humming_indexed_tunings[name]
++            if estimated_local_routes <= maximum
++        )
++        block_m = tuning["block_shape"][0]
++        if block_m not in alignments:
++            alignments[block_m] = moe_align_block_size(
++                local_ids, block_m, layer.num_local_experts, ignore_invalid_expert=True
++            )
++        sorted_ids, expert_ids, padded = alignments[block_m]
++        HummingMethod.forward_layer(
++            layer,
++            inputs=inputs,
++            outputs=result,
++            sorted_ids=sorted_ids,
++            expert_ids=expert_ids,
++            num_tokens_padded=padded,
++            top_k=route_width,
++            valid_shape_m=estimated_local_routes,
++            compute_config={"gemm_type": "indexed", "use_f16_accum": False},
++            tuning_config=tuning,
++            sublayer_name=name,
++        )
++        # Indexed alignment omits remote routes. Scale only the GEMM rows that
++        # were written, leaving both remote slots and expert padding untouched.
++        width = result.shape[1]
++        _scale_live_routes[(min(sorted_ids.numel(), 1024),)](
++            result,
++            getattr(layer, f"{name}_global_scale"),
++            flat_ids,
++            sorted_ids,
++            padded,
++            num_slots,
++            WIDTH=width,
++            BLOCK=triton.next_power_of_2(width),
++            num_warps=8 if width >= 4096 else 4,
++        )
++        if name == "w13":
++            silu_and_mul(gate_up, activations, expert_ids=flat_ids, expert_step=1)
++
++    return outputs.view(num_tokens, topk, hidden_size), local_ids
++
++
++def humming_grouped_expert_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    local_ids: torch.Tensor,
++    *,
++    input_row_map=None,
++    local_route_count=None,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """Return expert outputs and their original route indices for finalization."""
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.activation.activation import silu_and_mul
++
++    _, hidden_size = hidden_states.shape
++    topk = local_ids.shape[1]
++    route_experts, slots = local_ids.flatten().sort(stable=True)
++    experts = torch.arange(
++        layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
++    )
++    offsets = torch.searchsorted(route_experts, experts, out_int32=True)
++    first_local = offsets[0].item() if local_route_count is None else slots.numel() - local_route_count
++    num_routes = slots.numel() - first_local
++    if num_routes == 0:
++        return hidden_states.new_empty((0, hidden_size)), local_ids
++
++    intermediate = layer.intermediate_size_per_partition
++    stage_width = max(hidden_size, intermediate)
++    output_width = max(2 * intermediate, hidden_size)
++    if num_routes * (stage_width + output_width) > slots.numel() * (
++        intermediate + output_width
++    ):
++        return humming_expert_outputs(layer, hidden_states, local_ids)
++
++    slots = slots[first_local:]
++    route_experts = route_experts[first_local:].long()
++    offsets = offsets - first_local
++    staging = hidden_states.new_empty(num_routes * stage_width)
++    arena = hidden_states.new_empty(num_routes * output_width)
++    inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
++    gate_up = arena[: num_routes * 2 * intermediate].view(num_routes, 2 * intermediate)
++    activations = staging[: num_routes * intermediate].view(num_routes, intermediate)
++    outputs = arena[: num_routes * hidden_size].view(num_routes, hidden_size)
++    source_rows = torch.div(slots, topk, rounding_mode="floor")
++    if input_row_map is not None:
++        source_rows = input_row_map.index_select(0, source_rows)
++    torch.index_select(hidden_states, 0, source_rows, out=inputs)
++
++    for name, source, destination in (
++        ("w13", inputs, gate_up),
++        ("w2", activations, outputs),
++    ):
++        HummingMethod.forward_layer(
++            layer,
++            inputs=source,
++            outputs=destination,
++            expert_layout=offsets,
++            compute_config=_GROUPED_COMPUTE,
++            tuning_config=layer.humming_grouped_tunings[name],
++            sublayer_name=name,
++        )
++        scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
++        destination.mul_(scales.unsqueeze(1))
++        if name == "w13":
++            silu_and_mul(gate_up, activations)
++
++    mapped_rows = torch.full_like(local_ids, -1)
++    mapped_rows.view(-1).index_copy_(
++        0,
++        slots,
++        torch.arange(num_routes, dtype=mapped_rows.dtype, device=mapped_rows.device),
++    )
++    return outputs, mapped_rows
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
+index f3acc41..b26abdb 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py
+@@ -84,6 +84,8 @@ def _align_fp4_moe_weights_for_flashinfer_trtllm(layer) -> None:
+ class MuseSparkNvFp4FusedMoEMethod(ModelOptNvFp4FusedMoEMethod):
+     """Prepare Muse FP4 experts without process-global mutation or duplication."""
+ 
++    _supports_humming_nvfp4 = True
++
+     def create_weights(
+         self,
+         layer,
+@@ -141,6 +143,12 @@ class MuseSparkNvFp4FusedMoEMethod(ModelOptNvFp4FusedMoEMethod):
+     def process_weights_after_loading(self, layer):
+         """Prepare the TRT-LLM layout from native HF parameters in place."""
+         backend = getattr(self, "_moe_runner_backend", None)
++        if backend is not None and backend.is_humming():
++            from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                prepare_humming_nvfp4,
++            )
++
++            return prepare_humming_nvfp4(layer)
+         if backend is not None and backend.is_marlin():
+             return self._process_weights_for_marlin(layer)
+         input_scale = layer.gate_up_proj_input_scale.max().float()
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+new file mode 100644
+index 0000000..8a3cd79
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -0,0 +1,120 @@
++"""Exchange sequence-parallel prompt rows needed by each local Humming expert bank."""
++
++import torch
++import torch.distributed as dist
++from torch import nn
++
++from sglang.srt.layers import layernorm_sp
++from sglang.srt.layers.muse_spark.muse_spark_humming_moe import local_humming_expert_ids
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import eager_on_graph
++
++
++def _group_width(counts, padded_rows):
++    """Choose the widest exchange whose activation buffers fit one dense gather."""
++    size = len(counts)
++    incoming = [sum(source[rank] for source in counts) for rank in range(size)]
++    remote = sum(incoming) - sum(counts[rank][rank] for rank in range(size))
++    if remote >= padded_rows * (size - 1):
++        return 0
++    width = size
++    while width:
++        fits = all(
++            incoming[src] + sum(counts[src][first:first + width]) <= padded_rows
++            for src in range(size) for first in range(0, size, width)
++        )
++        if fits:
++            return width
++        width //= 2
++    return 0
++
++
++def _exchange_inputs(shard, needs, counts, width, group):
++    size, rank = group.world_size, group.rank_in_group
++    shard_rows, hidden = shard.shape
++    first_row = rank * shard_rows
++    receive_splits = [source[rank] for source in counts]
++    received = shard.new_empty((sum(receive_splits), hidden))
++    empty = received[:0]
++    capacity = max(sum(counts[rank][i:i + width]) for i in range(0, size, width))
++    send_buffer = shard.new_empty((capacity, hidden))
++    for first in range(0, size, width):
++        last = min(first + width, size)
++        # Flatten destination first, then source-token order within each destination.
++        send_mask = needs[first:last, first_row:first_row + shard_rows].reshape(-1)
++        send_splits = [n if first <= i < last else 0 for i, n in enumerate(counts[rank])]
++        ends = torch.cumsum(send_mask, dim=0, dtype=torch.int32)
++        ordinals = torch.arange(1, 1 + sum(send_splits), dtype=torch.int32, device=shard.device)
++        positions = torch.searchsorted(ends, ordinals).remainder_(shard_rows)
++        packed = send_buffer[:positions.numel()]
++        torch.index_select(shard, 0, positions, out=packed)
++        active = first <= rank < last
++        dist.all_to_all_single(
++            received if active else empty, packed, receive_splits if active else [0] * size,
++            send_splits, group=group.device_group,
++        )
++        # The synchronous collective orders the next pack on the caller's stream.
++        # All destination groups reuse the same backing allocation.
++    # Inputs arrived in global token order with the remote-only rows removed.
++    return received, torch.cumsum(needs[rank], dim=0, dtype=torch.int32) - 1
++
++
++def _local_grouped_eligible(experts, shard):
++    from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++
++    return (
++        type(experts) is MuseSpark1xFp4Experts
++        and experts.use_w4a16 and experts.use_humming
++        and experts._post_expert_norm_weight is not None
++        and experts._post_expert_norm is experts.post_expert_norm
++        and 0 < shard.shape[1] <= experts.intermediate_size_per_partition
++        and shard.dtype == torch.bfloat16 and shard.is_cuda
++        and torch.cuda.get_device_capability(shard.device)[0] == 9
++        and "forward" not in vars(experts)
++        and getattr(experts, "_compiled_call_impl", None) is None
++        and not (experts._forward_hooks or experts._forward_pre_hooks)
++        and not (nn.modules.module._global_forward_hooks or nn.modules.module._global_forward_pre_hooks)
++    )
++
++
++def _prompt_experts_into(experts, shard, scores, ids, group, output):
++    tokens = ids.shape[0]
++    padded_rows = shard.shape[0] * group.world_size
++    eligible = _local_grouped_eligible(experts, shard)
++    # Advertise actual local ownership, including remapped experts. A hook or
++    # unsupported local bank on any rank votes the entire exchange back to dense.
++    local = torch.zeros(padded_rows + 1, dtype=torch.uint8, device=shard.device)
++    local_routes = local.new_zeros((), dtype=torch.int32)
++    if eligible:
++        local_ids = local_humming_expert_ids(experts, ids)
++        owned_slots = local_ids >= 0
++        local[:tokens] = owned_slots.any(dim=1)
++        local[-1] = 1
++        local_routes = owned_slots.sum(dtype=torch.int32)
++    all_masks = local.new_empty((group.world_size, local.numel()))
++    group.all_gather_into_tensor(all_masks, local[None, :])
++    needs = all_masks[:, :padded_rows]
++    # One small device-to-host fence for the votes and every variable split.
++    counts = needs.reshape(group.world_size, group.world_size, shard.shape[0]).sum(-1, dtype=torch.int32).T
++    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), local_routes.view(1))).tolist()
++    size = group.world_size
++    counts = [descriptor[i * size:(i + 1) * size] for i in range(size)]
++    local_route_count = descriptor[-1]
++    width = _group_width(counts, padded_rows) if all(descriptor[size * size:-1]) else 0
++    if width:
++        inputs, row_map = _exchange_inputs(shard, needs, counts, width, group)
++        experts._grouped_humming_and_combine_impl(
++            inputs, local_ids, scores, output, input_row_map=row_map, local_route_count=local_route_count
++        )
++    else:
++        inputs = layernorm_sp.sp_exit_gather(shard, tokens)
++        if eligible:
++            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, output, local_route_count=local_route_count)
++        else:
++            output.copy_(experts(inputs, scores, ids, experts.post_expert_norm))
++
++
++def _capture_stub(experts, shard, scores, ids, group, output):
++    output.zero_()
++
++
++prompt_experts_into = eager_on_graph(True, capture_stub=_capture_stub)(_prompt_experts_into)
+diff --git a/python/sglang/srt/layers/quantization/modelopt_quant.py b/python/sglang/srt/layers/quantization/modelopt_quant.py
+index 8e6ac10..f71e0f6 100755
+--- a/python/sglang/srt/layers/quantization/modelopt_quant.py
++++ b/python/sglang/srt/layers/quantization/modelopt_quant.py
+@@ -2366,6 +2366,9 @@ class ModelOptNvFp4FusedMoEMethod(FusedMoEMethodBase):
+         quant_config: NVFP4 Quant Config
+     """
+ 
++    # Muse supplies its own packed Humming weight preparation and forward.
++    _supports_humming_nvfp4 = False
++
+     def __init__(self, quant_config: ModelOptFp4Config):
+         self.quant_config = quant_config
+         moe_runner_backend = get_moe_runner_backend()
+@@ -2379,7 +2382,15 @@ class ModelOptNvFp4FusedMoEMethod(FusedMoEMethodBase):
+             use_marlin_fallback = (8, 0) <= capability < (10, 0)
+         else:
+             use_marlin_fallback = moe_runner_backend.is_marlin()
+-        if not get_platform().is_blackwell and not use_marlin_fallback:
++        use_humming = (
++            self._supports_humming_nvfp4
++            and moe_runner_backend.is_humming()
++            and is_cuda()
++            and get_device_capability() == (9, 0)
++        )
++        if not get_platform().is_blackwell and not (
++            use_marlin_fallback or use_humming
++        ):
+             raise ValueError(
+                 "Current platform does not support NVFP4"
+                 " quantization with the selected MoE backend. Please use "
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 6b638e9..1cb5fea 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -56,6 +56,7 @@ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     reserve_projection_workspace,
+ )
+ from sglang.srt.layers.cp.utils import is_cp_active
++from sglang.srt.layers.moe import get_moe_runner_backend
+ from sglang.srt.layers.dp_attention import (
+     dp_gather_replicate,
+     dp_scatter,
+@@ -72,7 +73,10 @@ from sglang.srt.layers.linear import (
+ from sglang.srt.layers.logits_processor import LogitsProcessor as OSSLogitsProcessor
+ from sglang.srt.layers.moe.topk import StandardTopKOutput
+ from sglang.srt.layers.muse_spark.muse_spark_bf16_moe import MuseSpark1xBf16Experts
+-from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
++from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import (
++    HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT,
++    MuseSpark1xFp4Experts,
++)
+ from sglang.srt.layers.muse_spark.muse_spark_layers import (
+     MuseSpark1xNormPreservingResidualConnection,
+     MuseSpark1xRMSNorm,
+@@ -94,6 +98,7 @@ from sglang.srt.model_executor.forward_context import (
+     get_attn_backend,
+     get_token_to_kv_pool,
+ )
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context import is_in_breakable_cuda_graph
+ from sglang.srt.model_loader.weight_utils import default_weight_loader
+ from sglang.srt.runtime_context import get_forward, get_memory, get_parallel
+ from sglang.srt.state_capturer.routed_experts import get_global_experts_capturer
+@@ -610,6 +615,7 @@ class MuseSpark1xMoE(nn.Module):
+         self.experts.post_expert_norm = post_expert_norm
+         self.experts.use_megamoe = self.use_megamoe
+         self.sp_dispatcher = None
++        self.sp_replicate_expert_input = False
+         self.finalize_ar_workspace = None
+         self.unpool_gather_boundary: Optional[FusedPostNormResidualPreNorm] = None
+         self.side_stream = None
+@@ -777,9 +783,15 @@ class MuseSpark1xMoE(nn.Module):
+     ) -> torch.Tensor:
+         if hidden_states.shape[0] == 0:
+             return hidden_states.new_zeros((0, self.expert_hidden_size))
++        sp_active = getattr(get_forward(), "sp_active", False)
++        router_num_tokens = (
++            layernorm_sp.sp_num_tokens()
++            if sp_active and self.sp_replicate_expert_input
++            else hidden_states.shape[0]
++        )
+         use_split2 = (
+             self.router_in_fp32
+-            and _use_split_bf16_router(hidden_states.shape[0])
++            and _use_split_bf16_router(router_num_tokens)
+             and self.gate.weight.dtype == torch.float32
+             and hidden_states.dtype in (torch.bfloat16, torch.float16)
+         )
+@@ -787,13 +799,12 @@ class MuseSpark1xMoE(nn.Module):
+             router_input = (
+                 hidden_states.float() if self.router_in_fp32 else hidden_states
+             )
+-        sp_active = getattr(get_forward(), "sp_active", False)
+         prepare_early = (
+             self.nvfp4_checkpoint
+             # Measured to help up to 128 tokens (decode c<=128); untested above.
+             and hidden_states.shape[0] <= 128
+             and not sp_active
+-            and not getattr(self.experts, "use_marlin", False)
++            and not getattr(self.experts, "use_w4a16", False)
+         )
+         prepared_input = None
+         use_side_stream = not _is_cpu and torch.cuda.is_available()
+@@ -895,6 +906,10 @@ class MuseSpark1xMoE(nn.Module):
+         """Return combined source-token shards, before the nonlinear FFN tail."""
+         if self.pre_expert_norm is not None:
+             expert_input = self.pre_expert_norm(expert_input)
++        if self.sp_replicate_expert_input:
++            return self._forward_sp_replicated_experts(
++                expert_input, topk_scores, topk_ids
++            )
+         if self.use_megamoe:
+             from sglang.srt.layers.muse_spark.muse_spark_megamoe import forward_megamoe
+ 
+@@ -917,6 +932,38 @@ class MuseSpark1xMoE(nn.Module):
+         )
+         return self.sp_dispatcher.combine(combine_input)
+ 
++    def _forward_sp_replicated_experts(
++        self,
++        expert_input: torch.Tensor,
++        topk_scores: torch.Tensor,
++        topk_ids: torch.Tensor,
++    ) -> torch.Tensor:
++        """Share pooled rows, run local EP experts, and return this TP token shard."""
++        num_tokens = layernorm_sp.sp_num_tokens()
++        parallel = get_parallel()
++        tp_group = parallel.tp_group
++        if (
++            parallel.muse_sparse_prompt_exchange
++            and get_moe_runner_backend().is_humming()
++            and expert_input.is_cuda
++            and tp_group.world_size > 1
++            and num_tokens * self.top_k >= self.num_experts * HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++            and not torch.compiler.is_compiling()
++            and (not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph())
++        ):
++            from sglang.srt.layers.muse_spark.sparse_prompt_exchange import prompt_experts_into
++
++            scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
++            ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
++            output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
++            prompt_experts_into(self.experts, expert_input, scores, ids, tp_group, output)
++            return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++        inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)
++        scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
++        ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
++        output = self.experts(inputs, scores, ids, self.experts.post_expert_norm)
++        return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++
+ 
+ class MuseSpark1xDecoderLayer(nn.Module):
+     def __init__(
+@@ -1159,16 +1206,24 @@ class MuseSpark1xModel(nn.Module):
+                 for moe_layer in moe_layers:
+                     moe_layer.set_finalize_ar_workspace(self._finalize_ar_workspace)
+         if layernorm_sp.layernorm_sp_enabled():
+-            # Scope CUTLASS collectives to Muse; leave the generic Qwen SP
+-            # path unchanged. Decode never calls the SP participant hooks.
++            # Hopper uses ordinary graph-aware collectives. Keep Muse's
++            # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
++            backend = get_moe_runner_backend()
++            replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]
+                 if not layer.is_moe_layer:
+                     linears.extend([layer.mlp.gate_up_proj, layer.mlp.down_proj])
+                 for linear in linears:
+-                    linear._sp_use_cutlass = True
+-            moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+-            if moe_layers and not getattr(
++                    if replicate_expert_input:
++                        linear._sp_unfused_collective = True
++                    else:
++                        linear._sp_use_cutlass = True
++            if replicate_expert_input:
++                for moe_layer in moe_layers:
++                    moe_layer.sp_replicate_expert_input = True
++            elif moe_layers and not getattr(
+                 get_parallel(), "enable_megamoe_for_layernorm_sp", False
+             ):
+                 from sglang.srt.layers.moe.token_dispatcher.flashinfer import (

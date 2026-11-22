@@ -1,0 +1,352 @@
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py b/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
+index 9cda35d..6e73604 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_peer_pack.py
+@@ -31,3 +31,94 @@ def pack_peer_rows(peers, row_map, inputs, shard_rows):
+         peers, row_map, inputs.view(torch.int16), shard_rows, TOPK=topk,
+         H=hidden, WIDTH=width, ROUTES=triton.next_power_of_2(topk),
+     )
++
++
++@triton.jit
++def _count_route_tiles(Ids, ExpertMap, Local, Counts, slots, tiles, GLOBAL: tl.constexpr,
++                       MAP: tl.constexpr, EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    tile = tl.program_id(0)
++    slot = tile * TILE + tl.arange(0, TILE)
++    expert = tl.load(Ids + slot, slot < slots, other=-1)
++    if MAP:
++        expert = tl.load(ExpertMap + expert, (expert >= 0) & (expert < GLOBAL), other=-1)
++        tl.store(Local + slot, expert, slot < slots)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    counts = tl.histogram(bucket, BINS)
++    index = tl.arange(0, BINS)
++    # The final bin counts all live routes and supplies the existing CPU vote.
++    tl.store(Counts + index * tiles + tile, tl.where(index == EXPERTS, TILE - counts, counts), index <= EXPERTS)
++
++
++@triton.jit
++def _scan_route_tiles(Counts, Totals, tiles, SPAN: tl.constexpr):
++    expert = tl.program_id(0)
++    tile = tl.arange(0, SPAN)
++    ptr = Counts + expert * tiles + tile
++    count = tl.load(ptr, tile < tiles, other=0)
++    tl.store(ptr, tl.cumsum(count, 0) - count, tile < tiles)
++    tl.store(Totals + expert, tl.sum(count, 0))
++
++
++@triton.jit
++def _place_routes(Ids, Prefix, Totals, SortedExperts, RowMap, Offsets, slots, tiles,
++                  EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    tile = tl.program_id(0)
++    lane = tl.arange(0, TILE)
++    slot = tile * TILE + lane
++    expert = tl.load(Ids + slot, slot < slots, other=-1)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    # Use original lane as a tie breaker so equal experts retain token/slot order.
++    key = tl.sort(bucket * TILE + lane, descending=False)
++    bucket = key // TILE
++    local_counts = tl.histogram(bucket, BINS)
++    local_start = tl.cumsum(local_counts, 0) - local_counts
++    bins = tl.arange(0, BINS)
++    sizes = tl.load(Totals + bins, bins < EXPERTS, other=0)
++    start = tl.cumsum(sizes, 0) - sizes
++    before = tl.load(Prefix + bucket * tiles + tile, bucket < EXPERTS, other=0)
++    row = tl.gather(start, bucket, 0) + before + lane - tl.gather(local_start, bucket, 0)
++    original = tile * TILE + key % TILE
++    tl.store(RowMap + original, tl.where(bucket < EXPERTS, row, -1), original < slots)
++    tl.store(SortedExperts + row, bucket, bucket < EXPERTS)
++    if tile == 0:
++        tl.store(Offsets + bins, start, bins < EXPERTS)
++        tl.store(Offsets + EXPERTS, tl.sum(sizes, 0))
++
++
++def count_peer_routes(ids, layer):
++    slots = ids.numel()
++    experts = layer.num_local_experts
++    mapping = layer._expert_map
++    tile = 256
++    tiles = triton.cdiv(slots, tile)
++    if ids.dtype != torch.int32 or not ids.is_contiguous() or not 0 < experts <= 64 or not 32 <= tiles <= 2048:
++        return None
++    if mapping is None:
++        if layer.global_num_experts != experts:
++            return None
++        local_ids = ids
++    else:
++        if (mapping.dtype != torch.int32 or mapping.device != ids.device or not mapping.is_contiguous()
++                or mapping.shape != (layer.global_num_experts,)):
++            return None
++        local_ids = torch.empty_like(ids)
++    prefix = ids.new_empty((experts + 1, tiles))
++    totals = ids.new_empty(experts + 1)
++    bins = triton.next_power_of_2(experts + 1)
++    _count_route_tiles[(tiles,)](ids, mapping if mapping is not None else ids, local_ids, prefix, slots, tiles,
++                                 layer.global_num_experts, mapping is not None, experts, bins, tile)
++    _scan_route_tiles[(experts + 1,)](prefix, totals, tiles, triton.next_power_of_2(tiles))
++    return local_ids, prefix, totals
++
++
++def place_peer_routes(ids, plan, routes):
++    _, prefix, totals = plan
++    experts, tiles = totals.numel() - 1, prefix.shape[1]
++    sorted_experts = ids.new_empty(routes)
++    if not routes:
++        return sorted_experts, ids, totals
++    row_map = torch.empty_like(ids)
++    offsets = ids.new_empty(experts + 1)
++    _place_routes[(tiles,)](ids, prefix, totals, sorted_experts, row_map, offsets, ids.numel(), tiles,
++                            experts, triton.next_power_of_2(experts + 1), 256)
++    return sorted_experts, row_map, offsets
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 90e64db..c573d56 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -181,6 +181,17 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         )
+ 
+ 
++@triton.jit
++def _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr):
++    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
++    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
++    if HAS_EXPERT_MAP:
++        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
++    else:
++        expert = tl.where(in_range, expert, -1)
++    return expert.to(tl.int32)
++
++
+ @triton.jit
+ def _plan_grouped_decode(
+     global_ids,
+@@ -197,13 +208,7 @@ def _plan_grouped_decode(
+     EXPERT_SPAN: tl.constexpr,
+ ):
+     slot = tl.arange(0, SLOT_SPAN)
+-    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
+-    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
+-    if HAS_EXPERT_MAP:
+-        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
+-    else:
+-        expert = tl.where(in_range, expert, -1)
+-    expert = expert.to(tl.int32)
++    expert = _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
+     tl.store(local_ids + slot, expert, mask=slot < slots)
+     bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert + 1, 0)
+     buckets = tl.arange(0, EXPERT_SPAN)
+@@ -223,6 +228,34 @@ def _plan_grouped_decode(
+     )
+ 
+ 
++@triton.jit
++def _stage_grouped_decode(
++    global_ids, expert_map, local_ids, offsets, row_keys, row_map, hidden_states, output, slots,
++    EXPERTS: tl.constexpr, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr,
++    SLOT_SPAN: tl.constexpr, EXPERT_SPAN: tl.constexpr, TOPK: tl.constexpr,
++    HIDDEN: tl.constexpr, BLOCK: tl.constexpr,
++):
++    pid = tl.program_id(0)
++    if pid == 0:
++        _plan_grouped_decode(
++            global_ids, expert_map, local_ids, offsets, row_keys, row_map, slots,
++            EXPERTS, GLOBAL_EXPERTS, HAS_EXPERT_MAP, SLOT_SPAN, EXPERT_SPAN,
++        )
++    else:
++        mine = pid - 1
++        expert = _decode_route_expert(global_ids, expert_map, mine, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++        if (expert >= 0) & (expert < EXPERTS):
++            lanes = tl.arange(0, SLOT_SPAN)
++            mapped = _decode_route_expert(global_ids, expert_map, lanes, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++            # Valid keys occupy the suffix, sorted by (local expert, original slot).
++            # Count from the end, so the remote and masked prefix needs no offset read.
++            follows = (mapped < EXPERTS) & ((mapped > expert) | ((mapped == expert) & (lanes >= mine)))
++            row = slots - tl.sum(follows.to(tl.int32), 0)
++            width = tl.arange(0, BLOCK)
++            values = tl.load(hidden_states + (mine // TOPK) * HIDDEN + width, mask=width < HIDDEN, other=0)
++            tl.store(output + row * HIDDEN + width, values, mask=width < HIDDEN)
++
++
+ @triton.jit
+ def _gather_grouped_decode(
+     hidden_states,
+@@ -282,35 +315,44 @@ def humming_grouped_decode_outputs(
+     row_keys = local_ids.new_empty(slots)
+     row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+-    _plan_grouped_decode[(1,)](
+-        topk_ids,
+-        expert_map if expert_map is not None else topk_ids,
+-        local_ids,
+-        offsets,
+-        row_keys,
+-        row_map,
+-        slots,
+-        EXPERTS=experts,
+-        GLOBAL_EXPERTS=layer.global_num_experts,
+-        HAS_EXPERT_MAP=expert_map is not None,
+-        SLOT_SPAN=span,
+-        EXPERT_SPAN=triton.next_power_of_2(experts + 1),
+-        num_warps=4 if span <= 256 else 8,
+-    )
+     staging = hidden_states.new_empty(slots * intermediate)
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    _gather_grouped_decode[(min(slots, 128),)](
+-        hidden_states,
+-        row_keys,
+-        offsets,
+-        inputs,
+-        slots,
+-        TOPK=topk,
+-        HIDDEN=hidden_size,
+-        SLOT_SPAN=span,
+-        BLOCK=triton.next_power_of_2(hidden_size),
+-        num_warps=8 if hidden_size >= 4096 else 4,
+-    )
++    if slots <= 256 and 1024 <= hidden_size <= 4096:
++        _stage_grouped_decode[(slots + 1,)](
++            topk_ids, expert_map if expert_map is not None else topk_ids, local_ids, offsets, row_keys, row_map,
++            hidden_states, inputs, slots, EXPERTS=experts, GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None, SLOT_SPAN=span, EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            TOPK=topk, HIDDEN=hidden_size, BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if span == 256 and hidden_size > 2048 else 4,
++        )
++    else:
++        _plan_grouped_decode[(1,)](
++            topk_ids,
++            expert_map if expert_map is not None else topk_ids,
++            local_ids,
++            offsets,
++            row_keys,
++            row_map,
++            slots,
++            EXPERTS=experts,
++            GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None,
++            SLOT_SPAN=span,
++            EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            num_warps=4 if span <= 256 else 8,
++        )
++        _gather_grouped_decode[(min(slots, 128),)](
++            hidden_states,
++            row_keys,
++            offsets,
++            inputs,
++            slots,
++            TOPK=topk,
++            HIDDEN=hidden_size,
++            SLOT_SPAN=span,
++            BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if hidden_size >= 4096 else 4,
++        )
+ 
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+     def select(name):
+@@ -519,12 +561,19 @@ def humming_grouped_expert_outputs(
+ 
+     _, hidden_size = hidden_states.shape
+     topk = local_ids.shape[1]
+-    if peer_plan is None:
+-        route_experts, slots, offsets = prompt_route_order(local_ids, layer.num_local_experts)
+-        first_local = offsets[0].item()
++    mapped_rows = None
++    if peer_plan is not None and len(peer_plan) == 2:
++        workspace, (route_experts, mapped_rows, offsets) = peer_plan
++        num_routes = route_experts.numel()
+     else:
+-        workspace, route_experts, slots, offsets, first_local = peer_plan
+-    num_routes = slots.numel() - first_local
++        if peer_plan is None:
++            route_experts, slots, offsets = prompt_route_order(local_ids, layer.num_local_experts)
++            first_local = offsets[0].item()
++        else:
++            workspace, route_experts, slots, offsets, first_local = peer_plan
++        num_routes = slots.numel() - first_local
++        route_experts = route_experts[first_local:]
++        offsets = offsets - first_local
+     if num_routes == 0:
+         if peer_plan is not None:
+             workspace.pack(hidden_states, None, None)
+@@ -533,25 +582,24 @@ def humming_grouped_expert_outputs(
+     intermediate = layer.intermediate_size_per_partition
+     stage_width = max(hidden_size, intermediate)
+     output_width = max(2 * intermediate, hidden_size)
+-    if num_routes * (stage_width + output_width) > slots.numel() * (
++    if num_routes * (stage_width + output_width) > local_ids.numel() * (
+         intermediate + output_width
+     ):
+         return humming_expert_outputs(layer, hidden_states, local_ids)
+ 
+-    route_experts = route_experts[first_local:]
+-    offsets = offsets - first_local
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+-    mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
+-    map_block = 256
+-    # In the peer path, only invert the permutation here; each token owner
+-    # subsequently fills every mapped destination directly from the published shard.
+-    gather_rows = num_routes if peer_plan is None else 0
+-    _pack_prompt_routes[(gather_rows + triton.cdiv(slots.numel(), map_block),)](
+-        hidden_states, slots, inputs, mapped_rows, first_local, gather_rows, slots.numel(),
+-        hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
+-        BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
+-    )
++    if mapped_rows is None:
++        mapped_rows = torch.empty(local_ids.shape, dtype=local_ids.dtype, device=local_ids.device)
++        map_block = 256
++        # In the peer path, only invert the permutation here; each token owner
++        # subsequently fills every mapped destination directly from the published shard.
++        gather_rows = num_routes if peer_plan is None else 0
++        _pack_prompt_routes[(gather_rows + triton.cdiv(slots.numel(), map_block),)](
++            hidden_states, slots, inputs, mapped_rows, first_local, gather_rows, slots.numel(),
++            hidden_states.stride(0), hidden_states.stride(1), TOPK=topk, HIDDEN=hidden_size,
++            BLOCK_H=min(triton.next_power_of_2(hidden_size), 4096), BLOCK_MAP=map_block, num_warps=4,
++        )
+     if peer_plan is not None:
+         workspace.pack(hidden_states, mapped_rows, inputs)
+     activations = None
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index 75fc742..b50cd6f 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -8,7 +8,7 @@ import torch.distributed as dist
+ from torch import nn
+ from triton.errors import TritonError
+ 
+-from sglang.kernels.ops.moe.muse_spark_peer_pack import pack_peer_rows
++from sglang.kernels.ops.moe.muse_spark_peer_pack import count_peer_routes, pack_peer_rows, place_peer_routes
+ 
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import eager_on_graph
+@@ -178,16 +178,25 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+     # collective decision. A rank with a newly installed hook vetoes all peers.
+     tokens = output.shape[0]
+     scores, ids, votes = _gather_prompt_routes(group, scores, ids, eligible)
++    counts = None
+     if eligible:
+-        local_ids = local_humming_expert_ids(experts, ids[:tokens])
+-        sorted_experts, slots, offsets = prompt_route_order(local_ids, experts.num_local_experts)
+-        first_local = offsets[:1]
++        counts = count_peer_routes(ids[:tokens], experts)
++        if counts is None:
++            local_ids = local_humming_expert_ids(experts, ids[:tokens])
++            sorted_experts, slots, offsets = prompt_route_order(local_ids, experts.num_local_experts)
++            count = offsets[:1]
++        else:
++            local_ids = counts[0]
++            count = counts[2][-1:]
+     else:
+-        first_local = votes[:1]
+-    decision = torch.cat((votes, first_local)).tolist()
+-    del votes, first_local
++        count = votes[:1]
++    decision = torch.cat((votes, count)).tolist()
+     if all(decision[:-1]):
+-        plan = workspace, sorted_experts, slots, offsets, decision[-1]
++        if counts is None:
++            plan = workspace, sorted_experts, slots, offsets, decision[-1]
++        else:
++            grouped = place_peer_routes(local_ids, counts, decision[-1])
++            plan = workspace, grouped
+         experts._grouped_humming_and_combine_impl(shard, local_ids, scores[:tokens], output, peer_plan=plan)
+     else:
+         # Hooks can inspect, resize or retain their arguments. Preserve the original

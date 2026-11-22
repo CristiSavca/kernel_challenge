@@ -1,0 +1,67 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 891250c..10dc6ab 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -543,7 +543,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+             humming_grouped_expert_outputs,
+         )
+ 
+-        values, ids = humming_grouped_expert_outputs(self, hidden_states, local_topk_ids)
++        values, ids = humming_grouped_expert_outputs(
++            self, hidden_states, local_topk_ids, defer_output_scale=True
++        )
+         if values.shape[0] == 0:
+             output.zero_()
+             return
+@@ -555,8 +557,9 @@ class MuseSpark1xFp4Experts(nn.Module):
+             norm_weight=self._post_expert_norm_weight,
+             eps=self._post_expert_norm_eps,
+             weight_first=self._post_expert_norm_weight_first,
+-            slot_expert_ids=None if compact else ids,
++            slot_expert_ids=local_topk_ids if compact else ids,
+             slot_row_indices=ids if compact else None,
++            expert_output_scales=self.w2_global_scale if compact else None,
+             out=output,
+         )
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 9ed655e..6c87d12 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -473,8 +473,13 @@ def humming_grouped_expert_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+     local_ids: torch.Tensor,
++    *,
++    defer_output_scale: bool = False,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+-    """Return expert outputs and their original route indices for finalization."""
++    """Return compact routes. When requested, the finalizer scales the raw W2 rows.
++
++    The indexed fallback returns its ordinary scaled three-dimensional output.
++    """
+     from humming.layer import HummingMethod
+ 
+     from sglang.kernels.ops.activation.activation import silu_and_mul
+@@ -521,7 +526,8 @@ def humming_grouped_expert_outputs(
+     else:
+         outputs = inputs
+         phases = (("w2", activations, outputs),)
+-    route_experts = route_experts.long()
++    if len(phases) > 1 or not defer_output_scale:
++        route_experts = route_experts.long()
+     for name, source, destination in phases:
+         used_down = False
+         if name == "w2" and getattr(layer, "humming_prompt_down", None) is not None:
+@@ -538,8 +544,9 @@ def humming_grouped_expert_outputs(
+                 tuning_config=layer.humming_grouped_tunings[name],
+                 sublayer_name=name,
+             )
+-        scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
+-        destination.mul_(scales.unsqueeze(1))
++        if name != "w2" or not defer_output_scale:
++            scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
++            destination.mul_(scales.unsqueeze(1))
+         if name == "w13":
+             silu_and_mul(gate_up, activations)
+ 

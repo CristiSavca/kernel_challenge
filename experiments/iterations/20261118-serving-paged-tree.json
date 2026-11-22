@@ -1,0 +1,107 @@
+{
+  "at": "2026-11-18T09:57:29.431789+00:00",
+  "measured_leader": "V64",
+  "four_load_speedup": 1.4119,
+  "milestone_four_load_speedup": 3,
+  "target_four_load_speedup": 4,
+  "official_leader_result": "serving_v0523/runs/abd217baf0ed49fd.json",
+  "same_stock_curve": {
+    "stock_anchor_geomean": 9996.000336893705,
+    "highest_v64_raw_toks_per_s_per_gpu": 20547.4,
+    "necessary_raw_maximum_for_scores": {
+      "3": 29988.001010681117,
+      "4": 39984.00134757482
+    },
+    "required_raw_maximum_factor_for_4x": 1.945939697848624
+  },
+  "V100": {
+    "parent": "V99",
+    "sha256": "1775f98fc566f1c9bce3daa1e64dcb81e5e67c46927fa4213a099db2c0f88170",
+    "validation": "serving_v0523/candidates/v100_paged_tree_verify/validation.json",
+    "mechanism": "Preserve sequential physical slots after a branched verify step on 160-token KV pages by moving accepted target KV bytes and regenerating draft KV from accepted hidden rows. Aligned prompt chunks can use paged FA3 TMA on eligible layers.",
+    "official_hardware_result": null
+  },
+  "V100c": {
+    "parent": "V64",
+    "sha256": "335845f55f6e584e938dcb5bba72c18f89677f83f78a1374692525306cd635ed",
+    "validation": "serving_v0523/candidates/v100c_v64_paged_prefill_control/validation.json",
+    "mechanism": "Isolate the two page-support files and four launch changes on the measured V64 decoder at 32 users.",
+    "official_hardware_result": null,
+    "matched_v64_32_user_reference": {
+      "acceptance": 4.2,
+      "cache_hit": 0.92,
+      "concurrency": 32,
+      "reps": 1,
+      "spread": 0,
+      "tok_s_per_gpu": 20547.4,
+      "tok_s_per_user_e2e": 14.8,
+      "tok_s_per_user_e2e_p50": 39.4,
+      "tok_s_per_user_p50": 43.3,
+      "truncated": false,
+      "ttft_first_p90_s": 110,
+      "ttft_later_p90_s": 0.696,
+      "ttft_p90_s": 0.894
+    }
+  },
+  "local_evidence": {
+    "allocator_metadata_cpu": "serving_v0523/candidates/v100_paged_tree_verify/allocator_metadata_cpu.json",
+    "worker_check": "serving_v0523/candidates/v100_paged_tree_verify/worker_check.json",
+    "kv_interpreter": "serving_v0523/candidates/v100_paged_tree_verify/kv_interpreter.json",
+    "independent_kv_commit": "serving_v0523/candidates/v100_paged_tree_verify/independent_kv_commit.json",
+    "independent_paged_attention": "serving_v0523/candidates/v100_paged_tree_verify/independent_paged_attention.json",
+    "paged_attention_cpu": "serving_v0523/candidates/v100_paged_tree_verify/paged_attention_cpu.json",
+    "sm90": "serving_v0523/candidates/v100_paged_tree_verify/sm90.json",
+    "native_rust_radix": "serving_v0523/candidates/v100_paged_tree_verify/radix_page160.json"
+  },
+  "nov19_runner": {
+    "receipt": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "armed_at": "2026-11-18T09:52:25.539488+00:00",
+    "pid": 77919,
+    "opens_utc": "2026-11-19T00:03:00+00:00",
+    "regressions_passed": 54,
+    "previous_window_regressions_passed": 26,
+    "private_slots": [
+      "V89/4 for a confirmed V87 pass, V100c/32 if V87 is queued or running and scored V64 passes, V80a/16 if V87 fails or skips, defer for unknown state",
+      "V98/16 or V95/16 per eligibility",
+      "V99/16 after an eligible V93 pass or V79a/16 per eligibility"
+    ],
+    "v100_full_assigned_slot": false,
+    "submissions_when_armed": 0,
+    "scored_actions_when_armed": 0
+  },
+  "official_jobs_observed": {
+    "time_utc_approx": "2026-11-18T09:50:00Z",
+    "state": "queued",
+    "jobs": {
+      "V68/16": "04b01f958aa5487c",
+      "V87/4": "00c134c978104d65",
+      "V88/4": "30bb36feb528416f",
+      "V93/16": "75557c21595347de"
+    }
+  },
+  "hardware_open_questions": [
+    "target output agreement and requested lengths",
+    "prefix hit rate and fragmentation",
+    "peak memory and per-load first-token latency",
+    "graph replay and acceptance",
+    "throughput at the four stock decode speeds"
+  ],
+  "cleanup": [
+    "serving_v0523/candidates/v100_paged_tree_verify/cleanup.json",
+    "serving_v0523/candidates/v100_paged_tree_verify/sm90_cleanup.json",
+    "serving_v0523/candidates/v100c_v64_paged_prefill_control/cleanup.json"
+  ],
+  "local_native_radix": {
+    "new_cases": 5,
+    "combined_passing_tests": 947,
+    "upstream_ignored": 1
+  },
+  "quota_observed": {
+    "at": "2026-11-18T10:04:35.846660+00:00",
+    "checks_left": 0,
+    "checks_used": 3,
+    "scored_left": 1,
+    "scored_used": 0,
+    "resets_at": "2026-11-19T00:00:00Z"
+  }
+}

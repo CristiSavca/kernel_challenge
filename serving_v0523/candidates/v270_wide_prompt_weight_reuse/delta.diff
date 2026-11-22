@@ -1,0 +1,214 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+index ea45d1b..861900b 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+@@ -3,3 +3,3 @@ template <class Ctx>
+ struct alignas(128) MusePromptScaleStages {
+-  alignas(128) uint2 scales[Ctx::kNumStages][4][64];
++  alignas(128) uint2 scales[Ctx::kNumStages][4][Ctx::BlockShape::N / 4];
+ };
+@@ -21,3 +21,3 @@ CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
+   static_assert(Ctx::kNumMathThreads == 256 && Ctx::kNumLoadThreads == 128 && Ctx::kWarpIters == 4);
+-  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && Ctx::kMultiCastSize == 1);
++  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && (Ctx::kMultiCastSize == 1 || (Ctx::kMultiCastSizeA == 2 && Ctx::kMultiCastSizeB == 1)));
+   static_assert(!Ctx::kUseTmaBS && !Ctx::kUseCpAsync && Ctx::kUseTmaA && Ctx::kUseTmaB);
+@@ -26,6 +26,7 @@ CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
+   auto* dst = reinterpret_cast<uint2*>(&muse_prompt_scales(ctx).scales[stage]);
++  constexpr uint32_t sectors = Ctx::BlockShape::N / 4;
+   PRAGMA_UNROLL
+-  for (uint32_t j = 0; j < 2; ++j) {
++  for (uint32_t j = 0; j < Ctx::BlockShape::N / 128; ++j) {
+     uint32_t id = ctx.load_thread_id() + 128 * j;
+-    uint32_t w = packed[(id / 64) * row_stride + id % 64];
++    uint32_t w = packed[(id / sectors) * row_stride + id % sectors];
+     dst[id] = make_uint2(muse_scale_bits(w & 255) | (muse_scale_bits((w >> 8) & 255) << 16),
+@@ -40,2 +41,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+   uint2 scales[2];
++  static constexpr uint32_t bands = Ctx::WarpShape::N / 16;
+   using Base = Mma<Ctx, Arith>;
+@@ -52,3 +54,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+     PRAGMA_UNROLL
+-    for (uint32_t j = 0; j < 2; ++j)
++    for (uint32_t j = 0; j < bands; ++j)
+       Op::fma(desc, this->regs_b[iteration % 2][j][0], this->regs_c[0][j][0], true);
+@@ -62,3 +64,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+         PRAGMA_UNROLL
+-        for (uint32_t i = 0; i < 8; ++i) warpgroup_fence_operand(values[i]);
++        for (uint32_t i = 0; i < bands * 4; ++i) warpgroup_fence_operand(values[i]);
+       }
+@@ -68,3 +70,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+   CUDA_INLINE void transform_b(uint32_t buffer, uint32_t) {
+-    static_assert(sizeof(this->regs_b[0]) == 2 * sizeof(uint4));
++    static_assert(sizeof(this->regs_b[0]) == bands * sizeof(uint4));
+     auto* dst = reinterpret_cast<uint32_t*>(&this->regs_b[buffer]);
+@@ -72,3 +74,3 @@ struct MusePromptMma : Mma<Ctx, Arith> {
+     PRAGMA_UNROLL
+-    for (uint32_t j = 0; j < 2; ++j) {
++    for (uint32_t j = 0; j < bands; ++j) {
+       dequant<typename Ctx::ElementB, typename Ctx::ElementA>(
+@@ -97,6 +99,16 @@ struct MusePromptReader : S2RMemoryPipeline<Ctx, MMA, Epilogue> {
+     uint32_t k = iter % 4;
+-    this->loader_b.load(this->ctx.smem.stages[ring].b, this->mma.template regs_qb_as_ptr<>(k % 2), k);
+-    uint32_t warp = this->ctx.n_warp_id();
+-    uint32_t index = (this->ctx.lane_id() / 4) * 2 + warp % 2 + (warp / 2) * 16;
+-    this->mma.scales[k % 2] = muse_prompt_scales(this->ctx).scales[ring][k][index];
++    const uint32_t warp = this->ctx.n_warp_id(), lane = this->ctx.lane_id();
++    auto* words = this->mma.template regs_qb_as_ptr<>(k % 2);
++    const auto& scales = muse_prompt_scales(this->ctx).scales[ring][k];
++    if constexpr (Ctx::WarpShape::N == 16) {
++      static_assert(Ctx::BlockShape::M == 256 && Ctx::BlockShape::N == 128);
++      // One 64-channel WGMMA band per warpgroup, selected from the same packed K16 bank.
++      const auto* packed = reinterpret_cast<const uint32_t*>(this->ctx.smem.stages[ring].b);
++      words[0] = packed[k * 256 + (warp / 4) * 128 + lane * 4 + warp % 4];
++      const uint2 pair = scales[(warp / 4) * 16 + (lane / 4) * 2 + (warp % 4) / 2];
++      this->mma.scales[k % 2].x = warp % 2 ? pair.y : pair.x;
++    } else {
++      this->loader_b.load(this->ctx.smem.stages[ring].b, words, k);
++      this->mma.scales[k % 2] = scales[(lane / 4) * 2 + warp % 2 + (warp / 2) * 16];
++    }
+   }
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+index d98bbf0..6071c8a 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+@@ -5,6 +5,8 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+   static_assert(Ctx::kIsGroupedContiguousGemm && Ctx::kNumMathThreads == 256 && Ctx::kWarpIters == 4);
+-  static_assert(Ctx::BlockShape::M == 176 && Ctx::BlockShape::N == 256 && Ctx::BlockShape::K == 64);
+-  static_assert(Ctx::WarpShape::M == 176 && Ctx::WarpShape::N == 32 && Ctx::WarpShape::K == 64);
++  constexpr uint32_t bands = Ctx::WarpShape::N / 16;
++  static_assert((Ctx::BlockShape::M == 176 && Ctx::BlockShape::N == 256 && bands == 2) ||
++                (Paired && Ctx::BlockShape::M == 256 && Ctx::BlockShape::N == 128 && bands == 1));
++  static_assert(Ctx::WarpShape::M == Ctx::BlockShape::M && Ctx::BlockShape::K == 64 && Ctx::WarpShape::K == 64);
+   static_assert(MMA::kSwizzleBytes == 128 && !MMA::kUsePackedKLayout && MMA::kPackedKFactor == 1);
+-  static_assert(MMA::final_regs_c_index() == 0 && sizeof(mma.regs_b[0]) == 2 * sizeof(uint4));
++  static_assert(MMA::final_regs_c_index() == 0 && sizeof(mma.regs_b[0]) == bands * sizeof(uint4));
+   uint32_t addr = cast_smem_ptr_to_uint(&mma.ctx.smem) + offsetof(Storage, stages) +
+@@ -14,3 +16,3 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+   PRAGMA_UNROLL
+-  for (uint32_t j = 0; j < 2; ++j)
++  for (uint32_t j = 0; j < bands; ++j)
+     Op::fma(desc, mma.regs_b[iter % 2][j][0], mma.regs_c[0][j][0], true);
+@@ -24,3 +26,3 @@ CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
+         PRAGMA_UNROLL
+-        for (uint32_t j = 0; j < 8; ++j) warpgroup_fence_operand(values[j]);
++        for (uint32_t j = 0; j < bands * 4; ++j) warpgroup_fence_operand(values[j]);
+       }
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index fc5a4a6..582bf79 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -50,3 +50,60 @@ def adapt_prompt_weights(kernel):
+     kernel.code = kernel.code.replace("SMEM_SIZE = sizeof(SharedStorageType);",
+-        "SMEM_SIZE = ((sizeof(SharedStorageType) + 127) / 128 * 128) + 2048 * TuningConfig::kNumStages;")
++        "SMEM_SIZE = ((sizeof(SharedStorageType) + 127) / 128 * 128) + " + str(8 * kernel.block_shape[1]) + " * TuningConfig::kNumStages;")
++
++
++def _cluster_grid(kernel, sms):
++    """Query the current context for this image's maximum resident two-CTA clusters."""
++    from cuda.bindings import driver
++    from humming import ops
++
++    def checked(result):
++        if result[0] != 0:
++            raise RuntimeError(f"grouped prompt occupancy query failed: {result[0]}")
++        return result[1] if len(result) == 2 else None
++
++    shared = ops.get_kernel_smem_size(kernel.kernel_id)
++    module = checked(driver.cuModuleLoad(kernel.kernel_filename.encode()))
++    try:
++        func = checked(driver.cuModuleGetFunction(module, kernel.kernel_name.encode()))
++        attr = driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
++        checked(driver.cuFuncSetAttribute(func, attr, shared))
++        cluster = driver.CUlaunchAttribute()
++        cluster.id = driver.CUlaunchAttributeID.CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION
++        cluster.value.clusterDim.x, cluster.value.clusterDim.y, cluster.value.clusterDim.z = 2, 1, 1
++        config = driver.CUlaunchConfig()
++        config.gridDimX, config.gridDimY, config.gridDimZ = sms, 1, 1
++        config.blockDimX, config.blockDimY, config.blockDimZ = kernel.num_threads, 1, 1
++        config.sharedMemBytes = shared
++        config.attrs, config.numAttrs = [cluster], 1
++        active = checked(driver.cuOccupancyMaxActiveClusters(func, config))
++        if active < 1:
++            raise ValueError("no resident cluster for the prompt down projection")
++        return min(active, sms // 2) * 2
++    finally:
++        checked(driver.cuModuleUnload(module))
++
++
++def _prompt_grid_ranges(experts, narrow, wide):
++    """Group Humming's local-row intervals by their estimated number of packed weight sweeps."""
++    from math import isqrt
++
++    small_m, large_m = 176, 256
++    # Once every considered count is past the intersection, a wide tile always
++    # needs fewer sweeps. The two endpoints sample a one-standard-deviation span.
++    intersection = (small_m * large_m + large_m - small_m - 1) // (large_m - small_m)
++    limit = intersection + 2 * isqrt(intersection) + 4
++    ranges = []
++    for mean in range(1, limit + 1):
++        radius = isqrt(mean)
++        samples = (max(1, mean - radius), mean + radius)
++        def sweeps(width):
++            return sum((rows + width - 1) // width for rows in samples)
++        choice = wide if sweeps(large_m) < sweeps(small_m) else narrow
++        end = experts * mean
++        if ranges and ranges[-1][2:] == choice:
++            ranges[-1][1] = end
++        else:
++            ranges.append([ranges[-1][1] if ranges else 0, end, *choice])
++    ranges[-1][1] = 1 << 30
++    return torch.tensor(ranges, dtype=torch.int64, device="cpu").flatten()
+ 
+@@ -84,3 +141,7 @@ def _prepare(context, meta, compute, tuning):
+ 
+-                    valid = has_residual_isa(isa, 8)
++                    if self.warp_shape[1] == 16:
++                        valid = (all(isa.count(f"HGMMA.64x{w}x16.F32.BF16") == 16 for w in (32, 128, 224, 256))
++                                 and isa.count("WARPGROUP.DEPBAR.LE") == 32 and "MULTICAST" in isa)
++                    else:
++                        valid = has_residual_isa(isa, 8)
+                 if not valid or "UTMALDG.2D" not in isa or "UTMALDG.3D" not in isa:
+@@ -92,2 +153,11 @@ def _prepare(context, meta, compute, tuning):
+ 
++    class WidePromptWeightPipeline(ResidualPromptWeightPipeline):
++        def check_shape(self):
++            # The native BF16 reader handles at least 32 channels per warp.
++            # The 16-channel reader above consumes one original packed word per lane.
++            if (self.sm_version != 90 or tuple(self.block_shape) != (256, 128, 64)
++                    or tuple(self.warp_shape) != (256, 16, 64) or self.shape_n < 256 or self.shape_n % 256
++                    or self.shape_k < 64 or self.shape_k % 64):
++                raise ValueError("unsupported wide prompt tile")
++
+     cfg = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+@@ -107,8 +177,19 @@ def _prepare(context, meta, compute, tuning):
+     cfg.update(use_tma_bs=False, use_cp_async=False)
+-    for variant in (ResidualPromptWeightPipeline, PromptWeightPipeline):
++    choices = [(ResidualPromptWeightPipeline, cfg), (PromptWeightPipeline, cfg)]
++    sms = torch.cuda.get_device_properties(None).multi_processor_count
++    if sms >= 2 and sms % 2 == 0 and not cfg.get("pad_shape_n") and not cfg.get("pad_shape_k"):
++        wide = cfg | dict(block_shape=(256, 128, 64), warp_shape=(256, 16, 64), multi_cast_size_a=2)
++        choices.insert(0, (WidePromptWeightPipeline, wide))
++    wide_grid = None
++    for variant, config in choices:
+         try:
+-            kernel = variant(**cfg)
++            kernel = variant(**config)
+             kernel.check_context()
++            if variant is WidePromptWeightPipeline:
++                wide_grid = [kernel.kernel_id, _cluster_grid(kernel, sms)]
++                continue
++            if wide_grid is not None:
++                return _prompt_grid_ranges(kernel.num_experts, [kernel.kernel_id, 0], wide_grid)
+             return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+-        except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        except (AssertionError, AttributeError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+             logging.getLogger(__name__).warning("Grouped prompt down projection %s unavailable: %s", variant.__name__, exc)
+diff --git a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+index 2418a36..e2166e6 100644
+--- a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
++++ b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+@@ -36,2 +36,4 @@ def adapt_residual_tiles(kernel, paired, *, decode_width=None):
+     widths = _WIDTHS if decode_width is None else tuple(range(8, decode_width, 8))
++    if paired and decode_width is None and kernel.block_shape[0] == 256:
++        widths = (32, 128, 224)
+     for width in widths:

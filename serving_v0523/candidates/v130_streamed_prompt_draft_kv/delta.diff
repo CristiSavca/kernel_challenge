@@ -1,0 +1,251 @@
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 36502a5..679a5e0 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -315,6 +315,7 @@ class FusedKVMaterializeHelper:
+         )
+         self._mm_out_supported = True
+         self._prefix_cache = None
++        self._full_prompt_lengths = None
+         self._workspace_capacity = 0
+         self._workspace_dtype: Optional[torch.dtype] = None
+         self._proj_workspace: Optional[torch.Tensor] = None
+@@ -414,6 +415,30 @@ class FusedKVMaterializeHelper:
+         scaled_layers = tuple(layer.self_attn.attn for layer in layers) if fp8 else ()
+         self._prefix_cache = (pool, pool.k_data_ptrs, pool.v_data_ptrs, scaled_layers)
+ 
++    def can_stream_prompt(self, pool):
++        from sglang.srt.environ import envs
++        from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
++
++        info = self._prefix_cache
++        return (
++            info is not None and info[0] is pool and pool.k_data_ptrs is info[1] and pool.v_data_ptrs is info[2]
++            and type(pool) is MHATokenToKVPool and pool.dtype == torch.bfloat16 and not pool.is_quantized_kv_cache
++            and not envs.SGLANG_ENABLE_ASYNC_ASSERT.get() and "_store_kv_layer" not in vars(pool)
++            and getattr(pool.set_kv_buffer, "__func__", None) is MHATokenToKVPool.set_kv_buffer
++        )
++
++    def full_prompt_cache(self, pool, loc):
++        # The BF16 physical NHD writer is a plain scatter. Keep the normal
++        # pool call for instrumentation, quantization and non-aligned tails.
++        if not self.can_stream_prompt(pool) or loc.ndim != 1 or loc.numel() % 8 or not loc.is_contiguous():
++            return None
++        groups = loc.numel() // 8
++        lengths = self._full_prompt_lengths
++        if lengths is None or lengths.numel() < groups:
++            lengths = torch.full((groups,), 8, dtype=torch.int32, device=loc.device)
++            self._full_prompt_lengths = lengths
++        return pool, loc.view(groups, 8), lengths[:groups]
++
+     def _ensure_rope_cache(self, max_position: int) -> torch.Tensor:
+         if max_position + 1 > self._reserved_rope_cache_len:
+             ensure_cos_sin_cache_length = getattr(
+@@ -469,6 +494,7 @@ class FusedKVMaterializeHelper:
+         positions: torch.Tensor,
+         write_layer_kv: Callable[[int, torch.Tensor, torch.Tensor], None],
+         prefix_cache=None,
++        prompt_slab=False,
+     ) -> None:
+         """Materialize KV cache for all layers using batched projection."""
+         total_ctx = ctx_hidden.shape[0]
+@@ -501,20 +527,25 @@ class FusedKVMaterializeHelper:
+         )
+         cos_sin_cache = self._ensure_rope_cache(max_position)
+ 
+-        self._ensure_workspace(total_ctx, ctx_hidden.dtype)
+-        assert self._proj_workspace is not None
+-        assert self._k_workspace is not None
+-        assert self._v_workspace is not None
+-
+-        proj_out_2d = self._proj_workspace[:total_ctx]
+-        if self._mm_out_supported:
+-            try:
+-                torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
+-            except Exception:
+-                self._mm_out_supported = False
+-                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+-        else:
++        temporary_projection = prompt_slab and prefix_cache is not None
++        if temporary_projection:
++            # A successful direct prompt scatter needs no grow-only workspace.
+             proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++        else:
++            self._ensure_workspace(total_ctx, ctx_hidden.dtype)
++            assert self._proj_workspace is not None
++            assert self._k_workspace is not None
++            assert self._v_workspace is not None
++
++            proj_out_2d = self._proj_workspace[:total_ctx]
++            if self._mm_out_supported:
++                try:
++                    torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
++                except Exception:
++                    self._mm_out_supported = False
++                    proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++            else:
++                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+ 
+         proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
+         if prefix_cache is not None and self._prefix_cache is not None:
+@@ -540,6 +571,8 @@ class FusedKVMaterializeHelper:
+                     triton.next_power_of_2(self.head_dim), loc, lengths, loc.shape[1], bool(scaled_layers), 1.0,
+                 )
+                 return
++        if temporary_projection:
++            self._ensure_workspace(total_ctx, ctx_hidden.dtype)
+         tmp_k = self._k_workspace[:, :total_ctx]
+         tmp_v = self._v_workspace[:, :total_ctx]
+         cache_k, cache_v = _fused_norm_rope_stacked(
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 6963fcf..5e57ad2 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -32,6 +32,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Write eligible stacked DFLASH context KV directly to committed draft cache slots.",
+     ] = False
++    speculative_dflash_stream_prompt_kv: A[
++        bool,
++        "Bound temporary draft context activations during long native DFLASH prompt appends.",
++    ] = False
+     speculative_algorithm: A[
+         Optional[str],
+         "Speculative algorithm. Builtins: EAGLE, EAGLE3, NEXTN, STANDALONE, NGRAM, DFLASH, DSPARK, UNO. Or any name registered via `SpeculativeAlgorithm.register`.",
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index edbcf46..4017e0a 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1074,7 +1074,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 max_position_hint=self.target_worker.model_runner.model_config.context_len
+                 + int(self.block_size),
+             )
+-            if get_spec().speculative_dflash_direct_prefix_kv:
++            if get_spec().speculative_dflash_direct_prefix_kv or get_spec().speculative_dflash_stream_prompt_kv:
+                 self._fused_kv_helper.configure_prefix_cache(
+                     self.draft_model_runner.token_to_kv_pool, layers
+                 )
+@@ -1822,6 +1822,44 @@ class DFlashWorkerV2(BaseSpecWorker):
+         physical ids for a fused draft, the virtual ids for a private one."""
+         return plan.write_ids(self.draft_model_runner.kv_index_translator)
+ 
++    def _prompt_kv_slab_rows(self, target_hidden):
++        """Return a row budget for the ordinary independent-token draft projection."""
++        if not get_spec().speculative_dflash_stream_prompt_kv or self.lilicorr is not None or torch.compiler.is_compiling():
++            return 0
++        helper = self._fused_kv_helper
++        if (
++            helper is None or not self._use_fused_kv_materialize
++            or not helper.can_stream_prompt(self.draft_model_runner.token_to_kv_pool)
++        ):
++            return 0
++        from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++        from sglang.srt.layers.layernorm import RMSNorm
++        from sglang.srt.models.dflash import DFlashDraftModel
++        from torch.nn.modules import module as hooks
++
++        draft = self.draft_model
++        fc = getattr(draft, "fc", None)
++        norm = getattr(draft, "hidden_norm", None)
++        if (
++            getattr(type(draft), "project_target_hidden", None) is not DFlashDraftModel.project_target_hidden
++            or "project_target_hidden" in vars(draft) or draft.quantizable
++            or type(fc) is not torch.nn.Linear or fc.bias is not None or type(norm) is not RMSNorm
++            or target_hidden.device != fc.weight.device or not target_hidden.is_cuda
++            or target_hidden.dtype != torch.bfloat16 or fc.weight.dtype != target_hidden.dtype
++            or target_hidden.ndim != 2 or target_hidden.shape[1] != fc.in_features
++            or torch.is_autocast_enabled("cuda") or torch.are_deterministic_algorithms_enabled()
++            or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get() or is_batch_invariant_mode_enabled()
++            or torch.cuda.is_current_stream_capturing() or hooks._global_forward_hooks or hooks._global_forward_pre_hooks
++            or any(
++                module._forward_hooks or module._forward_pre_hooks or "forward" in vars(module)
++                or getattr(module, "_compiled_call_impl", None) is not None
++                for module in (fc, norm)
++            )
++        ):
++            return 0
++        # Each projection or normalized BF16 intermediate is independently bounded.
++        return max(8, (64 * 1024**2 // (fc.out_features * target_hidden.element_size())) // 8 * 8)
++
+     def _append_target_hidden_to_draft_kv_by_loc(
+         self,
+         *,
+@@ -1831,6 +1869,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        stream_prompt_slab: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1923,6 +1962,27 @@ class DFlashWorkerV2(BaseSpecWorker):
+             if commit_lens.dtype != torch.int32:
+                 commit_lens = commit_lens.to(torch.int32)
+ 
++        if cache_loc_2d is None and extend_lens is not None:
++            slab = self._prompt_kv_slab_rows(target_hidden)
++            if slab and num_tokens >= slab:
++                start = 0
++                while start < num_tokens:
++                    count = min(slab, num_tokens - start)
++                    # A final 1..7 rows take the ordinary per-layer writer.
++                    if count >= 8:
++                        count -= count % 8
++                    stop = start + count
++                    # The complete prompt rows already own physical pool slots.
++                    # No request boundary, cache window, or token ID is assumed.
++                    self._append_target_hidden_to_draft_kv_by_loc(
++                        target_hidden=target_hidden[start:stop],
++                        cache_loc=cache_loc[start:stop],
++                        positions=positions[start:stop],
++                        stream_prompt_slab=True,
++                    )
++                    start = stop
++                return
++
+         # `cache_loc` arrives in the draft pool's id space (`_draft_write_ids`);
+         # the callers' window buffers stay virtual for the compact
+         # req_to_token rebuild.
+@@ -1994,6 +2054,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                         ctx_hidden=ctx_hidden,
+                         ctx_positions=positions,
+                         ctx_cache_loc=cache_loc,
++                        stream_prompt_slab=stream_prompt_slab,
+                     )
+                     return
+                 except Exception as e:
+@@ -2048,6 +2109,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         ctx_cache_loc: torch.Tensor,
+         ctx_cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
++        stream_prompt_slab: bool = False,
+     ) -> None:
+         """Fused KV materialization using batched projection + Triton kernel."""
+         token_to_kv_pool = self.draft_model_runner.token_to_kv_pool
+@@ -2080,15 +2142,21 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     attn.v_scale,
+                 )
+ 
++        prefix_cache = None
++        if stream_prompt_slab:
++            prefix_cache = self._fused_kv_helper.full_prompt_cache(token_to_kv_pool, ctx_cache_loc)
++        elif (
++            get_spec().speculative_dflash_direct_prefix_kv
++            and ctx_cache_loc_2d is not None and commit_lens is not None
++            and self._fused_kv_helper._prefix_cache is not None
++        ):
++            prefix_cache = (token_to_kv_pool, ctx_cache_loc_2d, commit_lens)
+         self._fused_kv_helper.materialize(
+             ctx_hidden=ctx_hidden,
+             positions=ctx_positions,
+             write_layer_kv=_write_layer_kv,
+-            prefix_cache=(
+-                (token_to_kv_pool, ctx_cache_loc_2d, commit_lens)
+-                if ctx_cache_loc_2d is not None and commit_lens is not None
+-                and self._fused_kv_helper._prefix_cache is not None else None
+-            ),
++            prefix_cache=prefix_cache,
++            prompt_slab=stream_prompt_slab,
+         )
+ 
+     def _update_target_mamba_state_after_verify(

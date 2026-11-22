@@ -1,0 +1,390 @@
+{
+  "method": "Staged model, expert.forward, _forward_w4a16, production grouped decode and producer; CPU projection, route-plan, W13/W2 and normalization spies",
+  "hashes": {
+    "python/sglang/srt/models/muse_spark.py": "9ebcf4ff691d66e510ac383b5007f8bd8e6ca158c82bc2b103d291cf2c2e49d4",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "1be25c6bef2971de79a5de79b0dc3def8eaeda94bcaf63036995ad2bcac3ff76",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "d74cbe0969effa65f2292d752ca14ce18ead8fd5e4f33b805a41bf9d9ae198e9",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9"
+  },
+  "non_power_of_two_stripe_declined": true,
+  "legacy_optional_keyword_calls": 4,
+  "cases": [
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "duplicates",
+      "rows": 32,
+      "staged_words": 589824,
+      "output_words": 131072,
+      "map_words": 256,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "all_remote",
+      "rows": 17,
+      "staged_words": 0,
+      "output_words": 69632,
+      "map_words": 136,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "all_local",
+      "rows": 8,
+      "staged_words": 262144,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 128,
+      "staged_words": 503808,
+      "output_words": 524288,
+      "map_words": 1024,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 256,
+      "staged_words": 1040384,
+      "output_words": 1048576,
+      "map_words": 2048,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "missing_gain",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "wrong_gain",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "misaligned",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "strided_ids",
+      "rows": 8
+    },
+    {
+      "tp": 4,
+      "case": "getter_override",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "jit_failure",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "duplicates",
+      "rows": 32,
+      "staged_words": 589824,
+      "output_words": 131072,
+      "map_words": 256,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "all_remote",
+      "rows": 17,
+      "staged_words": 0,
+      "output_words": 69632,
+      "map_words": 136,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "all_local",
+      "rows": 8,
+      "staged_words": 262144,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 128,
+      "staged_words": 503808,
+      "output_words": 524288,
+      "map_words": 1024,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 256,
+      "staged_words": 1040384,
+      "output_words": 1048576,
+      "map_words": 2048,
+      "new": [
+        "gather_columns0",
+        "route",
+        "plan",
+        "ranked_norm_stage",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "missing_gain",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "wrong_gain",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "misaligned",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "strided_ids",
+      "rows": 8
+    },
+    {
+      "tp": 8,
+      "case": "getter_override",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "jit_failure",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "new": [
+        "gather_columns0",
+        "route",
+        "ordinary_norm",
+        "plan",
+        "gather",
+        "W13",
+        "W2"
+      ]
+    }
+  ],
+  "totals": {
+    "staged_words": 5087232,
+    "output_words": 4005888,
+    "map_words": 7824
+  }
+}

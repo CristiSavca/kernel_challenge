@@ -1,0 +1,49 @@
+{
+  "source": "results__20261113T204343Z-bench__v41__server.log",
+  "server_sha256": "b7212de67ee2c9fe42b113054891cb4f56cdb3eaa5d9daf5cca2602c1af29bc4",
+  "client_sha256": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+  "source_candidate": "eight-H200 V41 physical scheduler and client trace; hypothetical V239 admission",
+  "full_attention_layers": 16,
+  "packed_and_converted_limit_bytes": 33554432,
+  "KV_bytes_per_logical_row": 256,
+  "guard_rows_per_packed_request": 256,
+  "rungs": {
+    "1": {
+      "repetitions": 3
+    },
+    "4": {
+      "full_joint_arrivals": 25,
+      "prompt_pack_certain_fit": 21,
+      "certain_prompt_rows": 344064,
+      "certain_prompt_layer_calls": 336,
+      "certain_max_upper_bytes": 28655104,
+      "certain_paged_tail_request_steps": 46,
+      "certain_fit_but_whole_pack_definitely_exceeds_cap": 13,
+      "unknown_prompt_prefix": 4,
+      "repetitions": 2
+    },
+    "16": {
+      "full_joint_arrivals": 72,
+      "prompt_pack_certain_fit": 58,
+      "certain_prompt_rows": 950272,
+      "certain_prompt_layer_calls": 928,
+      "certain_max_upper_bytes": 32030976,
+      "certain_paged_tail_request_steps": 513,
+      "certain_fit_but_whole_pack_definitely_exceeds_cap": 51,
+      "unknown_prompt_prefix": 14,
+      "repetitions": 1
+    },
+    "32": {
+      "full_joint_arrivals": 145,
+      "prompt_pack_certain_fit": 115,
+      "certain_prompt_rows": 1884160,
+      "certain_prompt_layer_calls": 1840,
+      "certain_max_upper_bytes": 31612160,
+      "certain_paged_tail_request_steps": 2022,
+      "certain_fit_but_whole_pack_definitely_exceeds_cap": 109,
+      "unknown_prompt_prefix": 30,
+      "repetitions": 1
+    }
+  },
+  "interpretation": "The bounds use the original initial wave and anonymous request memberships. An eligible attention bucket requires real mixed admission, native layout, graph destination and a linear cohort. Each split performs one additional FA3 launch per full layer and packs the prompt prefix from its real physical pages; no time saving is assumed."
+}

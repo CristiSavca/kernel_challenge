@@ -1,0 +1,108 @@
+{
+  "review": "Independent frozen-source production dispatch audit",
+  "reviewed_at_utc": "2026-11-19T00:23:10+00:00",
+  "result": "Both changes reach their intended eligible model paths. No correctness defect identified in the reviewed entry, topology and KV paths.",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "reconstruction": "Applied both full exports independently to fresh Git indexes at the pin. Both tree IDs and export SHA-256 matched the frozen manifests.",
+  "v209": {
+    "full_patch_sha256": "5f99408f91c0b7c3ed04a9be3a7e85080f3f27a63bdb4215a0ecebcf0f429ff7",
+    "tree": "16c6cbbf608e4795ba5d6994d383e6da0e34c290",
+    "dispatch": "Scheduler.run_batch -> _run_mixed_dflash_roles -> try_forward_proposed_mixed -> TpModelWorker.forward_batch_generation(batch=None, forward_batch=mixed_fb, is_verify=True, return_kv_loc_plan=True) -> ModelRunner.forward/_forward_raw -> PrefillCudaGraphRunner.execute/_execute_body_capture -> outer Muse model eager forward -> logits processor -> native output trim -> DFlashWorkerV2.settle_mixed_verify.",
+    "entry": "The TpModelWorker default sharding argument is assigned only in the batch-is-present construction branch. With a prebuilt ForwardBatch, the selected indices and sharding flag survive, the worker returns unsampled logits and the same owned KV plan. capture_pre_sample_logits is a no-op when batch is None.",
+    "host_control_flow_probe": {
+      "cases": 24,
+      "backends": [
+        "FULL",
+        "BREAKABLE"
+      ],
+      "raw_and_bucket_rows": [
+        [
+          38,
+          48
+        ],
+        [
+          80,
+          80
+        ],
+        [
+          1030,
+          1056
+        ]
+      ],
+      "selected_logits_rows": 18,
+      "variants": "Both authorization flag values and both context-projected result states.",
+      "native_methods": "Exact TpModelWorker.forward_batch_generation, ModelRunner.forward/_forward_raw, PrefillCudaGraphRunner.execute/_uses_eager_prefill_tail/_execute_body_capture/_prefill_logits_buffer_rows/_restore_qwen_bcg_hc_output/_finalize_execute_output/_trim_logits_output and capture_pre_sample_logits executed. Backend replay, load_batch, model outer forward, tensors, GPU preparation, metrics and forward context were host doubles.",
+      "observed": "24 prefill graph dispatches. The eager tail retained authorized head layout and selected-row extent, the trimmed result contained all raw hidden rows and the context flag, and each worker result returned the input plan. The captured layer callable was restored on both backends."
+    },
+    "tp_admission": "Requires CUDA DFLASH, page-sized-one, DP=PP=attnCP=attnDCP=1, live prompt+verify+mixed extents, distinct request slots, valid native graph keys and mixed padding no larger than separate. Rejects CP graphs, PDMux, ragged verification, MLP TP gather and two-batch overlap. Rank MIN/MAX agreement covers graph sizes and a seven-word cohort signature containing the sharding verdict in its hash. The proposal is consumed after agreement. A decline takes existing standalone verify and prompt. Static and runtime SP FC/RMSNorm eligibility separately use TP Gloo MIN.",
+    "tail": "Static load_batch carries mixed_verify_logits_indices and mixed_verify_sharded_logits. FULL reuses a private copy of the raw batch; BREAKABLE uses its static batch. MuseSpark Omni supplies text embeddings and calls the Muse causal model. runs_sp tests configured SP and EXTEND, independent of a stale captured Python flag. On eligible rows the eager tail packs target taps, calls the released draft FC/RMSNorm per owner, then gathers the projected features. Projection needs at least 128 rows per TP rank. Projection is optional on smaller or guarded shapes.",
+    "logits": "LogitsMetadata preserves both fields. Selected SP hidden-row gather requires fewer selected rows than local hidden rows; otherwise native gather and pruning applies. Local head return also requires the existing aligned, contiguous FP32 CUDA softcap path, local vocab width and supported topology. Hooks on model/processor, global hooks and instance forward replacements disable V209's authorization. The full-vocab fallback remains available. set_mixed_verify_rows retains one end row per prompt and every verification row.",
+    "settlement": "Native trim carries context and KV flags; settlement gathers prompt vocabulary, reduces tail token/score pairs using deferred_argmax(first_nan=True), samples prompt once and passes predicted tail IDs to _accept_block. Mixed rows cannot invoke prompt-only paired KV projection (kv_helper=None and mixed marker). Prompt append writes prompt slots; tail append receives dense [B,W] slots plus actual commit_lens. Both fused-materialization and per-layer fallback call a prefix-valid writer, never an unconditional tail flatten-store in this branch.",
+    "source_anchors": [
+      "managers/scheduler.py:4640",
+      "speculative/dflash_mixed_forward.py:153",
+      "speculative/dflash_mixed_graph_admission.py:157",
+      "managers/tp_worker.py:623",
+      "model_executor/model_runner.py:1963",
+      "model_executor/runner/prefill_cuda_graph_runner.py:2181",
+      "models/muse_spark.py:1334",
+      "layers/dflash_context_projection.py:97",
+      "layers/logits_processor.py:575",
+      "speculative/dflash_worker_v2.py:2565",
+      "speculative/dflash_worker_v2.py:1993"
+    ]
+  },
+  "v207": {
+    "full_patch_sha256": "6f0d96020207d9959e25d4094e7906831138683e37c9c641e3963bdfbff60619",
+    "tree": "b6b24bcc9d6167b6618e15cb9b58b88ac5971c0f",
+    "call_path": "Muse SP Humming initializes sp_replicate_expert_input. _forward_sp_experts -> _forward_sp_replicated_experts gathers input and route IDs -> MuseSpark1xFp4Experts.forward -> _forward_w4a16 -> eager-on-graph grouped callback -> compact sorted W2 rows -> prior mapped Triton finalizer.",
+    "host_control_flow_probe": {
+      "cases": 36,
+      "tokens": [
+        8191,
+        8192,
+        16384
+      ],
+      "execution": [
+        "eager",
+        "breakable capture",
+        "full capture",
+        "torch.compile"
+      ],
+      "grouped_return_shapes": [
+        "compact",
+        "indexed fallback",
+        "empty"
+      ],
+      "native_methods": "Exact SP expert dispatch, W4A16 selector and V207 grouped callback executed. Collectives, Humming computation, tensors, CUDA state and Triton launch were host doubles.",
+      "observed": "Only compact eager/breakable at 8192 and 16384 selected deferred scaling (4/36). All compact indexed fallbacks, empty results, ordinary full capture, compile and below-threshold paths selected their corresponding normal behavior."
+    },
+    "arithmetic": "The sort produces original route slots, compact row_map carries -1 for remote slots, and the finalizer reads the matching original local_topk_ids only after row >= 0. It rounds FP32 W2\u00d7scale through the BF16 input element type before the unchanged RMSNorm and top-k accumulation. The indexed helper returns its original 3-D scaled tensor, and the grouped helper's defer default remains false.",
+    "bounds": "At 256 experts and top-8 the gate is 65,536 global routes, or 8,192 input tokens. The large-prompt change eliminates one per-route index_select and one BF16 read/write materialization for eligible compact routes. It does not accelerate every prefill or each decode step.",
+    "source_anchors": [
+      "models/muse_spark.py:1203",
+      "models/muse_spark.py:905",
+      "layers/muse_spark/muse_spark_fp4_moe.py:535",
+      "layers/muse_spark/muse_spark_fp4_moe.py:571",
+      "layers/muse_spark/muse_spark_humming_moe.py:471",
+      "../kernels/ops/moe/muse_spark_post_expert_finalize_triton.py:40"
+    ]
+  },
+  "anchor_root": "python/sglang/srt in the matching frozen Git tree",
+  "existing_corroboration": [
+    "entry_scheduler.json",
+    "head_eligibility.json",
+    "ordinary_scheduler.json",
+    "../v207_prompt_down_scale_finalization/callback.json",
+    "../v207_prompt_down_scale_finalization/finalizer.json"
+  ],
+  "limits": "Host probes exercise production control flow with modeled device boundaries. This review does not establish actual H200 dispatch frequency, token agreement, peak memory or throughput. Neither the GPU nor the judge was used.",
+  "scratch_cleanup": {
+    "removed": "/private/tmp/okc-audit209.y7AqhonY",
+    "allocated_kib_observed_before": 225944,
+    "volume_free_bytes_before": 39964745728,
+    "volume_free_bytes_after": 40200900608,
+    "volume_free_delta_bytes": 236154880,
+    "verified": "No open files, stashes, unique branch commits or extra worktrees. Both generated source views matched the frozen trees. Reviewed control-flow witnesses are retained above."
+  }
+}

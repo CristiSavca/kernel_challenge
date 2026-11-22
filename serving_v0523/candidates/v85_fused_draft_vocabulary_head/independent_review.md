@@ -1,0 +1,5 @@
+# Independent component review
+
+The reviewer traced DFLASH2’s borrowed target head through candidate projection, selector scoring, sampling correction and target verification. The official checkpoint inventory excludes the dense language-model head from FP4 conversion. The runtime checks weight dtype and dispatches supported Hopper tensors. Packed INT32 pairs reconstruct each FP32 score and global ID across ranks even when the local projection uses the dense fallback. The source covers eager and captured selector execution and retains the original RNG and correction logic.
+
+The FP32 accumulators and BF16 output maintain the configured precision. Reordering a reduction or selecting a different equal-score token can change a draft proposal. The target still runs the complete model and verifies it. The original V85 added 64-bit input pointer arithmetic for strided tensors. V85a subsequently adds explicit local bounds for both workspaces and inputs. GPU numerical agreement, memory and timing are open.

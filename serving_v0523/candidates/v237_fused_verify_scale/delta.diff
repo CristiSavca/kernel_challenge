@@ -1,0 +1,161 @@
+diff --git a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+index 99ebaf4..27fe724 100644
+--- a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
++++ b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+@@ -5,6 +5,8 @@ import triton
+ import triton.language as tl
+ from triton.language.extra import libdevice
+ 
++from sglang.kernels.numerics import mul_rn_f32
++
+ 
+ @triton.jit
+ def _softcap_row_argmax_kernel(
+@@ -16,6 +18,7 @@ def _softcap_row_argmax_kernel(
+     softcapping_value,
+     BLOCK_SIZE: tl.constexpr,
+     FIRST_NAN: tl.constexpr = False,
++    SCALE: tl.constexpr = None,
+ ):
+     row = tl.program_id(0).to(tl.int64)
+     best_val = -float("inf")
+@@ -24,6 +27,8 @@ def _softcap_row_argmax_kernel(
+         cols = start + tl.arange(0, BLOCK_SIZE)
+         mask = cols < valid_width
+         x = tl.load(logits_ptr + row * row_stride + cols, mask=mask, other=0.0)
++        if SCALE is not None:
++            x = mul_rn_f32(x, SCALE)
+         x = x / softcapping_value
+         x = libdevice.tanh(x)
+         x = x * softcapping_value
+@@ -42,7 +47,7 @@ def _softcap_row_argmax_kernel(
+     tl.store(out_ptr + row * 2 + 1, (best_idx + col_offset).to(tl.float32))
+ 
+ 
+-def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset, *, first_nan=False):
++def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset, *, first_nan=False, scale=None):
+     """Per row of a vocab shard: ``(max, first argmax + col_offset)`` of the
+     softcapped logits over the first ``valid_width`` columns, as fp32 ``[rows, 2]``."""
+     assert logits.dtype == torch.float32 and logits.stride(1) == 1
+@@ -57,6 +62,7 @@ def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset,
+         final_logit_softcapping,
+         BLOCK_SIZE=4096,
+         FIRST_NAN=first_nan,
++        SCALE=scale,
+         num_warps=8,
+     )
+     return out
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index f5a0acb..820d968 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -296,6 +296,7 @@ class LogitsProcessorOutput:
+     dflash_prefill_context_done: bool = False
+     dflash_prefill_kv_projected: bool = False
+     dflash_verify_fc_shard: Optional[torch.Tensor] = None
++    dflash_verify_logit_scale: Optional[float] = None
+ 
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+@@ -559,7 +560,14 @@ class LogitsProcessor(nn.Module):
+         # Extract MIS / setwise indices before ForwardBatch → LogitsMetadata conversion
+         multi_item_delimiter_indices = None
+         token_indices_to_pool = None
++        scale_sink = None
+         if isinstance(logits_metadata, ForwardBatch):
++            if (
++                logits_metadata.dflash_verify_raw_buffer is not None
++                and logits_metadata.forward_mode.is_target_verify()
++                and getattr(self._get_logits, "__func__", None) is LogitsProcessor._get_logits
++            ):
++                scale_sink = []
+             multi_item_delimiter_indices = logits_metadata.multi_item_delimiter_indices
+             token_indices_to_pool = logits_metadata.token_indices_to_pool
+             logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
+@@ -686,7 +694,8 @@ class LogitsProcessor(nn.Module):
+ 
+         if not logits_metadata.extend_return_logprob:
+             # Compute logits for both input and sampled tokens.
+-            logits = self._get_logits(pruned_states, lm_head, logits_metadata)
++            kwargs = {"scale_sink": scale_sink} if scale_sink is not None else {}
++            logits = self._get_logits(pruned_states, lm_head, logits_metadata, **kwargs)
+             sampled_logits = (
+                 logits[sample_indices] if sample_indices is not None else logits
+             )
+@@ -694,6 +703,7 @@ class LogitsProcessor(nn.Module):
+             # Decode mode or extend mode without return_logprob.
+             return LogitsProcessorOutput(
+                 next_token_logits=sampled_logits,
++                dflash_verify_logit_scale=scale_sink[0] if scale_sink else None,
+                 hidden_states=hidden_states_to_store,
+                 last_hidden_states=last_hidden_states_to_store,
+                 mm_input_embeds=logits_metadata.mm_input_embeds,
+@@ -1018,6 +1028,7 @@ class LogitsProcessor(nn.Module):
+         logits_metadata: LogitsMetadata,
+         embedding_bias: Optional[torch.Tensor] = None,
+         use_logits_buffer: bool = True,
++        scale_sink=None,
+     ) -> torch.Tensor:
+         """Get logits from hidden_states.
+ 
+@@ -1066,6 +1077,15 @@ class LogitsProcessor(nn.Module):
+             torch.cuda.synchronize()
+             _trace_e2e_logits("post_lm_head_sync_returned")
+ 
++        if (
++            scale_sink is not None and self.defer_verify_gather
++            and 0 < logits.shape[1] < self.vocab_size and type(self.logit_scale) is float
++            and torch.finfo(torch.float32).tiny <= self.logit_scale <= torch.finfo(torch.float32).max
++            and getattr(self._can_gather_softcap_fused, "__func__", None) is LogitsProcessor._can_gather_softcap_fused
++            and self._can_gather_softcap_fused(logits, local_hidden_states, lm_head, logits_metadata)
++        ):
++            scale_sink.append(self.logit_scale)
++            return logits
+         if self.logit_scale is not None:
+             logits.mul_(self.logit_scale)
+ 
+@@ -1170,7 +1190,7 @@ class LogitsProcessor(nn.Module):
+         """Full softcapped logits from a target-verify vocab shard."""
+         return self._gather_softcap_fused(logits, None, use_buffer=False)
+ 
+-    def deferred_argmax(self, logits: torch.Tensor, *, first_nan: bool = False) -> torch.Tensor:
++    def deferred_argmax(self, logits: torch.Tensor, *, first_nan: bool = False, scale=None) -> torch.Tensor:
+         """``argmax`` of the full softcapped logits from a target-verify vocab
+         shard, gathering only each rank's row maxima. Ties resolve to the lowest
+         vocab index, as ``torch.argmax`` over the gathered row does."""
+@@ -1179,7 +1199,7 @@ class LogitsProcessor(nn.Module):
+         col_offset = group.rank_in_group * shard_width
+         valid_width = max(0, min(shard_width, self.vocab_size - col_offset))
+         local = softcap_row_argmax(
+-            logits, self.final_logit_softcapping, valid_width, col_offset, first_nan=first_nan
++            logits, self.final_logit_softcapping, valid_width, col_offset, first_nan=first_nan, scale=scale
+         )
+         gathered = torch.empty(
+             (group.world_size, num_tokens, 2), dtype=local.dtype, device=local.device
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index cbff5eb..2ea5319 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -3449,15 +3449,18 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if target_lp is not None and target_lp.is_deferred_shard(
+             logits_output.next_token_logits
+         ):
++            scale = getattr(logits_output, "dflash_verify_logit_scale", None)
++            logits = logits_output.next_token_logits
+             if self._can_skip_verify_logits(batch, sampling_info):
+-                target_predict = target_lp.deferred_argmax(
+-                    logits_output.next_token_logits
+-                )
++                kwargs = {"scale": scale} if scale is not None else {}
++                target_predict = target_lp.deferred_argmax(logits, **kwargs)
+                 logits_output.next_token_logits = None
+             else:
+                 logits_output.next_token_logits = target_lp.finish_deferred_gather(
+-                    logits_output.next_token_logits
++                    logits if scale is None else logits * scale
+                 )
++            if scale is not None:
++                logits_output.dflash_verify_logit_scale = None
+ 
+         grammar_mask = None
+         if batch.has_grammar:

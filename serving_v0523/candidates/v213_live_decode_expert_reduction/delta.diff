@@ -1,0 +1,284 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+new file mode 100644
+index 0000000..66373ad
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+@@ -0,0 +1,74 @@
++// Each output warp collects the original K-warp partials in their native FP32 tree.
++template <class Ctx, class MMA, class Arith>
++struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
++  using Base = EpiloguePipeline<Ctx, MMA, Arith>;
++  using Base::Base;
++  using Block = typename Ctx::BlockShape;
++  using Warp = typename Ctx::WarpShape;
++  using Smem = typename Ctx::SharedStorage;
++  static constexpr uint32_t groups = Block::K / Warp::K;
++  static constexpr uint32_t owners = Ctx::kNumMathThreads / groups;
++  static constexpr uint32_t parts = sizeof(typename MMA::CRegistersArrayType) / sizeof(float4);
++  static_assert(Ctx::kUseWgmma && Ctx::kIsGroupedContiguousGemm && !Ctx::kUseStreamK && !Ctx::kUseTmaC);
++  static_assert(!Ctx::TuningConfig::kReduceOverlapLastStageOnly && Ctx::kNumWriteSplits == 1);
++  static_assert(Ctx::kNumMathThreads == 512 && (groups == 2 || groups == 4));
++  static_assert(Warp::K == 64 && Warp::N == 32 && Warp::M == Block::M);
++  static_assert((Block::M == 8 || Block::M == 16 || Block::M == 24) && parts == 2 * (Block::M / 8));
++  static_assert(std::is_same_v<typename Ctx::MmaOpClass::ValTypeC, float>);
++  using Scratch = float4[groups - 1][parts][owners];
++  // The producer cannot start another job while the ordinary math epilogue owns
++  // these stages. The output writer uses the disjoint leading reduce array.
++  static_assert(offsetof(Smem, reduce) == offsetof(Smem, stages));
++  static_assert(sizeof(Smem::reduce) % alignof(float4) == 0);
++  static_assert(sizeof(Smem::reduce) + sizeof(Scratch) <= sizeof(Smem::stages));
++  uint32_t live;
++  CUDA_INLINE void seek(uint32_t expert, uint32_t m, uint32_t n, uint32_t end, uint32_t start) {
++    Base::seek(expert, m, n, end, start);
++    live = end - start;
++  }
++  CUDA_INLINE void call(uint32_t* words) {
++    auto& ctx = this->ctx;
++    const uint32_t rank = ctx.warp_id() / (owners / 32);
++    const uint32_t owner = threadIdx.x % owners;
++    auto* stage = reinterpret_cast<char*>(&ctx.smem.stages);
++    auto& scratch = *reinterpret_cast<Scratch*>(stage + sizeof(Smem::reduce));
++    auto* values = reinterpret_cast<float4*>(words);
++    ctx.sync_math_threads();
++    if (rank != 0) {
++      PRAGMA_UNROLL
++      for (uint32_t v = 0; v < parts; ++v) {
++        const uint32_t first_row = 8 * (v % (Block::M / 8)) + 2 * (ctx.lane_id() % 4);
++        if (first_row < live) scratch[rank - 1][v][owner] = values[v];
++      }
++    }
++    ctx.sync_math_threads();
++    if (rank == 0) {
++      PRAGMA_UNROLL
++      for (uint32_t v = 0; v < parts; ++v) {
++        const uint32_t first_row = 8 * (v % (Block::M / 8)) + 2 * (ctx.lane_id() % 4);
++        if (first_row < live) {
++          float4 one = scratch[0][v][owner], left = values[v];
++          float4 two{}, three{};
++          if constexpr (groups == 4) {
++            two = scratch[1][v][owner];
++            three = scratch[2][v][owner];
++          }
++          auto* a = reinterpret_cast<float*>(&left);
++          auto* b = reinterpret_cast<float*>(&one);
++          auto* c = reinterpret_cast<float*>(&two);
++          auto* d = reinterpret_cast<float*>(&three);
++          PRAGMA_UNROLL
++          for (uint32_t j = 0; j < 4; ++j) {
++            if constexpr (groups == 4) a[j] = __fadd_rn(__fadd_rn(a[j], c[j]), __fadd_rn(b[j], d[j]));
++            else a[j] = __fadd_rn(a[j], b[j]);
++          }
++          values[v] = left;
++        }
++      }
++    }
++    this->smem_writer.write(words, 1, 0);
++    ctx.sync_math_threads();
++    this->gmem_writer.write(0, 1, 0);
++    ctx.sync_math_threads();
++  }
++};
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 06c66dc..23e2a0b 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -38,6 +38,7 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     # The complete generated kernel and these specializations share Humming's
+     # normal code cache key. Load the CUfunction directly for the compact ABI.
+     class GroupedDecodeGateUpKernel(HummingKernel):
++        live_reduction = False
+         both_pairs = False
+         residual_tiles = False
+ 
+@@ -57,6 +58,10 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             opcode = f"HGMMA.64x{self.block_shape[0]}x16.F32.BF16"
+             drains = 8 if self.both_pairs else (16 if prompt else 12)
+             valid = assembly.count(opcode) == 32 and assembly.count("WARPGROUP.DEPBAR.LE") == drains
++            if self.live_reduction:
++                from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
++
++                valid = has_live_decode_isa(assembly, self.block_shape[0])
+             if self.residual_tiles:
+                 from sglang.srt.layers.muse_spark.residual_prompt_mma import has_residual_isa
+ 
+@@ -87,6 +92,10 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             if not prompt:
+                 pair = header.with_name("grouped_decode_mma_pair.cuh")
+                 self.code += "\n#define MUSE_OVERLAP_CONTEXT MuseGateCtx\n" + pair.read_text()
++            if self.live_reduction:
++                from sglang.srt.layers.muse_spark.live_decode_reduce import bind_live_decode_reduce
++
++                bind_live_decode_reduce(self)
+             if self.residual_tiles:
+                 from sglang.srt.layers.muse_spark.residual_prompt_mma import adapt_residual_tiles
+ 
+@@ -99,6 +108,9 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     class GroupedDecodeFullPairGateUpKernel(GroupedDecodeGateUpKernel):
+         both_pairs = True
+ 
++    class LiveDecodeGateUpKernel(GroupedDecodeFullPairGateUpKernel):
++        live_reduction = True
++
+     config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     config.pop("sublayer_name", None)
+     required = {
+@@ -120,7 +132,7 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     elif prompt:
+         variants = (GroupedDecodeGateUpKernel,)
+     else:
+-        variants = (GroupedDecodeFullPairGateUpKernel, GroupedDecodeGateUpKernel)
++        variants = (LiveDecodeGateUpKernel, GroupedDecodeFullPairGateUpKernel, GroupedDecodeGateUpKernel)
+     for variant in variants:
+         try:
+             kernel = variant(**config)
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+index 4a063fd..e24a06b 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -60,7 +60,12 @@ def check_pair_code(compiler, kernel, both_pairs=False):
+     code = subprocess.check_output([tool, "-sass", kernel.kernel_filename], text=True)
+     opcode = f"HGMMA.64x{kernel.block_shape[0]}x16.F32.BF16"
+     drains = 8 if both_pairs else 12
+-    if code.count(opcode) != 32 or code.count("WARPGROUP.DEPBAR.LE") != drains or "UTMALDG.3D" not in code:
++    valid = code.count(opcode) == 32 and code.count("WARPGROUP.DEPBAR.LE") == drains
++    if getattr(kernel, "live_reduction", False):
++        from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
++
++        valid = has_live_decode_isa(code, kernel.block_shape[0])
++    if not valid or "UTMALDG.3D" not in code:
+         raise RuntimeError("grouped matrix pipeline compiled with unsupported instruction schedule")
+ 
+ 
+@@ -71,6 +76,7 @@ def _prepare_down(context, meta, compute, tuning):
+     from humming.kernel.humming import HummingKernel
+ 
+     class GroupedDecodePairDownKernel(HummingKernel):
++        live_reduction = False
+         both_pairs = False
+ 
+         @staticmethod
+@@ -79,6 +85,10 @@ def _prepare_down(context, meta, compute, tuning):
+ 
+         def prepare(self):
+             append_pair(self, self.both_pairs)
++            if self.live_reduction:
++                from sglang.srt.layers.muse_spark.live_decode_reduce import bind_live_decode_reduce
++
++                bind_live_decode_reduce(self)
+             KernelRuntime.prepare(self)
+ 
+         def load_cubin(self):
+@@ -89,6 +99,9 @@ def _prepare_down(context, meta, compute, tuning):
+     class GroupedDecodeFullPairDownKernel(GroupedDecodePairDownKernel):
+         both_pairs = True
+ 
++    class LiveDecodeDownKernel(GroupedDecodeFullPairDownKernel):
++        live_reduction = True
++
+     config = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     config.pop("sublayer_name", None)
+     required = {
+@@ -101,7 +114,7 @@ def _prepare_down(context, meta, compute, tuning):
+                                            "use_fused_e8m0_scale", "input_scale_group_size",
+                                            "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
+         return None
+-    for variant in (GroupedDecodeFullPairDownKernel, GroupedDecodePairDownKernel):
++    for variant in (LiveDecodeDownKernel, GroupedDecodeFullPairDownKernel, GroupedDecodePairDownKernel):
+         try:
+             kernel = variant(**config)
+             kernel.check_context()
+diff --git a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+new file mode 100644
+index 0000000..61b45bd
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+@@ -0,0 +1,33 @@
++"""Bind the live-row K-partial reduction only to the version-pinned paired decode loop."""
++import hashlib
++from pathlib import Path
++
++
++def bind_live_decode_reduce(kernel):
++    import humming
++    from sglang.kernels import jit
++
++    include = Path(humming.__path__[0]) / "include/humming/epilogue/pipeline.cuh"
++    if hashlib.sha256(include.read_bytes()).hexdigest() != "730493c5a7a92176bf3a5d47d54596a663d734018ac02c2b26ebb2da3e292ed3":
++        raise ValueError("unsupported grouped expert epilogue")
++    if kernel.reduce_overlap_last_stage_only or kernel.multi_cast_size_a != 1 or kernel.multi_cast_size_b != 1:
++        raise ValueError("grouped decode staging is shared with another producer")
++    marker = "#include <humming/epilogue/pipeline.cuh>"
++    alias = "using Epilogue = EpiloguePipeline<Ctx, MMA, EpilogueArithmetic>;"
++    if kernel.code.count(marker) != 1 or kernel.code.count(alias) != 1:
++        raise ValueError("unsupported grouped decode source")
++    header = Path(jit.__file__).parent / "csrc/muse_spark/live_decode_reduce.cuh"
++    kernel.code = kernel.code.replace(marker, marker + "\n" + header.read_text()).replace(
++        alias, "using Epilogue = MuseLiveDecodeEpilogue<Ctx, MMA, EpilogueArithmetic>;"
++    )
++
++    if kernel.block_shape[0] > 8:
++        from sglang.srt.layers.muse_spark.residual_prompt_mma import adapt_residual_tiles
++
++        adapt_residual_tiles(kernel, paired=True, decode_width=kernel.block_shape[0])
++
++
++def has_live_decode_isa(assembly, width):
++    widths = range(8, width + 1, 8)
++    return (all(assembly.count(f"HGMMA.64x{w}x16.F32.BF16") == 32 for w in widths)
++            and assembly.count("WARPGROUP.DEPBAR.LE") == 8 * len(widths))
+diff --git a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+index 8be1b21..2418a36 100644
+--- a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
++++ b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+@@ -19,7 +19,7 @@ def _replace_once(text, old, new):
+     return text.replace(old, new)
+ 
+ 
+-def adapt_residual_tiles(kernel, paired):
++def adapt_residual_tiles(kernel, paired, *, decode_width=None):
+     import humming
+     from humming.config.mma import WgmmaOpClassImpl
+     from sglang.kernels import jit
+@@ -33,11 +33,23 @@ def adapt_residual_tiles(kernel, paired):
+         code = _replace_once(code, "#include <humming/kernel/humming_ws.cuh>", source.replace("#pragma once", "", 1))
+     location = "template <bool kUseTma>\nclass KernelTensorParamType"
+     operations = []
+-    for width in _WIDTHS:
++    widths = _WIDTHS if decode_width is None else tuple(range(8, decode_width, 8))
++    for width in widths:
+         op = WgmmaOpClassImpl(width, 64, 16, "bf16", "bf16", "f32")
+         operations.append(f"struct MuseResidual{width} {{\n" + op.to_cpp_str() + "\n};\n")
+-    template = Path(jit.__file__).parent / "csrc/muse_spark/residual_prompt_mma.cuh"
+-    operations.append(template.read_text())
++    if decode_width is None:
++        template = Path(jit.__file__).parent / "csrc/muse_spark/residual_prompt_mma.cuh"
++        operations.append(template.read_text())
++    else:
++        if decode_width not in (16, 24) or not paired or code.count("#define MUSE_PAIR_LAST_K_SLICES") != 1:
++            raise ValueError("unsupported residual decode schedule")
++        operations.append("struct MuseFullWidth {};\n")
++        # Reuse the complete paired K16 implementation, changing the tensor
++        # instruction's output extent while preserving the full accumulator pitch.
++        declaration = "CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {"
++        code = _replace_once(code, declaration, declaration + " run_as<MmaOpClass>(stage, iteration); }\n"
++                             "  template<class SliceOp> CUDA_INLINE void run_as(uint32_t stage, uint32_t iteration) {")
++        code = _replace_once(code, "MmaOpClass::fma(desc, regs_b", "SliceOp::fma(desc, regs_b")
+     code = _replace_once(code, location, "".join(operations) + location)
+     # Keep the entire accumulator lifetime in one width-specialized branch.
+     # Joining those arrays before the epilogue spills the full-width hot loop.
+@@ -55,11 +67,14 @@ def adapt_residual_tiles(kernel, paired):
+         "if constexpr (std::is_same_v<Op, MuseFullWidth>) " + op +
+         f" else muse_residual_mma<Op, {paired_arg}, Ctx>(mma, stage_id, warp_iter_id);"
+     )
++    if decode_width is not None:
++        run = ("if constexpr (std::is_same_v<Op, MuseFullWidth>) " + op
++               + " else mma.template run_as<Op>(stage_id, warp_iter_id);")
+     body = _replace_once(body, op, run)
+     # Both offsets are absolute rows at the current expert's end and tile start.
+     # Every math warp observes this decision once before traversing K.
+     dispatch = "      const auto live = scheduler.current_shape_m - scheduler.m_offset;\n"
+-    for i, width in enumerate(_WIDTHS):
++    for i, width in enumerate(widths):
+         dispatch += f"      {'else ' if i else ''}if (live <= {width}) compute(MuseResidual{width}{{}});\n"
+     dispatch += "      else compute(MuseFullWidth{});\n"
+     begin = "      auto compute = [&](auto op) {\n        using Op = decltype(op);\n"

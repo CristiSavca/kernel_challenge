@@ -1,0 +1,43 @@
+{
+  "patch_sha256": "d79351da3fc899b1d4c63dd9aff8c618fc73cfd4152be0f7295d56a0bef3bdf4",
+  "cases": [
+    {
+      "role": "prefill",
+      "logical_rows": 16384,
+      "owner_rows": 2048,
+      "width": 8192,
+      "hidden_bf16_words": 16777216,
+      "tap_bf16_words": 83886080,
+      "terminal_launches": 1
+    },
+    {
+      "role": "mixed",
+      "logical_rows": 16640,
+      "owner_rows": 2080,
+      "width": 128,
+      "hidden_bf16_words": 266240,
+      "tap_bf16_words": 1331200,
+      "terminal_launches": 1
+    },
+    {
+      "role": "verify",
+      "logical_rows": 128,
+      "owner_rows": 128,
+      "width": 1024,
+      "hidden_bf16_words": 131072,
+      "tap_bf16_words": 655360,
+      "terminal_launches": 1
+    },
+    {
+      "role": "prefill",
+      "logical_rows": 1506,
+      "owner_rows": 189,
+      "width": 63,
+      "hidden_bf16_words": 11907,
+      "tap_bf16_words": 59535,
+      "terminal_launches": 1
+    }
+  ],
+  "negative_cases": 4,
+  "scope": "Native model/terminal-layer/gate source on CPU with synthetic preceding layers, experts and SP ownership. Torch stands in for the launched gate. The independent Triton receipt exercises device code on its interpreter."
+}

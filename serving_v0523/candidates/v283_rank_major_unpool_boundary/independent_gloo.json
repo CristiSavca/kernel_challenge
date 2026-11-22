@@ -1,0 +1,627 @@
+{
+  "torch": "2.5.1",
+  "legacy_private_signatures": 2,
+  "device": "CPU Gloo",
+  "transport": "real Gloo all_gather into list and copy into packed receive; staged GroupCoordinator layout",
+  "substituted": "GEMM outputs prescribed signed BF16 words; compiled norm and expert math represented by bit-preserving spies",
+  "all_bf16_bitpatterns": 65536,
+  "nan_encodings_per_complete_word_set": 254,
+  "source_sha256": {
+    "python/sglang/srt/distributed/parallel_state.py": "bd356b92933a4e5eb08f22cf3eda8b788cc09efbbb2fb421745803847b8d2f5c",
+    "python/sglang/srt/models/muse_spark.py": "b6b4abd0d47666bc4de61ec4ea5016e578ceaa8c9b2693b8bce8fd023020b372",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "069c7dde7c1fbc02f80bf2327f1a27ca4661894a81cfaabf94943cae0ba9953f",
+    "python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py": "62c2761407787f1d2d06ecb83769b9623f3d29cff843c1a463ab419934fcc496"
+  },
+  "results": {
+    "4": {
+      "per_rank": [
+        {
+          "case": "verify",
+          "rows": 1,
+          "words": 8192,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 1,
+          "words": 8192,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 128,
+          "words": 1048576,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 128,
+          "words": 1048576,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 256,
+          "words": 2097152,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 256,
+          "words": 2097152,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "decode",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "jit_failure",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            0
+          ],
+          "jit": [
+            4,
+            1
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "native",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "native_local",
+            "native_shard_boundary"
+          ]
+        },
+        {
+          "case": "terminal",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "terminal_gate"
+          ]
+        },
+        {
+          "case": "native_complete",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "native_complete",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "strided",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "stream_dtype",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "operator",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "sp",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "flag_off",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "prefill",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "zero",
+          "rows": 0,
+          "words": 0,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "too_many",
+          "rows": 257,
+          "words": 2105344,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        }
+      ],
+      "compared_on_all_ranks": 39944192
+    },
+    "8": {
+      "per_rank": [
+        {
+          "case": "verify",
+          "rows": 1,
+          "words": 8192,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 1,
+          "words": 8192,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 128,
+          "words": 1048576,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 128,
+          "words": 1048576,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "verify",
+          "rows": 256,
+          "words": 2097152,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "unselected",
+          "rows": 256,
+          "words": 2097152,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "decode",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "jit_failure",
+          "rows": 32,
+          "words": 262144,
+          "gather": [
+            0
+          ],
+          "jit": [
+            8,
+            1
+          ],
+          "stages": [
+            "column_project"
+          ]
+        },
+        {
+          "case": "native",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "native_local",
+            "native_shard_boundary"
+          ]
+        },
+        {
+          "case": "terminal",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "terminal_gate"
+          ]
+        },
+        {
+          "case": "native_complete",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "native_complete",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "strided",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "stream_dtype",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "operator",
+          "rows": 8,
+          "words": 65536,
+          "gather": [
+            -1
+          ],
+          "jit": [],
+          "stages": [
+            "column_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "sp",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "flag_off",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "prefill",
+          "rows": 8,
+          "words": 65536,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "zero",
+          "rows": 0,
+          "words": 0,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        },
+        {
+          "case": "too_many",
+          "rows": 257,
+          "words": 2105344,
+          "gather": [],
+          "jit": [],
+          "stages": [
+            "dense_project",
+            "ordinary_boundary"
+          ]
+        }
+      ],
+      "compared_on_all_ranks": 79888384
+    }
+  },
+  "scratch_cleanup": {
+    "path": "/private/tmp/okc-v283-gloo.Lq8ZtPsy",
+    "removed_bytes": 28730,
+    "available_bytes_before": 45846183936,
+    "available_bytes_after": 45846188032
+  }
+}

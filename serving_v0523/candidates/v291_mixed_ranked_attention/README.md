@@ -1,0 +1,25 @@
+# V291 keeps long-prompt attention fast paths when verification joins
+
+V291 adds causal sliding-window attention and a split full-attention path to V290’s mixed forward. All 62 target layers can use a prompt fast path when a full prompt runs alongside a compatible DFlash verification cohort. The 46 sliding layers pack the visible window from the original physical KV cache. The 16 full layers run dense FA3 on the prompt and use paged attention for the short verification requests. The split adds an attention launch on each full layer. The output remains in its original per-request position. [Serving patch](patch.diff) · [Six-file change from V290](delta.diff)
+
+The target grants causal eligibility only after all ranks agree on the running requests’ linear proposals and reserved physical slots. The prompt count comes from the existing output-row planner. For full attention, the tail inherits the actual page-table rows, row offsets and cache scales. A supported uniform Hopper FP8 verification cohort can enter the existing specialized kernel. Masked, softcapped, nonuniform or unsupported tail cases retain native attention as appropriate. Graph replay carries the certificate for the current forward. A 32 MiB workspace check bounds the prompt pack and the specialized tail independently. Peak memory across live graph pools requires hardware measurement. [Proposal ownership](certificate.json) · [Attention dispatch](paged_tail.json) · [Workspace and provider checks](attention_abi.json)
+
+## Scope by load
+
+| Concurrent users | Archived full chunks alongside verifiers | Prompt packs within the full-attention cap | Corresponding full-layer calls |
+|---:|---:|---:|---:|
+| 1 | 0 | 0 | 0 |
+| 4 | 25 | 21 | 336 |
+| 16 | 72 | 58 | 928 |
+| 32 | 145 | 115 | 1,840 |
+
+The counts use V41’s scheduler chronology, with three repetitions at one user, two at four users, and one each at 16 and 32 users. They describe opportunities if the V291 graph, allocator and proposal guards admit those batches. On a separate synthetic 16K fixture, V290’s inherited peer publisher moves at most 74.703 MiB of incoming expert activations per rank, compared with 112 MiB for full replication. Hiding one V64 verification round per archived join would yield illustrative wall-time ratios of 1.036× at 16 users and 1.048× at 32. The combined serving score, TTFT, token agreement and per-GPU peak remain unmeasured. V64 holds the official 1.4119× score. [Per-load work and assumptions](work.json) · [Official V64 result](../../runs/abd217baf0ed49fd.json)
+
+## What ran on the integrated tree
+
+- Five sliding-attention cases exercised model entry, graph replay, physical page translation and the KV writer. At 4,096 and 16,384 prompt rows, causal batches entered the packed path. The masked, uncertified and nonlinear controls declined it. The subsequent ordinary replay reused ten previously rejected cache slots across requests and matched the reference. [Sliding replay](independent_causal_attention.json)
+- Ten split-attention replay pairs compared 133,264,128 visible KV bytes and 23,040 sampled attention scalars. Seventeen additional model pairs ran scaled and unscaled FP8, native fallbacks and the specialized paged tail with checked host pointers. The specialized outputs covered 409,600 BF16 scalars, with maximum relative L2 error 0.002244 against an independent dense FP64 reference. Hardware output agreement requires a real serving run. [Split replay](full_attention.json) · [Paged-tail replay](paged_tail.json)
+- The certificate fixture accepted four eligible native entries and declined twenty cases before consuming a proposal. Twelve settlement replays tracked committed lengths, rejected slots and draft KV. The backend passed 168 workspace and geometry cases plus 72 native-provider ABI cases, including 36 legacy API retries and 72 separate-storage copybacks. [Certificate and settlement](certificate.json) · [Attention ABI](attention_abi.json)
+- V290’s ranked decode ran 34 paired model calls with 14 early route plans. A single model instance per TP4/TP8 fixture alternated prompt, verification and ordinary operations for twelve calls at each world size. All 990,720 compared words matched. The TP8 two-bank publisher reserves 32.5 MiB at the largest configured row count. Seventeen server configurations also exercised the inherited capacity limits. [Ranked model](ranked_model.json) · [Alternating calls](transitions.json) · [Server settings](server_config.json) · [Peer capacity](peer_capacity.json)
+
+The official 396,795-byte export covers 61 permitted paths, with a longest added line of 147 characters. Applying and reversing the full patch and parent delta reconstructs the pinned trees. Five of the six changed files match final V240 byte for byte. The sixth matches after accounting for V290’s existing ranked-pool field. The two additions follow that field and preserve all 137 earlier ForwardBatch fields. All 40,320 orderings of the eight inherited flags passed the actual CLI parser. [Export and component digests](validation.json) · [Public flags and field ordering](flags.json)

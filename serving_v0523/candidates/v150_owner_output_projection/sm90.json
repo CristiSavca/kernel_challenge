@@ -1,0 +1,60 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "srt/layers/communication/sp_owner_projection.py",
+      "kernel": "_sum_sources",
+      "label": "tp4",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SIZE": 4,
+        "BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "9422118a42ce7cccdeab990f854ee6642f0e5d4399b8218917cacf619b114bd8",
+      "cubin_sha256": "0500b002b15a962c6d5f90f5a9f2b38eddb1716fc62a5b9464142136fe25eb2c",
+      "cubin_bytes": 9496,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/communication/sp_owner_projection.py",
+      "kernel": "_sum_sources",
+      "label": "tp8",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SIZE": 8,
+        "BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "9422118a42ce7cccdeab990f854ee6642f0e5d4399b8218917cacf619b114bd8",
+      "cubin_sha256": "19fb2a41e5d0f7871b00f5d5b5779472033cccbc2d27f80692bd95d031e2b461",
+      "cubin_bytes": 11672,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 30 registers, used 0 barriers"
+      ]
+    }
+  ]
+}

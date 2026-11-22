@@ -1,0 +1,30 @@
+# V118 native-depth verification budgets
+
+A fixed eight-row verification budget has no pooling opportunity at one user. At 32 users, assigning those rows across requests by estimated prefix probability improved **expected committed tokens per target call by 5.1%** in a calibrated synthetic model. It also reduced the 10th-percentile request’s expected commits by 17.3%. This research result does not establish a serving speedup or justify a challenge submission. The sharpest one-user constraint is the checkpoint’s seven proposal positions. At V64’s observed average near four committed tokens per target call, doubling that average would already consume the entire eight-token ceiling. [V64 judge receipt](../../runs/abd217baf0ed49fd.json)
+
+## Width, depth and actual model work
+
+The released DFlash2 checkpoint specifies a block of eight, five bidirectional draft layers, five target tap positions (1, 16, 30, 44 and 59), and two-tap grouped convolutions. During ordinary decode the first position holds the verified token. The other seven hold mask embeddings. In the pinned worker a width override calls `draft_model.set_block_size`, which updates each convolution’s block grouping. V79 width twelve therefore changes attention context for the earliest positions as well as adding four positions beyond the training width. Its target attention enforces committed-prefix plus ancestor visibility independently for every node. [V79 design](../v79_wide_selector_tree/README.md) · [Public checkpoint configuration](https://huggingface.co/RadixArk/Muse-Spark-Open-DFlash2/blob/46c90f412549c472941a68382d91a99e5e6372a0/config.json)
+
+Keeping seven native proposal positions and increasing only the target node budget preserves draft geometry. A 16-node or 24-node target tree can hedge more paths and can commit at most eight tokens including its bonus. A second block anchored at an unverified candidate lacks the target features through layer 59 that the draft expects as its context. Draft KV generated from mask embeddings cannot reproduce these features. Exact staged target evaluation could produce them, but it spends nearly a full target pass before the second stage starts. The one-user endpoint frequency is unknown. An average of four bounds the fraction of fully accepted native blocks above by approximately 3/7.
+
+## Measured synthetic tradeoff
+
+The experiment used 32 independent batches per geometry with 16 possible successors, seven native depths and varied request confidence. It generated fresh synthetic logits and evaluated expected commits under three target temperatures. For this table the target uses the same conditional probabilities as the proposer. Entries are ratios to eight target nodes per request. Wider uniform trees consume two or three times the target rows. Pooling gives each request between four and sixteen rows and fixes the total at eight times the batch size. [Complete statistics](budget.json)
+
+| Concurrent requests | Uniform 16 | Uniform 24 | Pooled, same total rows |
+| ---: | ---: | ---: | ---: |
+| 1 | 1.258× | 1.367× | 1.000× |
+| 4 | 1.220× | 1.332× | 1.030× |
+| 16 | 1.222× | 1.336× | 1.048× |
+| 32 | 1.225× | 1.340× | 1.051× |
+
+For distinct successor IDs, expected commits equal one plus the summed target probability of every selected prefix. Descendant probability cannot exceed parent probability. When native scores are calibrated, repeatedly taking the largest available prefix probability across requests maximizes that sum subject to a floor, cap and total budget. Source checks matched 60 trees to V70’s node order, 720 allocations to exhaustive optima and 1,920 exact enumerations of target paths. At 32 users, 51.6% of requests individually lost expected commits under the four-row floor. A six-row floor raised the 10th-percentile ratio from 0.827 to 0.911 and reduced the aggregate ratio to 1.041. The challenge’s user-facing rates depend on latency as well as token count. [Runnable allocator and exact checks](budget.py)
+
+Under independent uniform top-eight routing to 256 experts, one rank at one user touches an expected 7.18 experts per layer at width eight, 12.75 at sixteen and 17.06 at twenty-four. If only expert time scaled with those counts and all other costs were constant, sixteen rows would beat eight in this example only if the affected expert work accounted for less than about one third of baseline pass time. This is a cost sensitivity. The judge provides no matching phase timing. [Traffic model](boundaries.json) · [Low-load expert traffic evidence](../../runs/low_load_expert_traffic_feasibility.md)
+
+## Head and KV boundaries
+
+The seventh score plane can affect the last selected node even when the first six planes agree bit for bit. One synthetic lattice selects the seven-token all-zero prefix while changing only plane seven selects an alternative child of the root. In the pure greedy tree it is possible to certify an entire tree early if none of its required earlier expansions reaches the next unseen plane. Starting with four planes left a second projection necessary in 42.5% of one-user batches, 93.3% of four-user batches and every 16- and 32-user batch in this experiment. At one user that trades a 24.6% reduction in projected rows for an average 1.425 bank passes over a 394.625 MiB vocabulary weight shard. V101b also needs the native full spine for its choice and feedback. [Counterexample and staged-head experiment](boundaries.py) · [V101b selection](../v101b_endpoint_guarded_spine/README.md)
+
+Variable per-request widths require changes in graph matching, tree attention addressing, scheduler row strides and KV slot ownership. The pinned speculative API exposes ragged verify for DSPARK. DFLASH's captured uniform width cannot simply consume those offsets. A page-one ownership simulation replayed 48 rounds, checked 636 disjoint request results and exercised 231 nontrivial remappings of temporary rows before commit. Physical page ownership and overlap publication need independent proofs for larger pages. This directory contains the CPU research harnesses only. All tests used generated inputs. No H200 run or runtime change was made.

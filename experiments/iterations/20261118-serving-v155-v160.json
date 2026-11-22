@@ -1,0 +1,239 @@
+{
+  "checked_at_utc": "2026-11-18T19:01:29.145157+00:00",
+  "score": {
+    "candidate": "V64",
+    "official_four_load": 1.4119,
+    "per_load": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "target": 4,
+    "remaining_multiplier": 2.8330618315744744
+  },
+  "target": 4,
+  "required_geomean_gain_over_V64": 2.8330618315744744,
+  "required_geomean_gain_on_4_16_32_if_1_unchanged": 4.008741672860118,
+  "candidates": {
+    "V155": {
+      "bytes": 126959,
+      "tree": "e24fc4cdd9b7106e0bcd7f682dd1107768427f09",
+      "patch_sha256": "194cda2953825386279202b580d3cb7ad4307cc3531f24da6e416392577f39f4",
+      "manifest": "serving_v0523/candidates/v155_mixed_verify_graph_rows/validation.json"
+    },
+    "V156": {
+      "bytes": 147300,
+      "tree": "5085027c639e0d20eab32f08ae56a240834acfba",
+      "patch_sha256": "df9d59ddc55a8b7e1bfc46a6e324cdd337d834f52fcecf19dded103bb1d10db1",
+      "manifest": "serving_v0523/candidates/v156_mixed_verify_settlement/validation.json"
+    },
+    "V157": {
+      "bytes": 122573,
+      "tree": "1a05b33aa2c4ab874872f9c8867f28c6f86e478f",
+      "patch_sha256": "7acfb25c01494307fd0714a229717146d2532b0251c2533aa91de7eadc6db591",
+      "manifest": "serving_v0523/candidates/v157_mixed_graph_admission/validation.json"
+    },
+    "V158": {
+      "bytes": 120805,
+      "tree": "ebb9c46421b4167a74a059d2d986f90a36e3be03",
+      "patch_sha256": "9a15753b9fc9cb18bff67682f7409c48212a39838faca280b3c6ce9be33b96e1",
+      "manifest": "serving_v0523/candidates/v158_native_dflash_proposal/validation.json"
+    },
+    "V159": {
+      "bytes": 172923,
+      "tree": "a6564d6daed989f1b5c29692f753ae312a0877a0",
+      "patch_sha256": "19b54bc3d3618ec7cfe699c8ca65698918d46d7ef2aacffbe04b3ff2ff12c229",
+      "manifest": "serving_v0523/candidates/v159_mixed_verify_forward/validation.json"
+    },
+    "V160": {
+      "bytes": 190775,
+      "tree": "d98c5059cc2d03bb0ed83757f348d886d2da1127",
+      "patch_sha256": "ed00e04fcad2dc0d9745dcd37923e3100a9227dbeb4e36a1252a5d81c0e05778",
+      "manifest": "serving_v0523/candidates/v160_mixed_dflash_serving/validation.json"
+    }
+  },
+  "latest": "V160",
+  "activation": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-mixed-prefill": ""
+  },
+  "normal_overlap_scheduler": true,
+  "cpu_validation": {
+    "final_source": "d98c5059cc2d03bb0ed83757f348d886d2da1127",
+    "durable_evidence": {
+      "execution_cpu.json": "b929335a3bf59b96d8bce08c67eb3c8be27c8eda5e2803b9d909fb9f16b80671",
+      "scheduler_admission_cpu.json": "f19b409f3c39d04456363445b473fcbbc884c62b6b2bfab6649ce0329402bfbb",
+      "readback_cpu.json": "b814c9b45515c251a153a67b1bf4b140c828636b2b3de7f6279b193235ce8151",
+      "independent_round.json": "d32c46fe1c9c3995752971bc0b07a9df51fa95c39047f1fee0024b11bca28bcb",
+      "cli_cpu.json": "52b543ac7b8548185f47fbd4688e801531034b92e15829e832e51e6bba1bee1b",
+      "independent_review.md": "3a2d517dfac3259bd76a6a75e1fe96666ac65ac09bf8ca3344b26861b5ad7902"
+    },
+    "joined_rounds": 96,
+    "native_reservations": 96,
+    "filtered_next_iterations": 96,
+    "tail_tokens_committed": 1008,
+    "overlap_execution_rounds": 216,
+    "following_ordinary_ticks": 216,
+    "admission_rejection_cases": 47,
+    "distributed_vote_sizes": [
+      2,
+      4,
+      8
+    ],
+    "host_join_comparisons": 192,
+    "host_request_comparisons": 1152,
+    "early_copy_regression_rounds": 32,
+    "existing_cli_positional_fields_preserved": 546,
+    "host_platform": "Local CPU, model and device kernels simulated",
+    "inherited_fixtures_rerun_on_final_tree": {
+      "V159_bridge": {
+        "cases": 96,
+        "separate_fallbacks": 6,
+        "gloo_group_sizes": [
+          2,
+          4,
+          8
+        ],
+        "result_sha256": "419486c3d878ff10c801c7c88b59b0026844a47cd59f175f2fe3859069528ffb"
+      },
+      "V156_host": {
+        "cases": 192,
+        "requests": 1152,
+        "adverse": 15,
+        "copy_configurations": 16,
+        "result_sha256": "349fa021396690da869101f7f620f8696f6fc4b08e95161ebe9bd83e631718f2"
+      }
+    }
+  },
+  "historical_V41": {
+    "path": "experiments/iterations/20261118-serving-mixed-graph-capacity.json",
+    "concurrency": {
+      "1": {
+        "passes_with_running": 0,
+        "qualifying_passes": 0,
+        "running_request_appearances": 0,
+        "conditional_change_in_padded_target_rows": 0
+      },
+      "4": {
+        "passes_with_running": 112,
+        "qualifying_passes": 66,
+        "running_request_appearances": 164,
+        "conditional_change_in_padded_target_rows": -1312
+      },
+      "16": {
+        "passes_with_running": 238,
+        "qualifying_passes": 99,
+        "running_request_appearances": 1305,
+        "conditional_change_in_padded_target_rows": -7120
+      },
+      "32": {
+        "passes_with_running": 347,
+        "qualifying_passes": 55,
+        "running_request_appearances": 1150,
+        "conditional_change_in_padded_target_rows": -7072
+      }
+    },
+    "meaning": "Retrospective padded target-row budgets on prior hardware traces. Actual V160 admission frequency and latency need H200 timing."
+  },
+  "checks": {
+    "source_rules": "https://openkernelchallenge.dev/api/v1/serving",
+    "checked_fixed_flag_patterns": 76,
+    "longest_added_line_chars": 128,
+    "patch_bytes": 190775,
+    "cap_bytes": 409600,
+    "hardware_gates": [
+      "output agreement and exact lengths",
+      "peak VRAM <= stock +2 GB/GPU",
+      "TTFT <=2x stock at every load",
+      "four-load stock-user-rate frontier"
+    ],
+    "source_export_passed": true
+  },
+  "device": {
+    "local": "Apple Silicon",
+    "free_external_access": "exhausted",
+    "billing_evidence": "experiments/iterations/20261118-serving-device-access.json",
+    "new_allocations": 0
+  },
+  "judge": {
+    "observed_at_utc": "2026-11-18T18:59:37.155007+00:00",
+    "prior_job": "75557c21595347de",
+    "candidate": "V93/16",
+    "status": "queued",
+    "daily_limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-19T00:00:00Z",
+    "new_submissions": 0,
+    "nov19_plan": [
+      "V120b/32",
+      "V147/16 if V93 pending",
+      "V139/4"
+    ],
+    "runners": {
+      "nov19_decode_runner": {
+        "pid": 75333,
+        "open_lock": "serving_v0523/runs/nov19_decode_runner.lock"
+      },
+      "nov20_v129_runner": {
+        "pid": 47821,
+        "open_lock": "serving_v0523/runs/nov20_v129_runner.lock"
+      },
+      "nov20_v132_runner": {
+        "pid": 3073,
+        "open_lock": "serving_v0523/runs/nov20_v132_runner.lock"
+      },
+      "nov20_v141_runner": {
+        "pid": 3084,
+        "open_lock": "serving_v0523/runs/nov20_v141_runner.lock"
+      },
+      "nov20_v154c_runner": {
+        "pid": 3094,
+        "open_lock": "serving_v0523/runs/nov20_v154c_runner.lock"
+      }
+    },
+    "nov20_plan": "V129/1 plus conditional V132/32 and V141/32. V154c/16 only for an unused private slot.",
+    "scored_decision": "Preserve the scored slot until candidate-specific hardware evidence is available."
+  }
+}

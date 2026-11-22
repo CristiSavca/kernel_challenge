@@ -1,0 +1,94 @@
+{
+  "sglang_pin": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "fa3_pin": "f89bc2306632d1ec5f97b014dded4254f5b4a907",
+  "native": {
+    "paged_tma_rejections": 18,
+    "dense_device_offset_shapes": 46,
+    "comparison_tile_m": 64,
+    "comparison_tile_n": 128,
+    "packed_q_rows": 64,
+    "sha256": {
+      "flash_api.cpp": "35f2f6f5db472886219c7391a8c4d73ef619db4c8ef97ba23a914463ccf27f15",
+      "tile_size.h": "49d112117594a6b319d7fcb8f26f753306bab74a952f8344e43d2289525dff85",
+      "heuristics.h": "37d022a08979493825df8b33518eeff537457f9665f899ebc4d9532f6ddbae0b",
+      "seqlen.h": "75af0f30fda8649f97344cfc64d4365fb87a7862402de7e15f57a071d0f7d1d7",
+      "mainloop_fwd_sm90_tma_gmma_ws.hpp": "611c7e1062db972a68bff9d820410b6b8c9a4989a3f6aaaf689a4e8d778071f8",
+      "flash_prepare_scheduler.cu": "bc45f3f7b43fd92978d5bb05aac4263d4c9666a63f34cf20dbd7b52d14b0e67e"
+    }
+  },
+  "capture": {
+    "replays": 16,
+    "stale_sliced_pointers": 12,
+    "fragmented_spans_with_correct_endpoints": 16,
+    "native_graph_calls": "FullCudaGraphBackend.replay and DecodeCudaGraphRunner.execute"
+  },
+  "benchmarks": {
+    "attention": {
+      "job": "c21d391dbf604bb5",
+      "source": "experiments/candidates/muse_attention_decode/profiles/87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c.c21d391dbf604bb5.json",
+      "rows": [
+        {
+          "case": "sliding",
+          "weight": 46,
+          "raw_stock_us": 26.43200010061264,
+          "raw_submission_us": 10.575999971479177
+        },
+        {
+          "case": "full",
+          "weight": 16,
+          "raw_stock_us": 40.09599983692169,
+          "raw_submission_us": 18.079999834299088
+        }
+      ],
+      "stock_ms": 1.8574080020189285,
+      "submission_ms": 0.7757759960368276
+    },
+    "decoder_layer": {
+      "job": "c39d323f785c4e97",
+      "source": "experiments/candidates/muse_decode_layer/profiles/dd57f4575e7c99689a9ce9f519c6df3913ff229d922d1dba69d2ab844cdc4bb0.c39d323f785c4e97.json",
+      "rows": [
+        {
+          "case": "sliding",
+          "weight": 46,
+          "raw_stock_us": 264.832004904747,
+          "raw_submission_us": 105.359997600317
+        },
+        {
+          "case": "full",
+          "weight": 16,
+          "raw_stock_us": 280.35201132297516,
+          "raw_submission_us": 120.11199817061424
+        }
+      ],
+      "stock_ms": 16.667904406785965,
+      "submission_ms": 6.76835186034441
+    },
+    "experts": {
+      "job": "3c15b408fdb04c44",
+      "source": "experiments/candidates/muse_moe_w4a16/profiles/ef7b210bdeab136d22cd7ca81cdcdad44bcd0d456d98a714e10a19f7093d596a.3c15b408fdb04c44.json",
+      "rows": [
+        {
+          "case": "expert",
+          "weight": 60,
+          "raw_stock_us": 144.1280022263527,
+          "raw_submission_us": 66.51199981570244
+        }
+      ],
+      "stock_ms": 8.647680133581161,
+      "submission_ms": 3.9907199889421463
+    },
+    "estimated_scored_v64_period_ms": 19.68503937007874,
+    "full_only_stock_bundle_ms": 0.6415359973907471,
+    "full_profiles": 9,
+    "other_stock_full_raw_range_us": [
+      39.903998374938965,
+      40.39999842643738
+    ],
+    "generous_full_only_decode_gain": 1.0336879189104895,
+    "measured_v4_full_only_savings_ms": 0.35225600004196167,
+    "generous_all_attention_decode_gain": 1.104187032122881,
+    "measured_v4_all_attention_savings_ms": 1.081632005982101
+  },
+  "physical_serving_test": false,
+  "new_official_calls": 0
+}

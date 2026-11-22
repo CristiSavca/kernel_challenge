@@ -1,0 +1,165 @@
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..1f7a5ad 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,7 +1,7 @@
+ import logging
+ import math
+ import os
+-from typing import TYPE_CHECKING, List, Optional, Tuple
++from typing import TYPE_CHECKING, List, NamedTuple, Optional, Tuple
+ 
+ import torch
+ 
+@@ -375,6 +375,27 @@ class _DominoDraftSampler:
+         self.out[: bs * (self.block_size - 1)].copy_(proposals.reshape(-1))
+ 
+ 
++class DFlashBlockProposal(NamedTuple):
++    """A single draft step, borrowed until the next proposal on this worker.
++
++    Tokens, absolute positions and allocator-global slots are [requests, width].
++    The target and draft translators retain their separate physical KV mappings.
++    A sampled selector's candidate IDs and proposal probabilities are paired with
++    these tokens; a later graph replay may overwrite all three.
++    """
++
++    tokens: torch.Tensor
++    positions: torch.Tensor
++    prefix_lens: torch.Tensor
++    prefix_lens_cpu: Optional[torch.Tensor]
++    virtual_slots: torch.Tensor
++    kv_loc_plan: KVLocPlan
++    selector_sample: Optional[Tuple[torch.Tensor, torch.Tensor]]
++    draft_input: DFlashDraftInputV2
++    source_batch: ScheduleBatch
++    owner_token: object
++
++
+ class DFlashWorkerV2(BaseSpecWorker):
+     """DFLASH speculative decoding worker (spec-v2).
+ 
+@@ -580,6 +601,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         )
+         self._draft_block_end_buf: Optional[torch.Tensor] = None  # [cap_bs]
+         self._selector_sample: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
++        self._pending_proposal_token = None
+         self._draft_seq_lens_cpu_buf: Optional[torch.Tensor] = None  # [cap_bs] on CPU
+         self._draft_block_spec_info = make_draft_block_spec_info(
+             draft_token_num=int(self.block_size), device=self.device
+@@ -2476,6 +2498,31 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 new_seq_lens=next_draft_input.new_seq_lens,
+             )
+ 
++        proposal = self.propose_decode_block(batch)
++        return self.verify_proposed_decode_block(
++            batch, proposal, on_publish=on_publish, grammar_barrier=grammar_barrier
++        )
++
++    def propose_decode_block(self, batch: ScheduleBatch) -> DFlashBlockProposal:
++        """Run the native draft on resolved, reserved, nonempty decoding rows.
++
++        Call on the worker's forward stream after the normal relay resolution and
++        allocation. Consume the result in the same serialized step. This method
++        neither forwards the target nor publishes, settles or releases rows.
++        """
++        draft_input = batch.spec_info
++        if (
++            not isinstance(draft_input, DFlashDraftInputV2)
++            or batch.forward_mode.is_idle()
++            or batch.forward_mode.is_extend()
++            or batch.is_extend_in_batch
++            or len(batch.seq_lens) == 0
++            or draft_input.bonus_tokens is None
++            or draft_input.bonus_tokens.numel() != len(batch.seq_lens)
++        ):
++            raise ValueError("DFLASH proposal requires resolved, nonempty decode rows")
++
++        self._pending_proposal_token = None
+         # `seq_lens` is carried over from the previous overlap iteration and may have been
+         # produced on another stream.
+         batch.seq_lens.record_stream(
+@@ -2811,6 +2858,60 @@ class DFlashWorkerV2(BaseSpecWorker):
+         draft_tokens[:, 0].copy_(block_ids[:, 0])
+         draft_tokens[:, 1:].copy_(draft_next)
+ 
++        token = object()
++        self._pending_proposal_token = token
++        return DFlashBlockProposal(
++            draft_tokens,
++            positions_2d,
++            prefix_lens,
++            batch.seq_lens_cpu,
++            verify_out_cache_loc_2d,
++            kv_loc_plan,
++            self._selector_sample,
++            draft_input,
++            batch,
++            token,
++        )
++
++    def is_current_decode_proposal(self, batch: ScheduleBatch, proposal: DFlashBlockProposal) -> bool:
++        """Check local ownership without touching the proposal or synchronizing any device."""
++        return (
++            isinstance(proposal, DFlashBlockProposal)
++            and self._pending_proposal_token is not None
++            and proposal.owner_token is self._pending_proposal_token
++            and proposal.source_batch is batch
++            and proposal.draft_input is batch.spec_info
++            and proposal.prefix_lens is batch.seq_lens
++            and proposal.prefix_lens_cpu is batch.seq_lens_cpu
++            and proposal.kv_loc_plan.req_pool_indices is batch.req_pool_indices
++            and proposal.selector_sample is self._selector_sample
++        )
++
++    def consume_decode_proposal(self, batch: ScheduleBatch, proposal: DFlashBlockProposal) -> None:
++        """Claim the current step exactly once before standalone or mixed target verification."""
++        if not self.is_current_decode_proposal(batch, proposal):
++            raise ValueError("stale or mismatched DFLASH proposal")
++        self._pending_proposal_token = None
++
++    def verify_proposed_decode_block(
++        self,
++        batch: ScheduleBatch,
++        proposal: DFlashBlockProposal,
++        *,
++        on_publish=None,
++        grammar_barrier=None,
++    ) -> GenerationBatchResult:
++        """Finish this step normally, including grammar, verification and draft KV commit."""
++        self.consume_decode_proposal(batch, proposal)
++        draft_input = proposal.draft_input
++        draft_tokens = proposal.tokens
++        bs, block_size = draft_tokens.shape
++        positions = proposal.positions.reshape(-1)
++        prefix_lens = proposal.prefix_lens
++        verify_out_cache_loc_2d = proposal.virtual_slots
++        verify_out_cache_loc = verify_out_cache_loc_2d.reshape(-1)
++        kv_loc_plan = proposal.kv_loc_plan
++
+         # Must stay ahead of the target verify launch below.
+         grammar_tree = (
+             GrammarTree.from_linear_chain(draft_tokens) if batch.has_grammar else None
+@@ -2847,13 +2948,15 @@ class DFlashWorkerV2(BaseSpecWorker):
+             batch.seq_lens_cpu = draft_input.nxt_kv_lens_cpu
+             batch.seq_lens_sum = int(draft_input.nxt_kv_lens_sum)
+ 
+-        verify_forward_batch, _ = verify_input.prepare_for_verify(
+-            batch,
+-            self.target_worker,
+-            defer_metadata_init=get_parallel().attn_dp_enabled,
+-        )
+-        batch.seq_lens_cpu = seq_lens_cpu_backup
+-        batch.seq_lens_sum = seq_lens_sum_backup
++        try:
++            verify_forward_batch, _ = verify_input.prepare_for_verify(
++                batch,
++                self.target_worker,
++                defer_metadata_init=get_parallel().attn_dp_enabled,
++            )
++        finally:
++            batch.seq_lens_cpu = seq_lens_cpu_backup
++            batch.seq_lens_sum = seq_lens_sum_backup
+ 
+         # Idle-DP guard: an idle rank's eager verify contributes raw scheduler
+         # counts while a graph-replaying rank assumes the padded bucket, so

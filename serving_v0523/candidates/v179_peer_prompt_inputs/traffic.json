@@ -1,0 +1,85 @@
+{
+  "geometry": {
+    "experts": 256,
+    "local_experts": 32,
+    "distinct_routes": 8,
+    "ranks": 8,
+    "hidden": 4096
+  },
+  "assumptions": "Uniform independent distinct top-k expert choices per token; 2-byte BF16. Each rank runs the sparse branch. Identical remote payload; HBM traffic and NVLink time are unmeasured.",
+  "shapes": {
+    "8192": {
+      "local_publication_MiB": 8.0,
+      "expected_compact_input_MiB": 42.35721600305983,
+      "remote_payload_per_rank_MiB": 37.062564002677355,
+      "previous_nominal_tensor_traffic_MiB": 169.42886401223933,
+      "direct_nominal_tensor_traffic_MiB": 100.71443200611967,
+      "nominal_difference_MiB": 68.71443200611967,
+      "conditional_difference_microseconds_at_4_8_TB_s": 15.010896719843528,
+      "observed_selector_simulations": 64,
+      "previous_input_alltoalls_histogram": {
+        "4": 54,
+        "2": 10
+      },
+      "new_publication_copies": 1,
+      "new_peer_reads": 1,
+      "new_device_barriers": 2
+    },
+    "16384": {
+      "local_publication_MiB": 16.0,
+      "expected_compact_input_MiB": 84.71443200611967,
+      "remote_payload_per_rank_MiB": 74.12512800535471,
+      "previous_nominal_tensor_traffic_MiB": 338.85772802447866,
+      "direct_nominal_tensor_traffic_MiB": 201.42886401223933,
+      "nominal_difference_MiB": 137.42886401223933,
+      "conditional_difference_microseconds_at_4_8_TB_s": 30.021793439687055,
+      "observed_selector_simulations": 64,
+      "previous_input_alltoalls_histogram": {
+        "4": 28,
+        "2": 36
+      },
+      "new_publication_copies": 1,
+      "new_peer_reads": 1,
+      "new_device_barriers": 2
+    }
+  },
+  "V41_archived_prompt_shapes": {
+    "1": {
+      "all_prompt_calls": 54,
+      "live_prompt_rows": 303536,
+      "eligible_at_live_shape": 17,
+      "eligible_live_rows": 268481,
+      "eligible_at_captured_shape": 17,
+      "eligible_captured_rows": 269312
+    },
+    "4": {
+      "all_prompt_calls": 127,
+      "live_prompt_rows": 669797,
+      "eligible_at_live_shape": 35,
+      "eligible_live_rows": 571372,
+      "eligible_at_captured_shape": 35,
+      "eligible_captured_rows": 571392
+    },
+    "16": {
+      "all_prompt_calls": 241,
+      "live_prompt_rows": 1415564,
+      "eligible_at_live_shape": 75,
+      "eligible_live_rows": 1228800,
+      "eligible_at_captured_shape": 75,
+      "eligible_captured_rows": 1228800
+    },
+    "32": {
+      "all_prompt_calls": 351,
+      "live_prompt_rows": 2825080,
+      "eligible_at_live_shape": 150,
+      "eligible_live_rows": 2455793,
+      "eligible_at_captured_shape": 150,
+      "eligible_captured_rows": 2456064
+    }
+  },
+  "resident_workspace_bound_B_at_16384": 16777216,
+  "full_chunk_nominal_saved_GiB_over_62_upper_bound": 8.320888250741053,
+  "physical_serving_run": false,
+  "H200_peak_memory": null,
+  "measured_V64_excess_GB": 1.9
+}

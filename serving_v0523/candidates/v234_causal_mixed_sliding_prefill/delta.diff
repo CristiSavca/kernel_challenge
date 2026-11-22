@@ -1,0 +1,69 @@
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index 7d7c86892060d20271ebbb0d6d47f3f71cc88f94..a0c1538750148286cf13427be50cb0bec3dd8fde 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -104,12 +104,16 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     """Check ordinary ragged EXTEND geometry before converting the writer's operands."""
+     metadata = backend.forward_metadata
+     count = batch.batch_size
++    mixed = getattr(batch, "mixed_verify_logits_indices", None) is not None
+     if (
+         count < 2 or batch.forward_mode != ForwardMode.EXTEND or batch.dcp_kv_mask is not None
+         or metadata is backend.full_cg_prefill_metadata or metadata.image_token_ranges is not None
+         or metadata.swa_spec_metadata is not None or layer.is_cross_attention
+         or layer.attn_type in (AttentionType.ENCODER_ONLY, AttentionType.DECODER_BIDIRECTIONAL)
+-        or getattr(batch, "mixed_verify_logits_indices", None) is not None
++        or (mixed and (
++            not getattr(batch, "mixed_verify_is_causal", False) or batch.spec_info is not None
++            or layer.sliding_window_size is None or layer.sliding_window_size <= 0
++        ))
+         or torch.compiler.is_compiling() or not k.is_cuda or torch.cuda.is_current_stream_capturing()
+         or torch.are_deterministic_algorithms_enabled() or torch.is_grad_enabled()
+     ):
+@@ -122,6 +126,8 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         return None
+     pool = backend.token_to_kv_pool
+     table, slots, owner = metadata.page_table, write.loc, pool
++    if mixed and (type(pool) is not SWAKVPool or not pool.layers_mapping[layer.layer_id][1]):
++        return None
+     if type(pool) is SWAKVPool:
+         _, sliding = pool.layers_mapping[layer.layer_id]
+         owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 3e681f37f17ec72f570fe667e1962c8c1409efb9..bf7fe8ba3ae7ceb16ae9fb95e6c672a1cbd212bd 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -837,6 +837,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     dflash_verify_raw_buffer: Optional[torch.Tensor] = None
+     dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
+     muse_decode_column_gather: bool = False
++    mixed_verify_is_causal: bool = False
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 68c3d65682896c1c2c8250fa6fe2dfd42b2d6462..1ed857346b59f50dc24b08a5be99482518a92ead 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2097,6 +2097,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             extend_start_loc=forward_batch.extend_start_loc,
+             mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
+             mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
++            mixed_verify_is_causal=forward_batch.mixed_verify_is_causal,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index f3044dab428c8b1f0e9b9e95019adbecae7fc982..344d04280b6b33ca0eef53db5cea9ad1c7e71c5e 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -190,6 +190,9 @@ def try_forward_proposed_mixed(
+     if agree_mixed_dflash_target(plan, cohort_signature=signature) is None:
+         return None
+     _, _, prompt_fb, mixed_fb = views
++    # The agreed plan proves a top-1 causal chain for every tail and the native
++    # reservation for every proposal row. This forward alone owns the proof.
++    mixed_fb.mixed_verify_is_causal = True
+     worker.consume_decode_proposal(decode_batch, proposal)
+     worker._wait_for_fused_hicache_load(prompt_batch)
+     worker.target_worker.set_hicache_consumer(prompt_batch.hicache_consumer_index)

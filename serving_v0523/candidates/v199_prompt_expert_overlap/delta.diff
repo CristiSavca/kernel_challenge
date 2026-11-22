@@ -1,0 +1,315 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+new file mode 100644
+index 0000000..ea45d1b
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+@@ -0,0 +1,103 @@
++// Each stored uint2 holds four group-of-16 scales for one K16/N4 sector.
++template <class Ctx>
++struct alignas(128) MusePromptScaleStages {
++  alignas(128) uint2 scales[Ctx::kNumStages][4][64];
++};
++
++template <class Ctx>
++CUDA_INLINE MusePromptScaleStages<Ctx>& muse_prompt_scales(Ctx& ctx) {
++  auto* end = reinterpret_cast<char*>(&ctx.smem) + ((sizeof(typename Ctx::SharedStorage) + 127) & ~size_t(127));
++  return *reinterpret_cast<MusePromptScaleStages<Ctx>*>(end);
++}
++
++CUDA_INLINE uint32_t muse_scale_bits(uint32_t byte) {
++  return byte ? (byte << 4) + (120u << 7) : 0;
++}
++
++// Execute behind the original activation and weight TMA requests. Humming's
++// non-async scale path accounts for one release arrival per loader thread.
++template <bool Advance, class Ctx, class Loader>
++CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
++  static_assert(Ctx::kNumMathThreads == 256 && Ctx::kNumLoadThreads == 128 && Ctx::kWarpIters == 4);
++  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && Ctx::kMultiCastSize == 1);
++  static_assert(!Ctx::kUseTmaBS && !Ctx::kUseCpAsync && Ctx::kUseTmaA && Ctx::kUseTmaB);
++  constexpr uint32_t row_stride = Ctx::ProblemShape::N / 4;
++  const auto* packed = reinterpret_cast<const uint32_t*>(loader.gmem_ptr);
++  auto* dst = reinterpret_cast<uint2*>(&muse_prompt_scales(ctx).scales[stage]);
++  PRAGMA_UNROLL
++  for (uint32_t j = 0; j < 2; ++j) {
++    uint32_t id = ctx.load_thread_id() + 128 * j;
++    uint32_t w = packed[(id / 64) * row_stride + id % 64];
++    dst[id] = make_uint2(muse_scale_bits(w & 255) | (muse_scale_bits((w >> 8) & 255) << 16),
++                         muse_scale_bits((w >> 16) & 255) | (muse_scale_bits(w >> 24) << 16));
++  }
++  if constexpr (Advance) loader.advance();
++}
++
++template <class Ctx, class Arith>
++struct MusePromptMma : Mma<Ctx, Arith> {
++  using Mma<Ctx, Arith>::Mma;
++  uint2 scales[2];
++  using Base = Mma<Ctx, Arith>;
++  using Op = typename Ctx::MmaOpClass;
++  using Storage = typename Ctx::SharedStorage;
++
++  CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {
++    static_assert(Base::kWarpIters == 4 && !Base::kUsePackedKLayout && Base::kPackedKFactor == 1 &&
++                  Base::kRegsBKDim == 1 && Base::final_regs_c_index() == 0 && Base::kSwizzleBytes == 128);
++    uint32_t address = cast_smem_ptr_to_uint(&this->ctx.smem) + offsetof(Storage, stages) +
++        stage * sizeof(typename Storage::StageStorage) + iteration * 2 * sizeof(int4) + this->smem_offset;
++    uint64_t desc = make_wgmma_smem_desc<128>(address);
++    wgmma_fence();
++    PRAGMA_UNROLL
++    for (uint32_t j = 0; j < 2; ++j)
++      Op::fma(desc, this->regs_b[iteration % 2][j][0], this->regs_c[0][j][0], true);
++    if (iteration % 2) {
++      wgmma_commit();
++      wgmma_wait<0>();
++      // Keep both K16 register-source fragments readable until the group drains.
++      PRAGMA_UNROLL
++      for (uint32_t b = 0; b < 2; ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&this->regs_b[b]);
++        PRAGMA_UNROLL
++        for (uint32_t i = 0; i < 8; ++i) warpgroup_fence_operand(values[i]);
++      }
++    }
++  }
++
++  CUDA_INLINE void transform_b(uint32_t buffer, uint32_t) {
++    static_assert(sizeof(this->regs_b[0]) == 2 * sizeof(uint4));
++    auto* dst = reinterpret_cast<uint32_t*>(&this->regs_b[buffer]);
++    uint4 zero{};
++    PRAGMA_UNROLL
++    for (uint32_t j = 0; j < 2; ++j) {
++      dequant<typename Ctx::ElementB, typename Ctx::ElementA>(
++          this->regs_qb[buffer], dst + j * 4, j, reinterpret_cast<uint32_t*>(&zero));
++      uint32_t pair = j ? scales[buffer].y : scales[buffer].x;
++      uint32_t even = __byte_perm(pair, pair, 0x1010);
++      uint32_t odd = __byte_perm(pair, pair, 0x3232);
++      PRAGMA_UNROLL
++      for (uint32_t i = 0; i < 4; ++i) {
++        uint32_t temp, value = dst[j * 4 + i];
++        asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(temp) : "r"(value), "r"(0x7d807d80u));
++        asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(value) : "r"(temp), "r"(i % 2 ? odd : even));
++        dst[j * 4 + i] = value;
++      }
++    }
++  }
++};
++
++template <class Ctx, class MMA, class Epilogue>
++struct MusePromptReader : S2RMemoryPipeline<Ctx, MMA, Epilogue> {
++  using Base = S2RMemoryPipeline<Ctx, MMA, Epilogue>;
++  using Base::Base;
++  template <bool First = false>
++  CUDA_INLINE void load_stage_iter(uint32_t stage, uint32_t iter) {
++    uint32_t ring = (stage + iter / 4) % Ctx::kNumStages;
++    uint32_t k = iter % 4;
++    this->loader_b.load(this->ctx.smem.stages[ring].b, this->mma.template regs_qb_as_ptr<>(k % 2), k);
++    uint32_t warp = this->ctx.n_warp_id();
++    uint32_t index = (this->ctx.lane_id() / 4) * 2 + warp % 2 + (warp / 2) * 16;
++    this->mma.scales[k % 2] = muse_prompt_scales(this->ctx).scales[ring][k][index];
++  }
++};
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index ac75a67..9ed655e 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -56,7 +56,9 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     grouped_tunings = {}
+     decode_tunings = {}
+     layer.humming_decode_down = {}
++    layer.humming_prompt_down = None
+     gate_meta = None
++    down_meta = None
+     for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
+         packed = getattr(layer, checkpoint_name)
+         scales = getattr(layer, f"{checkpoint_name}_weight_scale")
+@@ -125,6 +127,9 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         HummingKernel.prepare_kernels(
+             meta.to_str(), _GROUPED_COMPUTE, grouped_tunings[name]
+         )
++        if (name == "w2" and torch.cuda.get_device_capability(packed.device) == (9, 0)
++                and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()):
++            down_meta = meta.to_str()
+         if (name == "w13" and torch.cuda.get_device_capability(packed.device) == (9, 0)
+                 and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()):
+             gate_meta = meta.to_str()
+@@ -162,6 +167,10 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     layer.humming_decode_tunings = decode_tunings
+     layer.humming_decode_gate_up = None
+     layer.humming_prompt_gate_up = None
++    if down_meta is not None:
++        from sglang.srt.layers.muse_spark.prompt_weight_pipeline import prepare_prompt_down
++
++        layer.humming_prompt_down = prepare_prompt_down(layer, down_meta, _GROUPED_COMPUTE, grouped_tunings["w2"])
+     if gate_meta is not None:
+         from sglang.srt.layers.muse_spark.decode_gate_up import prepare_gate_up
+ 
+@@ -514,15 +523,21 @@ def humming_grouped_expert_outputs(
+         phases = (("w2", activations, outputs),)
+     route_experts = route_experts.long()
+     for name, source, destination in phases:
+-        HummingMethod.forward_layer(
+-            layer,
+-            inputs=source,
+-            outputs=destination,
+-            expert_layout=offsets,
+-            compute_config=_GROUPED_COMPUTE,
+-            tuning_config=layer.humming_grouped_tunings[name],
+-            sublayer_name=name,
+-        )
++        used_down = False
++        if name == "w2" and getattr(layer, "humming_prompt_down", None) is not None:
++            from sglang.srt.layers.muse_spark.prompt_weight_pipeline import run_prompt_down
++
++            used_down = run_prompt_down(layer, source, destination, offsets, _GROUPED_COMPUTE, layer.humming_grouped_tunings[name])
++        if not used_down:
++            HummingMethod.forward_layer(
++                layer,
++                inputs=source,
++                outputs=destination,
++                expert_layout=offsets,
++                compute_config=_GROUPED_COMPUTE,
++                tuning_config=layer.humming_grouped_tunings[name],
++                sublayer_name=name,
++            )
+         scales = getattr(layer, f"{name}_global_scale").index_select(0, route_experts)
+         destination.mul_(scales.unsqueeze(1))
+         if name == "w13":
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+new file mode 100644
+index 0000000..36f623f
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -0,0 +1,134 @@
++"""Decode packed Hopper W2 weight fragments on Humming's loader warps."""
++import hashlib
++import json
++import logging
++import subprocess
++from functools import lru_cache
++from importlib.metadata import PackageNotFoundError, version
++from pathlib import Path
++
++import torch
++
++
++def adapt_prompt_weights(kernel):
++    import humming
++    from sglang.kernels import jit
++
++    source = Path(humming.__path__[0]) / "include/humming/kernel/humming_ws.cuh"
++    src = source.read_text()
++    if hashlib.sha256(src.encode()).hexdigest() != "6a148cc29b81d4009066667c347d9091a8a138009f7884226e9969a6936e2899":
++        raise ValueError("unsupported grouped Humming loop")
++    header = Path(jit.__file__).parent / "csrc/muse_spark/prompt_weight_pipeline.cuh"
++    pipeline = source.parents[1] / "memory/g2s_pipeline.cuh"
++    transfers = pipeline.read_text()
++    if hashlib.sha256(transfers.encode()).hexdigest() != "479ff827ecf40b82d4685b3a104d796ef41bb643a1d9cc398feabcc77ccbd43b":
++        raise ValueError("unsupported grouped Humming transfer pipeline")
++    transfers = transfers.replace("#pragma once", "", 1)
++    transfer = "loader_bs.template load<kShouldAdvance>(smem.stages[stage_id].bs, mbar_ptr);"
++    transfers = transfers.replace(transfer, "muse_load_scales<kShouldAdvance>(ctx, loader_bs, stage_id);")
++    marker = "#include <humming/memory/g2s_pipeline.cuh>"
++    for name, replacement in (("Mma", "MusePromptMma"), ("S2RMemoryPipeline", "MusePromptReader")):
++        src = src.replace("= " + name + "<Ctx", "= " + replacement + "<Ctx")
++    # The loader now converts contiguous E4M3 words while the two TMA transfers run.
++    src = src.replace("? 40 : 24;", "? 32 : 32;")
++    src = src.replace("extern __shared__ int4 shared_memory[];", "extern __shared__ __align__(128) int4 shared_memory[];")
++    prefetch = "s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);"
++    if src.count(prefetch) != 1:
++        raise ValueError("unsupported grouped Humming prefetch")
++    # The second pair still addresses the current shared A tile. Publish reuse
++    # only after its final K16 operation drains, and keep the next-stage wait
++    # before that next stage supplies the following iteration's first fragment.
++    src = src.replace("              consumer.arrive(stage_id);\n", "")
++    src = src.replace("            mma.transform_b(\n",
++                      "            if (warp_iter_id + 1 == Ctx::kWarpIters) consumer.arrive(stage_id);\n"
++                      "            mma.transform_b(\n")
++    src = src.replace(prefetch, "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch)
++    common = "#include <humming/mma/all.cuh>\n#include <humming/memory/s2r_pipeline.cuh>\n"
++    src = src.replace(marker, common + header.read_text() + "\n" + transfers)
++    src = src.replace("#pragma once", "", 1)
++    kernel.code = kernel.code.replace("#include <humming/kernel/humming_ws.cuh>", src)
++    kernel.code = kernel.code.replace("SMEM_SIZE = sizeof(SharedStorageType);",
++        "SMEM_SIZE = ((sizeof(SharedStorageType) + 127) / 128 * 128) + 2048 * TuningConfig::kNumStages;")
++
++
++@lru_cache(maxsize=64)
++def _prepare(context, meta, compute, tuning):
++    from humming.jit.compiler import NVCCCompiler
++    from humming.jit.runtime import KernelRuntime
++    from humming.kernel.humming import HummingKernel
++
++    class PromptWeightPipeline(HummingKernel):
++        @staticmethod
++        def _get_compiler():
++            return NVCCCompiler
++
++        def prepare(self):
++            adapt_prompt_weights(self)
++            KernelRuntime.prepare(self)
++
++        def load_cubin(self):
++            if not self.cubin_loaded:
++                tool = NVCCCompiler._get_env()["binaries"].get("cuobjdump")
++                if not tool:
++                    raise RuntimeError("CUDA disassembler unavailable")
++                isa = subprocess.check_output([tool, "-sass", self.kernel_filename], text=True)
++                if (isa.count("HGMMA.64x176x16.F32.BF16") != 32 or isa.count("WARPGROUP.DEPBAR.LE") != 8
++                        or "UTMALDG.2D" not in isa or "UTMALDG.3D" not in isa):
++                    raise RuntimeError("grouped prompt Hopper instructions unavailable")
++                HummingKernel.load_cubin(self)
++
++    cfg = json.loads(meta) | json.loads(compute) | json.loads(tuning)
++    cfg.pop("sublayer_name", None)
++    required = {"gemm_type": "grouped_contiguous", "mma_type": "wgmma", "use_f16_accum": False,
++                "a_dtype": "bfloat16", "b_dtype": "float4e2m1", "c_dtype": "bfloat16", "bs_dtype": "float8e4m3",
++                "weight_scale_group_size": 16, "weight_scale_type": "group", "weight_scale_2_type": "none",
++                "block_shape": [176, 256, 64], "warp_shape": [176, 32, 64],
++                "num_stages": 4, "use_warp_spec": True, "use_tma": True, "use_mbarrier": True,
++                "use_tma_c": False, "use_stream_k": False}
++    if (cfg.pop("num_sms", 0) or any(cfg.get(k) != v for k, v in required.items())
++            or any(cfg.get(k) for k in ("has_bias", "has_zero_point", "use_packed_k_layout",
++                                        "use_fused_e8m0_scale", "input_scale_group_size",
++                                        "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))
++            or any(cfg.get(k, 1) != 1 for k in ("multi_cast_size_a", "multi_cast_size_b"))):
++        return None
++    try:
++        cfg.update(use_tma_bs=False, use_cp_async=False)
++        kernel = PromptWeightPipeline(**cfg)
++        kernel.check_context()
++        return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
++    except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using ordinary grouped prompt down projection: %s", exc)
++        return None
++
++
++def _binding(tensor):
++    return tensor.device, tensor.dtype, tensor.shape, tensor.stride(), tensor.data_ptr()
++
++
++def prepare_prompt_down(layer, meta, compute, tuning):
++    from humming.kernel.humming import HummingKernel
++
++    try:
++        if version("humming-kernels") == "0.1.12":
++            config = _prepare(HummingKernel.current_context(), meta, compute, tuning)
++            if config is not None:
++                bank = _binding(layer.w2_weight), _binding(layer.w2_weight_scale)
++                return config, meta, compute, tuning, bank
++    except (PackageNotFoundError, AssertionError, ImportError, RuntimeError, OSError):
++        pass
++    return None
++
++def run_prompt_down(layer, inputs, outputs, offsets, compute, tuning):
++    from sglang.srt.layers.muse_spark.decode_mma_pair import run_down
++
++    config, meta, expected_compute, expected_tuning, bank = layer.humming_prompt_down
++    if (compute != expected_compute or tuning != expected_tuning or layer.humming_metas["w2"].to_str() != meta
++            or bank != (_binding(layer.w2_weight), _binding(layer.w2_weight_scale))
++            or inputs.device != bank[0][0] or outputs.device != inputs.device
++            or inputs.dtype != torch.bfloat16 or outputs.dtype != inputs.dtype
++            or not inputs.is_contiguous() or not outputs.is_contiguous()
++            or inputs.shape != (outputs.shape[0], layer.intermediate_size_per_partition)
++            or outputs.shape[1] != layer.hidden_size):
++        return False
++    run_down(config, layer, inputs, outputs, offsets)
++    return True

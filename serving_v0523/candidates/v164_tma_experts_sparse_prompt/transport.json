@@ -1,0 +1,75 @@
+{
+  "source_sha256": "7e5c1d60796d85aaf68dcf614b2fe36e52398267799eb0dcef157142cf96846e",
+  "torch": "2.5.1",
+  "gloo": {
+    "2": {
+      "rank_cases": 96,
+      "bf16_values": 17280,
+      "widths_per_rank": {
+        "2": 16,
+        "0": 30,
+        "1": 2
+      },
+      "modes_per_rank": {
+        "plain": 15,
+        "remap": 15,
+        "one_rank_forward_hook": 3,
+        "one_rank_pre_hook": 3,
+        "one_rank_forward_override": 3,
+        "one_rank_compiled": 3,
+        "one_rank_unsupported": 3,
+        "global_pre_hook": 3
+      },
+      "actual_transport_calls_per_rank": 20,
+      "zero_input_rank_rounds": 4,
+      "zero_output_rank_rounds": 8
+    },
+    "4": {
+      "rank_cases": 192,
+      "bf16_values": 71424,
+      "widths_per_rank": {
+        "4": 12,
+        "0": 28,
+        "1": 8
+      },
+      "modes_per_rank": {
+        "plain": 15,
+        "remap": 15,
+        "one_rank_forward_hook": 3,
+        "one_rank_pre_hook": 3,
+        "one_rank_forward_override": 3,
+        "one_rank_compiled": 3,
+        "one_rank_unsupported": 3,
+        "global_pre_hook": 3
+      },
+      "actual_transport_calls_per_rank": 44,
+      "zero_input_rank_rounds": 8,
+      "zero_output_rank_rounds": 104
+    },
+    "8": {
+      "rank_cases": 384,
+      "bf16_values": 290304,
+      "widths_per_rank": {
+        "8": 14,
+        "0": 26,
+        "2": 4,
+        "4": 2,
+        "1": 2
+      },
+      "modes_per_rank": {
+        "plain": 15,
+        "remap": 15,
+        "one_rank_forward_hook": 3,
+        "one_rank_pre_hook": 3,
+        "one_rank_forward_override": 3,
+        "one_rank_compiled": 3,
+        "one_rank_unsupported": 3,
+        "global_pre_hook": 3
+      },
+      "actual_transport_calls_per_rank": 50,
+      "zero_input_rank_rounds": 16,
+      "zero_output_rank_rounds": 240
+    }
+  },
+  "scope": "Production masked gather, split selection, variable-split Gloo, row maps and per-rank hooks. Synthetic BF16 expert function and CPU emulation of CUDA guard. No NCCL/BCG or H200 timing."
+}

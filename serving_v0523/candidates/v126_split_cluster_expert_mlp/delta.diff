@@ -1,0 +1,391 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_split_mlp.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_split_mlp.cuh
+new file mode 100644
+index 0000000..7fbe74e
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_split_mlp.cuh
+@@ -0,0 +1,202 @@
++#include "expert_cluster_mlp.cuh"
++
++namespace sglang {
++namespace muse_split_mlp {
++
++using namespace device;
++using namespace muse_cluster_mlp;
++using Stripes = float4[kWarps][2][4][32];
++
++// Each warp owns one K stripe and four 16-column output fragments. Adjacent
++// stripes join in FP32 before the original projection, scale and SiLU rounds.
++template <uint32_t Splits>
++SGL_DEVICE void gate_split(const Params& p, Tile tile, uint32_t split, uint32_t rank,
++                           Stripes& partial, bf16_t* active) {
++  const uint32_t width = p.intermediate / (kCluster * Splits);
++  const uint32_t stride = width + 8;
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32, stripe = warp % Splits;
++  const uint32_t group = warp / Splits;
++  const uint32_t gate_base = (split * kCluster + rank) * width;
++  const float scale = cast<float>(p.gate_scale[tile.expert]);
++  const bf16_t* input = p.rows + size_t(tile.first) * p.hidden;
++  for (uint32_t start = 0; start < width; start += 64 * (kWarps / Splits)) {
++    uint32_t band = start + group * 64;
++    float4 gate[4][1] = {}, up[4][1] = {};
++    if (band < width) {
++      for (uint32_t k = stripe * 16; k < p.hidden; k += Splits * 16) {
++        auto x = load_rows<1>(input, p.hidden, tile.count, k);
++        size_t base = (size_t(tile.expert) * (p.hidden / 16) + k / 16) * (2 * p.intermediate) + gate_base + band;
++        contract(gate, p.gate_up, base, x);
++        contract(up, p.gate_up, base + p.intermediate, x);
++      }
++#pragma unroll
++      for (uint32_t part = 0; part < 4; ++part) {
++        partial[warp][0][part][lane] = gate[part][0];
++        partial[warp][1][part][lane] = up[part][0];
++      }
++    }
++    __syncthreads();
++    if (band < width) {
++#pragma unroll
++      for (uint32_t part = stripe; part < 4; part += Splits) {
++        float4 g{}, u{};
++#pragma unroll
++        for (uint32_t s = 0; s < Splits; ++s) {
++          float4 a = partial[group * Splits + s][0][part][lane];
++          float4 b = partial[group * Splits + s][1][part][lane];
++          g.x += a.x; g.y += a.y; g.z += a.z; g.w += a.w;
++          u.x += b.x; u.y += b.y; u.z += b.z; u.w += b.w;
++        }
++        float gs[] = {g.x, g.y, g.z, g.w}, us[] = {u.x, u.y, u.z, u.w};
++#pragma unroll
++        for (uint32_t i = 0; i < 4; ++i) {
++          uint32_t row = (lane % 4) * 2 + i % 2;
++          uint32_t col = band + part * 16 + lane / 4 + (i / 2) * 8;
++          if (row < tile.count) {
++            float gval = muse_expert_scaled_silu::scale_and_round(cast<bf16_t>(gs[i]), scale);
++            float uval = muse_expert_scaled_silu::scale_and_round(cast<bf16_t>(us[i]), scale);
++            active[row * stride + col] = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gval) * uval);
++          }
++        }
++      }
++    }
++    __syncthreads();
++  }
++}
++
++template <uint32_t Splits>
++SGL_DEVICE void down_split(const Params& p, Tile tile, uint32_t split, uint32_t rank,
++                           bf16_t* active, float* partial_rows) {
++  auto cluster = cooperative_groups::this_cluster();
++  const uint32_t width = p.hidden / kCluster;
++  const uint32_t inner = p.intermediate / (Splits * kCluster);
++  const uint32_t lane = threadIdx.x % 32;
++  for (uint32_t band = threadIdx.x / 32 * 64; band < width; band += kWarps * 64) {
++    const uint32_t column = rank * width + band;
++    float4 down[4][1] = {};
++    for (uint32_t peer = 0; peer < kCluster; ++peer) {
++      const bf16_t* values = cluster.map_shared_rank(active, peer);
++      const uint32_t part_k = (split * kCluster + peer) * inner;
++      for (uint32_t k = 0; k < inner; k += 16) {
++        auto x = load_rows<1>(values, inner + 8, tile.count, k);
++        size_t base = (size_t(tile.expert) * (p.intermediate / 16) + (part_k + k) / 16) * p.hidden + column;
++        contract(down, p.down, base, x);
++      }
++    }
++#pragma unroll
++    for (uint32_t part = 0; part < 4; ++part) {
++      const auto d = down[part][0];
++      float results[] = {d.x, d.y, d.z, d.w};
++#pragma unroll
++      for (uint32_t i = 0; i < 4; ++i) {
++        uint32_t row = (lane % 4) * 2 + i % 2;
++        uint32_t col = column + part * 16 + lane / 4 + (i / 2) * 8;
++        if (row < tile.count) partial_rows[size_t(tile.first + row) * p.hidden + col] = results[i];
++      }
++    }
++  }
++}
++
++template <uint32_t Splits>
++__global__ __launch_bounds__(32 * kWarps) void split_kernel(
++    const __grid_constant__ Params p, float* partials, uint32_t slots) {
++  __shared__ Stripes stripes;
++  extern __shared__ __align__(16) unsigned char storage[];
++  auto* active = reinterpret_cast<bf16_t*>(storage);
++  auto cluster = cooperative_groups::this_cluster();
++  uint32_t rank = cluster.block_rank(), split = blockIdx.z;
++  float* out = partials + size_t(split) * slots * p.hidden;
++  for (uint32_t job = blockIdx.y;; job += gridDim.y) {
++    Tile tile = locate(p, job);
++    if (!tile.count) return;
++    for (uint32_t i = 0; i < tile.count; i += 8) {
++      Tile rows{tile.expert, tile.first + i, min(8u, tile.count - i)};
++      gate_split<Splits>(p, rows, split, rank, stripes, active);
++      cluster.sync();
++      down_split<Splits>(p, rows, split, rank, active, out);
++      cluster.sync();
++    }
++  }
++}
++}  // namespace muse_split_mlp
++
++struct MuseSplitMLP {
++  template <uint32_t Splits>
++  static bool fits(int64_t hidden, int64_t inner, int64_t experts, int sms, int shared_limit) {
++    using namespace muse_split_mlp;
++    if (hidden % (kCluster * 64) || inner % (kCluster * Splits * 64)) return false;
++    size_t bytes = 8 * (inner / (kCluster * Splits) + 8) * sizeof(bf16_t);
++    if (sizeof(Stripes) + bytes > static_cast<size_t>(shared_limit) || experts * Splits * kCluster < sms) return false;
++    cudaLaunchAttribute attr{};
++    attr.id = cudaLaunchAttributeClusterDimension;
++    attr.val.clusterDim = {kCluster, 1, 1};
++    cudaLaunchConfig_t cfg{};
++    cfg.gridDim = dim3(kCluster, static_cast<uint32_t>(experts), Splits);
++    cfg.blockDim = dim3(32 * kWarps, 1, 1);
++    cfg.dynamicSmemBytes = bytes;
++    cfg.attrs = &attr;
++    cfg.numAttrs = 1;
++    int resident = 0;
++    auto status = cudaOccupancyMaxActiveClusters(&resident, split_kernel<Splits>, &cfg);
++    if (status == cudaErrorInvalidValue || status == cudaErrorInvalidConfiguration ||
++        status == cudaErrorInvalidClusterSize || status == cudaErrorLaunchOutOfResources || status == cudaErrorNotSupported) {
++      (void)cudaGetLastError();
++      return false;
++    }
++    CHECK_CUDA(status);
++    return resident > 0;
++  }
++
++  static int64_t supported(int64_t device, int64_t hidden, int64_t inner, int64_t experts) {
++    int current = -1, capable = 0, sms = 0, shared_limit = 0;
++    CHECK_CUDA(cudaGetDevice(&current));
++    if (current != device || hidden <= 0 || inner <= 0 || experts <= 0) return 0;
++    CHECK_CUDA(cudaDeviceGetAttribute(&capable, cudaDevAttrClusterLaunch, current));
++    if (!capable) return 0;
++    CHECK_CUDA(cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, current));
++    CHECK_CUDA(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, current));
++    return (fits<2>(hidden, inner, experts, sms, shared_limit) ? 2 : 0) |
++           (fits<4>(hidden, inner, experts, sms, shared_limit) ? 4 : 0);
++  }
++
++  static void run(tvm::ffi::TensorView rows, tvm::ffi::TensorView gate, tvm::ffi::TensorView gs,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView global,
++                  tvm::ffi::TensorView offsets, tvm::ffi::TensorView partials, int64_t workgroups) {
++    using namespace host;
++    using namespace muse_split_mlp;
++    auto m = SymbolicSize{"rows"}, h = SymbolicSize{"hidden"}, e = SymbolicSize{"experts"}, s = SymbolicSize{"splits"};
++    auto kg = SymbolicSize{"gate groups"}, wg = SymbolicSize{"gate words"}, ng = SymbolicSize{"gate width"};
++    auto kd = SymbolicSize{"down groups"}, wd = SymbolicSize{"down words"}, ends = SymbolicSize{"offsets"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({m, h}).with_dtype<bf16_t>().with_device(dev).verify(rows);
++    TensorMatcher({s, m, h}).with_dtype<float>().with_device(dev).verify(partials);
++    TensorMatcher({e, kg, wg}).with_dtype<int32_t>().with_device(dev).verify(gate);
++    TensorMatcher({e, kd, wd}).with_dtype<int32_t>().with_device(dev).verify(down);
++    TensorMatcher({e, kg, ng}).with_dtype<uint8_t>().with_device(dev).verify(gs);
++    TensorMatcher({e, kd, h}).with_dtype<uint8_t>().with_device(dev).verify(ds);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(global);
++    TensorMatcher({ends}).with_dtype<int32_t>().with_device(dev).verify(offsets);
++    const auto inner = kd.unwrap() * 16, splits = s.unwrap();
++    RuntimeCheck(kg.unwrap() * 16 == h.unwrap() && wd.unwrap() == 2 * h.unwrap() &&
++                 ng.unwrap() == 2 * inner && wg.unwrap() == 4 * inner, "incompatible expert banks");
++    RuntimeCheck((splits == 2 || splits == 4) && h.unwrap() % (64 * kCluster) == 0 &&
++                 inner % (64 * kCluster * splits) == 0 && m.unwrap() > 0 &&
++                 workgroups > 0 && workgroups <= e.unwrap() && ends.unwrap() == e.unwrap() + 1,
++                 "invalid split expert geometry");
++    const Params p{
++        static_cast<bf16_t*>(rows.data_ptr()),
++        {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
++        {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
++        static_cast<const bf16_t*>(global.data_ptr()), static_cast<const int32_t*>(offsets.data_ptr()),
++        static_cast<uint32_t>(h.unwrap()), static_cast<uint32_t>(inner), static_cast<uint32_t>(e.unwrap())};
++    const size_t bytes = 8 * (inner / (splits * kCluster) + 8) * sizeof(bf16_t);
++    auto launch = LaunchKernel(dim3(kCluster, static_cast<uint32_t>(workgroups), splits), 32 * kWarps, dev.unwrap(), bytes);
++    launch.enable_cluster(dim3(kCluster, 1, 1));
++    auto* dst = static_cast<float*>(partials.data_ptr());
++    uint32_t slots = static_cast<uint32_t>(m.unwrap());
++    if (splits == 2) launch(split_kernel<2>, p, dst, slots);
++    else launch(split_kernel<4>, p, dst, slots);
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index 5ee468b..bba0cc3 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -27,6 +27,8 @@ def _post_expert_norm_weighted_sum_kernel(
+     HAS_EXPERT_SCALE: tl.constexpr,
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
++    SPLITS: tl.constexpr = 1,
++    PART_STRIDE: tl.constexpr = 0,
+ ):
+     tok = tl.program_id(0)
+     offs = tl.arange(0, BLOCK_H)
+@@ -50,11 +52,20 @@ def _post_expert_norm_weighted_sum_kernel(
+                 live = tl.load(ids_ptr + slot) >= 0
+         if live:
+             x = tl.load(x_ptr + base + offs, mask=mask, other=0.0).to(tl.float32)
++            if SPLITS > 1:
++                # W2 pieces are FP32. Recombine them before the original
++                # BF16 output boundary and then apply the expert's scale.
++                for part in tl.static_range(1, SPLITS):
++                    x += tl.load(x_ptr + part * PART_STRIDE + base + offs, mask=mask, other=0.0)
++                x = x.to(tl.bfloat16).to(tl.float32)
+             if HAS_EXPERT_SCALE:
+                 expert = tl.load(scale_ids_ptr + slot)
+                 scale = tl.load(expert_scales_ptr + expert).to(tl.float32)
+                 # Preserve the input-dtype store of the standalone multiply.
+-                x = (x * scale).to(x_ptr.dtype.element_ty).to(tl.float32)
++                if SPLITS > 1:
++                    x = (x * scale).to(tl.bfloat16).to(tl.float32)
++                else:
++                    x = (x * scale).to(x_ptr.dtype.element_ty).to(tl.float32)
+                 x = tl.where(mask, x, 0.0)
+ 
+             if APPLY_NORM:
+@@ -74,7 +85,10 @@ def _post_expert_norm_weighted_sum_kernel(
+             s = tl.load(s_ptr + slot).to(tl.float32)
+             product = y * s
+             if ROUND_PRODUCT:
+-                product = product.to(x_ptr.dtype.element_ty).to(tl.float32)
++                if SPLITS > 1:
++                    product = product.to(tl.bfloat16).to(tl.float32)
++                else:
++                    product = product.to(x_ptr.dtype.element_ty).to(tl.float32)
+             acc += product
+ 
+     tl.store(out_ptr + tok * H + offs, acc.to(out_ptr.dtype.element_ty), mask=mask)
+@@ -103,8 +117,11 @@ def fused_post_expert_norm_weighted_sum(
+     [tokens, topk] map supplies an input row index or -1 for each slot.
+     out, when supplied, is a caller-owned contiguous [tokens, hidden] tensor.
+     With expert_output_scales, slot_expert_ids supplies each mapped row's scale ID.
++    A mapped [pieces, rows, hidden] FP32 input contains full-precision W2
++    partials. These are accumulated before rounding the projection to BF16.
+     """
+     x = expert_output.contiguous()
++    splits, part_stride = 1, 0
+     has_out = out is not None
+     if slot_row_indices is None:
+         tokens, topk, hidden = x.shape
+@@ -115,7 +132,12 @@ def fused_post_expert_norm_weighted_sum(
+         assert out is not None
+         assert slot_expert_ids is None or expert_output_scales is not None
+         tokens, topk = slot_row_indices.shape
+-        _, hidden = x.shape
++        if x.ndim == 3:
++            splits, rows, hidden = x.shape
++            assert splits in (2, 4) and x.dtype == torch.float32 and out.dtype == torch.bfloat16
++            part_stride = rows * hidden
++        else:
++            _, hidden = x.shape
+         slot_ids = slot_row_indices
+     if expert_output_scales is not None:
+         assert slot_row_indices is not None and slot_expert_ids is not None
+@@ -165,6 +187,8 @@ def fused_post_expert_norm_weighted_sum(
+         HAS_EXPERT_SCALE=expert_output_scales is not None,
+         ROUND_PRODUCT=round_product,
+         BLOCK_H=block_h,
++        SPLITS=splits,
++        PART_STRIDE=part_stride,
+         num_warps=8 if block_h >= 4096 else 4,
+         num_stages=2,
+     )
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 509da1e..481553f 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import json
+ import logging
++import math
+ import subprocess
+ from typing import TYPE_CHECKING
+ 
+@@ -49,6 +50,39 @@ def _cluster_mlp_module():
+         return None
+ 
+ 
++@cache_once
++def _split_mlp_module():
++    try:
++        return load_jit(
++            "muse_split_mlp",
++            cuda_files=["muse_spark/expert_split_mlp.cuh"],
++            cuda_wrappers=[("run", "MuseSplitMLP::run"), ("supported", "MuseSplitMLP::supported")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Falling back to grouped Humming sparse experts: %s", exc)
++        return None
++
++
++def _sparse_cluster_grid(tokens, topk, global_experts, local_experts, sms, available):
++    if not available or tokens * topk > global_experts:
++        return 0, 0
++    p = 1.0 - (1.0 - min(1.0, topk / global_experts)) ** tokens
++    active = local_experts * p
++    # Aim for two resident blocks per SM. Splitting disjoint intermediate
++    # bands increases concurrent weight loads without replicating either bank.
++    target = 2 * sms
++    if active * 8 >= target:
++        return 0, 0
++    splits = 4 if available & 4 and (active * 16 < target or not (available & 2)) else 2
++    if not (available & splits):
++        return 0, 0
++    # Keep one standard deviation of spare clusters. Any real excess or skew
++    # consumes another grid-stride tile on the device.
++    groups = min(local_experts, max(1, math.ceil(active + math.sqrt(active * (1.0 - p)))))
++    return splits, groups
++
++
+ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     """Replace the local checkpoint bank with packed Humming weights."""
+     from humming import dtypes
+@@ -183,6 +217,8 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+                 HummingKernel.prepare_kernels(meta.to_str(), _GROUPED_COMPUTE, tuning)
+ 
+     layer.humming_cluster_mlp = False
++    layer.humming_split_mlps = 0
++    layer.humming_device_sms = 0
+     if cluster_layout:
+         module = _cluster_mlp_module()
+         if module is not None:
+@@ -190,6 +226,11 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+                 packed.get_device(), hidden_size, intermediate, experts
+             )
+ 
++        split_module = _split_mlp_module()
++        if split_module is not None:
++            layer.humming_split_mlps = split_module.supported(packed.get_device(), hidden_size, intermediate, experts)
++            layer.humming_device_sms = torch.cuda.get_device_properties(packed.device).multi_processor_count
++
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+     for name in ("gate_up_proj", "down_proj"):
+@@ -320,7 +361,11 @@ def humming_grouped_decode_outputs(
+     # At sparse occupancy the original output-parallel GEMMs provide more work
+     # for the device. Here a cluster can process a complete 16-row expert tile.
+     clustered = getattr(layer, "humming_cluster_mlp", False) and slots >= 4 * layer.global_num_experts
+-    if clustered:
++    splits, workgroups = _sparse_cluster_grid(
++        hidden_states.shape[0], topk, layer.global_num_experts, experts,
++        getattr(layer, "humming_device_sms", 0), getattr(layer, "humming_split_mlps", 0),
++    )
++    if clustered or splits:
+         inputs = hidden_states.new_empty((slots, hidden_size))
+     else:
+         staging = hidden_states.new_empty(slots * intermediate)
+@@ -338,6 +383,14 @@ def humming_grouped_decode_outputs(
+         num_warps=8 if hidden_size >= 4096 else 4,
+     )
+ 
++    if splits:
++        partials = torch.empty((splits, slots, hidden_size), dtype=torch.float32, device=inputs.device)
++        _split_mlp_module().run(
++            inputs, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
++            layer.w2_weight, layer.w2_weight_scale.view(torch.uint8), layer.w13_global_scale, offsets, partials, workgroups,
++        )
++        return partials, row_map, local_ids
++
+     if clustered:
+         _cluster_mlp_module().run(
+             inputs, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),

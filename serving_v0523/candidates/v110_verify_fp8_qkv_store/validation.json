@@ -1,0 +1,56 @@
+{
+  "candidate": "V110",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_job": "abd217baf0ed49fd",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "tree": "ec5ef25a792f00f35dbca7a29a0b3d148b3c7b2b",
+  "patch_sha256": "49a35645f8600ccea7294e4362dd2f82bf54480cd5d99c51a521a4f69fbc0022",
+  "delta_sha256": "1c3fa9bdaf7274ed096ff7909e8930459c64688b40d8f90255ea252368cf5e82",
+  "bytes": 52795,
+  "permitted_python_sources": [
+    "python/sglang/kernels/ops/attention/verify_fp8_cache.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "max_added_line_bytes": 98,
+  "flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "fixed_flag_pattern_count": 76,
+  "exact_parent_plus_delta": true,
+  "applies_and_reverses": true,
+  "official_export_matches_git": true,
+  "kernel_sha256": "fa58e95aacc1cb403c905b53a40b6ce907550db7eb97f3fcfc95e269c401445d",
+  "hardware_result": null,
+  "triton_interpreter_bytes": 4323144,
+  "sm90_assemblies": 10,
+  "installed_torch_conversion_table_bytes": 65536,
+  "host_dispatch": {
+    "fused": 12,
+    "FA_query_bytes": 10420224,
+    "complete_pool_storage_bytes": 57487360,
+    "FA_output_bytes": 20840448,
+    "baseline_fallback": 84
+  },
+  "target_configuration": {
+    "torch_native_codes": 65536,
+    "q_width": 1024,
+    "kv_width": 128,
+    "sm90_registers": 24,
+    "spill_bytes": 0,
+    "preexisting_precision": "torch.float8_e4m3fn"
+  }
+}

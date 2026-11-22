@@ -1,0 +1,337 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh
+index d0dffa7..58c2ca1 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh
+@@ -82,7 +82,10 @@ struct MuseExpertScaledSilu {
+     RuntimeCheck(width.unwrap() % kVecSize == 0, "activation width must be vector aligned");
+     RuntimeCheck(offsets_size.unwrap() == experts.unwrap() + 1, "invalid grouped offsets shape");
+     RuntimeCheck(0 < rows.unwrap() && rows.unwrap() <= slot_span, "invalid route count");
+-    RuntimeCheck(slot_span <= 2048 && (slot_span & (slot_span - 1)) == 0, "invalid slot key span");
++    RuntimeCheck((slot_span & (slot_span - 1)) == 0 && slot_span <= INT32_MAX / (experts.unwrap() + 1),
++                 "invalid slot key span");
++    RuntimeCheck(rows.unwrap() <= UINT32_MAX / (double_width.unwrap() / kVecSize),
++                 "activation vector offset overflow");
+     const auto num_rows = static_cast<uint32_t>(rows.unwrap());
+     const Params params{
+         .gate_up = static_cast<const bf16_t*>(gate_up.data_ptr()),
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index 5ee468b..5537510 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -8,7 +8,8 @@ _MIN_TOKENS_FOR_FUSED = 32
+ 
+ 
+ @triton.jit
+-def _post_expert_norm_weighted_sum_kernel(
++def _post_expert_norm_weighted_sum_row(
++    tok,
+     x_ptr,
+     w_ptr,
+     s_ptr,
+@@ -28,7 +29,6 @@ def _post_expert_norm_weighted_sum_kernel(
+     ROUND_PRODUCT: tl.constexpr,
+     BLOCK_H: tl.constexpr,
+ ):
+-    tok = tl.program_id(0)
+     offs = tl.arange(0, BLOCK_H)
+     mask = offs < H
+ 
+@@ -80,6 +80,39 @@ def _post_expert_norm_weighted_sum_kernel(
+     tl.store(out_ptr + tok * H + offs, acc.to(out_ptr.dtype.element_ty), mask=mask)
+ 
+ 
++@triton.jit
++def _post_expert_norm_weighted_sum_kernel(
++    x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++    TOPK: tl.constexpr, H: tl.constexpr, eps, APPLY_NORM: tl.constexpr,
++    HAS_WEIGHT: tl.constexpr, WEIGHT_FIRST: tl.constexpr, HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr, HAS_EXPERT_SCALE: tl.constexpr,
++    ROUND_PRODUCT: tl.constexpr, BLOCK_H: tl.constexpr,
++):
++    _post_expert_norm_weighted_sum_row(
++        tl.program_id(0), x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++        TOPK, H, eps, APPLY_NORM, HAS_WEIGHT, WEIGHT_FIRST, HAS_IDS, HAS_ROW_MAP,
++        HAS_EXPERT_SCALE, ROUND_PRODUCT, BLOCK_H,
++    )
++
++
++@triton.jit
++def _finalize_wave(
++    x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr, bounds,
++    TOPK: tl.constexpr, H: tl.constexpr, eps, APPLY_NORM: tl.constexpr,
++    HAS_WEIGHT: tl.constexpr, WEIGHT_FIRST: tl.constexpr, HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr, HAS_EXPERT_SCALE: tl.constexpr,
++    ROUND_PRODUCT: tl.constexpr, BLOCK_H: tl.constexpr,
++):
++    first = tl.load(bounds)
++    end = tl.load(bounds + 1)
++    for tok in range(first + tl.program_id(0), end, tl.num_programs(0)):
++        _post_expert_norm_weighted_sum_row(
++            tok, x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++            TOPK, H, eps, APPLY_NORM, HAS_WEIGHT, WEIGHT_FIRST, HAS_IDS,
++            HAS_ROW_MAP, HAS_EXPERT_SCALE, ROUND_PRODUCT, BLOCK_H,
++        )
++
++
+ def fused_post_expert_norm_weighted_sum(
+     expert_output: torch.Tensor,
+     topk_scores: torch.Tensor,
+@@ -93,6 +126,7 @@ def fused_post_expert_norm_weighted_sum(
+     slot_row_indices: Optional[torch.Tensor] = None,
+     out: Optional[torch.Tensor] = None,
+     expert_output_scales: Optional[torch.Tensor] = None,
++    token_bounds: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+     """Normalize and combine experts without reading inactive slots.
+ 
+@@ -146,7 +180,14 @@ def fused_post_expert_norm_weighted_sum(
+         return y.sum(dim=1).to(x.dtype)
+ 
+     block_h = triton.next_power_of_2(hidden)
+-    _post_expert_norm_weighted_sum_kernel[(tokens,)](
++    if token_bounds is None:
++        kernel = _post_expert_norm_weighted_sum_kernel[(tokens,)]
++        bounds_args = ()
++    else:
++        assert has_out and token_bounds.shape == (2,)
++        kernel = _finalize_wave[(min(tokens, 512),)]
++        bounds_args = (token_bounds,)
++    kernel(
+         x,
+         norm_weight.contiguous() if norm_weight is not None else x,
+         topk_scores.contiguous(),
+@@ -154,6 +195,7 @@ def fused_post_expert_norm_weighted_sum(
+         slot_ids.contiguous() if slot_ids is not None else x,
+         slot_expert_ids.contiguous() if expert_output_scales is not None else x,
+         expert_output_scales.contiguous() if expert_output_scales is not None else x,
++        *bounds_args,
+         TOPK=topk,
+         H=hidden,
+         eps=eps,
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 5d8b327..756c994 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2024,6 +2024,7 @@ class Envs:
+     # Muse Spark
+     # ===================================================================
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_GRAPH_PREFILL = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_A_MULTICAST = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+new file mode 100644
+index 0000000..c51d118
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+@@ -0,0 +1,121 @@
++"""Graph-replayable grouped expert prefill with bounded BF16 workspace."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++def wave_capacity(tokens, topk, experts, hidden, intermediate):
++    # Whole tokens stay together. The last token that starts in a wave can
++    # extend up to topk - 1 rows past its nominal route limit.
++    stage_width = max(hidden, intermediate)
++    output_width = max(hidden, 2 * intermediate)
++    max_rows = (384 << 20) // (2 * (stage_width + output_width))
++    if not 1 <= topk <= 8 or tokens < 1:
++        return 0
++    slots = tokens * topk
++    capacity = slots if slots <= max_rows else min(tokens, max_rows - topk + 1)
++    if capacity < 1:
++        return 0
++    key_span = triton.next_power_of_2(max(slots, capacity + topk - 1))
++    if triton.cdiv(slots, capacity) > 16 or (experts + 1) * key_span >= 2**31:
++        return 0
++    return capacity
++
++
++def plan_waves(local_ids, experts, capacity):
++    tokens, topk = local_ids.shape
++    waves = triton.cdiv(tokens * topk, capacity)
++    live = (local_ids >= 0) & (local_ids < experts)
++    counts = live.sum(1, dtype=torch.int32)
++    starts = torch.cumsum(counts, 0, dtype=torch.int32) - counts
++    wave = torch.div(starts, capacity, rounding_mode="floor").clamp_max(waves - 1)
++    bins = torch.where(live, wave[:, None] * experts + local_ids, waves * experts)
++    sorted_bins, sorted_slots = bins.flatten().sort(stable=True)
++    cutoffs = torch.arange(waves * experts + 1, device=local_ids.device, dtype=torch.int32)
++    edges = torch.searchsorted(sorted_bins, cutoffs, out_int32=True)
++    wave_starts = torch.arange(waves, device=local_ids.device, dtype=torch.int32) * capacity
++    token_bounds = torch.searchsorted(starts, wave_starts, out_int32=True)
++    token_bounds = torch.cat((token_bounds, token_bounds.new_full((1,), tokens)))
++    return sorted_bins, sorted_slots, edges, token_bounds
++
++
++@triton.jit
++def _pack_wave(
++    Inputs, SortedBins, SortedSlots, Edges, Packed, RowKeys, RowMap,
++    ROWS: tl.constexpr, EXPERTS: tl.constexpr, TOPK: tl.constexpr,
++    HIDDEN: tl.constexpr, WIDTH: tl.constexpr, SPAN: tl.constexpr,
++):
++    first = tl.load(Edges)
++    end = tl.load(Edges + EXPERTS)
++    col = tl.arange(0, WIDTH)
++    for pos in range(first + tl.program_id(0), end, tl.num_programs(0)):
++        slot = tl.load(SortedSlots + pos).to(tl.int32)
++        expert = tl.load(SortedBins + pos) % EXPERTS
++        row = ROWS - (end - pos)
++        tl.store(RowKeys + row, (expert + 1) * SPAN + slot)
++        tl.store(RowMap + slot, row)
++        src = (slot // TOPK).to(tl.int64) * HIDDEN + col
++        vals = tl.load(Inputs + src, mask=col < HIDDEN, other=0)
++        tl.store(Packed + row.to(tl.int64) * HIDDEN + col, vals, mask=col < HIDDEN)
++
++
++def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
++        fused_post_expert_norm_weighted_sum,
++    )
++    from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++        _GROUPED_COMPUTE,
++        _expert_scaled_silu_module,
++    )
++
++    tokens, hidden = hidden_states.shape
++    topk = local_ids.shape[1]
++    experts = layer.num_local_experts
++    intermediate = layer.intermediate_size_per_partition
++    rows = min(tokens * topk, capacity + topk - 1)
++    span = triton.next_power_of_2(max(tokens * topk, rows))
++    sorted_bins, sorted_slots, edges, token_bounds = plan_waves(local_ids, experts, capacity)
++    # Humming infers the end of its last expert from the physical row count.
++    # Each wave occupies a suffix of that capacity, including empty waves.
++    stage = hidden_states.new_empty(rows * max(hidden, intermediate))
++    arena = hidden_states.new_empty(rows * max(hidden, 2 * intermediate))
++    packed = stage[: rows * hidden].view(rows, hidden)
++    gate_up = arena[: rows * 2 * intermediate].view(rows, 2 * intermediate)
++    activation = stage[: rows * intermediate].view(rows, intermediate)
++    projected = arena[: rows * hidden].view(rows, hidden)
++    row_keys = local_ids.new_empty(rows)
++    row_map = torch.full_like(local_ids, -1)
++    output = torch.empty_like(hidden_states)
++
++    for wave in range(token_bounds.numel() - 1):
++        bounds = edges[wave * experts : (wave + 1) * experts + 1]
++        offsets = bounds + (rows - bounds[-1:])
++        _pack_wave[(min(rows, 256),)](
++            hidden_states, sorted_bins, sorted_slots, bounds, packed, row_keys, row_map,
++            ROWS=rows, EXPERTS=experts, TOPK=topk, HIDDEN=hidden,
++            WIDTH=triton.next_power_of_2(hidden), SPAN=span, num_warps=8,
++        )
++        HummingMethod.forward_layer(
++            layer, inputs=packed, outputs=gate_up, expert_layout=offsets,
++            compute_config=_GROUPED_COMPUTE, tuning_config=layer.humming_grouped_tunings["w13"],
++            sublayer_name="w13",
++        )
++        _expert_scaled_silu_module().run(
++            gate_up, activation, row_keys, offsets, layer.w13_global_scale, span
++        )
++        HummingMethod.forward_layer(
++            layer, inputs=activation, outputs=projected, expert_layout=offsets,
++            compute_config=_GROUPED_COMPUTE, tuning_config=layer.humming_grouped_tunings["w2"],
++            sublayer_name="w2",
++        )
++        fused_post_expert_norm_weighted_sum(
++            projected, scores, norm_weight=layer._post_expert_norm_weight,
++            eps=layer._post_expert_norm_eps, weight_first=layer._post_expert_norm_weight_first,
++            slot_row_indices=row_map, slot_expert_ids=local_ids,
++            expert_output_scales=layer.w2_global_scale, out=output,
++            token_bounds=token_bounds[wave : wave + 2],
++        )
++    return output
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 19257be..c056edf 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -625,6 +625,29 @@ class MuseSpark1xFp4Experts(nn.Module):
+             hidden_states = pre_expert_norm(hidden_states)
+         if self.use_humming:
+             local_topk_ids = local_humming_expert_ids(self, topk_ids)
++            if (
++                not grouped_decode
++                and getattr(self, "humming_graph_prefill", False)
++                and self._post_expert_norm_weight is not None
++                and hidden_states.dtype == torch.bfloat16
++                and hidden_states.is_contiguous()
++                and topk_ids.numel() >= self.global_num_experts * _HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++                and not torch.compiler.is_compiling()
++            ):
++                from sglang.srt.layers.muse_spark.humming_prefill_waves import (
++                    grouped_prefill_waves,
++                    wave_capacity,
++                )
++
++                tokens, hidden = hidden_states.shape
++                capacity = wave_capacity(
++                    tokens, local_topk_ids.shape[1], self.num_local_experts,
++                    hidden, self.intermediate_size_per_partition,
++                )
++                if capacity:
++                    return grouped_prefill_waves(
++                        self, hidden_states, topk_scores, local_topk_ids, capacity
++                    )
+             if (
+                 self._post_expert_norm_weight is not None
+                 and hidden_states.dtype == torch.bfloat16
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index d4898d7..4705457 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -13,6 +13,7 @@ import triton.language as tl
+ 
+ from sglang.kernels.jit.utils import cache_once, get_activation_cuda_cflags, load_jit
+ from sglang.srt.environ import envs
++from sglang.srt.runtime_context import get_exec, get_parallel
+ 
+ if TYPE_CHECKING:
+     from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
+@@ -35,6 +36,30 @@ def _expert_scaled_silu_module():
+     )
+ 
+ 
++@cache_once
++def _graph_prefill_ready(device, tp_group):
++    supported = (
++        envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_GRAPH_PREFILL.get()
++        and torch.version.cuda is not None
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and torch.cuda.get_device_capability(device) == (9, 0)
++    )
++    if supported:
++        try:
++            _expert_scaled_silu_module()
++        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++            logging.getLogger(__name__).warning("Disabling graph-local grouped prefill: %s", exc)
++            supported = False
++    # Breakable graph capture puts a TP barrier at each eager boundary.
++    # All ranks must choose the same graph structure, even after a JIT failure.
++    if tp_group.world_size > 1:
++        ready = torch.tensor(int(supported), device="cpu", dtype=torch.int32)
++        torch.distributed.all_reduce(ready, op=torch.distributed.ReduceOp.MIN, group=tp_group.cpu_group)
++        supported = bool(ready.item())
++    return supported
++
++
+ @cache_once
+ def _skinny_gate_up_module():
+     try:
+@@ -148,6 +173,10 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE.get()
+         and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
+     )
++    layer.humming_graph_prefill = (
++        _graph_prefill_ready(layer.gate_up_proj.device, get_parallel().tp_group)
++        and layer.intermediate_size_per_partition % 8 == 0
++    )
+     multicast_a = False
+     resident_device = None
+     if (

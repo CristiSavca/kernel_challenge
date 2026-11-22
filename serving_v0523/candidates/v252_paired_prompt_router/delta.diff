@@ -1,0 +1,75 @@
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_paired_router.py b/python/sglang/kernels/ops/moe/muse_spark_paired_router.py
+new file mode 100644
+index 0000000..5bdfdbf
+--- /dev/null
++++ b/python/sglang/kernels/ops/moe/muse_spark_paired_router.py
+@@ -0,0 +1,51 @@
++"""Evaluate both BF16 factors of a split router before rounding its FP32 sum."""
++import torch
++import triton
++import triton.language as tl
++
++from sglang.srt.environ import envs
++from sglang.srt.runtime_context import get_exec
++
++
++@triton.jit
++def _paired_router(X, High, Low, Out, rows,
++                   K: tl.constexpr, N: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr):
++    row = tl.program_id(0) * BM + tl.arange(0, BM)
++    col = tl.program_id(1) * BN + tl.arange(0, BN)
++    inner = tl.arange(0, BK)
++    x_offsets = row[:, None].to(tl.int64) * K + inner[None, :]
++    w_offsets = inner[:, None].to(tl.int64) * N + col[None, :]
++    high_sum = tl.full((BM, BN), 0, tl.float32)
++    low_sum = tl.full((BM, BN), 0, tl.float32)
++    for _ in range(K // BK):
++        x = tl.load(X + x_offsets, row[:, None] < rows, 0)
++        high = tl.load(High + w_offsets)
++        low = tl.load(Low + w_offsets)
++        high_sum = tl.dot(x, high, acc=high_sum)
++        low_sum = tl.dot(x, low, acc=low_sum)
++        x_offsets += BK
++        w_offsets += BK * N
++    out_offsets = row[:, None].to(tl.int64) * N + col[None, :]
++    tl.store(Out + out_offsets, high_sum + low_sum, row[:, None] < rows)
++
++
++def paired_router(x, high, low):
++    if (not x.is_cuda or x.ndim != 2 or high.ndim != 2 or low.shape != high.shape
++            or x.device != high.device or x.device != low.device
++            or x.dtype != torch.bfloat16 or high.dtype != x.dtype or low.dtype != x.dtype
++            or not (x.is_contiguous() and high.is_contiguous() and low.is_contiguous())
++            or torch.compiler.is_compiling() or torch.are_deterministic_algorithms_enabled()
++            or get_exec().deterministic.enable_deterministic_inference
++            or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()):
++        return None
++    rows, width = x.shape
++    inner, cols = high.shape
++    if inner != width or width < 64 or width % 64 or cols < 32 or cols % 32:
++        return None
++    device = torch.cuda.get_device_properties(x.device)
++    grid = (triton.cdiv(rows, 64), cols // 32)
++    if device.major != 9 or grid[0] * grid[1] < device.multi_processor_count:
++        return None
++    out = torch.empty((rows, cols), device=x.device, dtype=torch.float32)
++    _paired_router[grid](x, high, low, out, rows, width, cols, 64, 32, 64, num_warps=4, num_stages=3)
++    return out
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 1b2d47b..161f399 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -239,8 +239,13 @@ class MuseSpark1xRouter(nn.Module):
+         self._split2_key = key
+ 
+     def forward_split2(self, hidden_states: torch.Tensor) -> torch.Tensor:
++        from sglang.kernels.ops.moe.muse_spark_paired_router import paired_router
++
+         self._build_split2()
+         x = hidden_states.to(torch.bfloat16)
++        paired = paired_router(x, self._split2_hi, self._split2_lo)
++        if paired is not None:
++            return paired
+         acc = torch.mm(x, self._split2_hi, out_dtype=torch.float32)
+         acc += torch.mm(x, self._split2_lo, out_dtype=torch.float32)
+         return acc

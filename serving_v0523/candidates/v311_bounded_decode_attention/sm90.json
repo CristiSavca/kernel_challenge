@@ -1,0 +1,1300 @@
+{
+  "triton": "3.8.0",
+  "source_sha256": {
+    "parent": "8a70205cefdf58f31cb1c8e20ee98525ec16aef3b1edb5717ba30c3deac63b85",
+    "candidate": "5eb54ba0532fc6e909f84eca9880f71cc775ed1f5fa9e9fa0a8fd4a3e0c4c96c"
+  },
+  "builds": {
+    "b1/w-1/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 230,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2360,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "7ab25df065c0a6df2d8dd241c8f00d69a1f1d5e2fec17a18237639cc7bd22d14"
+    },
+    "b1/w-1/c131088/partition/direct/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 216,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4264,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "ba8440c25e8125b292e384a41cd7cf4692c6018858f1a32be87d23585a251c4d"
+    },
+    "b1/w-1/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 47,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 320,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "25f16963f58b31f2cc187ad45a7e17667ebaafb8cce9a779814fb9532646bed9"
+    },
+    "b1/w-1/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 230,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2360,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "7ab25df065c0a6df2d8dd241c8f00d69a1f1d5e2fec17a18237639cc7bd22d14"
+    },
+    "b1/w-1/c131088/partition/direct/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 216,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4264,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "ba8440c25e8125b292e384a41cd7cf4692c6018858f1a32be87d23585a251c4d"
+    },
+    "b1/w-1/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 328,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "b7213124e4f45881129ae7bbb91fec156dcbfd14a8b07a929eb15482fe22e199"
+    },
+    "b1/w2047/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1544,
+      "static_branches": 5,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "ce7862453ab4c9cbd0e9477e8dfac4e8f63b1336c07fe74844258acf5664fde9"
+    },
+    "b1/w2047/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 47,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 328,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "30c4811064c786e378d477d112755d889ed8f0d122d7953877ddbac61e75ca7c"
+    },
+    "b1/w2047/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1544,
+      "static_branches": 5,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "8bd7f638a04ba1eec7627d41603000254ecbf8c6a99cba90657b9e3598e914a1"
+    },
+    "b1/w2047/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 328,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "d98b6e71b3c88b7fb6d71baa3718b37af10a2d8a9a2937b17d43ef9dbf9f8653"
+    },
+    "b4/w-1/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 246,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2400,
+      "static_branches": 7,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "59dec40b6b82b5e52c49e26e658388cc5df70d8f8d9edbb55b05f3eb57555710"
+    },
+    "b4/w-1/c131088/partition/direct/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 242,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4336,
+      "static_branches": 44,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "6cf445d51a0e8835aef13068b08d2958c3a5ecc06f0206cc9ed841c0d5612a17"
+    },
+    "b4/w-1/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 26
+      },
+      "registers": 45,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 360,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "06a662aefd6df42483319533eba1cdeef63db0bc46414626e108d00065e41005"
+    },
+    "b4/w-1/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 246,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2400,
+      "static_branches": 7,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "59dec40b6b82b5e52c49e26e658388cc5df70d8f8d9edbb55b05f3eb57555710"
+    },
+    "b4/w-1/c131088/partition/direct/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 242,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4336,
+      "static_branches": 44,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "6cf445d51a0e8835aef13068b08d2958c3a5ecc06f0206cc9ed841c0d5612a17"
+    },
+    "b4/w-1/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 26
+      },
+      "registers": 54,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 352,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "8fc361076dbba1f7b830205599ccfe5d1888f1ed4463f861b68de2ce11196322"
+    },
+    "b4/w2047/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1608,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "e87254a7d5e47dd5596e8fdd47331359f6b53a5c570d9844fc6dc722b90b6e2d"
+    },
+    "b4/w2047/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 26
+      },
+      "registers": 45,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 368,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "542b19d64f520f2eee42d98271bc49d56a4c36108ab05c7b7ad49c243bfb0748"
+    },
+    "b4/w2047/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1608,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "e87254a7d5e47dd5596e8fdd47331359f6b53a5c570d9844fc6dc722b90b6e2d"
+    },
+    "b4/w2047/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 26
+      },
+      "registers": 54,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 360,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "5a4be808740fcc5f883396c102a696384f48777d3b8e126196006f47c2fd1d36"
+    },
+    "b16/w-1/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 248,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2448,
+      "static_branches": 7,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "fabe09ab0e586a714f1c807ed649e95b6b6e6669f52c6f74ca26f40d544a3da9"
+    },
+    "b16/w-1/c131088/partition/direct/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 242,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4392,
+      "static_branches": 44,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "7eca61d6ded3539ee9c0512510a05d6e7b7c09f0abea073a6c73fe54358325ea"
+    },
+    "b16/w-1/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 32
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 384,
+      "static_branches": 6,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "e30f3cbabe6ffa1519dfdb4dfc66acaefb4752cf759fc32e7476abf3f7f4326c"
+    },
+    "b16/w-1/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 248,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2448,
+      "static_branches": 7,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "fabe09ab0e586a714f1c807ed649e95b6b6e6669f52c6f74ca26f40d544a3da9"
+    },
+    "b16/w-1/c131088/partition/direct/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 242,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4392,
+      "static_branches": 44,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "7eca61d6ded3539ee9c0512510a05d6e7b7c09f0abea073a6c73fe54358325ea"
+    },
+    "b16/w-1/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 32
+      },
+      "registers": 48,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 376,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "8468c7358a339bac16daae175ca17fb1e6ef7571809c1d2537fbc74bde931004"
+    },
+    "b16/w2047/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 199,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1656,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "3e812a251a841bb69491f0a32e702c98e8b7c8191de0aba2ab96dae668a86596"
+    },
+    "b16/w2047/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 32
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 384,
+      "static_branches": 6,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "9b21e39f666b3d514e64aa749ef740944614471b7e8269c3a9e80c0f640b85ce"
+    },
+    "b16/w2047/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 199,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1656,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "3e812a251a841bb69491f0a32e702c98e8b7c8191de0aba2ab96dae668a86596"
+    },
+    "b16/w2047/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 32
+      },
+      "registers": 48,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 384,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "ed731257991efe2e54faed0632b7f8845de29f01ad687c8e5a7e1ff1df8c3f28"
+    },
+    "b32/w-1/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 232,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2384,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "7eb7bbae8ed2399d756729ba6ab95e2eb41f68b0e62805f15992c80171745562"
+    },
+    "b32/w-1/c131088/partition/direct/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 219,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4224,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "115f567b2d5dcc6fbaa2839c9802b377d88476fcc706736f3ffc9618a154d394"
+    },
+    "b32/w-1/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 336,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "11d3a44ada81c38858809fbd4e1d662812af028491f85a281c626f3ae80ae029"
+    },
+    "b32/w-1/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 232,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2384,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "7eb7bbae8ed2399d756729ba6ab95e2eb41f68b0e62805f15992c80171745562"
+    },
+    "b32/w-1/c131088/partition/direct/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 219,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4224,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "115f567b2d5dcc6fbaa2839c9802b377d88476fcc706736f3ffc9618a154d394"
+    },
+    "b32/w-1/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 48,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 328,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "f428a1de37cd8951d42078c892ac534e3e0be81b90b3937cd9f1b429c26a308a"
+    },
+    "b32/w2047/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1568,
+      "static_branches": 5,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "0bbb71bec6fa1fd1a1498a18cb8d81df76d35f87ae1f99c4ffaf0395ec765942"
+    },
+    "b32/w2047/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 336,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "2fd78d80560218aa98dcac8074e7a6f0a0970a4ed045b1c2f97b8fd5e7a035da"
+    },
+    "b32/w2047/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1568,
+      "static_branches": 5,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "0bbb71bec6fa1fd1a1498a18cb8d81df76d35f87ae1f99c4ffaf0395ec765942"
+    },
+    "b32/w2047/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 48,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 336,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "81f07f4291ec2a9e576576ec0c1e8af14c7d1f802ac29d1cc83f51b92db040ec"
+    },
+    "b1/w-1/c2048/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 230,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2360,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "087ede7388e31dbd18f5f59db127b4a15cae375753c2735841aee6e51f04a8ce"
+    },
+    "b1/w-1/c2048/partition/direct/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 216,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4264,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "4aa5ab1cffa18232c8117ee381d077371cb0569fabd99aa6b7c64adf9ea7f43a"
+    },
+    "b1/w-1/c2048/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 47,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 320,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "25f16963f58b31f2cc187ad45a7e17667ebaafb8cce9a779814fb9532646bed9"
+    },
+    "b1/w-1/c2048/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 230,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 2360,
+      "static_branches": 5,
+      "global_loads": 31,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 57600,
+      "cubin_sha256": "e2470655c0f2ac2947152e881538c34f0d9b9cefa08496980cc021605396dc49"
+    },
+    "b1/w-1/c2048/partition/direct/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 216,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 4256,
+      "static_branches": 30,
+      "global_loads": 37,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 4,
+      "shared_bytes": 57624,
+      "cubin_sha256": "2a100642e5aa45dd9169c39b77e8af3ea0abacd1dc5de1b8de22b840f0b6510f"
+    },
+    "b1/w-1/c2048/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 20
+      },
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 328,
+      "static_branches": 5,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "32270552818101adbf1aadef2b76b3accf6815c228394d9e1e9486bfbe5e55c8"
+    },
+    "b2/w127/c131088/partition/indexed/parent": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1584,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "4946fc672d04727f421c4f442fe49bb1fb186f881d8e06388d4247747654ed7a"
+    },
+    "b2/w127/c131088/merge/parent": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 23
+      },
+      "registers": 45,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 360,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "f4a6ec50d8be5de6ec29a6f1fc413e44e0b0b8e75c8b32115417d83d79ee3b2f"
+    },
+    "b2/w127/c131088/partition/indexed/candidate": {
+      "fp32_reduction_layouts": [],
+      "merge_fp32_ops": {},
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 1584,
+      "static_branches": 7,
+      "global_loads": 29,
+      "mma_types": [
+        "HGMMA.64x64x16.F32.BF16",
+        "HMMA.16816.F32"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 33024,
+      "cubin_sha256": "16d5a4831da0565a08dc7d1a68da5224115892f0ced0b726dd1b2810dec903bc"
+    },
+    "b2/w127/c131088/merge/candidate": {
+      "fp32_reduction_layouts": [
+        [
+          "arith.maxnumf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ],
+        [
+          "arith.addf",
+          "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        ],
+        [
+          "arith.addf",
+          "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        ]
+      ],
+      "merge_fp32_ops": {
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "ex2.approx.ftz.f32": 4,
+        "shfl.sync.bfly.b32": 23
+      },
+      "registers": 47,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "sass_instructions": 360,
+      "static_branches": 7,
+      "global_loads": 11,
+      "mma_types": [
+        "HFMA2.MMA"
+      ],
+      "tensor_map_loads": 0,
+      "shared_bytes": 1024,
+      "cubin_sha256": "9b336b96b9fa33783877a6ce6f9af8f8d65755d03945ccff4c54bc0050102ed0"
+    }
+  },
+  "physical_gpu": false,
+  "target": "sm90a",
+  "page_size": 1,
+  "direct_descriptor": "full attention only; page size one",
+  "duplicate_compile_cases_excluded": true
+}

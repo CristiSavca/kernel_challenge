@@ -1,0 +1,7 @@
+# V88a repairs the captured draft vocabulary head
+
+V88’s official four-user private check failed while warming the native greedy draft sampler for graph capture. The terminal server-exit message followed a Python NameError in the dense draft head's candidate_topk function. Its module was missing the is_cuda import. The run exited before producing any rungs. V88a adds the missing import to the V88 module. The candidate retains V88's frozen head kernel and five flags. [Judge log](../../runs/30bb36feb528416f.log) · [One-file repair](delta.diff) · [Official export](patch.diff)
+
+The regression reconstructs each candidate's DFlash module from the pinned Git tree and checks the names actually bound by its source. Among the 24 historical candidates containing the guard, only V88 lacks the import. The prior capture-hook fixture supplied a stand-in candidate_topk, and a separate numerical fixture supplied is_cuda directly. This regression executes the submitted candidate_topk function with its actual utility imports and the pinned is_cuda implementation. It reproduces the original NameError, then exercises the fixed V88a and independently queued V93 through CUDA eligibility, dense fallback, a non-CUDA host, and the disabled switch. Tensor operations use CPU PyTorch with a host stand-in for the fused projection. V93 already imports the helper. [Regression](capture_namespace.py) · [Results by patch](capture_namespace.json)
+
+V88a has no official run or speed measurement. [Validation and flags](validation.json)

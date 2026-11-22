@@ -1,0 +1,132 @@
+{
+  "recorded_utc": "2026-11-18T08:13:33.553034+00:00",
+  "measured_score": 1.4119,
+  "measured_job": "abd217baf0ed49fd",
+  "milestone": 3.0,
+  "stretch": 4.0,
+  "measurement_scope": "official four-load frontier",
+  "previous_turn": "progress: V93/16 judge check and V88/4 control accepted",
+  "current_checks": {
+    "v68/16": "04b01f958aa5487c",
+    "v87/4": "00c134c978104d65",
+    "v88/4": "30bb36feb528416f",
+    "v93/16": "75557c21595347de"
+  },
+  "verified_queued": [
+    "04b01f958aa5487c",
+    "00c134c978104d65",
+    "30bb36feb528416f",
+    "75557c21595347de"
+  ],
+  "hypothesis": "Removing an eager graph break and host read of the live route count per layer can improve prefill TTFT. Every expert and full-K projection remains active on its assigned routes.",
+  "negative_result": "At eight verify rows, V93 already reads every selected W13 and W2 bank once. No V96 payload was created. See serving_v0523/runs/low_load_expert_traffic_feasibility.md.",
+  "large_prefill": {
+    "candidate": "V98",
+    "parent": "V93",
+    "patch_sha256": "c1b8ffcd56c3fbb3c80ae008ab0f10bfe8f9d601ac6822f8d1a27d5c7aad2525",
+    "geometry": "384 MiB combined BF16 matrix workspace, plus output, metadata and capture overhead",
+    "risk": "Nine static waves at 16384 token rows can launch redundant schedulers and add graph-pool memory. V64 passed at +1.9 GB/GPU against the +2 GB limit."
+  },
+  "nov19_checks": [
+    {
+      "alternatives": [
+        {
+          "candidate": "v89",
+          "users": 4,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": "",
+            "--speculative-dflash-compact-context": "",
+            "--speculative-dflash-fused-candidate-head": ""
+          },
+          "sha256": "e20ea10ed16c9b4dec6e0d4c834ef44c086f5cbf468ee6574a5a258800da6e18"
+        },
+        {
+          "candidate": "v80a",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": ""
+          },
+          "sha256": "9c6cf15326e1fbda08159c6d20d6dc1c23150695738453df15d60ace3b2d3864"
+        }
+      ],
+      "decision_receipt": "v87_nov18_check4",
+      "when_queued_running_or_passed": "v89",
+      "when_failed_or_skipped": "v80a",
+      "when_unknown": "defer this slot"
+    },
+    {
+      "alternatives": [
+        {
+          "candidate": "v98",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": "",
+            "--speculative-dflash-compact-context": "",
+            "--speculative-dflash-fused-candidate-head": "",
+            "--speculative-dflash-reduced-target-argmax": ""
+          },
+          "sha256": "c1b8ffcd56c3fbb3c80ae008ab0f10bfe8f9d601ac6822f8d1a27d5c7aad2525"
+        },
+        {
+          "candidate": "v95",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25"
+          },
+          "sha256": "e9359287a5e70dff46449743557bf4622c121ae7adb0c36c119a1b2d7ca311e9"
+        }
+      ],
+      "decision_receipt": "v93_nov18_check16",
+      "v93_job": "75557c21595347de",
+      "when_v93_admitted_and_shared_parents_eligible": "v98",
+      "when_v93_or_v68_failed": "v95",
+      "when_unknown": "defer this slot"
+    },
+    {
+      "candidate": "v79a",
+      "users": 16,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--speculative-dflash-tree": "",
+        "--speculative-dflash-tp-context-projection": "",
+        "--speculative-num-draft-tokens": "12"
+      },
+      "sha256": "28690547fa3a3d52a05c1d4385c48906979b21ac52b4533d42e2cdbc4cfd94b1"
+    }
+  ],
+  "nov19_runner_pid": 16624,
+  "independent_review": "Production plan, arbitrary skew, rank-consistent initialization and Humming scheduler semantics verified independently.",
+  "official_run_status": "V98 armed for eligible November 19 private check. All four full-score ratios await judge verification.",
+  "secondary_draft_prefill": {
+    "candidate": "V97",
+    "parent": "V93",
+    "sha256": "cacabc83b29c72037623b52b679de04211cee957d50d483afed6935b4d9d1762",
+    "status": "frozen, unscheduled",
+    "result": "Actual CPU/Gloo TP2/4/8 forward/worker tests passed for exact-value fixtures. Patched full and breakable replay trims preserve the projection marker in all 16 independent cases.",
+    "tradeoff_at_16384_tokens_tp8": "560 MiB less peer receive volume per rank across the two relevant gathers, 640 MiB temporary full weight. Effect on elapsed time and peak unmeasured."
+  }
+}

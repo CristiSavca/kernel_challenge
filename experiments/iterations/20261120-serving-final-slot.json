@@ -1,0 +1,164 @@
+{
+  "observed_utc": "2026-11-20T01:07:25.210908+00:00",
+  "cutoff_utc": "2026-11-20T08:00:00Z",
+  "incumbent": {
+    "job": "ad275bf67d9a4a0a",
+    "score": 1.5487,
+    "prior": 1.4119,
+    "gpu_memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "official_points": [
+      {
+        "concurrency": 1,
+        "ratio": 1.4126,
+        "stock_tok_s_per_gpu": 6472.3,
+        "tok_s_per_gpu": 9142.5,
+        "tok_s_per_user": 140.9
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.4396,
+        "stock_tok_s_per_gpu": 9949.4,
+        "tok_s_per_gpu": 14322.9,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.6802,
+        "stock_tok_s_per_gpu": 12286.4,
+        "tok_s_per_gpu": 20643.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6836,
+        "stock_tok_s_per_gpu": 12653.2,
+        "tok_s_per_gpu": 21302.6,
+        "tok_s_per_user": 9
+      }
+    ]
+  },
+  "limits": {
+    "scored": {
+      "per_day": 1,
+      "used": 0,
+      "left": 1
+    },
+    "checks": {
+      "per_day": 3,
+      "used": 3,
+      "left": 0
+    }
+  },
+  "jobs": {
+    "v129": {
+      "job": "022544241ab14973",
+      "users": 1,
+      "status": "queued",
+      "patch_sha256": "f20be13ffbc4d3ae2da7d473b3f8ea4b5ccd19fb42ea55a46ba954efced751e2",
+      "scored_V204": {
+        "tok_s_per_gpu": 8146,
+        "tok_s_per_user_e2e": 176.2,
+        "ttft_first_p90_s": 4.991,
+        "ttft_later_p90_s": 0.172
+      },
+      "comparison": {
+        "tok_s_per_gpu": 8146,
+        "tok_s_per_user_e2e": 176.2,
+        "ttft_first_p90_s": 4.991,
+        "ttft_later_p90_s": 0.172
+      },
+      "comparison_run": "ad275bf67d9a4a0a",
+      "lineage_scenarios": {
+        "scored_parent": "abd217baf0ed49fd",
+        "four_user_proxy": null,
+        "by_assumed_affected_loads": {
+          "1": {
+            "coupled_factor_over_V64_to_match_V204": 1.4420643834795652
+          },
+          "1,4": {
+            "coupled_factor_over_V64_to_match_V204": 1.1431718977730594
+          }
+        }
+      }
+    },
+    "v141": {
+      "job": "226d046c12bf4dbc",
+      "users": 32,
+      "status": "queued",
+      "patch_sha256": "dacec92848e669b47532fb53738c869f89efdfdf538a5a12415a20b98c3532a4",
+      "scored_V204": {
+        "tok_s_per_gpu": 21302.6,
+        "tok_s_per_user_e2e": 15.4,
+        "ttft_first_p90_s": 102.755,
+        "ttft_later_p90_s": 0.722
+      },
+      "comparison": {
+        "tok_s_per_gpu": 21302.6,
+        "tok_s_per_user_e2e": 15.4,
+        "ttft_first_p90_s": 102.755,
+        "ttft_later_p90_s": 0.722
+      },
+      "comparison_run": "ad275bf67d9a4a0a",
+      "lineage_scenarios": {
+        "scored_parent": "abd217baf0ed49fd",
+        "four_user_proxy": "b013f83007d544d3",
+        "by_assumed_affected_loads": {
+          "32": {
+            "coupled_factor_over_V64_to_match_V204": 1.3581860685129008
+          },
+          "16,32": {
+            "coupled_factor_over_V64_to_match_V204": 1.3336402382000612
+          }
+        }
+      }
+    },
+    "v154c": {
+      "job": "d4545dbfa1ad4e24",
+      "users": 16,
+      "status": "queued",
+      "patch_sha256": "7bc2eca145404dd077273440e2d18b9c0b9c5da83ff8bdcc5c10907733896b23",
+      "scored_V204": {
+        "tok_s_per_gpu": 18472.5,
+        "tok_s_per_user_e2e": 26.4,
+        "ttft_first_p90_s": 47.319,
+        "ttft_later_p90_s": 0.292
+      },
+      "comparison": {
+        "tok_s_per_gpu": 18338.6,
+        "tok_s_per_user_e2e": 26.1,
+        "ttft_first_p90_s": 47.375,
+        "ttft_later_p90_s": 0.298
+      },
+      "comparison_run": "7fcdf9abf39b486a",
+      "lineage_scenarios": {
+        "scored_parent": "abd217baf0ed49fd",
+        "four_user_proxy": null,
+        "by_assumed_affected_loads": {
+          "16": {
+            "coupled_factor_over_V64_to_match_V204": 1.5839547473631417
+          },
+          "16,32": {
+            "coupled_factor_over_V64_to_match_V204": 1.148568520008467
+          },
+          "1,4,16,32": {
+            "coupled_factor_over_V64_to_match_V204": 1.0691222326724772
+          }
+        }
+      }
+    }
+  },
+  "V204_sensitivity": {
+    "2": {
+      "all_four_multiplier": 1.2239022840336087,
+      "only_16_32_multiplier": 1.4447648214779032
+    },
+    "3": {
+      "all_four_multiplier": 1.7142033372937298,
+      "only_16_32_multiplier": 2.1992546987608446
+    }
+  },
+  "note": "Read-only. Raw comparisons with V204 come from separate jobs. For each lineage scenario, the indicated loads take the same relative change on each rate axis versus V64. Other loads hold their V64 rates, with the measured V139 private four-user rung as a proxy for V141. The transfer assumptions and private-to-scored variation make these decision scenarios, not measured scores."
+}

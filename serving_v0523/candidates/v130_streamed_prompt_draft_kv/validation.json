@@ -1,0 +1,38 @@
+{
+  "status": "withdrawn",
+  "scheduled": false,
+  "reason": "The direct full-prompt path writes reserved physical KV slot zero and omits the native writer's bounds assertion.",
+  "counterexample": "reserved_slot_witness.json",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V104",
+  "parent_sha256": "6747155fe16b33f758b0fb5b9ac1e1be9453df721b130c3bb99da4ad3d53db04",
+  "scored_ancestor": "V64",
+  "parent_tree": "109f194b11d46f81b7946520c990418eb968508d",
+  "tree": "1fbb1247814609787df168659815d2f2b2ec8261",
+  "patch_sha256": "4b4ab2f797c8580ed24a7eec28525f728fa1824d559b26c1020e9f22e26713f3",
+  "delta_sha256": "689f866beecc56646b26e4b7622ca6ecd0f39c16e6369acead24fab80b5457ae",
+  "bytes": 64323,
+  "source_files": 12,
+  "python_compiled": 12,
+  "delta_paths": [
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/speculative/dflash_worker_v2.py"
+  ],
+  "longest_added_line_bytes": 124,
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-direct-prefix-kv": "",
+    "--speculative-dflash-stream-prompt-kv": ""
+  },
+  "official_export_matches_git": true,
+  "strict_apply_reverse_and_parent_delta": true,
+  "unchanged_v104_kernel_body_sha256": {
+    "_cache_round": "d4324ef4bc746a46e01c4e9cb2914a228046c0d2050e1594c4304b2ba0119b3a",
+    "_fused_norm_rope_kernel_stacked": "21fc252547628fd563ea3202afafbe816f7cf46a3447c2d90e5cf2c2ec3eafe6"
+  },
+  "physical_h200": false
+}

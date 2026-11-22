@@ -1,0 +1,39 @@
+{
+  "objective": "Serving score 2x, then 3x; best verified 1.1037x",
+  "observed_at_utc": "2026-11-16T04:49:46Z",
+  "observations": [
+    "V44 scored and V53/V55/V56 private checks submitted at Nov16 reset; all still queued",
+    "Prior Nov15 checks remain queued",
+    "No new hardware performance result"
+  ],
+  "diagnosis": "Current task is measurement-limited; one-load raw throughput and inferred phase shares must not be treated as full-score evidence.",
+  "coordination": {
+    "perf_scan": "V59 implementer; independent private-runner reviewer",
+    "dense_critic": "V59 and V60 independent integration/precision/cache reviewer",
+    "memory_candidate": "V60 allocator/metadata and pinned attention source implementer",
+    "root": "official jobs, result comparison, gated next-quota runner"
+  },
+  "candidates": {
+    "v59": "ea60c518cb47f98a8a740757f055398c816d1c30aff4573252f53a57c13f0773",
+    "v60": "8c152846270bd35aa7d58d8cfb6ea46f6cc5b81aa10f03a680bb4487000be79c"
+  },
+  "decision": "Private V60 check; V59 only after useful exact parent passes; one32-user confirmation after pending comparisons resolve or selection cutoff. No new automatic scored promotion.",
+  "resolved_findings": [
+    "Preserve higher-precision incumbent collectives",
+    "Keep true graph replay lengths with page160",
+    "Select strongest32-user candidate only after readiness and fresh result reads",
+    "Preserve partial and nonzero submission output; never blind-retry"
+  ],
+  "validation": "Pinned patches, Python compilation, CPU routing/index/collective models and independent source review; no CUDA validation",
+  "public_source_scan": {
+    "facebookresearch/sgl-muse-mega": "GB300/SM103, CUDA13.1 and different KV/compute recipe; not imported",
+    "ethduke/open-kernel-challenge": "Existing component work includes attention precision changes; no new compliant whole-serving drop-in found"
+  },
+  "paid_compute_started": false,
+  "evidence": [
+    "CODEX_HANDOFF.md",
+    "serving_v0523/runs/predictions.md",
+    "serving_v0523/runs/nov17_checks_runner.cpu.json",
+    "serving_v0523/runs/nov17_checks_runner.launch.json"
+  ]
+}

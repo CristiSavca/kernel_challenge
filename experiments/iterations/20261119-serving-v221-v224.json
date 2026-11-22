@@ -1,0 +1,117 @@
+{
+  "recorded_utc": "2026-11-19T01:36:54.176836+00:00",
+  "objective": "4x official four-load serving score",
+  "best_official": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "candidate": "V224",
+  "exports": {
+    "221": {
+      "patch": "serving_v0523/candidates/v221_fused_prompt_route_pack/patch.diff",
+      "parent": "V219",
+      "tree": "abec3a5fd7515ee1c8e41de03e10670e17f1d4c3",
+      "bytes": 343306,
+      "patch_sha256": "76f62c1a316fdeeb8d9fdf7088aaa494500243db75ae8974577b24b0c2d0c01c",
+      "delta_sha256": "1d3345387eaf1f4dac0bcc38d0f4aa70868521cc8b099ccfddd1feef3ec4ce68"
+    },
+    "222": {
+      "patch": "serving_v0523/candidates/v222_packed_prompt_taps/patch.diff",
+      "parent": "V219",
+      "tree": "9560505367446d0c3568c54bd930f49ee291a093",
+      "bytes": 351430,
+      "patch_sha256": "b007b1f0cd8ae987a80cdfead5f3aaac715489ea72ef3c35314810a3dd6eb950",
+      "delta_sha256": "535e85833676990345411a3571c61023e5494e52c1e272c1478170ab05cced62"
+    },
+    "223": {
+      "patch": "serving_v0523/candidates/v223_batched_direct_prompt/patch.diff",
+      "parent": "V219",
+      "tree": "06ffd56234f614880bfec98b2e9e14c4380225a7",
+      "bytes": 351350,
+      "patch_sha256": "063fdbe4884732d44b6c92412334b15e53e00aaef8654f73faa901a3f40bdcca",
+      "delta_sha256": "8c73eeea08f5e2df70318fb3c42f4b99ff05cae8abc71390207575b103855dd2"
+    },
+    "224": {
+      "patch": "serving_v0523/candidates/v224_packed_prefill_serving/patch.diff",
+      "parent": "V219",
+      "tree": "8d8af59c59922678e09adf6f0806cdf3c1ab8710",
+      "bytes": 362196,
+      "patch_sha256": "2de1b0195710e395b2d4c5e2666a8df7a42516c4bb3fc87ae313e0788f1e1a9a",
+      "delta_sha256": "fd24066edbd7476589c813c788d15ec2dacc35f91cb3749518a20e7736f0feb7"
+    }
+  },
+  "official_rules": "serving_v0523/candidates/v224_packed_prefill_serving/validation.json",
+  "score_measured_on_v224": false,
+  "connected_checks": {
+    "attention_replay.json": "serving_v0523/candidates/v224_packed_prefill_serving/attention_replay.json",
+    "expert_replay.json": "serving_v0523/candidates/v224_packed_prefill_serving/expert_replay.json",
+    "distributed_taps.json": "serving_v0523/candidates/v224_packed_prefill_serving/distributed_taps.json",
+    "tap_hooks.json": "serving_v0523/candidates/v224_packed_prefill_serving/tap_hooks.json",
+    "sessions.json": "serving_v0523/candidates/v224_packed_prefill_serving/sessions.json",
+    "global_names.json": "serving_v0523/candidates/v224_packed_prefill_serving/global_names.json",
+    "flags.json": "serving_v0523/candidates/v224_packed_prefill_serving/flags.json"
+  },
+  "checked_capacity_bytes": {
+    "old_graph_outputs": 1610612736,
+    "new_graph_outputs": 201326592,
+    "logical_full_chunk_tap_copy_traffic_removed": 671088640
+  },
+  "queue": {
+    "observed_utc": "2026-11-19 01:35:22 UTC",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "result": null,
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "result": null,
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32,
+        "result": null
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4,
+        "result": null
+      }
+    },
+    "v224_submitted": false
+  },
+  "allocation": "None",
+  "nov20_standby": "Existing V215/V198 decision is retained",
+  "cleanup": [
+    "serving_v0523/candidates/v221_fused_prompt_route_pack/guest_cleanup.json",
+    "serving_v0523/candidates/v221_fused_prompt_route_pack/host_cleanup.json",
+    "serving_v0523/candidates/v222_packed_prompt_taps/cleanup.json",
+    "serving_v0523/candidates/v223_batched_direct_prompt/compiler_cleanup.json",
+    "serving_v0523/candidates/v223_batched_direct_prompt/export_cleanup.json",
+    "serving_v0523/candidates/v224_packed_prefill_serving/export_cleanup.json"
+  ]
+}

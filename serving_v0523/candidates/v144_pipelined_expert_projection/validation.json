@@ -1,0 +1,50 @@
+{
+  "candidate": "V144",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V141",
+  "parent_sha256": "dacec92848e669b47532fb53738c869f89efdfdf538a5a12415a20b98c3532a4",
+  "parent_tree": "fa79385948a1220e83d5cf998c5fcd6904a39d24",
+  "tree": "c28daec266cf12fdce6def7d75210d062b48a448",
+  "scored_anchor_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "patch_sha256": "c6f2938fae1d63325122f70a922b14e58d4f542f29b0de43e2be7079ab4cce09",
+  "delta_sha256": "465b38fe2b5375d94bbb914b62c9e44eb7cc525aa80a68b7b61171bf31d74ccc",
+  "bytes": 96499,
+  "delta_bytes": 4639,
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh"
+  ],
+  "source_hashes": {
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh": "901a1c8ebfe37ed4a67586ad8766e27daa7d783a22f51097d35c13078896c43e"
+  },
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "official_export": "okc serve diff .",
+  "fixed_flag_patterns": 76,
+  "strict_full_delta_forward_reverse_tree": true,
+  "python_compiled": 13,
+  "maximum_added_line": 128,
+  "physical_H200": false,
+  "identity_preserved_sm90a_medium_instructions": 5584
+}

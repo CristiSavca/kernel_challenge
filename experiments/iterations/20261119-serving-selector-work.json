@@ -1,0 +1,63 @@
+{
+  "tree": "988e8f886b89bb726cfac55a1211085046f91fe8",
+  "patch_sha256": "9080bf12a7d0ce24da22b5782cd5749e9d737ef0e09b9f1f05259d02eaceac6b",
+  "draft_model_sha256": "55f01a604f5dc1a578fa5e9a0ca4ee2325d220bd192a2a729cafdf8eb7dddef9",
+  "worker_sha256": "edab535dc0f53b758eabcb6deb5ef79755bf24b5e54e50e5036c34ba06a56698",
+  "shape_source": "https://huggingface.co/RadixArk/Muse-Spark-Open-DFlash2/blob/46c90f412549c472941a68382d91a99e5e6372a0/config.json",
+  "official_capture_log_sha256": "57f21face666d19b975cb367d4a0842fa7919c2b435bbe987509d7bd9ee1e69c",
+  "v41_log_sha256": "b7212de67ee2c9fe42b113054891cb4f56cdb3eaa5d9daf5cca2602c1af29bc4",
+  "observed_v41_decode_lines": {
+    "8": [],
+    "32": [
+      "[2026-11-13 21:34:55 TP0 EP0] Decode batch, #running-req: 32, #full token: 2504803, full token usage: 0.74, #swa token: 100928, swa token usage: 0.12, accept len: 4.01, accept rate: 0.43, cuda graph: True, gen throughput (token/s): 897.81, #queue-req: 0"
+    ]
+  },
+  "torch_cpu": "2.5.1",
+  "greedy_host_comparison": {
+    "cases": 48,
+    "fp32_score_words_checked": 73472,
+    "proposal_ids_and_onehot_rows": 4592
+  },
+  "budgets": [
+    {
+      "users": 8,
+      "prediction_rows": 56,
+      "verify_rows": 64,
+      "native_edge_dot_flops": 7340032,
+      "prospective_edge_dot_flops": 458752,
+      "eliminated_flops": 6881280,
+      "all_position_hidden_projection_flops": 234881024,
+      "local_vocabulary_projection_flops": 23172481024,
+      "eliminated_vs_unavoidable_local_vocab_percent": 0.029695913842255305,
+      "baseline_predecessor_logical_bf16_bytes": 458752,
+      "prospective_predecessor_logical_bf16_bytes": 28672,
+      "baseline_predecessor_bf16_distinct_row_upper_per_edge_summed": 397312,
+      "successor_bf16_bytes_both": 458752,
+      "full_score_output_fp32_bytes": 57344,
+      "five_dense_draft_mlp_flops": 56371445760,
+      "five_dense_draft_mlp_weight_bytes": 880803840,
+      "draft_mlp_intermediate_read_plus_write_upper_bytes": 13762560
+    },
+    {
+      "users": 32,
+      "prediction_rows": 224,
+      "verify_rows": 256,
+      "native_edge_dot_flops": 29360128,
+      "prospective_edge_dot_flops": 1835008,
+      "eliminated_flops": 27525120,
+      "all_position_hidden_projection_flops": 939524096,
+      "local_vocabulary_projection_flops": 92689924096,
+      "eliminated_vs_unavoidable_local_vocab_percent": 0.029695913842255305,
+      "baseline_predecessor_logical_bf16_bytes": 1835008,
+      "prospective_predecessor_logical_bf16_bytes": 114688,
+      "baseline_predecessor_bf16_distinct_row_upper_per_edge_summed": 1589248,
+      "successor_bf16_bytes_both": 1835008,
+      "full_score_output_fp32_bytes": 229376,
+      "five_dense_draft_mlp_flops": 225485783040,
+      "five_dense_draft_mlp_weight_bytes": 880803840,
+      "draft_mlp_intermediate_read_plus_write_upper_bytes": 55050240
+    }
+  ],
+  "physical_gpu": false,
+  "limit": "Tested host reductions and first-index ties. Launch latency and HBM reads cannot be derived from these work counts. No timing at eight users is available in these traces."
+}

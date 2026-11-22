@@ -1,0 +1,363 @@
+diff --git a/python/sglang/kernels/ops/speculative/dflash_tree.py b/python/sglang/kernels/ops/speculative/dflash_tree.py
+index a535bac..7fdd8d6 100644
+--- a/python/sglang/kernels/ops/speculative/dflash_tree.py
++++ b/python/sglang/kernels/ops/speculative/dflash_tree.py
+@@ -32,11 +32,11 @@ class DFlashTree:
+ 
+ 
+ @triton.jit
+-def _edge_probabilities(scores, active):
++def _edge_probabilities(scores, active, inverse_temperature=1.0):
+     scores = tl.where(active & (scores == scores), scores.to(tl.float32), -float("inf"))
+     peak = tl.max(scores)
+     if -float("inf") < peak and peak < float("inf"):
+-        weights = tl.exp(scores - peak)
++        weights = tl.exp((scores - peak) * inverse_temperature)
+     else:
+         weights = (active & (scores == peak)).to(tl.float32)
+     return weights / tl.sum(weights)
+@@ -55,14 +55,24 @@ def _propose_tree(
+     WIDTH: tl.constexpr,
+     K: tl.constexpr,
+     BLOCK: tl.constexpr,
++    Alternatives=None,
++    ALT_PLANE: tl.constexpr = 0,
+ ):
+     request = tl.program_id(0)
++    inverse_temperature = 1.0
++    if ALT_PLANE:
++        variant = tl.program_id(1)
++        if variant != 0:
++            start = Alternatives + (variant - 1) * 4 * ALT_PLANE
++            Tokens, Depths = start, start + ALT_PLANE
++            Parents, Ancestors = start + 2 * ALT_PLANE, start + 3 * ALT_PLANE
++        inverse_temperature = tl.where(variant == 0, 1.0, tl.where(variant == 1, 0.5, 2.0))
+     edges = tl.arange(0, BLOCK)
+     parent_slot = edges // K
+     candidate = edges % K
+     lattice = Scores + request * (WIDTH - 1) * K * K
+     root_scores = tl.load(lattice + candidate, parent_slot == 0, other=-float("inf"))
+-    root_prob = _edge_probabilities(root_scores, parent_slot == 0)
++    root_prob = _edge_probabilities(root_scores, parent_slot == 0, inverse_temperature)
+     frontier = tl.where(parent_slot == 0, root_prob, -1.0)
+     depths = tl.full((BLOCK,), 0, tl.int32)
+     ancestors = tl.full((BLOCK,), 1, tl.int32)
+@@ -90,7 +100,7 @@ def _propose_tree(
+                 parent_slot == slot,
+                 other=-float("inf"),
+             )
+-            child_mass = score * _edge_probabilities(child_scores, parent_slot == slot)
++            child_mass = score * _edge_probabilities(child_scores, parent_slot == slot, inverse_temperature)
+             frontier = tl.where(parent_slot == slot, child_mass, frontier)
+             depths = tl.where(parent_slot == slot, depth, depths)
+             ancestors = tl.where(parent_slot == slot, ancestry, ancestors)
+@@ -102,9 +112,10 @@ def make_dflash_tree_buffers(batch_size, width, device):
+     )
+ 
+ 
+-def propose_dflash_tree(candidate_ids, scores, anchor_ids, out):
++def propose_dflash_tree(candidate_ids, scores, anchor_ids, out, alternatives=None):
+     batch, depth, k = candidate_ids.shape
+-    _propose_tree[(batch,)](
++    grid = (batch, 3) if alternatives is not None else (batch,)
++    _propose_tree[grid](
+         candidate_ids.contiguous(),
+         scores.contiguous(),
+         anchor_ids,
+@@ -116,6 +127,8 @@ def propose_dflash_tree(candidate_ids, scores, anchor_ids, out):
+         depth + 1,
+         k,
+         triton.next_power_of_2((depth + 1) * k),
++        alternatives,
++        alternatives.stride(1) if alternatives is not None else 0,
+         num_warps=4,
+     )
+ 
+@@ -155,31 +168,77 @@ def _native_prefix_nodes(tokens, parents, Chain, offset, nodes, WIDTH: tl.conste
+     return spine
+ 
+ 
++@triton.jit
++def _spine_choice(margins, nodes, WIDTH: tl.constexpr):
++    endpoint_vote = tl.sum(tl.where(nodes == 0, margins, 0))
++    utilities = tl.cumsum(tl.where(nodes == 0, 0, margins))
++    chain_utility = tl.sum(tl.where(nodes == WIDTH - 1, utilities, 0))
++    interior = tl.where((nodes > 0) & (nodes < WIDTH - 1), utilities, -2147483647)
++    best = tl.argmax(interior, axis=0, tie_break_left=True)
++    return tl.where(
++        tl.max(interior) > tl.maximum(0, chain_utility),
++        best, tl.where(endpoint_vote > 0, WIDTH - 1, 0),
++    )
++
++
++@triton.jit
++def _known_tree_reward(Tokens, Parents, Committed, offset, nodes, observed, WIDTH: tl.constexpr):
++    tokens = tl.load(Tokens + offset + nodes, nodes < WIDTH, other=0)
++    parents = tl.load(Parents + offset + nodes, nodes < WIDTH, other=-2)
++    leader = tl.full((), 0, tl.int32)
++    matched = tl.full((), 0, tl.int32)
++    for i in range(WIDTH - 1):
++        token = tl.load(Committed + offset + i, i < observed, other=0)
++        child = tl.min(tl.where((nodes < WIDTH) & (parents == leader) & (tokens == token), nodes, WIDTH))
++        found = (leader >= 0) & (i < observed) & (child < WIDTH)
++        matched += found.to(tl.int32)
++        leader = tl.where(found, child, -1)
++    return tl.minimum(WIDTH, matched + 1)
++
++
++@triton.jit
++def _temperature_vote(prior, first, second, observed, WIDTH: tl.constexpr):
++    censored = (first == second) & (first == observed + 1) & (first < WIDTH)
++    sign = (first > second).to(tl.int32) - (first < second).to(tl.int32)
++    decay = (prior > 0).to(tl.int32) - (prior < 0).to(tl.int32)
++    updated = tl.maximum(-WIDTH, tl.minimum(WIDTH, prior - decay + 2 * sign))
++    return tl.where(censored, prior, updated)
++
++
+ @triton.jit
+ def _select_spine_tree(
+-    Original, Chain, Advantage, Selected, PLANE, WIDTH: tl.constexpr, BLOCK: tl.constexpr
++    Original, Chain, Advantage, Selected, PLANE, WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++    STATE_STRIDE: tl.constexpr = 0, Alternatives=None, ALT_PLANE: tl.constexpr = 0,
+ ):
+     request = tl.program_id(0)
+     nodes = tl.arange(0, BLOCK)
+     offset = request * WIDTH
+     offsets = offset + nodes
+     active = nodes < WIDTH
++    if ALT_PLANE:
++        votes = Advantage + request * STATE_STRIDE + WIDTH
++        broad = tl.load(votes)
++        sharp = tl.load(votes + 1)
++        relative = tl.load(votes + 2)
++        # One confirmed win adds two to a neutral vote. Require another win
++        # before overriding the incumbent. Width two has no distinct alternatives.
++        broad_wins = broad >= 3
++        sharp_wins = sharp >= 3
++        prefer_broad = (relative > 0) | ((relative == 0) & (broad >= sharp))
++        if broad_wins | sharp_wins:
++            variant = tl.where(broad_wins & (~sharp_wins | prefer_broad), 0, 1)
++            for plane in tl.static_range(4):
++                source = Alternatives + (4 * variant + plane) * ALT_PLANE
++                values = tl.load(source + offsets, active, other=0)
++                tl.store(Selected + plane * PLANE + offsets, values, active)
++            return
+     tokens = tl.load(Original + offsets, active, other=0)
+     depths = tl.load(Original + PLANE + offsets, active, other=0)
+     parents = tl.load(Original + 2 * PLANE + offsets, active, other=-2)
+     ancestors = tl.load(Original + 3 * PLANE + offsets, active, other=0)
+-    margins = tl.load(Advantage + offsets, active, other=0)
+-    # Lane zero tracks the original binary policy. A hedge must beat both
+-    # endpoints on the adjacent-margin estimate before it can override that policy.
+-    endpoint_vote = tl.sum(tl.where(nodes == 0, margins, 0))
+-    utilities = tl.cumsum(tl.where(nodes == 0, 0, margins))
+-    chain_utility = tl.sum(tl.where(nodes == WIDTH - 1, utilities, 0))
+-    interior = tl.where((nodes > 0) & (nodes < WIDTH - 1), utilities, -2147483647)
+-    best = tl.argmax(interior, axis=0, tie_break_left=True)
+-    length = tl.where(
+-        tl.max(interior) > tl.maximum(0, chain_utility),
+-        best, tl.where(endpoint_vote > 0, WIDTH - 1, 0),
+-    )
++    state_offset = request * STATE_STRIDE if STATE_STRIDE else offset
++    margins = tl.load(Advantage + state_offset + nodes, active, other=0)
++    length = _spine_choice(margins, nodes, WIDTH)
+     spine = _native_prefix_nodes(tokens, parents, Chain, offset, nodes, WIDTH)
+     common = tl.sum(spine.to(tl.int32)) - 1
+     # Preserve the incumbent's actual row ordering whenever the topology agrees.
+@@ -211,7 +270,8 @@ def _select_spine_tree(
+ @triton.jit
+ def _update_spine_margins(
+     TreeTokens, Parents, Chain, Committed, Lengths, Advantage, Next,
+-    WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++    WIDTH: tl.constexpr, BLOCK: tl.constexpr, STATE_STRIDE: tl.constexpr = 0,
++    Alternatives=None, ALT_PLANE: tl.constexpr = 0,
+ ):
+     request = tl.program_id(0)
+     nodes = tl.arange(0, BLOCK)
+@@ -246,7 +306,8 @@ def _update_spine_margins(
+     # Adjacent policies exchange at most one leaf, so a difference of one
+     # identifies the full signed advantage. Equal lower bounds can be censored.
+     uncertain = (nodes > common) & (observed + 1 < WIDTH) & (previous == observed + 1) & (reward == previous)
+-    prior = tl.load(Advantage + offset + nodes, active, other=0)
++    state_offset = request * STATE_STRIDE if STATE_STRIDE else offset
++    prior = tl.load(Advantage + state_offset + nodes, active, other=0)
+     magnitude = tl.maximum(prior, -prior) * 3 // 4
+     decayed = tl.where(prior < 0, -magnitude, magnitude)
+     updated = tl.where(uncertain, prior, decayed + 4 * (reward - previous))
+@@ -255,16 +316,27 @@ def _update_spine_margins(
+     vote = (chain_reward > tree_reward).to(tl.int32) - (chain_reward < tree_reward).to(tl.int32)
+     decay = (prior > 0).to(tl.int32) - (prior < 0).to(tl.int32)
+     endpoint = tl.maximum(-WIDTH, tl.minimum(WIDTH, prior - decay + 2 * vote))
+-    tl.store(Next + offset + nodes, tl.where(nodes == 0, endpoint, updated), active)
+-
+-
+-def select_dflash_tree(original, chain, advantage):
++    tl.store(Next + state_offset + nodes, tl.where(nodes == 0, endpoint, updated), active)
++    if ALT_PLANE:
++        length = _spine_choice(prior, nodes, WIDTH)
++        base = tl.sum(tl.where(nodes == length, reward, 0))
++        broad = _known_tree_reward(Alternatives, Alternatives + 2 * ALT_PLANE, Committed, offset, nodes, observed, WIDTH)
++        sharp = _known_tree_reward(Alternatives + 4 * ALT_PLANE, Alternatives + 6 * ALT_PLANE,
++                                   Committed, offset, nodes, observed, WIDTH)
++        start = state_offset + WIDTH
++        tl.store(Next + start, _temperature_vote(tl.load(Advantage + start), broad, base, observed, WIDTH))
++        tl.store(Next + start + 1, _temperature_vote(tl.load(Advantage + start + 1), sharp, base, observed, WIDTH))
++        tl.store(Next + start + 2, _temperature_vote(tl.load(Advantage + start + 2), broad, sharp, observed, WIDTH))
++
++
++def select_dflash_tree(original, chain, advantage, alternatives=None):
+     batch, width = chain.shape
+     selected = torch.empty_like(original.data)
+     kernel = _select_spine_tree if advantage.ndim == 2 else _select_chain_or_tree
++    extra = (advantage.stride(0), alternatives, alternatives.stride(1)) if alternatives is not None else ()
+     kernel[(batch,)](
+         original.data, chain, advantage, selected, batch * width, width,
+-        triton.next_power_of_2(width), num_warps=1,
++        triton.next_power_of_2(width), *extra, num_warps=1,
+     )
+     return DFlashTree(selected)
+ 
+@@ -305,13 +377,14 @@ def _update_tree_advantage(
+     tl.store(Next + request, tl.maximum(-WIDTH, tl.minimum(WIDTH, prior - decay + 2 * vote)))
+ 
+ 
+-def update_dflash_tree_advantage(original, chain, committed, lengths, advantage):
++def update_dflash_tree_advantage(original, chain, committed, lengths, advantage, alternatives=None):
+     batch, width = chain.shape
+     updated = torch.empty_like(advantage)
+     kernel = _update_spine_margins if advantage.ndim == 2 else _update_tree_advantage
++    extra = (advantage.stride(0), alternatives, alternatives.stride(1)) if alternatives is not None else ()
+     kernel[(batch,)](
+         original.tokens, original.parents, chain, committed, lengths, advantage,
+-        updated, width, triton.next_power_of_2(width), num_warps=1,
++        updated, width, triton.next_power_of_2(width), *extra, num_warps=1,
+     )
+     return updated
+ 
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 00b345c..84c7da1 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -83,6 +83,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Extend the adaptive DFLASH tree with intermediate native prefix lengths at the same verifier budget.",
+     ] = False
++    speculative_dflash_temperature_tree: A[
++        bool,
++        "Compare broader and sharper native DFLASH trees using request-local greedy verification feedback.",
++    ] = False
+     speculative_dflash_reduced_target_argmax: A[
+         bool,
+         "Reduce exact softcapped DFLASH target verify maxima across compatible CUDA TP ranks.",
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 69619aa..14f44ff 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -274,6 +274,7 @@ class _SelectorDraftSampler:
+         device,
+         sampling_enabled: bool,
+         tree_enabled: bool = False,
++        temperature_trees: bool = False,
+     ):
+         self.draft_model = draft_model
+         self.selector = draft_model.candidate_selector
+@@ -298,6 +299,11 @@ class _SelectorDraftSampler:
+             else None
+         )
+ 
++        self.temperature_trees = (
++            torch.empty((2, 4, max_bs, self.block_size), dtype=torch.int64, device=device)
++            if tree_enabled and temperature_trees else None
++        )
++
+     def stage_sampling_params(self, *, bs: int, sampling_info) -> None:
+         """Host-side refresh of the static sampling params; must run before the draft
+         graph replay that consumes them."""
+@@ -333,7 +339,7 @@ class _SelectorDraftSampler:
+         self.candidate_out[:bs].copy_(candidate_ids)
+         self.q_out[:bs].copy_(q_rows)
+         if self.tree_out is not None:
+-            propose_dflash_tree(candidate_ids, scores, block_ids[:, 0], self.tree_out)
++            propose_dflash_tree(candidate_ids, scores, block_ids[:, 0], self.tree_out, self.temperature_trees)
+ 
+ 
+ class _DominoDraftSampler:
+@@ -755,6 +761,12 @@ class DFlashWorkerV2(BaseSpecWorker):
+ 
+     def init_cuda_graphs(self):
+         target_dp_enabled = get_parallel().attn_dp_enabled
++        # Select the owner in the target topology, before draft TP/PP contexts.
++        temperature_trees = (
++            self._tree_verify_backend is not None and get_spec().speculative_dflash_temperature_tree
++            and get_spec().speculative_dflash_adaptive_tree and get_spec().speculative_dflash_adaptive_spine
++            and get_parallel().pp_size == 1 and get_dp_tp_group().rank_in_group == 0
++        )
+         with (
+             draft_pp_context(),
+             draft_tp_context(self.draft_parallel_layout),
+@@ -798,7 +810,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     )
+             if capture_decode_cuda_graph:
+                 # Must run before capture so the draft graph folds the head in.
+-                self._draft_sampler = self._maybe_build_draft_sampler()
++                self._draft_sampler = self._maybe_build_draft_sampler(temperature_trees)
+                 if self._draft_sampler is not None:
+                     self.draft_model_runner.capture_tail_hooks.append(
+                         make_draft_sampler_capture_hook(self._draft_sampler)
+@@ -823,9 +835,12 @@ class DFlashWorkerV2(BaseSpecWorker):
+         )
+         if get_spec().speculative_dflash_adaptive_tree and get_dp_tp_group().rank_in_group == 0:
+             shape = (1, width) if get_spec().speculative_dflash_adaptive_spine else (1,)
++            alternatives = self._draft_sampler.temperature_trees
++            if alternatives is not None:
++                shape = (1, width + 3)
+             advantage = torch.zeros(shape, dtype=torch.int32, device=device)
+-            select_dflash_tree(tree, tree.tokens, advantage)
+-            update_dflash_tree_advantage(tree, tree.tokens, committed, lengths, advantage)
++            select_dflash_tree(tree, tree.tokens, advantage, alternatives)
++            update_dflash_tree_advantage(tree, tree.tokens, committed, lengths, advantage, alternatives)
+         req_table = self.model_runner.req_to_token_pool.req_to_token
+         scratch = torch.empty_strided(
+             (1, width), req_table.stride(), dtype=req_table.dtype, device=device
+@@ -962,7 +977,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         )
+         return result
+ 
+-    def _maybe_build_draft_sampler(self):
++    def _maybe_build_draft_sampler(self, temperature_trees=False):
+         def _eager(reason):
+             if self._target_tp_rank == 0:
+                 logger.info("DFLASH draft greedy head kept eager (reason=%s).", reason)
+@@ -1003,6 +1018,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 device=self.device,
+                 sampling_enabled=self._selector_sampling_enabled,
+                 tree_enabled=self._tree_verify_backend is not None,
++                temperature_trees=temperature_trees,
+             )
+         if self.lilicorr is not None:
+             if not head_supported:
+@@ -2934,9 +2950,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 policy_advantage = draft_input.tree_policy_advantage
+                 if policy_advantage is None:
+                     shape = linear_tokens.shape if get_spec().speculative_dflash_adaptive_spine else (bs,)
++                    if self._draft_sampler.temperature_trees is not None:
++                        shape = (bs, block_size + 3)
+                     policy_advantage = torch.zeros(shape, dtype=torch.int32, device=linear_tokens.device)
+                 else:
+-                    tree = select_dflash_tree(original_tree, linear_tokens, policy_advantage)
++                    tree = select_dflash_tree(
++                        original_tree, linear_tokens, policy_advantage, self._draft_sampler.temperature_trees
++                    )
+             if group.world_size > 1:
+                 group.broadcast(tree.data, src=0)
+         if self._tree_verify_backend is not None:
+@@ -3074,7 +3094,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+             )
+             if original_tree is not None:
+                 policy_advantage = update_dflash_tree_advantage(
+-                    original_tree, linear_tokens, out_tokens, commit_lens, policy_advantage
++                    original_tree, linear_tokens, out_tokens, commit_lens, policy_advantage,
++                    self._draft_sampler.temperature_trees,
+                 )
+         else:
+             _, commit_lens, bonus, out_tokens, new_seq_lens = self._accept_block(

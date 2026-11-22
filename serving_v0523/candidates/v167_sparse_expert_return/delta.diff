@@ -1,0 +1,134 @@
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_sparse_return.py b/python/sglang/kernels/ops/moe/muse_spark_sparse_return.py
+new file mode 100644
+index 0000000..259a77c
+--- /dev/null
++++ b/python/sglang/kernels/ops/moe/muse_spark_sparse_return.py
+@@ -0,0 +1,35 @@
++"""Accumulate received expert partials in source-rank order on the token owner."""
++
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _sum_rank_group(
++    indices, received, previous, output, rows, hidden, group_base,
++    SOURCES: tl.constexpr, FIRST: tl.constexpr,
++    BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr,
++):
++    row = tl.program_id(0) * BLOCK_M + tl.arange(0, BLOCK_M)
++    col = tl.program_id(1) * BLOCK_N + tl.arange(0, BLOCK_N)
++    valid = (row[:, None] < rows) & (col[None, :] < hidden)
++    out_idx = row.to(tl.int64)[:, None] * hidden + col[None, :]
++    if FIRST:
++        total = tl.full((BLOCK_M, BLOCK_N), 0, tl.float32)
++    else:
++        total = tl.load(previous + out_idx, valid, other=0).to(tl.float32)
++    for peer in tl.static_range(SOURCES):
++        packed = tl.load(indices + peer * rows + row, row < rows, other=-1)
++        local = tl.maximum(packed - group_base, 0).to(tl.int64)
++        idx = local[:, None] * hidden + col[None, :]
++        value = tl.load(received + idx, valid & (packed[:, None] >= 0), other=0)
++        total += value.to(tl.float32)
++    tl.store(output + out_idx, total, valid)
++
++
++def sum_rank_group(indices, received, previous, output, group_base, first):
++    rows, hidden = output.shape
++    _sum_rank_group[(triton.cdiv(rows, 4), triton.cdiv(hidden, 256))](
++        indices, received, previous, output, rows, hidden, group_base,
++        SOURCES=indices.shape[0], FIRST=first, BLOCK_M=4, BLOCK_N=256,
++    )
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+index 8a3cd79..bb55409 100644
+--- a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -54,8 +54,39 @@ def _exchange_inputs(shard, needs, counts, width, group):
+         )
+         # The synchronous collective orders the next pack on the caller's stream.
+         # All destination groups reuse the same backing allocation.
+-    # Inputs arrived in global token order with the remote-only rows removed.
+-    return received, torch.cumsum(needs[rank], dim=0, dtype=torch.int32) - 1
++    return received
++
++
++def _return_partials(partials, needs, counts, width, group, output):
++    """Reverse the input exchange and sum each token's partials on its owner."""
++    from sglang.kernels.ops.moe.muse_spark_sparse_return import sum_rank_group
++
++    size, rank = group.world_size, group.rank_in_group
++    rows, hidden = output.shape
++    own_mask = needs[:, rank * rows:(rank + 1) * rows]
++    ends = torch.cumsum(own_mask, dim=1, dtype=torch.int32)
++    lengths = ends[:, -1]
++    bases = torch.cumsum(lengths, dim=0, dtype=torch.int32) - lengths
++    indices = torch.where(own_mask.bool(), ends + bases[:, None] - 1, -1)
++    send_splits = [owner[rank] for owner in counts]
++    capacity = max(sum(counts[rank][first:first + width]) for first in range(0, size, width))
++    # Keep a valid device pointer even on a token owner with no incoming rows.
++    receive_buffer = partials.new_empty((max(capacity, 1), hidden))
++    accumulator = output if width == size else output.new_empty(output.shape, dtype=torch.float32)
++    zeros = [0] * size
++    base = 0
++    for first in range(0, size, width):
++        last = min(first + width, size)
++        splits = [n if first <= source < last else 0 for source, n in enumerate(counts[rank])]
++        length = sum(splits)
++        active = first <= rank < last
++        dist.all_to_all_single(
++            receive_buffer[:length], partials if active else partials[:0],
++            splits, send_splits if active else zeros, group=group.device_group,
++        )
++        destination = output if last == size else accumulator
++        sum_rank_group(indices[first:last], receive_buffer, accumulator, destination, base, first == 0)
++        base += length
+ 
+ 
+ def _local_grouped_eligible(experts, shard):
+@@ -101,16 +132,26 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+     local_route_count = descriptor[-1]
+     width = _group_width(counts, padded_rows) if all(descriptor[size * size:-1]) else 0
+     if width:
+-        inputs, row_map = _exchange_inputs(shard, needs, counts, width, group)
++        inputs = _exchange_inputs(shard, needs, counts, width, group)
++        # The stable route sort is unaffected by dropping entirely nonlocal tokens.
++        ends = torch.cumsum(needs[group.rank_in_group], dim=0, dtype=torch.int32)
++        ordinals = torch.arange(1, inputs.shape[0] + 1, dtype=torch.int32, device=shard.device)
++        live_rows = torch.searchsorted(ends, ordinals)
++        compact_ids = local_ids.index_select(0, live_rows)
++        compact_scores = scores.index_select(0, live_rows)
++        # Grouped projection stages its inputs before the finalizer writes them back.
+         experts._grouped_humming_and_combine_impl(
+-            inputs, local_ids, scores, output, input_row_map=row_map, local_route_count=local_route_count
++            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count
+         )
++        _return_partials(inputs, needs, counts, width, group, output)
+     else:
+         inputs = layernorm_sp.sp_exit_gather(shard, tokens)
+         if eligible:
+-            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, output, local_route_count=local_route_count)
++            partial = shard.new_empty((tokens, shard.shape[1]))
++            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, partial, local_route_count=local_route_count)
+         else:
+-            output.copy_(experts(inputs, scores, ids, experts.post_expert_norm))
++            partial = experts(inputs, scores, ids, experts.post_expert_norm)
++        output.copy_(layernorm_sp.reduce_scatter_token_rows(partial, group))
+ 
+ 
+ def _capture_stub(experts, shard, scores, ids, group, output):
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 1cb5fea..1d82a69 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -955,9 +955,9 @@ class MuseSpark1xMoE(nn.Module):
+ 
+             scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+             ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
+-            output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
++            output = torch.empty_like(expert_input, memory_format=torch.contiguous_format)
+             prompt_experts_into(self.experts, expert_input, scores, ids, tp_group, output)
+-            return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++            return output
+         inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)
+         scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+         ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)

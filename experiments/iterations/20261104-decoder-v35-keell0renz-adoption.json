@@ -1,0 +1,41 @@
+{
+  "iteration": "V35",
+  "decision": "scored; new public decoder incumbent",
+  "private_job": "97be48eb77234c77",
+  "private_speedup": 2.2397862568640114,
+  "scored_job": "c39d323f785c4e97",
+  "scored_speedup": 2.246979852685114,
+  "scored_ci": [
+    2.2132751548948373,
+    2.2806845504753905
+  ],
+  "tests": "13/13",
+  "flags": [],
+  "source_sha256": "dd57f4575e7c99689a9ce9f519c6df3913ff229d922d1dba69d2ab844cdc4bb0",
+  "origin": {
+    "repo": "keell0renz/muse-open-kernel-challenge",
+    "commit": "890809cee421500b00126d084e81b338ef9181ab",
+    "path": "kernels/muse_decode_layer.py",
+    "license": "Apache-2.0",
+    "upstream_sha256": "82c098ae7534b20b5d80f59d547650cb0853fc7d5e313fe29e1e9d9373e1bb19",
+    "executable_ast_identical": true,
+    "change": "attribution comments and upstream NOTICE added after first line"
+  },
+  "previous_incumbent": {
+    "sha256": "97af39947d4cab457126d8eea37802130154aa75eb1119601b1f528c781179c2",
+    "scored_job": "7a8c4941741645ee",
+    "speedup": 2.181183135031857
+  },
+  "board_after": {
+    "decoder_rank": 264,
+    "overall_rank": 264,
+    "to_first": 1.1465,
+    "checked_utc": "2026-11-04T23:56Z"
+  },
+  "review_scope": "Static scan and targeted read only (no encoded payloads, harness/frame access, or host sync in timed paths; RQTOL is a prepare-time synthetic self-test; tuning bias restored). Not an exhaustive audit of the 980 KB file.",
+  "known_open_issues": [
+    "Upstream MoE finalizer waits fall through after 4,000,000 polls rather than failing; see tools/PUBLIC_KERNEL_SCOUT_20261104.md. Not observed to trigger; 13/13 official tests pass.",
+    "Upstream prepare runs synthetic MoE A/B timing diagnostics; these use no kernel_fn input."
+  ],
+  "finding": "Overall rank tracks the decoder board (Spearman 0.997 across 4-problem teams; overall rank equals decoder rank in sampled rows)."
+}

@@ -1,0 +1,173 @@
+{
+  "as_of_utc": "2026-11-18T20:29:11.349221+00:00",
+  "user_target_four_load_score": 4,
+  "official_best": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "per_load_ratio": {
+      "1": 1.17,
+      "4": 1.316,
+      "16": 1.5919,
+      "32": 1.6213
+    },
+    "additional_geomean_required": 2.8330618315744744
+  },
+  "candidates": {
+    "169": {
+      "patch_sha256": "3668c7c494d96d010001deb597ed68db4b0564909182b5c0936060e5b3ea4a08",
+      "tree": "84378c59f2a550cf3e994cdfd5b3fbb1d56f747d",
+      "bytes": 158601,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": ""
+      },
+      "validation": "serving_v0523/candidates/v169_grouped_expert_tile_cohorts/validation.json"
+    },
+    "170": {
+      "disposition": "feasibility only; native FA3 cold chunks already single split; CP would require a different distribution",
+      "analysis": "serving_v0523/candidates/v170_long_prefill_attention_feasibility/check.json"
+    },
+    "171": {
+      "patch_sha256": "6f4022bd2d3f4d2a9294bf961980bf7c1eb391f83f9dccea020c84a50befacf9",
+      "tree": "7d0765cb0e77c0e22a4692e32326c02bcc69b717",
+      "bytes": 172102,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": "",
+        "--speculative-dflash-sp-prefill-context": ""
+      },
+      "validation": "serving_v0523/candidates/v171_prompt_endpoint_context/validation.json"
+    },
+    "172": {
+      "patch_sha256": "ba8bff16c3e03e8f39160812d839564d2da4e6b477a3e3579f23aaef50f7ae26",
+      "tree": "c507b07bc1b2c56b159f66af0fca0737a5b7e862",
+      "bytes": 160935,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": "",
+        "--speculative-dflash-share-verify-schedule": ""
+      },
+      "validation": "serving_v0523/candidates/v172_streamed_experts_verify_schedule/validation.json"
+    },
+    "173": {
+      "patch_sha256": "7d1bffd4526ea77fc2567479d4f569f673ba82062c342a01817c5b5562f11c4a",
+      "tree": "015f2efa61fced6df06bf4fadeb49bff3b0f9136",
+      "bytes": 154759,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": ""
+      },
+      "validation": "serving_v0523/candidates/v173_medium_expert_tma/validation.json"
+    }
+  },
+  "V173_evidence": {
+    "route_layouts": 850,
+    "dirty_replays": 765,
+    "coordinate_writes": 73754240,
+    "numerical_pairs": 33,
+    "bf16_intermediate_and_output_checks": 1115520,
+    "cancel_checks": 6,
+    "compiled_targets": [
+      "sm_90",
+      "sm_90a"
+    ],
+    "physically_timed": false,
+    "conditional_sparse_route_fraction": {
+      "16_request_uniform": 0.9535,
+      "32_request_uniform": 0.4552,
+      "separate_256_row_one_rank_H200_histogram": 0.16666666666666666
+    },
+    "overhead": "two additional expert kernel launches per eligible layer",
+    "machine_code": "serving_v0523/candidates/v173_medium_expert_tma/sm90.json"
+  },
+  "V172_evidence": {
+    "eligible_verify_prepares_before": 62,
+    "eligible_verify_prepares_after": 2,
+    "native_FA3_semaphore_layouts_distinct": true,
+    "device_timing": null
+  },
+  "V171_evidence": {
+    "native_distributed_cpu_forwards": 324,
+    "independent_worker_cases": 351,
+    "logical_gather_outputs_MiB_per_rank_at_16384_rows_TP8": {
+      "V168": 1536,
+      "V171_1_sequence": 256.125,
+      "V171_32_sequences": 260
+    },
+    "timed_batch_cardinalities_available": false
+  },
+  "V169_evidence": {
+    "model_work_saved_uniform_12288_rows": 0.189,
+    "model_work_saved_uniform_16384_rows": 0.018,
+    "cuda_compiler": "nvcc 12.9.86 SM90a; six Humming template builds",
+    "hardware_timing": null
+  },
+  "private_quota": {
+    "date_utc": "2026-11-18",
+    "used": 3,
+    "remaining": 0,
+    "scored_remaining": 1
+  },
+  "V93": {
+    "id": "75557c21595347de",
+    "last_checked_utc": "2026-11-18T20:29Z",
+    "status": "queued"
+  },
+  "expected_private_check": {
+    "candidate": "V168",
+    "users": 16,
+    "condition": "V93 pending at slot selection, plus normal Nov19 runner guards",
+    "window_start": "2026-11-19T00:03:00+00:00",
+    "tests": 169,
+    "unchanged_prior_attempts": 28,
+    "reference_job": "ac89fddc4ee147ab",
+    "reference_tok_s_per_gpu": 17349.9,
+    "launch_receipt": "serving_v0523/runs/nov19_integrated_verify_runner.launch.json",
+    "submitted_on_arm": false
+  },
+  "H200_tests_or_submissions_in_iteration": 0,
+  "V173_conditional_private_check": {
+    "candidate": "V173",
+    "mode": "check",
+    "users": 16,
+    "start_utc": "2026-11-20T00:03:00+00:00",
+    "end_utc_exclusive": "2026-11-20T07:59:00+00:00",
+    "launch_receipt": "serving_v0523/runs/nov20_v173_runner.launch.json",
+    "required_quota": {
+      "per_day": 3,
+      "used": 2,
+      "left": 1
+    },
+    "first_two_private_checks": [
+      "v129_nov20_check1",
+      "v163_nov20_check16"
+    ],
+    "failed_controls": [
+      "v120b_nov19_check32",
+      "v139_nov19_check4"
+    ],
+    "comparator": {
+      "receipt": "v168_nov19_check16",
+      "sha256": "95816b34347ec23816b3def52e99265449ce0c8df523e0a36f587603ae57b574",
+      "users": 16,
+      "require": "passed correct, complete nontruncated rung"
+    },
+    "submitted_on_arm": false,
+    "prior_waiters_verified": 6,
+    "nov19_and_nov20_test_methods": 176,
+    "independent_final_source_probes": 36
+  }
+}

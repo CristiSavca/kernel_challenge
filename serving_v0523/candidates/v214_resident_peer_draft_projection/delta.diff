@@ -1,0 +1,287 @@
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 5fd4034e783f799250216c8162b03dbb66a0ed40..b9166bbcf989fe55f2845fa40ce98479df8828ff 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -328,7 +328,10 @@ class FusedKVMaterializeHelper:
+         flat_kv_weight = torch.stack(kv_weights).reshape(
+             self.n_layers * self.layer_out_dim, -1
+         )
+-        self.flat_kv_weight_t = flat_kv_weight.transpose(0, 1).contiguous()
++        # A peer can retain this packed weight between forwards. Use ordinary
++        # versioned storage even if the worker initializes under inference mode.
++        with torch.inference_mode(False), torch.no_grad():
++            self.flat_kv_weight_t = flat_kv_weight.transpose(0, 1).clone(memory_format=torch.contiguous_format)
+         self.k_norm_weights = torch.stack(k_norm_weights).contiguous()
+         self.eps_values = torch.tensor(
+             eps_values, dtype=torch.float32, device=self.device
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index 5d5ab211a27debe917329a3bba2d97030eb69407..4545c391ab017f8524dd3fdef129b596dbeb0050 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -19,6 +19,14 @@ class _PrefillContext(NamedTuple):
+     logits_processor: nn.Module
+ 
+ 
++class _PeerKVWeight(NamedTuple):
++    group: object
++    local_weight: torch.Tensor
++    version: int
++    remote_weight: torch.Tensor
++    ready_event: object
++
++
+ _draft_kv_helper = ContextVar("dflash_prefill_kv_helper", default=None)
+ _prefill_context = ContextVar("dflash_sp_prefill_context", default=None)
+ 
+@@ -154,17 +162,29 @@ def project_paired_draft_kv(shard, num_tokens, group):
+     rows, hidden = shard.shape
+     weight = getattr(helper, "flat_kv_weight_t", None)
+     channels = 0 if weight is None or weight.ndim != 2 else weight.shape[1]
++    # The rank halfway around this TP group is a peer for both cohort widths.
++    # Retain only its prepared weight. Each request still projects fresh rows.
++    cached = getattr(helper, "_paired_kv_peer", None)
++    version = weight._version if weight is not None and not torch.is_inference(weight) else None
++    reuse = (
++        cached is not None and cached.group is group and cached.local_weight is weight
++        and cached.version == version and version is not None
++    )
++    if cached is not None and not reuse:
++        helper._paired_kv_peer = None
++        cached = None
++
+     # Minimize the per-rank wire volume. A token cohort shares its inputs.
+     # Every other cohort exchanges one weight bank and one projected block.
+     def volume(width):
+         peers = size // width - 1
+-        return (width - 1) * rows * hidden + peers * (hidden * channels + width * rows * channels)
++        return (width - 1) * rows * hidden + (peers - int(reuse)) * hidden * channels + peers * width * rows * channels
+ 
+     width = min((n for n in (2, 4) if n < size), key=volume)
+     full = (size - 1) * rows * hidden
+     ready = (
+         comm is not None and comm.available and weight is not None
+-        and rows > 0 and (rows - 1) * size < num_tokens <= rows * size
++        and 0 < num_tokens <= rows * size
+         and shard.is_contiguous() and shard.dtype == torch.bfloat16
+         and weight.is_contiguous() and weight.shape == (hidden, channels) and channels > 0
+         and weight.device == shard.device == comm.device and weight.dtype == shard.dtype
+@@ -176,10 +196,16 @@ def project_paired_draft_kv(shard, num_tokens, group):
+     cohorts = size // width
+     base = cohort * width
+     peers = [c for c in range(cohorts) if c != cohort]
++    opposite = (cohort + cohorts // 2) % cohorts
+     if ready:
+         try:
+             gathered = shard.new_empty((width, rows, hidden))
+-            remote_weights = weight.new_empty((len(peers), hidden, channels))
++            # Separate allocations let just the opposite rank's bank outlive
++            # this call, including when the selected cohort has three peers.
++            remote_weights = {
++                other: cached.remote_weight if reuse and other == opposite else torch.empty_like(weight)
++                for other in peers
++            }
+             projected = shard.new_empty((cohorts, width * rows, channels))
+             outgoing = shard.new_empty((len(peers), width * rows, channels))
+         except torch.OutOfMemoryError:
+@@ -189,32 +215,57 @@ def project_paired_draft_kv(shard, num_tokens, group):
+     # retired its fused helper or failed to reserve staging storage.
+     # Gloo may finish CPU tensor copies on a thread outside inference mode.
+     with torch.inference_mode(False):
+-        signature = torch.tensor([int(ready), rows, hidden, channels, num_tokens], dtype=torch.int64, device="cpu")
++        signature = torch.tensor([int(ready), rows, hidden, channels, num_tokens, int(reuse)], dtype=torch.int64, device="cpu")
+         signatures = [torch.empty_like(signature) for _ in range(size)]
+         torch.distributed.all_gather(signatures, signature, group=group.cpu_group)
++    if any(s[-1].item() != int(reuse) for s in signatures):
++        # One rank retired its helper or changed its packed weight. Invalidate
++        # every partner before using any retained weight or issuing a send.
++        if helper is not None:
++            helper._paired_kv_peer = None
++        return None
+     if not ready or any(not torch.equal(s, signature) for s in signatures):
+         return None
+ 
+-    gathered[lane].copy_(shard)
++    stream = torch.cuda.current_stream(weight.device) if weight.is_cuda else None
++    if stream is not None:
++        weight.record_stream(stream)
++        if reuse:
++            stream.wait_event(cached.ready_event)
++            cached.remote_weight.record_stream(stream)
++    # SP splits one padded sequence into contiguous rank-major pieces. A
++    # captured bucket can leave the last owners partially or entirely empty.
++    def live_rows(first_rank, rank_count=1):
++        return max(0, min(rank_count * rows, num_tokens - first_rank * rows))
++
++    local_rows = live_rows(group.rank_in_group)
++    cohort_rows = live_rows(base, width)
++    gathered[lane, :local_rows].copy_(shard[:local_rows])
+     with comm.change_state(enable=True):
+-        comm.group_start()
+-        try:
+-            for other in range(width):
+-                if other != lane:
+-                    comm.send(shard, base + other)
+-                    comm.recv(gathered[other], base + other)
+-            for idx, other in enumerate(peers):
+-                peer = other * width + lane
+-                comm.send(weight, peer)
+-                comm.recv(remote_weights[idx], peer)
+-        finally:
+-            comm.group_end()
++        if cohort_rows or len(peers) > int(reuse):
++            comm.group_start()
++            try:
++                for other in range(width):
++                    if other != lane:
++                        if local_rows:
++                            comm.send(shard[:local_rows], base + other)
++                        peer_rows = live_rows(base + other)
++                        if peer_rows:
++                            comm.recv(gathered[other, :peer_rows], base + other)
++                for other in peers:
++                    if not reuse or other != opposite:
++                        peer = other * width + lane
++                        comm.send(weight, peer)
++                        comm.recv(remote_weights[other], peer)
++            finally:
++                comm.group_end()
+ 
+-        x = gathered.view(-1, hidden)
++        x = gathered.view(-1, hidden)[:cohort_rows]
+         try:
+-            torch.mm(x, weight, out=projected[cohort])
+-            for idx in range(len(peers)):
+-                torch.mm(x, remote_weights[idx], out=outgoing[idx])
++            if cohort_rows:
++                torch.mm(x, weight, out=projected[cohort, :cohort_rows])
++                for idx, other in enumerate(peers):
++                    torch.mm(x, remote_weights[other], out=outgoing[idx, :cohort_rows])
+         except torch.OutOfMemoryError:
+             computed = False
+         else:
+@@ -227,8 +278,14 @@ def project_paired_draft_kv(shard, num_tokens, group):
+         try:
+             for idx, other in enumerate(peers):
+                 peer = other * width + lane
+-                comm.send(outgoing[idx], peer)
+-                comm.recv(projected[other], peer)
++                if cohort_rows:
++                    comm.send(outgoing[idx, :cohort_rows], peer)
++                peer_rows = live_rows(other * width, width)
++                if peer_rows:
++                    comm.recv(projected[other, :peer_rows], peer)
+         finally:
+             comm.group_end()
++    if not reuse and version is not None and weight._version == version:
++        event = stream.record_event() if stream is not None else None
++        helper._paired_kv_peer = _PeerKVWeight(group, weight, version, remote_weights[opposite], event)
+     return projected.view(-1, channels)[:num_tokens]
+diff --git a/python/sglang/srt/managers/scheduler_components/weight_updater.py b/python/sglang/srt/managers/scheduler_components/weight_updater.py
+index 2381b3a657d1e1476b9f9eaba851bd2aa3e26999..d969e809b7d22a2c82ff9c10117a76e68e529750 100644
+--- a/python/sglang/srt/managers/scheduler_components/weight_updater.py
++++ b/python/sglang/srt/managers/scheduler_components/weight_updater.py
+@@ -140,7 +140,7 @@ class SchedulerWeightUpdaterManager:
+         with self._observe_weight_load("disk"):
+             success, message = True, "Succeeded to update model weights."
+             target_updated = False
+-            for role, runner in self._select_runners():
++            for role, runner in self._weight_load_runners():
+                 success, message = runner.weight_updater.update_weights_from_disk(
+                     recv_req.model_path,
+                     recv_req.load_format,
+@@ -184,6 +184,14 @@ class SchedulerWeightUpdaterManager:
+             runners += self.draft_worker.weight_update_runners()
+         return runners
+ 
++    def _weight_load_runners(self, selector: str = "all"):
++        for role, runner in self._select_runners(selector):
++            if role == "draft":
++                invalidate = getattr(self.draft_worker, "invalidate_draft_kv_projection", None)
++                if invalidate is not None:
++                    invalidate()
++            yield role, runner
++
+     def update_weights_from_distributed(
+         self,
+         recv_req: UpdateWeightsFromDistributedReqInput,
+@@ -211,7 +219,7 @@ class SchedulerWeightUpdaterManager:
+                 logger.error(message)
+             else:
+                 success, message = True, "Succeeded to update parameter online."
+-                for _, runner in self._select_runners(recv_req.selector):
++                for _, runner in self._weight_load_runners(recv_req.selector):
+                     success, message = (
+                         runner.weight_updater.load_weights_from_distributed(weights)
+                     )
+@@ -242,7 +250,7 @@ class SchedulerWeightUpdaterManager:
+                 recv_req.serialized_named_tensors
+             )
+             success, message = True, "Success"
+-            for _, runner in self._select_runners(recv_req.selector):
++            for _, runner in self._weight_load_runners(recv_req.selector):
+                 success, message = runner.weight_updater.update_weights_from_tensor(
+                     named_tensors=named_tensors,
+                     load_format=recv_req.load_format,
+@@ -267,7 +275,7 @@ class SchedulerWeightUpdaterManager:
+         with self._observe_weight_load("ipc"):
+             success, message = True, "Succeeded to update model weights."
+             target_updated = False
+-            for role, runner in self._select_runners():
++            for role, runner in self._weight_load_runners():
+                 success, message = runner.weight_updater.update_weights_from_ipc(
+                     recv_req
+                 )
+@@ -314,7 +322,7 @@ class SchedulerWeightUpdaterManager:
+                 message="a weight-update session is already open; "
+                 "call end_weight_update() first",
+             )
+-        for _, runner in self._select_runners(recv_req.selector):
++        for _, runner in self._weight_load_runners(recv_req.selector):
+             runner.weight_updater.begin_weight_update()
+         self._session = _WeightUpdateSession(selector=recv_req.selector)
+         torch.distributed.barrier(group=self.tp_cpu_group)
+@@ -328,7 +336,7 @@ class SchedulerWeightUpdaterManager:
+                 message="no weight-update session is open; call begin_weight_update() first",
+             )
+         run_post_load = not self._session.loaded_weights
+-        for _, runner in self._select_runners(self._session.selector):
++        for _, runner in self._weight_load_runners(self._session.selector):
+             runner.weight_updater.end_weight_update(run_post_load=run_post_load)
+         self._session = None
+         torch.distributed.barrier(group=self.tp_cpu_group)
+@@ -424,7 +432,8 @@ class SchedulerWeightUpdaterManager:
+     def check_weights(self, recv_req: CheckWeightsReqInput):
+         try:
+             role_payloads = []
+-            for role, runner in self._select_runners(recv_req.selector):
++            select = self._weight_load_runners if recv_req.action == "reset_tensors" else self._select_runners
++            for role, runner in select(recv_req.selector):
+                 p = runner.check_weights(
+                     action=recv_req.action,
+                     allow_quant_error=recv_req.allow_quant_error,
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index e8a113072da53d018ee0fa4304d4aad1258deb98..9b0dc753bca96f656f310f4b9efdfc57c35278ac 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1043,6 +1043,11 @@ class DFlashWorkerV2(BaseSpecWorker):
+             tp_group=tp_group if tp_group.world_size > 1 else None,
+         )
+ 
++    def invalidate_draft_kv_projection(self):
++        # Weight loaders may modify a parameter via .data without advancing its
++        # version, including before reporting failure. Drop both packed banks.
++        self._fused_kv_helper = None
++
+     def _init_fused_kv_helper(self) -> None:
+         """Initialize the fused KV materialization helper with pre-stacked weights."""
+         try:
+@@ -1985,6 +1990,9 @@ class DFlashWorkerV2(BaseSpecWorker):
+             if commit_lens.dtype != torch.int32:
+                 commit_lens = commit_lens.to(torch.int32)
+ 
++        if self._use_fused_kv_materialize and self._fused_kv_helper is None:
++            self._init_fused_kv_helper()
++
+         # `cache_loc` arrives in the draft pool's id space (`_draft_write_ids`);
+         # the callers' window buffers stay virtual for the compact
+         # req_to_token rebuild.

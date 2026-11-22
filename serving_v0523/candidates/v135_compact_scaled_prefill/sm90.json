@@ -1,0 +1,54 @@
+{
+  "compiled": "Full TVM FFI host and device wrapper. Offline assembly, no GPU execution.",
+  "header_sha256": "5e96e6b9cdcb596d0619fea393b27b00a51b66449b9a6d151d8a0454ad13c67b",
+  "guest": "Ubuntu Linux aarch64",
+  "nvcc": "12.9.86",
+  "cflags": "C++20, -O3, --use_fast_math, --expt-relaxed-constexpr, --expt-extended-lambda",
+  "artifacts": {
+    "compile.log": "46862bfab8d44c71d06a491c9f73223e145919b487b2ff47acc61542ee86c798",
+    "sm_90.cubin": "f158d44c2ee7d04529513ad11e4879e408788bbeb49e8f22fc4b1448b3fa7afa",
+    "sm_90.o": "f02119c53ccfd020c51b5b4271c660ab0532a72829d06c36fea1d5cebca772ee",
+    "sm_90.ptx": "998e30ee7488963bd8dc0a1bab3fc93cbbf5453deaa85074353512f960ee0025",
+    "sm_90.sass": "1e727360bd509a1c2b9e20847366f3de495fd6f656410db1a1b311523b233ef4",
+    "sm_90a.cubin": "7ba6980f05e753448d2bf5a26d8383931cce86ddf8506180593eace48d1b830c",
+    "sm_90a.o": "cd7904b445f42331c96d8a99c71de8884710b0b6341c91df70667ab38f203b2e",
+    "sm_90a.ptx": "a6a7f01956206ea8424f5fca76197cdaf8794867affb55270badba7d6a0933f2",
+    "sm_90a.sass": "4fa597e20b5a8deb7906deeb55991df43a6806b98585884309199fb1783642d3",
+    "wrap.cu": "79103c35ef094c59f2bf36a88bf6d29a039f05f40eb7748eaad22b3a0b0fa956"
+  },
+  "variants": {
+    "sm_90": {
+      "registers": 32,
+      "stack_bytes": 0,
+      "spill_load_bytes": 0,
+      "spill_store_bytes": 0,
+      "barriers": 0
+    },
+    "sm_90a": {
+      "registers": 32,
+      "stack_bytes": 0,
+      "spill_load_bytes": 0,
+      "spill_store_bytes": 0,
+      "barriers": 0
+    }
+  },
+  "sm90_static": {
+    "mul.rn.f32": 16,
+    "cvt.rn.bf16.f32": 24,
+    "MUFU.EX2": 8
+  },
+  "ptxas_log": [
+    "ptxas info    : 0 bytes gmem",
+    "ptxas info    : Compiling entry function '_ZN6sglang31muse_expert_prefill_scaled_silu10run_kernelENS0_6ParamsE' for 'sm_90'",
+    "ptxas info    : Function properties for _ZN6sglang31muse_expert_prefill_scaled_silu10run_kernelENS0_6ParamsE",
+    "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+    "ptxas info    : Used 32 registers, used 0 barriers",
+    "ptxas info    : Compile time = 3.840 ms",
+    "ptxas info    : 0 bytes gmem",
+    "ptxas info    : Compiling entry function '_ZN6sglang31muse_expert_prefill_scaled_silu10run_kernelENS0_6ParamsE' for 'sm_90a'",
+    "ptxas info    : Function properties for _ZN6sglang31muse_expert_prefill_scaled_silu10run_kernelENS0_6ParamsE",
+    "    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+    "ptxas info    : Used 32 registers, used 0 barriers",
+    "ptxas info    : Compile time = 3.708 ms"
+  ]
+}

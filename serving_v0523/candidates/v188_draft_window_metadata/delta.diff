@@ -1,0 +1,148 @@
+diff --git a/python/sglang/kernels/ops/attention/metadata.py b/python/sglang/kernels/ops/attention/metadata.py
+index ba4866571ca1e05a71f59679dbb9cad0dba6e060..c74fdb55535ca6f44018e81b6e33308a717038d7 100644
+--- a/python/sglang/kernels/ops/attention/metadata.py
++++ b/python/sglang/kernels/ops/attention/metadata.py
+@@ -223,6 +223,7 @@ def _fused_decode_metadata_kernel(
+     BLOCK_COLS: tl.constexpr,
+     SKIP_PAGE_TABLE: tl.constexpr,
+     ZERO_TAIL: tl.constexpr,
++    WINDOW_LEFT: tl.constexpr,
+ ):
+     pid_b = tl.program_id(0)
+     pid_c = tl.program_id(1)
+@@ -233,6 +234,8 @@ def _fused_decode_metadata_kernel(
+         for idx in range(B):
+             seq = tl.load(seq_lens + idx * seq_lens_stride_0)
+             val = (seq + SEQ_LEN_DELTA).to(tl.int32)
++            if WINDOW_LEFT >= 0:
++                val -= (tl.maximum(seq.to(tl.int32) - WINDOW_LEFT, 0) // 128) * 128
+             tl.store(cache_seqlens_int32 + idx * cache_seqlens_int32_stride_0, val)
+             tl.store(cu_seqlens_k + idx * cu_seqlens_k_stride_0, acc)
+             acc += val
+@@ -244,8 +247,12 @@ def _fused_decode_metadata_kernel(
+         return
+ 
+     seq_len = tl.load(seq_lens + pid_b * seq_lens_stride_0).to(tl.int32)
++    first = 0
++    if WINDOW_LEFT >= 0:
++        # Translate by a whole FA4 K tile to preserve both split and reduction boundaries.
++        first = (tl.maximum(seq_len - WINDOW_LEFT, 0) // 128) * 128
+     num_live_pages = tl.minimum(
+-        tl.cdiv(seq_len + SEQ_LEN_DELTA, PAGE_SIZE), max_seq_pages
++        tl.cdiv(seq_len + SEQ_LEN_DELTA - first, PAGE_SIZE), max_seq_pages
+     )
+     col_start = pid_c * BLOCK_COLS
+     if not ZERO_TAIL and col_start >= num_live_pages:
+@@ -257,7 +264,7 @@ def _fused_decode_metadata_kernel(
+     token_ids = tl.load(
+         req_to_token
+         + row_idx * req_to_token_stride_0
+-        + cols * PAGE_SIZE * req_to_token_stride_1,
++        + (first + cols * PAGE_SIZE) * req_to_token_stride_1,
+         mask=live_mask,
+         other=0,
+         cache_modifier=".cg",
+@@ -518,6 +525,7 @@ def normal_decode_set_metadata(
+     full_v2p: Optional[torch.Tensor] = None,
+     swa_v2p: Optional[torch.Tensor] = None,
+     zero_tail: bool = False,
++    window_left: int = -1,
+ ):
+     """Fill sequence lengths, their prefix sum and page tables in one launch.
+ 
+@@ -536,6 +544,10 @@ def normal_decode_set_metadata(
+     assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+         f"page_size must be a power of two, got {page_size}"
+     )
++    if window_left >= 0:
++        assert page_size == 1 and not skip_page_table and not zero_tail
++        assert swa_page_table is None and full_v2p is None and swa_v2p is None
++        max_seq_pages = min(max_seq_pages, window_left + seq_len_delta + 127)
+     if swa_page_table is not None and not skip_page_table:
+         assert (full_to_swa_index_mapping is None) != (swa_v2p is None), (
+             "SWA output requires exactly one token-slot or page mapping"
+@@ -587,6 +599,7 @@ def normal_decode_set_metadata(
+         BLOCK_COLS=block_cols,
+         SKIP_PAGE_TABLE=skip_page_table,
+         ZERO_TAIL=zero_tail,
++        WINDOW_LEFT=window_left,
+         num_warps=block_cols // 32,
+         num_stages=3,
+     )
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index e769198790db8ba7a44a90d54b643899ed138977..2fe49162b55583a6ffca1b275ede2db7c0c66320 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -367,6 +367,7 @@ class FlashAttentionBackend(AttentionBackend):
+             self._decode_uses_static_max_seqlen_k = (
+                 runtime_policy.decode_uses_static_max_seqlen_k
+             )
++        self._draft_window_left = self._draft_graph_window(model_runner)
+         # Set (never getattr'd) so forward_extend can identity-check "is this the
+         # full-CG prefill metadata?" to disable the pointer-keyed shear-bias
+         # block-schedule cache (see forward_extend rel_bias handling).
+@@ -3012,6 +3013,38 @@ class FlashAttentionBackend(AttentionBackend):
+         src = seq_lens_cpu if seq_lens_cpu is not None else seq_lens.cpu()
+         return src.max().item()
+ 
++    def _draft_graph_window(self, model_runner) -> int:
++        # At head dimension 128 the SM90 FA4 paged local attention uses 128-key tiles.
++        if (
++            not self.is_draft_runner or self.fa_impl_ver != 4 or not get_platform().is_sm90
++            or self.page_size != 1 or self.kv_cache_dtype != torch.bfloat16
++            or self.kv_index_translator.is_translating or self.use_sliding_window_kv_pool
++            or self.local_attn_builder is not None or self._kv_shard_pool is not None
++            or self.is_encoder_decoder or self.is_prefill_aware_swa or self.use_mla or self.topk > 1
++            or get_parallel().attn_dp_enabled or get_parallel().attn_dcp_size != 1
++            or get_parallel().enable_prefill_cp or self.attn_cp_size != 1
++            or get_exec().deterministic.enable_deterministic_inference
++            or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            or get_spec().speculative_draft_window_size is not None
++        ):
++            return -1
++        from sglang.srt.models.dflash import DFlash2DraftModel
++
++        model = model_runner.model
++        if type(model) is not DFlash2DraftModel or self.speculative_num_draft_tokens != model.block_size:
++            return -1
++        windows = []
++        for block in model.layers:
++            layer = block.self_attn.attn
++            if (
++                layer.head_dim != 128 or layer.v_head_dim != 128 or layer.is_cross_attention
++                or layer.attn_type != AttentionType.ENCODER_ONLY
++                or layer.sliding_window_size is None or layer.sliding_window_size < 0
++            ):
++                return -1
++            windows.append(layer.sliding_window_size)
++        return max(windows, default=-1)
++
+     def _set_decode_page_metadata(
+         self,
+         plan: KVLocPlan,
+@@ -3019,6 +3052,7 @@ class FlashAttentionBackend(AttentionBackend):
+         req_pool_indices: torch.Tensor,
+         seq_lens: torch.Tensor,
+         seq_len_delta: int,
++        window_left: int = -1,
+     ) -> None:
+         """Fill `cache_seqlens_int32`, `cu_seqlens_k` and the page table(s).
+ 
+@@ -3043,6 +3077,7 @@ class FlashAttentionBackend(AttentionBackend):
+                 else None
+             ),
+             skip_page_table=translated,
++            window_left=window_left,
+         )
+         if translated:
+             # The plan's table reaches `cache_seqlens_int32`, which the kernels
+@@ -3251,7 +3286,8 @@ class FlashAttentionBackend(AttentionBackend):
+                 # max_seq_len_k left unset -- unread here (scheduler_metadata is
+                 # normal-decode-only).
+                 self._set_decode_page_metadata(
+-                    plan, metadata, req_pool_indices, verify_lens, verify_delta
++                    plan, metadata, req_pool_indices, verify_lens, verify_delta,
++                    window_left=self._draft_window_left if ragged_layout is None and encoder_lens is None else -1,
+                 )
+             else:
+                 # When topk > 1, we need two specific target verify metadata, and then merge states

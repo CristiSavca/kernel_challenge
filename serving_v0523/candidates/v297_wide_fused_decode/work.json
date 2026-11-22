@@ -1,0 +1,76 @@
+{
+  "initial_32_user_fixture": {
+    "expert_row_tiles": 33,
+    "shape_rows": 256,
+    "original_tile_jobs_across_W13_W2": 2112,
+    "cases": {
+      "neither_projection_widens": {
+        "total_tile_jobs": 2112,
+        "total_tile_jobs_saved": 0,
+        "logical_input_TMA_MiB_saved": 0.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      },
+      "one_projection_widens": {
+        "total_tile_jobs": 1584,
+        "total_tile_jobs_saved": 528,
+        "logical_input_TMA_MiB_saved": 99.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      },
+      "both_projections_widen": {
+        "total_tile_jobs": 1056,
+        "total_tile_jobs_saved": 1056,
+        "logical_input_TMA_MiB_saved": 198.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      }
+    }
+  },
+  "caches": {
+    "assumed_L2_MiB": 50,
+    "logical_A_miss_MiB_avoided_range": [
+      -0.46875,
+      0.0703125
+    ],
+    "logical_weight_scale_miss_MiB_avoided_range": [
+      -18.0,
+      0.0
+    ],
+    "assumptions": "V278 conventional equal geometry, serial issue orders and 128-byte lines. The fused pipeline and physical H200 cache behavior can differ."
+  },
+  "per_load_V41_scheduler_reports": {
+    "1": {
+      "M8": 59,
+      "M16": 0,
+      "M24": 0
+    },
+    "4": {
+      "M8": 43,
+      "M16": 0,
+      "M24": 0
+    },
+    "16": {
+      "M8": 10,
+      "M16": 11,
+      "M24": 0
+    },
+    "32": {
+      "M8": 6,
+      "M16": 3,
+      "M24": 15
+    }
+  },
+  "high_load_sensitivity": {
+    "V64_32user_period_proxy_ms": 96.99769053117784,
+    "layers": 62,
+    "net_us_saved_per_layer_for_five_percent_faster_decode": 74.49899426357754
+  },
+  "scope": "All tile counts require successful compilation, exact supported geometry, and actual dispatch. A scheduler sample is neither a time fraction nor a throughput measurement. The copy figures count TMA operand requests before caches. No H200 timing or score for this candidate.",
+  "sources_sha256": {
+    "v297_wide_fused_decode/independent_exposure.json": "699af81dd35b6102e2571a2c9785734eb2d8f65f38c6a3618648b5cc44dad8f7",
+    "v275_wide_decode_output_tiles/work.json": "fe7112ddef252825c85fb1a213bcad331f451e5d3295723c5e2ac5c013843a27",
+    "v278_overlapped_wide_decode/cache_sensitivity.json": "f419ae32b867de9afc13c8f89ddce9bb0e7c6226f08742cf68ce5328bc27fa4d",
+    "v262_decode_phase_budget/check.json": "cbdc77d744ea9fcde14cc1e463180eb88ba86689f788b6fbe1a8ac9cfc3833cd"
+  }
+}

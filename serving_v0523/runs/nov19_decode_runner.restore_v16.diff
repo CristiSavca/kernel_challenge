@@ -1,0 +1,175 @@
+--- a/submit_nov19_decode_checks.py
++++ b/submit_nov19_decode_checks.py
+@@ -91,11 +91,7 @@
+ LEGACY_EXPERT_ALTERNATIVES = (V100c, V106, V89, V116, V111, V120)
+ ALTERNATIVES = (V116b, V120b, V80a)
+ PREFILL_ALTERNATIVES = (V98, V102, V95)
+-V125 = Candidate(
+-    "v125", "v125_v68_clustered_expert_mlp",
+-    "3564873a4327719c83fa88a3d1eae5cf3f06d6c42b8505c45a7403a883d658d3", V68.flags,
+-)
+-TREE_ALTERNATIVES = (V101b, V79a, V125)
++TREE_ALTERNATIVES = (V101b, V79a)
+ CANDIDATES = (*ALTERNATIVES, *PREFILL_ALTERNATIVES, *TREE_ALTERNATIVES)
+ 
+ 
+@@ -263,25 +259,20 @@
+     state, detail = job_state(V68_JOB, V68.sha256, V68.flags, okc=okc, execute=execute)
+     if state not in ("passed", "queued", "running"):
+         return state, detail
+-    if candidate != V125:
+-        parent_state, detail = optional_parent_gate(runs, okc, execute)
+-        if parent_state != "passed":
+-            return parent_state, detail
+-    if candidate not in ALTERNATIVES:
+-        # A measured V68 control lets us isolate the expert kernel while the
+-        # native-width tree comparator has yet to pass.
+-        fallback = V125 if state == "passed" else V79a
+-        try:
+-            selected, reason = v93_choice(runs, okc, execute, V101b, fallback, pending=fallback)
+-        except (OSError, subprocess.SubprocessError):
+-            selected, reason = None, "V93 status unavailable"
+-        if selected is None and fallback == V79a:
+-            selected = V79a
+-        if selected != candidate:
+-            return "waiting", reason
+-        if candidate == V125:
+-            return "passed", "matched V68 control passed at 16 users"
+-    return "passed", reason
++    state, detail = optional_parent_gate(runs, okc, execute)
++    if state != "passed":
++        return state, detail
++    if candidate in ALTERNATIVES:
++        return "passed", reason
++    # V79a is independent of V93 and retains its slot unless the exact
++    # native-width comparator has passed. Both still require the shared parents.
++    try:
++        choice, reason = v93_choice(runs, okc, execute, V101b, V79a, pending=V79a)
++    except (OSError, subprocess.SubprocessError):
++        choice, reason = None, "V93 status unavailable"
++    selected = choice or V79a
++    state = "passed" if candidate == selected else "waiting"
++    return state, f"{reason}; {selected.name} is eligible for the tree slot"
+ 
+ 
+ def run_candidate(candidate, *, runs=RUNS, root=ROOT, okc, clock=utc_now, execute=subprocess.run):
+@@ -369,9 +360,6 @@
+         evidence["comparison_job"] = V93_JOB
+         alternatives = PREFILL_ALTERNATIVES if candidate in PREFILL_ALTERNATIVES else TREE_ALTERNATIVES
+         evidence["exclusive_alternatives"] = [c.name for c in alternatives]
+-        if candidate == V125:
+-            evidence.update(shared_jobs=[V68_JOB], decision_receipt=prefix(V93), decision_job=V93_JOB,
+-                            comparison_receipt=f"{V68_JOB}.json", comparison_job=V68_JOB)
+         if candidate == V102:
+             evidence.update(shared_jobs=[V68_JOB], decision_receipt=prefix(V93), decision_job=V93_JOB,
+                             comparison_receipt=f"{V64_JOB}.json", comparison_job=V64_JOB)
+@@ -401,10 +389,7 @@
+               "when_v93_or_v68_failed": V95.name, "when_unknown": "defer this slot"}
+     third = {"alternatives": [checks[c.name] for c in TREE_ALTERNATIVES], "decision_receipt": prefix(V93), "v93_job": V93_JOB,
+              "when_v93_passed_and_shared_parents_eligible": V101b.name, "legacy_attempt_receipts": [prefix(V99)],
+-             "when_v93_pending_or_failed_and_exact_v68_passed": V125.name,
+-             "v125_comparison_job": V68_JOB,
+-             "when_v68_pending_and_shared_parents_eligible": V79a.name,
+-             "when_v68_passed_but_v93_unknown": "defer this slot"}
++             "otherwise_if_shared_parents_eligible": V79a.name}
+     return {"start_utc": START.isoformat(), "end_utc": END.isoformat(), "quota_reset": RESET,
+             "v68_job": V68_JOB, "optional_parent_receipts": [prefix(V72a), prefix(V76a)],
+             "allow_pending_parents": True, "reserve_checks": 0, "maximum_private_checks": 3, "checks": [first, second, third]}
+--- a/test_nov19_decode_checks.py
++++ b/test_nov19_decode_checks.py
+@@ -23,7 +23,7 @@
+         self.on_quota = lambda: None
+         self.at = r.START
+         self.submit_result = 0
+-        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120b","v101b","v102","v125"), 1)}
++        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120b","v101b","v102"), 1)}
+         self.jobs[r.V68_JOB] = {"id": r.V68_JOB, "board":"serving", "mode":"check",
+                                 "status":"queued", "result":None}
+         self.ids[r.V87.name] = r.V87_JOB
+@@ -92,13 +92,13 @@
+         self.assertEqual(checks[2]["decision_receipt"], r.prefix(r.V93))
+         self.assertEqual(checks[2]["v93_job"], r.V93_JOB)
+         self.assertEqual([(v["candidate"], v["users"]) for v in checks[2]["alternatives"]],
+-                         [("v101b", 16), ("v79a", 16), ("v125", 16)])
++                         [("v101b", 16), ("v79a", 16)])
+         self.assertEqual(checks[2]["alternatives"][0]["flags"],
+                          r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""})
+         self.assertEqual(checks[2]["alternatives"][1]["flags"], r.V76a.flags | {"--speculative-num-draft-tokens": "12"})
+         self.assertEqual([r.prefix(c) for c in r.CANDIDATES],
+                          ["v116b_nov19_check4", "v120b_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
+-                          "v101b_nov19_check16", "v79a_nov19_check16", "v125_nov19_check16"])
++                          "v101b_nov19_check16", "v79a_nov19_check16"])
+         self.assertEqual(r.START.isoformat(), "2026-11-19T00:03:00+00:00")
+         self.assertEqual(r.END.hour,22)
+ 
+@@ -704,50 +704,6 @@
+         self.at=r.END
+         self.assertEqual(self.offer(r.V95), "outside submission window")
+ 
+-    def exact_v68(self):
+-        self.jobs[r.V68_JOB].update(status="done", result={
+-            "status": "ok", "passed": True, "concurrency": [16],
+-            "serving_flags": r.V68.flags, "patch": {"sha256": r.V68.sha256},
+-        })
+-
+-    def test_v125_with_measured_v68_and_unresolved_v93(self):
+-        self.exact_v68()
+-        for state in ("queued", "running", "failed"):
+-            self.job(r.V93, state=state)
+-            self.assertTrue(self.offer(r.V79a).startswith("waiting"))
+-            self.assertTrue(self.offer(r.V125).startswith("submitted"))
+-            meta = json.loads(self.receipt(r.V125).read_text().splitlines()[0])
+-            self.assertEqual((meta["users"], meta["flags"], meta["sha256"]), (16, r.V68.flags, r.V125.sha256))
+-            self.assertEqual(meta["evidence"]["comparison_job"], r.V68_JOB)
+-            self.assertEqual(meta["evidence"]["shared_jobs"], [r.V68_JOB])
+-            self.assertEqual(self.offer(r.V101b), "attempt recorded")
+-            self.receipt(r.V125).unlink()
+-
+-    def test_v125_independent_of_optional_tree_parent(self):
+-        self.exact_v68()
+-        self.job(r.V76a, passed=False)
+-        self.assertTrue(self.offer(r.V125).startswith("submitted"))
+-
+-    def test_v125_requires_matched_v68_and_identifiable_v93(self):
+-        self.assertTrue(self.offer(r.V125).startswith("waiting"))
+-        self.exact_v68()
+-        self.receipt(r.V93).write_text("ambiguous CLI")
+-        for candidate in r.TREE_ALTERNATIVES:
+-            self.assertTrue(self.offer(candidate).startswith("waiting"))
+-        self.job(r.V93, state="queued")
+-        self.jobs[r.V68_JOB]["result"]["patch"]["sha256"] = "incorrect"
+-        self.assertTrue(self.offer(r.V125).startswith("failed"))
+-        self.assertEqual(self.left, 3)
+-
+-    def test_v125_switch_after_quota(self):
+-        self.exact_v68()
+-        self.on_quota = lambda: self.job(r.V93)
+-        self.assertEqual(self.offer(r.V125), "quota request failed")
+-        self.assertFalse(self.receipt(r.V125).exists())
+-        self.assertTrue(self.offer(r.V101b).startswith("submitted"))
+-        self.assertEqual(self.offer(r.V125), "attempt recorded")
+-        self.assertEqual(self.left, 2)
+-
+     def test_exact_v93_pass_selects_v101b_for_third_and_last_check(self):
+         self.job(r.V93)
+         self.assertTrue(self.offer(r.V80a).startswith("submitted"))
+@@ -760,7 +716,7 @@
+         self.assertEqual((meta["candidate"], meta["users"], meta["flags"], meta["sha256"]),
+                          ("v101b", 16, r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""}, r.V101b.sha256))
+         self.assertEqual(meta["evidence"]["comparison_job"], r.V93_JOB)
+-        self.assertEqual(meta["evidence"]["exclusive_alternatives"], ["v101b", "v79a", "v125"])
++        self.assertEqual(meta["evidence"]["exclusive_alternatives"], ["v101b", "v79a"])
+ 
+     def test_unpassed_or_wrong_v93_keeps_wide_tree(self):
+         for state, fields in (
+@@ -800,9 +756,8 @@
+     def test_v99_pass_on_ineligible_shared_stack_is_blocked(self):
+         self.job(r.V93)
+         self.job(r.V76a, passed=False)
+-        for candidate in (r.V101b, r.V79a):
++        for candidate in r.TREE_ALTERNATIVES:
+             self.assertTrue(self.offer(candidate).startswith("failed"))
+-        self.assertTrue(self.offer(r.V125).startswith("waiting"))
+         self.assertEqual(self.left, 3)
+ 
+     def test_v93_status_failure_does_not_require_wide_tree_to_wait(self):

@@ -1,0 +1,201 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+index 1278068..06bdfce 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+@@ -15,6 +15,27 @@ static_assert(MuseGateCtx::kNumWriteSplits == 1 && !MuseGateCtx::kUseStreamK &&
+ static_assert(MuseGateCtx::kMultiCastSize == 1 && MuseGateCtx::kWeightScaleGroupSize == 16);
+ static_assert(MuseGateCtx::kIsGroupedContiguousGemm && MuseGateCtx::kUseTmaB && MuseGateCtx::kUseTmaBS);
+ 
++#if !defined(MUSE_GATE_PROMPT) && MUSE_GATE_M == 8
++// The same eight-row TMA box can cover the original token matrix for every expert.
++template <> class G2SMemoryLoaderA<MuseGateCtx> {
++  MuseGateCtx& ctx;
++  const CUtensorMap* map;
++  uint32_t row, col;
++ public:
++  CUDA_INLINE G2SMemoryLoaderA(MuseGateCtx& c) : ctx(c), map(static_cast<const CUtensorMap*>(c.params.a)) {}
++  CUDA_INLINE void seek(uint32_t, uint32_t k_tile, uint32_t, uint32_t offset) {
++    row = (ctx.params.top_k >> 16) ? 0 : offset;
++    col = k_tile * kMuseGateK;
++  }
++  template <bool Advance = true>
++  CUDA_INLINE void load(int4* dest, void* bar, uint32_t = 0) {
++    const auto line = ctx.load_thread_id();
++    if (line < 2) tma_load_2d(map, dest + line * MUSE_GATE_M * 8, bar, col + line * 64, row);
++    if constexpr (Advance) col += kMuseGateK;
++  }
++};
++#endif
++
+ template <bool Weight>
+ struct MusePackedGateLoader {
+   MuseGateCtx& ctx;
+@@ -79,7 +100,7 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+     scale = __bfloat162float(scales[ctx.params.expert_ids_ptr[start]]);
+ #else
+     // The grouped ABI has no indexed top-k. Its scalar parameter carries the packed-key shift.
+-    scale = __bfloat162float(scales[(uint32_t(ctx.params.expert_ids_ptr[start]) >> ctx.params.top_k) - 1]);
++    scale = __bfloat162float(scales[(uint32_t(ctx.params.expert_ids_ptr[start]) >> (ctx.params.top_k & 0xffff)) - 1]);
+ #endif
+   }
+ 
+@@ -88,8 +109,16 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+     for (uint32_t i = threadIdx.x; i < MUSE_GATE_M * 16; i += MuseGateCtx::kNumMathThreads) {
+       const uint32_t s = i / 8, col = i % 8, row = s % MUSE_GATE_M;
+       if (row >= live) continue;
+-      auto gate = fragment(s, col);
+-      auto up = fragment(s + 2 * MUSE_GATE_M, col);
++      uint32_t source = s;
++#if !defined(MUSE_GATE_PROMPT) && MUSE_GATE_M == 8
++      const uint32_t token_shift = ctx.params.top_k >> 16;
++      if (token_shift) {
++        const uint32_t mask = (1u << (ctx.params.top_k & 0xffff)) - 1;
++        source = s - row + ((ctx.params.expert_ids_ptr[start + row] & mask) >> token_shift);
++      }
++#endif
++      auto gate = fragment(source, col);
++      auto up = fragment(source + 2 * MUSE_GATE_M, col);
+       auto* g = reinterpret_cast<__nv_bfloat16*>(&gate);
+       auto* u = reinterpret_cast<__nv_bfloat16*>(&up);
+       PRAGMA_UNROLL
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+index 8e2929b..c51b310 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -54,7 +54,8 @@ struct MuseDecodeGateUp {
+     auto rows = SymbolicSize{"rows"}, k = SymbolicSize{"K"}, i = SymbolicSize{"intermediate"}, e = SymbolicSize{"experts"};
+     auto dev = SymbolicDevice{};
+     dev.set_options<kDLCUDA>();
+-    TensorMatcher({rows, k}).with_dtype<bf16_t>().with_device(dev).verify(input);
++    auto tokens = SymbolicSize{"input rows"};
++    TensorMatcher({tokens, k}).with_dtype<bf16_t>().with_device(dev).verify(input);
+     TensorMatcher({rows, i}).with_dtype<bf16_t>().with_device(dev).verify(output);
+     TensorMatcher({rows}).with_dtype<int32_t>().with_device(dev).verify(ids);
+     TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(scales);
+@@ -63,8 +64,16 @@ struct MuseDecodeGateUp {
+         || rows.unwrap() > INT32_MAX / (i.unwrap() / 128)
+         || tile <= 0 || tile > 256 || sms <= 0 || sms > INT32_MAX) return false;
+ 
++    const bool direct = tokens.unwrap() != rows.unwrap();
++    uint32_t token_shift = 0;
++    if (direct) {
++      if (Prompt || tile != 8 || tokens.unwrap() <= 0 || tokens.unwrap() > tile || rows.unwrap() % tokens.unwrap()) return false;
++      auto routes = rows.unwrap() / tokens.unwrap();
++      if (routes < 2 || (routes & (routes - 1))) return false;
++      for (; routes > 1; routes >>= 1) ++token_shift;
++    }
+     CUtensorMap a{};
+-    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(rows.unwrap())}, stride[] = {2 * dims[0]};
++    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(tokens.unwrap())}, stride[] = {2 * dims[0]};
+     const cuuint32_t box[] = {64, uint32_t(tile)}, step[] = {1, 1};
+     if (cuTensorMapEncodeTiled(&a, CU_TENSOR_MAP_DATA_TYPE_BFLOAT16, 2, input.data_ptr(), dims, stride, box, step,
+         CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_128B, CU_TENSOR_MAP_L2_PROMOTION_NONE,
+@@ -76,6 +85,8 @@ struct MuseDecodeGateUp {
+     uint32_t m = rows.unwrap(), key_shift = 0;
+     // _plan_grouped_decode packs (local_expert + 1) above ceil(log2(slots)) bits.
+     for (uint32_t bits = m - 1; bits; bits >>= 1) ++key_shift;
++    // Low bits describe packed keys. The high field selects source-token rows in the epilogue.
++    key_shift |= token_shift << 16;
+     bool int64_layout = false;
+     void* args[] = {&a, &maps.weight, &c, &none, &maps.scale, &none, &none, &factor, &none,
+                     &experts, &none, &layout, &none, &none, &m, &key_shift, &int64_layout};
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+index 66373ad..1e8b269 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+@@ -25,6 +25,10 @@ struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
+   CUDA_INLINE void seek(uint32_t expert, uint32_t m, uint32_t n, uint32_t end, uint32_t start) {
+     Base::seek(expert, m, n, end, start);
+     live = end - start;
++    // A token-major eight-row W13 tile may select any lane, even for one live route.
++    if constexpr (Block::M == 8 && groups == 2) {
++      if (this->ctx.params.top_k >> 16) live = Block::M;
++    }
+   }
+   CUDA_INLINE void call(uint32_t* words) {
+     auto& ctx = this->ctx;
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 23e2a0b..ebd2482 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -199,7 +199,7 @@ def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+     ):
+         return None
+     _, handle, shared, width = kernel
+-    active = inputs.new_empty((inputs.shape[0], layer.intermediate_size_per_partition))
++    active = inputs.new_empty((keys.numel(), layer.intermediate_size_per_partition))
+     launch = launcher.run_prompt if prompt else launcher.run
+     if prompt:
+         keys = keys.int()
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 00b0ab6..d8dc88e 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -317,7 +317,20 @@ def humming_grouped_decode_outputs(
+     expert_map = layer._expert_map
+     staging = hidden_states.new_empty(slots * intermediate)
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    if slots <= 256 and 1024 <= hidden_size <= 4096:
++    estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
++    def select(name):
++        return next(config for maximum, config in layer.humming_decode_tunings[name]
++                    if estimated_local_routes <= maximum)
++
++    gate_tuning = select("w13")
++    gate_state = getattr(layer, "humming_decode_gate_up", None)
++    tile = gate_state[3].get(gate_tuning) if gate_state else None
++    token_major = (
++        tile is not None and tile[3] == 8 and hidden_states.shape[0] <= 8
++        and topk > 1 and (topk & (topk - 1)) == 0
++    )
++    activations = None
++    if not token_major and slots <= 256 and 1024 <= hidden_size <= 4096:
+         _stage_grouped_decode[(slots + 1,)](
+             topk_ids, expert_map if expert_map is not None else topk_ids, local_ids, offsets, row_keys, row_map,
+             hidden_states, inputs, slots, EXPERTS=experts, GLOBAL_EXPERTS=layer.global_num_experts,
+@@ -341,27 +354,25 @@ def humming_grouped_decode_outputs(
+             EXPERT_SPAN=triton.next_power_of_2(experts + 1),
+             num_warps=4 if span <= 256 else 8,
+         )
+-        _gather_grouped_decode[(min(slots, 128),)](
+-            hidden_states,
+-            row_keys,
+-            offsets,
+-            inputs,
+-            slots,
+-            TOPK=topk,
+-            HIDDEN=hidden_size,
+-            SLOT_SPAN=span,
+-            BLOCK=triton.next_power_of_2(hidden_size),
+-            num_warps=8 if hidden_size >= 4096 else 4,
+-        )
+-
+-    estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+-    def select(name):
+-        return next(config for maximum, config in layer.humming_decode_tunings[name]
+-                    if estimated_local_routes <= maximum)
++        if token_major:
++            from sglang.srt.layers.muse_spark.decode_gate_up import run_gate_up
++
++            activations = run_gate_up(layer, hidden_states, row_keys, offsets, gate_tuning)
++        if activations is None:
++            _gather_grouped_decode[(min(slots, 128),)](
++                hidden_states,
++                row_keys,
++                offsets,
++                inputs,
++                slots,
++                TOPK=topk,
++                HIDDEN=hidden_size,
++                SLOT_SPAN=span,
++                BLOCK=triton.next_power_of_2(hidden_size),
++                num_warps=8 if hidden_size >= 4096 else 4,
++            )
+ 
+-    gate_tuning = select("w13")
+-    activations = None
+-    if getattr(layer, "humming_decode_gate_up", None) is not None:
++    if activations is None and gate_state:
+         from sglang.srt.layers.muse_spark.decode_gate_up import run_gate_up
+ 
+         activations = run_gate_up(layer, inputs, row_keys, offsets, gate_tuning)

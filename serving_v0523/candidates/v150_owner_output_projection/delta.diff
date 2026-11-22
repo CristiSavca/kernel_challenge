@@ -1,0 +1,194 @@
+diff --git a/python/sglang/srt/layers/communication/sp_owner_projection.py b/python/sglang/srt/layers/communication/sp_owner_projection.py
+new file mode 100644
+index 0000000..c2f772e
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_owner_projection.py
+@@ -0,0 +1,145 @@
++"""Pipeline row-parallel BF16 output projections to their sequence owners."""
++
++import torch
++import triton
++import triton.language as tl
++from torch.nn import functional as F
++
++from sglang.srt.runtime_context import get_exec, get_parallel
++from sglang.srt.utils.custom_op import register_custom_op
++
++
++def owner_projection_eligible(rows, channels, size):
++    # Each peer needs a tall GEMM to amortize its weight read and transfer launch.
++    return rows >= 512 * size and rows * channels * 2 >= 32 * 1024**2
++
++
++def _exchange(comm, group, outgoing, incoming, step):
++    rank, size = group.rank_in_group, group.world_size
++    comm.group_start()
++    try:
++        comm.send(outgoing, (rank + step) % size)
++        comm.recv(incoming, (rank - step) % size)
++    finally:
++        comm.group_end()
++
++
++def enable_owner_projection(linears, group):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
++
++    if group.world_size not in (4, 8) or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return
++    comm = group.pynccl_comm
++    ready = (
++        comm is not None
++        and comm.available
++        and torch.cuda.get_device_capability(comm.device)[0] == 9
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not is_batch_invariant_mode_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not torch.is_autocast_enabled()
++        and bool(linears)
++        and all(
++            type(fc.quant_method) is UnquantizedLinearMethod
++            and "apply" not in vars(fc.quant_method)
++            and fc.bias is None
++            and fc.tp_group is not None
++            and fc.tp_group.ranks == group.ranks
++            and fc.weight.device == comm.device
++            and fc.weight.dtype == torch.bfloat16
++            and fc.weight.ndim == 2
++            and fc.weight.is_contiguous()
++            and not fc.weight.requires_grad
++            for fc in linears
++        )
++    )
++    status = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if not status.item():
++        return
++    # Initialize every peer connection before any CUDA graph captures the exchange.
++    stream = torch.cuda.Stream(device=comm.device)
++    current = torch.cuda.current_stream(comm.device)
++    outgoing = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
++    incoming = torch.empty_like(outgoing)
++    stream.wait_stream(current)
++    with torch.cuda.stream(stream), comm.change_state(enable=True):
++        for step in range(1, group.world_size):
++            _exchange(comm, group, outgoing, incoming, step)
++    current.wait_stream(stream)
++    group.sp_projection_stream = stream
++    for fc in linears:
++        fc._sp_owner_projection = True
++
++
++@triton.jit
++def _sum_sources(partials, output, count, width, stride, SIZE: tl.constexpr, BLOCK: tl.constexpr):
++    offsets = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
++    total = tl.full((BLOCK,), 0, tl.float32)
++    for source in tl.static_range(SIZE):
++        part = tl.load(partials + source * count.to(tl.int64) + offsets, offsets < count, other=0)
++        total += part.to(tl.float32)
++    row = offsets // width
++    col = offsets % width
++    tl.store(output + row.to(tl.int64) * stride + col, total, offsets < count)
++
++
++def _finish_partials(partials, output):
++    size, rows, channels = partials.shape
++    count = output.numel()
++    _sum_sources[(triton.cdiv(count, 256),)](
++        partials, output, count, channels, output.stride(0), size, 256
++    )
++
++
++def _owner_shape(x: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
++    return x.new_empty((x.shape[0] // size, weight.shape[0]))
++
++
++def _project_stripe(x, weight, output, size, dispatch):
++    from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++    group = get_parallel().tp_group
++    rank, comm = group.rank_in_group, group.pynccl_comm
++    compute = torch.cuda.current_stream(x.device)
++    transfer = group.sp_projection_stream
++    rows = x.shape[0] // size
++    partials = x.new_empty((size, rows, weight.shape[0]))
++    project = bf16_gemm_dispatch if dispatch else F.linear
++    # Keep the preceding send alive until its read is ordered before reuse on
++    # the allocating stream. Compute the next partial while the last one moves.
++    previous = None
++    with comm.change_state(enable=True):
++        for step in range(1, size):
++            destination = (rank + step) % size
++            source = (rank - step) % size
++            outgoing = project(x.narrow(0, destination * rows, rows), weight, None).contiguous()
++            if previous is not None:
++                compute.wait_stream(transfer)
++            transfer.wait_stream(compute)
++            with torch.cuda.stream(transfer):
++                _exchange(comm, group, outgoing, partials[source], step)
++            previous = outgoing
++        partials[rank].copy_(project(x.narrow(0, rank * rows, rows), weight, None))
++    compute.wait_stream(transfer)
++    _finish_partials(partials, output)
++
++
++def projection_stripe_width(rows, channels):
++    # Bound the temporary source stack; align each weight strip for tensor cores.
++    budget = (128 * 1024**2) // (rows * 2)
++    return min(channels, max(128, budget // 128 * 128))
++
++
++@register_custom_op(fake_impl=_owner_shape)
++def owner_projection(x: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool) -> torch.Tensor:
++    channels = weight.shape[0]
++    stripe = projection_stripe_width(x.shape[0], channels)
++    output = x.new_empty((x.shape[0] // size, channels))
++    for start in range(0, channels, stripe):
++        width = min(stripe, channels - start)
++        _project_stripe(x, weight.narrow(0, start, width), output.narrow(1, start, width), size, dispatch)
++    return output
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index ea02720..8092f91 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -277,6 +277,22 @@ def row_parallel_gbar_matmul(linear, input_: torch.Tensor, bias) -> torch.Tensor
+     """
+     tp_size = linear.tp_group.world_size if linear.tp_group is not None else 1
+     x = input_.contiguous()
++    if (
++        getattr(linear, "_sp_owner_projection", False)
++        and bias is None
++        and x.dtype == linear.weight.dtype == torch.bfloat16
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++    ):
++        from sglang.srt.layers.communication.sp_owner_projection import owner_projection, owner_projection_eligible
++        from sglang.srt.layers.quantization.unquant import get_bf16_gemm_backend
++
++        if owner_projection_eligible(x.shape[0], linear.weight.shape[0], tp_size):
++            padded = ceil_align(x.shape[0], tp_size)
++            if padded != x.shape[0]:
++                x = torch.nn.functional.pad(x, (0, 0, 0, padded - x.shape[0]))
++            backend = get_bf16_gemm_backend()
++            return owner_projection(x, linear.weight, tp_size, backend.is_cutedsl() or backend.is_gemv())
+     if getattr(linear, "_sp_unfused_collective", False):
+         group = linear.tp_group
+         with group.use_symmetric_memory(group):
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 46a283f..c6e4655 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1210,6 +1210,11 @@ class MuseSpark1xModel(nn.Module):
+                     else:
+                         linear._sp_use_cutlass = True
+             if replicate_expert_input:
++                from sglang.srt.layers.communication.sp_owner_projection import enable_owner_projection
++
++                enable_owner_projection(
++                    [layer.self_attn.o_proj for layer in self.layers], get_parallel().tp_group
++                )
+                 for moe_layer in moe_layers:
+                     moe_layer.sp_replicate_expert_input = True
+             elif moe_layers and not getattr(

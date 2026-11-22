@@ -1,0 +1,168 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index c5ba07e..55e1149 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -393,48 +393,100 @@ def _stage_grouped_decode(
+ 
+ 
+ @triton.jit
+-def _stage_token_routes(
+-    ids_ptr, map_ptr, x_ptr, weight_ptr, local_ptr, offsets_ptr, keys_ptr, rows_ptr,
+-    out_ptr, eps, SLOTS: tl.constexpr, GLOBAL: tl.constexpr, EXPERTS: tl.constexpr,
+-    HAS_MAP: tl.constexpr, TOPK: tl.constexpr, K_TILE: tl.constexpr, HIDDEN: tl.constexpr,
+-    SPAN: tl.constexpr, BUCKETS: tl.constexpr, WIDTH: tl.constexpr,
+-    WRITE_ACTIVE: tl.constexpr = False,
++def _plan_route_tiles(
++    ids_ptr, map_ptr, local_ptr, rows_ptr, tile_ends_ptr,
++    SLOTS: tl.constexpr, GLOBAL: tl.constexpr, EXPERTS: tl.constexpr,
++    HAS_MAP: tl.constexpr, TILE: tl.constexpr, BUCKETS: tl.constexpr,
+ ):
+-    token = tl.program_id(0)
+-    all_slots = tl.arange(0, SPAN)
+-    ids = tl.load(ids_ptr + all_slots, all_slots < SLOTS, other=-1)
++    tile = tl.program_id(0)
++    lane = tl.arange(0, TILE)
++    slot = tile * TILE + lane
++    ids = tl.load(ids_ptr + slot, slot < SLOTS, other=-1)
+     valid = (ids >= 0) & (ids < GLOBAL)
+     if HAS_MAP:
+         ids = tl.load(map_ptr + ids, valid, other=-1)
+     else:
+         ids = tl.where(valid, ids, -1)
+     ids = ids.to(tl.int32)
+-    # Bin zero contains all remote and padding rows. Subtract the padding to
+-    # leave the same live suffix that the grouped GEMMs and finalizer consume.
++    tl.store(local_ptr + slot, ids, slot < SLOTS)
+     bucket = tl.where((ids >= 0) & (ids < EXPERTS), ids + 1, 0)
+-    counts = tl.histogram(bucket, BUCKETS)
+-    starts = tl.cumsum(counts, 0) - (SPAN - SLOTS)
+-    if token == 0:
+-        bins = tl.arange(0, BUCKETS)
+-        tl.store(offsets_ptr + bins, starts, bins <= EXPERTS)
+-        if WRITE_ACTIVE:
+-            # The second half of the layout holds a count and sorted live IDs.
+-            nonempty = (bins > 0) & (bins <= EXPERTS) & (counts > 0)
+-            ordinal = tl.cumsum(nonempty.to(tl.int32), 0)
+-            plan = offsets_ptr + EXPERTS + 1
+-            tl.store(plan + ordinal, bins - 1, nonempty)
+-            tl.store(plan, tl.sum(nonempty.to(tl.int32), 0))
+-    before = tl.histogram(tl.where(all_slots < token * TOPK, bucket, 0), BUCKETS)
++    ends = tl.cumsum(tl.histogram(bucket, BUCKETS), 0)
++    padding = tl.maximum((tile + 1) * TILE - SLOTS, 0)
++    bins = tl.arange(0, BUCKETS)
++    tl.store(tile_ends_ptr + tile * (EXPERTS + 1) + bins, ends - padding, bins <= EXPERTS)
++    # Sorting the original lane as a tiebreaker preserves duplicate route order.
++    key = tl.sort(bucket * TILE + lane, descending=False)
++    sorted_bucket = key // TILE
++    start = tl.gather(ends, tl.maximum(sorted_bucket - 1, 0), 0)
++    dest = tile * TILE + key % TILE
++    tl.store(rows_ptr + dest, tl.where(sorted_bucket > 0, lane - start, -1), dest < SLOTS)
++
++
++@triton.jit
++def _stage_token_routes(
++    ids_ptr, map_ptr, x_ptr, weight_ptr, local_ptr, offsets_ptr, keys_ptr, rows_ptr,
++    out_ptr, eps, SLOTS: tl.constexpr, GLOBAL: tl.constexpr, EXPERTS: tl.constexpr,
++    HAS_MAP: tl.constexpr, TOPK: tl.constexpr, K_TILE: tl.constexpr, HIDDEN: tl.constexpr,
++    SPAN: tl.constexpr, BUCKETS: tl.constexpr, WIDTH: tl.constexpr,
++    WRITE_ACTIVE: tl.constexpr = False, ROUTE_TILE: tl.constexpr = 0,
++):
++    token = tl.program_id(0)
+     lanes = tl.arange(0, K_TILE)
+     slot = token * TOPK + lanes
+-    expert = tl.gather(ids, tl.minimum(slot, SPAN - 1), 0)
+-    live = (lanes < TOPK) & (expert >= 0) & (expert < EXPERTS)
+-    safe = tl.where(live, expert, 0)
+-    # Preserve relative order even when a token routes twice to one expert.
+-    duplicate = (expert[:, None] == expert[None, :]) & (lanes[:, None] > lanes[None, :])
+-    row = tl.gather(starts, safe, 0) + tl.gather(before, safe + 1, 0)
+-    row += tl.sum(duplicate.to(tl.int32), 1)
+-    tl.store(local_ptr + slot, expert, lanes < TOPK)
++    if ROUTE_TILE:
++        # map_ptr is the tile-prefix buffer in this specialization. Earlier
++        # tiles include the current expert, later tiles only smaller experts.
++        tiles: tl.constexpr = triton.cdiv(SLOTS, ROUTE_TILE)
++        tile = tl.arange(0, triton.next_power_of_2(tiles))
++        expert = tl.load(local_ptr + slot, lanes < TOPK, other=-1)
++        live = (lanes < TOPK) & (expert >= 0) & (expert < EXPERTS)
++        safe = tl.where(live, expert, 0)
++        bin_id = safe[None, :] + (tile[:, None] < (slot // ROUTE_TILE)[None, :]).to(tl.int32)
++        boundary = tl.load(
++            map_ptr + tile[:, None] * (EXPERTS + 1) + bin_id,
++            (tile[:, None] < tiles) & live[None, :], other=0,
++        )
++        row = tl.sum(boundary, 0) + tl.load(rows_ptr + slot, lanes < TOPK, other=-1)
++        if token == 0:
++            bins = tl.arange(0, BUCKETS)
++            all_ends = tl.load(
++                map_ptr + tile[:, None] * (EXPERTS + 1) + bins[None, :],
++                (tile[:, None] < tiles) & (bins[None, :] <= EXPERTS), other=0,
++            )
++            tl.store(offsets_ptr + bins, tl.sum(all_ends, 0), bins <= EXPERTS)
++    else:
++        all_slots = tl.arange(0, SPAN)
++        ids = tl.load(ids_ptr + all_slots, all_slots < SLOTS, other=-1)
++        valid = (ids >= 0) & (ids < GLOBAL)
++        if HAS_MAP:
++            ids = tl.load(map_ptr + ids, valid, other=-1)
++        else:
++            ids = tl.where(valid, ids, -1)
++        ids = ids.to(tl.int32)
++        # Bin zero contains all remote and padding rows. Subtract the padding to
++        # leave the same live suffix that the grouped GEMMs and finalizer consume.
++        bucket = tl.where((ids >= 0) & (ids < EXPERTS), ids + 1, 0)
++        counts = tl.histogram(bucket, BUCKETS)
++        starts = tl.cumsum(counts, 0) - (SPAN - SLOTS)
++        if token == 0:
++            bins = tl.arange(0, BUCKETS)
++            tl.store(offsets_ptr + bins, starts, bins <= EXPERTS)
++            if WRITE_ACTIVE:
++                # The second half of the layout holds a count and sorted live IDs.
++                nonempty = (bins > 0) & (bins <= EXPERTS) & (counts > 0)
++                ordinal = tl.cumsum(nonempty.to(tl.int32), 0)
++                plan = offsets_ptr + EXPERTS + 1
++                tl.store(plan + ordinal, bins - 1, nonempty)
++                tl.store(plan, tl.sum(nonempty.to(tl.int32), 0))
++        before = tl.histogram(tl.where(all_slots < token * TOPK, bucket, 0), BUCKETS)
++        expert = tl.gather(ids, tl.minimum(slot, SPAN - 1), 0)
++        live = (lanes < TOPK) & (expert >= 0) & (expert < EXPERTS)
++        safe = tl.where(live, expert, 0)
++        # Preserve relative order even when a token routes twice to one expert.
++        duplicate = (expert[:, None] == expert[None, :]) & (lanes[:, None] > lanes[None, :])
++        row = tl.gather(starts, safe, 0) + tl.gather(before, safe + 1, 0)
++        row += tl.sum(duplicate.to(tl.int32), 1)
++        tl.store(local_ptr + slot, expert, lanes < TOPK)
+     tl.store(rows_ptr + slot, tl.where(live, row, -1), lanes < TOPK)
+     tl.store(keys_ptr + row, (expert + 1) * SPAN + slot, live)
+     if tl.sum(live.to(tl.int32), 0) > 0:
+@@ -546,13 +598,28 @@ def humming_grouped_decode_outputs(
+         activations = staging[: slots * intermediate].view(slots, intermediate)
+         outputs = arena[: slots * hidden_size].view(slots, hidden_size)
+     if norm_weight is not None:
++        map_or_plan = expert_map if expert_map is not None else topk_ids
++        route_tile = 0
++        # Amortize the planning launch when eight or more ID tiles would
++        # otherwise be scanned twice by every token's normalization block.
++        if not skinny_gate_up and slots >= 8 * 128:
++            route_tile = 128
++            tile_count = triton.cdiv(slots, route_tile)
++            tile_ends = local_ids.new_empty((tile_count, experts + 1))
++            _plan_route_tiles[(tile_count,)](
++                topk_ids, map_or_plan, local_ids, row_map, tile_ends,
++                SLOTS=slots, GLOBAL=layer.global_num_experts, EXPERTS=experts,
++                HAS_MAP=expert_map is not None, TILE=route_tile,
++                BUCKETS=triton.next_power_of_2(experts + 1), num_warps=4,
++            )
++            map_or_plan = tile_ends
+         _stage_token_routes[(hidden_states.shape[0],)](
+-            topk_ids, expert_map if expert_map is not None else topk_ids,
++            topk_ids, map_or_plan,
+             hidden_states, norm_weight, local_ids, layout, row_keys, row_map,
+             inputs, norm_eps, slots, layer.global_num_experts, experts, expert_map is not None,
+             topk, triton.next_power_of_2(topk), hidden_size, span,
+             triton.next_power_of_2(experts + 1), triton.next_power_of_2(hidden_size),
+-            WRITE_ACTIVE=bool(active_groups), num_warps=8,
++            WRITE_ACTIVE=bool(active_groups), ROUTE_TILE=route_tile, num_warps=8,
+         )
+     elif hidden_size <= 8192 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get():
+         tile = min(span, 128)

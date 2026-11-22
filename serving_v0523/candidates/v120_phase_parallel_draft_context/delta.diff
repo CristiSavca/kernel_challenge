@@ -1,0 +1,380 @@
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 0b8f528..36502a5 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -23,6 +23,18 @@ import triton
+ import triton.language as tl
+ 
+ 
++@triton.jit
++def _cache_round(value, scale, FP8: tl.constexpr):
++    if FP8:
++        # Preserve the stock FP32 reciprocal multiplication and BF16 rounding
++        # before saturation, including their handling of signed NaNs.
++        value = (value.to(tl.float32) * tl.div_rn(1.0, scale)).to(tl.bfloat16)
++        value = tl.where(value > 448.0, 448.0, value).to(tl.bfloat16)
++        value = tl.where(value < -448.0, -448.0, value).to(tl.bfloat16)
++        value = value.to(tl.float8e4nv)
++    return value
++
++
+ @triton.jit
+ def _fused_norm_rope_kernel_stacked(
+     kv_ptr,  # [total_ctx, n_layers, kv_size * 2]
+@@ -50,6 +62,11 @@ def _fused_norm_rope_kernel_stacked(
+     rotary_dim: tl.constexpr,
+     half_rotary_dim: tl.constexpr,
+     BLOCK_HD: tl.constexpr,
++    Loc=None,
++    Lengths=None,
++    WIDTH: tl.constexpr = 0,
++    CACHE_FP8: tl.constexpr = False,
++    cache_scale=1.0,
+ ):
+     """Fused RMSNorm(K) + RoPE(K) materialization. Grid: (total_ctx, num_kv_heads, n_layers)."""
+     ctx_id = tl.program_id(0)
+@@ -58,23 +75,37 @@ def _fused_norm_rope_kernel_stacked(
+     if ctx_id >= total_ctx or layer_id >= n_layers:
+         return
+ 
++    if WIDTH:
++        if ctx_id % WIDTH >= tl.load(Lengths + ctx_id // WIDTH):
++            return
++
+     position = tl.load(positions_ptr + ctx_id)
+     eps = tl.load(eps_ptr + layer_id).to(tl.float32)
+     kv_base = kv_ptr + ctx_id * kv_stride_ctx + layer_id * kv_stride_layer
+     k_base = kv_base + head_id * head_dim
+     v_base = kv_base + kv_size + head_id * head_dim
+-    k_write = (
+-        k_out_ptr
+-        + layer_id * k_out_stride_layer
+-        + ctx_id * k_out_stride_ctx
+-        + head_id * k_out_stride_head
+-    )
+-    v_write = (
+-        v_out_ptr
+-        + layer_id * v_out_stride_layer
+-        + ctx_id * v_out_stride_ctx
+-        + head_id * v_out_stride_head
+-    )
++    if WIDTH:
++        slot = tl.load(Loc + ctx_id).to(tl.int64)
++        offset = slot * kv_size + head_id * head_dim
++        if CACHE_FP8:
++            dtype: tl.constexpr = tl.float8e4nv
++        else:
++            dtype: tl.constexpr = tl.bfloat16
++        k_write = tl.load(k_out_ptr + layer_id).to(tl.pointer_type(dtype)) + offset
++        v_write = tl.load(v_out_ptr + layer_id).to(tl.pointer_type(dtype)) + offset
++    else:
++        k_write = (
++            k_out_ptr
++            + layer_id * k_out_stride_layer
++            + ctx_id * k_out_stride_ctx
++            + head_id * k_out_stride_head
++        )
++        v_write = (
++            v_out_ptr
++            + layer_id * v_out_stride_layer
++            + ctx_id * v_out_stride_ctx
++            + head_id * v_out_stride_head
++        )
+ 
+     offs = tl.arange(0, BLOCK_HD)
+     mask_hd = offs < head_dim
+@@ -114,13 +145,13 @@ def _fused_norm_rope_kernel_stacked(
+     k_rot_first = k_first * cos_v - k_second * sin_v
+     k_rot_second = k_second * cos_v + k_first * sin_v
+ 
+-    tl.store(v_write + offs, v_raw, mask=mask_hd)
+-    tl.store(k_write + offs, k_rot_first.to(v_raw.dtype), mask=mask_half)
+-    tl.store(
+-        k_write + half_rotary_dim + offs, k_rot_second.to(v_raw.dtype), mask=mask_half
+-    )
++    tl.store(v_write + offs, _cache_round(v_raw, cache_scale, CACHE_FP8), mask=mask_hd)
++    k_first_out = _cache_round(k_rot_first.to(v_raw.dtype), cache_scale, CACHE_FP8)
++    k_second_out = _cache_round(k_rot_second.to(v_raw.dtype), cache_scale, CACHE_FP8)
++    tl.store(k_write + offs, k_first_out, mask=mask_half)
++    tl.store(k_write + half_rotary_dim + offs, k_second_out, mask=mask_half)
+     mask_pass = (offs >= rotary_dim) & (offs < head_dim)
+-    tl.store(k_write + offs, k_normed.to(v_raw.dtype), mask=mask_pass)
++    tl.store(k_write + offs, _cache_round(k_normed.to(v_raw.dtype), cache_scale, CACHE_FP8), mask=mask_pass)
+ 
+ 
+ def _fused_norm_rope_stacked(
+@@ -283,6 +314,7 @@ class FusedKVMaterializeHelper:
+             getattr(self.rotary_emb, "cos_sin_cache", torch.empty((0,))).shape[0]
+         )
+         self._mm_out_supported = True
++        self._prefix_cache = None
+         self._workspace_capacity = 0
+         self._workspace_dtype: Optional[torch.dtype] = None
+         self._proj_workspace: Optional[torch.Tensor] = None
+@@ -337,6 +369,51 @@ class FusedKVMaterializeHelper:
+         if self.max_position_hint is not None:
+             self._ensure_rope_cache(self.max_position_hint)
+ 
++    def configure_prefix_cache(self, pool, layers):
++        from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
++
++        if (
++            type(pool) is not MHATokenToKVPool
++            or pool.kv_cache_layout != "nhd"
++            or pool.dtype not in (torch.bfloat16, torch.float8_e4m3fn)
++            or self.flat_kv_weight_t.dtype != torch.bfloat16
++            or self.flat_kv_weight_t.device.type != "cuda"
++            or torch.version.hip is not None
++            or torch.cuda.get_device_capability(self.flat_kv_weight_t.device)[0] < 9
++            or pool.layer_num != self.n_layers
++            or pool.head_num != self.num_kv_heads
++            or pool.head_dim != self.head_dim
++            or pool.v_head_dim != self.head_dim
++            or pool.k_scale_buffer is not None
++            or pool.v_scale_buffer is not None
++        ):
++            return
++        if getattr(pool.set_kv_buffer_prefix_valid, "__func__", None) is not MHATokenToKVPool.set_kv_buffer_prefix_valid:
++            return
++        fp8 = pool.dtype == torch.float8_e4m3fn
++        expected_dtype = torch.uint8 if fp8 else torch.bfloat16
++        for index, layer in enumerate(layers):
++            attn = layer.self_attn.attn
++            if attn.layer_id != pool.start_layer + index:
++                return
++            for buf in (pool.k_buffer[index], pool.v_buffer[index]):
++                if (
++                    buf.ndim != 3
++                    or tuple(buf.shape[1:]) != (self.num_kv_heads, self.head_dim)
++                    or not buf.is_contiguous()
++                    or buf.device != self.flat_kv_weight_t.device
++                    or buf.dtype != expected_dtype
++                ):
++                    return
++        for table in (pool.k_data_ptrs, pool.v_data_ptrs):
++            if (table is None or table.shape != (self.n_layers,) or not table.is_contiguous()
++                or table.device != self.flat_kv_weight_t.device or table.dtype != torch.uint64):
++                return
++        # The regular writer skips scale division for BF16 input into BF16 storage.
++        # For FP8, check the live layer scales before every direct write.
++        scaled_layers = tuple(layer.self_attn.attn for layer in layers) if fp8 else ()
++        self._prefix_cache = (pool, pool.k_data_ptrs, pool.v_data_ptrs, scaled_layers)
++
+     def _ensure_rope_cache(self, max_position: int) -> torch.Tensor:
+         if max_position + 1 > self._reserved_rope_cache_len:
+             ensure_cos_sin_cache_length = getattr(
+@@ -391,6 +468,7 @@ class FusedKVMaterializeHelper:
+         ctx_hidden: torch.Tensor,
+         positions: torch.Tensor,
+         write_layer_kv: Callable[[int, torch.Tensor, torch.Tensor], None],
++        prefix_cache=None,
+     ) -> None:
+         """Materialize KV cache for all layers using batched projection."""
+         total_ctx = ctx_hidden.shape[0]
+@@ -439,6 +517,29 @@ class FusedKVMaterializeHelper:
+             proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+ 
+         proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
++        if prefix_cache is not None and self._prefix_cache is not None:
++            pool, loc, lengths = prefix_cache
++            configured_pool, k_table, v_table, scaled_layers = self._prefix_cache
++            if (
++                pool is configured_pool and pool.k_data_ptrs is k_table and pool.v_data_ptrs is v_table
++                and loc.ndim == 2 and loc.numel() == total_ctx and loc.shape[1] > 0
++                and lengths.shape == (loc.shape[0],) and lengths.dtype == torch.int32
++                and loc.dtype == torch.int64 and loc.device == lengths.device == proj_out.device
++                and loc.is_contiguous() and lengths.is_contiguous() and positions.is_contiguous()
++                and (not scaled_layers or all(
++                    type(scale) in (int, float) and scale == 1
++                    for layer in scaled_layers for scale in (layer.k_scale, layer.v_scale)
++                ))
++            ):
++                _fused_norm_rope_kernel_stacked[(total_ctx, self.num_kv_heads, self.n_layers)](
++                    proj_out, self.k_norm_weights, self.eps_values, cos_sin_cache, positions,
++                    k_table, v_table, proj_out.stride(0), proj_out.stride(1),
++                    self.k_norm_weights.stride(0), cos_sin_cache.stride(0),
++                    0, 0, 0, 0, 0, 0, total_ctx, self.n_layers, self.num_kv_heads,
++                    self.head_dim, self.kv_size, self.rotary_dim, self.rotary_dim // 2,
++                    triton.next_power_of_2(self.head_dim), loc, lengths, loc.shape[1], bool(scaled_layers), 1.0,
++                )
++                return
+         tmp_k = self._k_workspace[:, :total_ctx]
+         tmp_v = self._v_workspace[:, :total_ctx]
+         cache_k, cache_v = _fused_norm_rope_stacked(
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 0c3475b..1ba82fa 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -28,6 +28,10 @@ class Spec(msgspec.Struct):
+     # -------------------------------------------------------------------------
+     # Speculative decoding
+     # -------------------------------------------------------------------------
++    speculative_dflash_direct_prefix_kv: A[
++        bool,
++        "Write eligible stacked DFLASH context KV directly to committed draft cache slots.",
++    ] = False
+     speculative_algorithm: A[
+         Optional[str],
+         "Speculative algorithm. Builtins: EAGLE, EAGLE3, NEXTN, STANDALONE, NGRAM, DFLASH, DSPARK, UNO. Or any name registered via `SpeculativeAlgorithm.register`.",
+@@ -75,6 +79,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Project DFLASH prefill features before gathering sequence-parallel token rows.",
+     ] = False
++    speculative_dflash_parallel_verify_context: A[
++        bool,
++        "Partition full-width DFLASH context outputs across draft TP ranks during verification.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index edbb803..7f2ba21 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -6,6 +6,7 @@ from typing import NamedTuple
+ 
+ import torch
+ from torch import nn
++from torch.nn import functional as F
+ from torch.nn.modules import module as module_hooks
+ 
+ 
+@@ -30,6 +31,73 @@ def _agree(ready, group):
+     return bool(status.item())
+ 
+ 
++class _VerifyProjection(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    weight: torch.Tensor
++    projector: object
++    group: object
++    first_channel: int
++    width: int
++
++
++def prepare_dflash_verify_projection(draft, group):
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.out_features % group.world_size == 0
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++    )
++    if not _agree(compatible, group):
++        return None
++    width = fc.out_features // group.world_size
++    return _VerifyProjection(
++        draft, fc, fc.weight, draft.project_target_hidden, group,
++        group.rank_in_group * width, width,
++    )
++
++
++def project_dflash_verify(context, inputs):
++    """Project complete output channels on each rank before the native hidden norm."""
++    draft, fc, original_weight, projector, group, first_channel, width = context
++    # Verification features are replicated in the draft TP group. Run its
++    # collective before any rank-local hooks or overrides can modify the input.
++    with torch.autocast(device_type=inputs.device.type, enabled=False):
++        local = F.linear(
++            inputs.to(original_weight.dtype), original_weight.narrow(0, first_channel, width)
++        )
++    projected = group.all_gather(local, -1)
++    if (
++        draft.fc is not fc
++        or fc.weight is not original_weight
++        or inputs.dtype != original_weight.dtype
++        or fc.bias is not None
++        or draft.quantizable
++        or draft.project_target_hidden != projector
++        or "forward" in vars(fc)
++        or fc._forward_hooks
++        or fc._forward_pre_hooks
++        or module_hooks._global_forward_hooks
++        or module_hooks._global_forward_pre_hooks
++        or getattr(fc, "_compiled_call_impl", None) is not None
++        or torch.is_autocast_enabled(inputs.device.type)
++        or torch.are_deterministic_algorithms_enabled()
++    ):
++        return draft.project_target_hidden(inputs)
++    return draft.hidden_norm(projected)
++
++
+ def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
+     from sglang.srt.layers.logits_processor import LogitsProcessor
+     from sglang.srt.models.dflash import DFlashDraftModel
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 1b4568b..4f2b2d3 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -23,6 +23,8 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers.dflash_context_projection import (
+     dflash_sp_prefill_scope,
+     prepare_dflash_sp_prefill,
++    prepare_dflash_verify_projection,
++    project_dflash_verify,
+ )
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+@@ -638,6 +640,19 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 self._target_logits_processor,
+                 parallel.tp_group,
+             )
++        self._verify_projection = None
++        with draft_tp_context(self.draft_parallel_layout):
++            group = get_parallel().tp_group
++            if (
++                get_spec().speculative_dflash_parallel_verify_context
++                and is_cuda()
++                and group.world_size > 1
++                and parallel.pp_size == 1
++                and not get_exec().deterministic.enable_deterministic_inference
++                and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++                and torch.distributed.get_backend(group.cpu_group) == "gloo"
++            ):
++                self._verify_projection = prepare_dflash_verify_projection(self.draft_model, group)
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1098,6 +1113,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 max_position_hint=self.target_worker.model_runner.model_config.context_len
+                 + int(self.block_size),
+             )
++            if get_spec().speculative_dflash_direct_prefix_kv:
++                self._fused_kv_helper.configure_prefix_cache(
++                    self.draft_model_runner.token_to_kv_pool, layers
++                )
+             if get_parallel().tp_rank == 0:
+                 logger.info(
+                     "DFLASH fused KV materialization enabled. "
+@@ -1953,6 +1972,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+         ):
+             if prefill_fc_done:
+                 ctx_hidden = self.draft_model.hidden_norm(target_hidden)
++            elif cache_loc_2d is not None and self._verify_projection is not None:
++                ctx_hidden = project_dflash_verify(self._verify_projection, target_hidden)
+             else:
+                 ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+@@ -2108,6 +2129,11 @@ class DFlashWorkerV2(BaseSpecWorker):
+             ctx_hidden=ctx_hidden,
+             positions=ctx_positions,
+             write_layer_kv=_write_layer_kv,
++            prefix_cache=(
++                (token_to_kv_pool, ctx_cache_loc_2d, commit_lens)
++                if ctx_cache_loc_2d is not None and commit_lens is not None
++                and self._fused_kv_helper._prefix_cache is not None else None
++            ),
+         )
+ 
+     def _update_target_mamba_state_after_verify(

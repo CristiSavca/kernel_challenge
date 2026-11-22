@@ -1,0 +1,259 @@
+diff --git a/python/sglang/kernels/ops/attention/metadata.py b/python/sglang/kernels/ops/attention/metadata.py
+index ba4866571ca1e05a71f59679dbb9cad0dba6e060..debc93715c706e2dcf3a5e4ec4ca0cb2eac815b8 100644
+--- a/python/sglang/kernels/ops/attention/metadata.py
++++ b/python/sglang/kernels/ops/attention/metadata.py
+@@ -292,6 +292,16 @@ def _fused_decode_metadata_kernel(
+         )
+ 
+ 
++@triton.jit
++def _draft_page_index(token_index, PAGE_SIZE: tl.constexpr, PAGE_SHIFT: tl.constexpr):
++    if PAGE_SHIFT >= 0:
++        return token_index >> PAGE_SHIFT
++    # Preserve floor division, including a negative unmapped slot.
++    return tl.where(
++        token_index >= 0, token_index // PAGE_SIZE, (token_index + 1) // PAGE_SIZE - 1
++    )
++
++
+ @triton.jit
+ def _draft_extend_metadata_kernel(
+     # Input tensors
+@@ -322,8 +332,8 @@ def _draft_extend_metadata_kernel(
+     B,
+     max_seq_pages,
+     tokens_per_req,
+-    PAGE_SIZE_ONE: tl.constexpr,
+-    SHIFT: tl.constexpr,
++    PAGE_SIZE: tl.constexpr,
++    PAGE_SHIFT: tl.constexpr,
+     BLOCK_COLS: tl.constexpr,
+     HAS_SWA: tl.constexpr,
+     OUT_BLOCK: tl.constexpr,
+@@ -368,10 +378,12 @@ def _draft_extend_metadata_kernel(
+         return
+ 
+     seq_len = tl.load(seq_lens + pid_b * seq_lens_stride_0).to(tl.int32)
+-    if PAGE_SIZE_ONE:
++    if PAGE_SIZE == 1:
+         num_live_pages = seq_len
++    elif PAGE_SHIFT >= 0:
++        num_live_pages = (seq_len + PAGE_SIZE - 1) >> PAGE_SHIFT
+     else:
+-        num_live_pages = (seq_len + (1 << SHIFT) - 1) >> SHIFT
++        num_live_pages = tl.cdiv(seq_len, PAGE_SIZE)
+     num_live_pages = tl.minimum(num_live_pages, max_seq_pages)
+     if pid_c * BLOCK_COLS >= num_live_pages:
+         return
+@@ -382,30 +394,21 @@ def _draft_extend_metadata_kernel(
+     col_offsets = pid_c * BLOCK_COLS + tl.arange(0, BLOCK_COLS)
+     mask = col_offsets < num_live_pages
+ 
+-    if PAGE_SIZE_ONE:
+-        col_idx = col_offsets
+-    else:
+-        col_idx = col_offsets << SHIFT
++    col_idx = col_offsets * PAGE_SIZE
+ 
+     rt_offsets = row_offset + col_idx * req_to_token_stride_1
+     page_index = tl.load(
+         req_to_token + rt_offsets, mask=mask, other=0, cache_modifier=".cg"
+     )
+ 
+-    if PAGE_SIZE_ONE:
+-        page_table_val = page_index
+-    else:
+-        page_table_val = page_index >> SHIFT
++    page_table_val = _draft_page_index(page_index, PAGE_SIZE, PAGE_SHIFT)
+ 
+     pt_offsets = pid_b * page_table_stride_0 + col_offsets * page_table_stride_1
+     tl.store(page_table + pt_offsets, page_table_val, mask=mask, cache_modifier=".cg")
+ 
+     if HAS_SWA:
+         swa_loc = tl.load(full_to_swa_index_mapping + page_index, mask=mask, other=0)
+-        if PAGE_SIZE_ONE:
+-            swa_page_table_val = swa_loc
+-        else:
+-            swa_page_table_val = swa_loc >> SHIFT
++        swa_page_table_val = _draft_page_index(swa_loc, PAGE_SIZE, PAGE_SHIFT)
+         tl.store(
+             swa_page_table + pt_offsets,
+             swa_page_table_val.to(tl.int32),
+@@ -441,8 +444,9 @@ def draft_extend_set_metadata(
+     row tails keep stale values that attention kernels never read past
+     cache_seqlens, matching the eager replay path's bounded writes.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
++    page_shift = (
++        page_size.bit_length() - 1 if page_size & (page_size - 1) == 0 else -1
+     )
+ 
+     batch_size = cache_seqlens_int32.shape[0]
+@@ -492,8 +496,8 @@ def draft_extend_set_metadata(
+         batch_size,
+         max_seq_pages,
+         tokens_per_req,
+-        PAGE_SIZE_ONE=page_size == 1,
+-        SHIFT=(page_size).bit_length() - 1 if page_size > 1 else 0,
++        PAGE_SIZE=page_size,
++        PAGE_SHIFT=page_shift,
+         BLOCK_COLS=BLOCK_COLS,
+         num_warps=8,
+         num_stages=3,
+@@ -533,9 +537,7 @@ def normal_decode_set_metadata(
+     independently of address translation. ``skip_page_table=True`` leaves
+     both page tables untouched and computes only lengths and the prefix sum.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
+-    )
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
+     if swa_page_table is not None and not skip_page_table:
+         assert (full_to_swa_index_mapping is None) != (swa_v2p is None), (
+             "SWA output requires exactly one token-slot or page mapping"
+diff --git a/python/sglang/kernels/ops/memory/allocator.py b/python/sglang/kernels/ops/memory/allocator.py
+index f0f4a77b6a751f7ce837b48223d4cc908bb19bf0..704d845c6899a7ae784ae37ce6c74766ce39a2da 100644
+--- a/python/sglang/kernels/ops/memory/allocator.py
++++ b/python/sglang/kernels/ops/memory/allocator.py
+@@ -151,7 +151,9 @@ def alloc_extend_kernel(
+     num_part1 = (
+         min(seq_len, (pre_len + page_size - 1) // page_size * page_size) - pre_len
+     )
+-    offset_one_page = tl.arange(0, page_size)
++    # Only the vector extent needs to be a power of two. The two partial-page
++    # stores below mask against the number of actual tokens in the page.
++    offset_one_page = tl.arange(0, triton.next_power_of_2(page_size))
+     tl.store(
+         out_indices + output_start_loc + offset_one_page,
+         last_loc + 1 + offset_one_page,
+diff --git a/python/sglang/srt/arg_groups/muse_spark_hook.py b/python/sglang/srt/arg_groups/muse_spark_hook.py
+index 2dd159c8e87b482e6d29fb1a7d8a797da3ae0082..9d39ea6905dc8df10b63d97241fa773d57ba8b6a 100644
+--- a/python/sglang/srt/arg_groups/muse_spark_hook.py
++++ b/python/sglang/srt/arg_groups/muse_spark_hook.py
+@@ -16,12 +16,14 @@ MUSE_SPARK_ARCHITECTURES = ("MuseSparkForConditionalGeneration",)
+ MUSE_SPARK_CHAT_TEMPLATE_FILE = "chat_template.jinja"
+ 
+ # Graph-pool and KV-sizing switches the reference launcher (sglang_meta) sets.
++# Out-of-window SWA slots keep the generic default (freed): 46 of Muse's 62 layers
++# are sliding-window, so pinning a running request's whole context in the SWA pool
++# caps how many long requests fit at once.
+ MUSE_SPARK_ENV_DEFAULTS = (
+     (envs.SGLANG_ENABLE_CUDA_GRAPH_DEDUP, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_BORROW, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_PRECARVE, True),
+     (envs.SGLANG_ENABLE_POST_CAPTURE_KV_SIZING, True),
+-    (envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS, False),
+ )
+ 
+ 
+diff --git a/python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py b/python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py
+index 9ceed02e40ec4e47d1345c7fce7880407ac8acd0..ebce2d901b5729247d080f193d995631d3a10d6a 100644
+--- a/python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py
++++ b/python/sglang/srt/distributed/device_communicators/custom_all_reduce_v2.py
+@@ -122,7 +122,7 @@ class CustomAllReduceV2:
+         :param max_size: direction-agnostic memory cap. Each workspace is
+                          sized to what the tuned config wants, clipped to
+                          this bound. Defaults to
+-                         ``SGLANG_CUSTOM_ALL_REDUCE_V2_MAX_SIZE_KB`` (16 MB).
++                         ``SGLANG_CUSTOM_ALL_REDUCE_V2_MAX_SIZE_KB`` (128 MB).
+         :param max_pull_size: explicit pull buffer size; overrides both
+                               the tuned size and ``max_size``. ``0`` builds a
+                               push-only instance.
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 10eee809c188062702bf4000c94521313e8b54a5..7efe9086d500d160a5947f7b9f3950a7bcc5e29d 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -1531,8 +1531,10 @@ class Envs:
+     SGLANG_DETERMINISTIC_NCCL_NCHANNELS = EnvInt(8)
+     SGLANG_OPT_USE_CUSTOM_ALL_REDUCE_V2 = EnvBool(True)
+     # Default per-direction workspace cap for CustomAllReduceV2; explicit
+-    # constructor sizes take precedence over this.
+-    SGLANG_CUSTOM_ALL_REDUCE_V2_MAX_SIZE_KB = EnvInt(16 * 1024)
++    # constructor sizes take precedence over this. 128 MB is the largest
++    # message the tuned tables dispatch; a lower cap sends the tuned sizes
++    # above it to NCCL.
++    SGLANG_CUSTOM_ALL_REDUCE_V2_MAX_SIZE_KB = EnvInt(128 * 1024)
+     SGLANG_FORCE_CUSTOM_ALL_REDUCE_V2_PULL_SIZE_KB = EnvInt(None)
+     SGLANG_FORCE_CUSTOM_ALL_REDUCE_V2_PUSH_SIZE_KB = EnvInt(None)
+     # See docs/references/environment_variables.
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 41c463dcfabe782eb681e9b2ab7b5c37c81d0df2..c4c340f068447f32bd8a372543a5d5b32cdc9dcf 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -407,11 +407,17 @@ class MuseSpark1xFp4Experts(nn.Module):
+         local_topk_ids = local_topk_ids.contiguous()
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
++        # Expected routes per local expert. Under expert parallelism only
++        # num_local_experts / global_num_experts of the routes land on this rank.
++        routes_per_expert = num_tokens * topk / self.global_num_experts
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            if routes_per_expert / block_size_m < 0.9:
+                 break
+ 
+-        if num_tokens == 1 and topk <= 32 and expert_map is None:
++        # The ids are already local, with -1 for experts on other ranks, so align
++        # over the local experts. The -1 routes form the inactive prefix that the
++        # sorted Marlin kernels skip, with or without expert parallelism.
++        if num_tokens == 1 and topk <= 32:
+             from sglang.kernels.ops.moe.moe_align_single_token import (
+                 moe_align_single_token,
+             )
+@@ -422,16 +428,11 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 )
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids,
+                 block_size_m,
+-                align_num_experts,
+-                return_inactive_prefix_count=expert_map is None,
++                self.num_local_experts,
++                return_inactive_prefix_count=True,
+             )
+ 
+         # Both aligners emit ascending block IDs with inactive blocks first;
+@@ -468,7 +469,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=topk,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens,
+             size_n=gemm1_n,
+@@ -478,7 +479,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         )
+         silu_and_mul(
+             cache1.view(-1, gemm1_n),
+@@ -504,7 +505,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=1,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens * topk,
+             size_n=size_k,
+@@ -514,7 +515,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         ).view(num_tokens, topk, size_k), local_topk_ids
+ 
+     def _forward_marlin(

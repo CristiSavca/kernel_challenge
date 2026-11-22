@@ -1,0 +1,308 @@
+{
+  "objective": "Official four-load serving score of 4×",
+  "classification": "progress",
+  "previous": "20261119-serving-v292-v296.json",
+  "observed_utc": "2026-11-19 07:48:31 UTC",
+  "incumbent": {
+    "candidate": "V64",
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "complete_passing_results": 5
+  },
+  "frozen_candidate": {
+    "candidate": "V297",
+    "parent": "V295",
+    "parent_tree": "2c712d66b6211c08845570d67423807ef7d54006",
+    "tree": "f53b3f6f04851484810f87276c77079498ce1a9e",
+    "patch_sha256": "2ad93af9d6674100c9ea90412b4068e7566b3aea044a264da17c774e13f98e07",
+    "delta_sha256": "1fe68e950a182fc9f82703c6cbb6b767c45196cabae11b37df8ed3715c93283c",
+    "bytes": 405695,
+    "byte_budget": 409600,
+    "submitted": false
+  },
+  "technical_change": "Widen both grouped expert projections at the native 16- and 24-row tile widths, convert each packed weight band immediately before use, retain four live register-source fragments through the K16 drain and preserve the fused epilogue and live FP32 K tree.",
+  "modeled_work": {
+    "expert_row_tiles": 33,
+    "shape_rows": 256,
+    "original_tile_jobs_across_W13_W2": 2112,
+    "cases": {
+      "neither_projection_widens": {
+        "total_tile_jobs": 2112,
+        "total_tile_jobs_saved": 0,
+        "logical_input_TMA_MiB_saved": 0.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      },
+      "one_projection_widens": {
+        "total_tile_jobs": 1584,
+        "total_tile_jobs_saved": 528,
+        "logical_input_TMA_MiB_saved": 99.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      },
+      "both_projections_widen": {
+        "total_tile_jobs": 1056,
+        "total_tile_jobs_saved": 1056,
+        "logical_input_TMA_MiB_saved": 198.0,
+        "unique_expert_weights_or_scales_skipped": 0,
+        "all_expert_dot_products_retained": true
+      }
+    }
+  },
+  "historical_shape_exposure": {
+    "1": {
+      "M8": 59,
+      "M16": 0,
+      "M24": 0
+    },
+    "4": {
+      "M8": 43,
+      "M16": 0,
+      "M24": 0
+    },
+    "16": {
+      "M8": 10,
+      "M16": 11,
+      "M24": 0
+    },
+    "32": {
+      "M8": 6,
+      "M16": 3,
+      "M24": 15
+    }
+  },
+  "score_sensitivity": {
+    "raw_throughput": {
+      "samples": {
+        "1": 1.4119041967138868,
+        "1.05": 1.4510352121541097,
+        "1.1": 1.4895080255367643,
+        "1.25": 1.601420055935285,
+        "1.5": 1.7782841632726591,
+        "2": 2.105702086202509
+      },
+      "uniform_16_and_32_factor_for": {
+        "3": 3.561779144399604,
+        "4": 5.564019196765938
+      }
+    },
+    "both_raw_throughput_and_aggregate_user_speed": {
+      "samples": {
+        "1": 1.4119041967138868,
+        "1.05": 1.4580214523457151,
+        "1.1": 1.50402210886135,
+        "1.25": 1.6342334345787113,
+        "1.5": 1.8476044791847508,
+        "2": 2.372225929385287
+      },
+      "uniform_16_and_32_factor_for": {
+        "3": 2.4470515835281406,
+        "4": 3.258057715821962
+      }
+    }
+  },
+  "code_scope": "V295 is the integrated parent. Including the extra V296 prompt RMSNorm copy elimination exceeded the official patch limit. Candidate is reachable through the ordinary grouped target-verify model entry; no load-specific flags added.",
+  "verified": {
+    "zero_spill_wide_images": 4,
+    "rejected_real_spill_images": 3,
+    "host_ranked_compare_calls": 56,
+    "ranked_staged_words": 31395840,
+    "ranked_output_words": 31023104,
+    "exact_FP32_reduction_words": 3416064,
+    "native_cli_flag_orders": 40320,
+    "native_server_configurations": 17,
+    "distributed_prompt_rank_calls": 276
+  },
+  "rules": "Frozen export and V295 increment apply/reverse strictly; all 61 paths and eight inherited flags pass the public structural rules. Four H200 execution gates remain unmeasured: output agreement, peak GPU memory, TTFT and mechanism/throughput.",
+  "next_measurement": "Compare V295/V297 at the same H200 verify shapes with per-projection latency and wide/narrow dispatch, then matched end-to-end token agreement, TTFT, memory, throughput and interaction across the four fixed loads.",
+  "selection": {
+    "new_submissions": 0,
+    "paid_allocations": 0,
+    "judge": "serving_v0523/candidates/v297_wide_fused_decode/judge_observation.json",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "queued": {
+      "V93": {
+        "job_id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "users": 16,
+        "users_source": "accepted private-check receipt"
+      },
+      "V204": {
+        "job_id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "users": 16,
+        "users_source": "accepted private-check receipt"
+      },
+      "V120b": {
+        "job_id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32,
+        "users_source": "official listing"
+      },
+      "V139": {
+        "job_id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4,
+        "users_source": "official listing"
+      }
+    },
+    "private_standby": "Existing V229/V198 conditional allocation"
+  },
+  "evidence_sha256": {
+    "serving_v0523/candidates/v297_wide_fused_decode/cleanup.json": "3e38e9f62fdd1edb6dac7d9029aaf76846ad1a85048217cb694d5539535eec8d",
+    "serving_v0523/candidates/v297_wide_fused_decode/flags.json": "d3b63d6148ac39fe66a99118e8869f9d215932d946e6dc382e2623e1debe5b7e",
+    "serving_v0523/candidates/v297_wide_fused_decode/high_load_score.json": "58544ac7ec1ba87d93fb5bdf24ea52111be7ff1c30282f390e1f625330a7e114",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_dispatch.json": "d6306e8e83b035ecd880b82f05073aacdb6369683b3aaa803568acb75b97ff03",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_exposure.json": "699af81dd35b6102e2571a2c9785734eb2d8f65f38c6a3618648b5cc44dad8f7",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_ffi.json": "96bc798371ca7581b7d3e3fdc8b21b0c8164debe244512096896a6dfae248f71",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_lifetimes.json": "14b7987d6f60e6b79b8d9be54a822a96f9b6b8b72e8c8d55a56a26d661444b8a",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_spill_guard.json": "8b716c93093f5c24b51ba15504b9edfb2d9cdee8b4413c72760d86474e1ae6df",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_w13_maps.json": "c4fa685e32120d23203a8e390a4b51a8e288b308a6c092be287a140bd7f4f31b",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_w13_operands.json": "4807e4594b1a0ce688ab85f957cad61b5b6b6fc6cfb8953ca6fecb35b7c57f62",
+    "serving_v0523/candidates/v297_wide_fused_decode/independent_w13_writer.json": "765969a278d71f99d8f1eef09d4e50cad2f55953850f1dc2b3c8d88e369e2ca1",
+    "serving_v0523/candidates/v297_wide_fused_decode/judge_observation.json": "0618d15352dad40ee08578e5cc750e0c81c7b8994900110800c73faf37453f5e",
+    "serving_v0523/candidates/v297_wide_fused_decode/ordinary_decode.json": "c6f06bbdde9e517dac173ce7cd59cabb9fc48f74c7a782f3ec808090a0591d37",
+    "serving_v0523/candidates/v297_wide_fused_decode/prompt_graph.json": "45ed281fb90155579c343a6125df3449dc8cdd4db24dce6d1e3dd09f671594b2",
+    "serving_v0523/candidates/v297_wide_fused_decode/prompt_routes.json": "cb1ebf693626037e31d4ab76c1832fb096002c235295c1a295d41cb95d143102",
+    "serving_v0523/candidates/v297_wide_fused_decode/server_config.json": "fb69b7e0737a30d67e48fff383bcf79805f060ad5308a0bd04caeb0261502acf",
+    "serving_v0523/candidates/v297_wide_fused_decode/validation.json": "6559b0cfa884af08c24f33dfe8f792f865671a91dcd95fffd13aa5abeb30783a",
+    "serving_v0523/candidates/v297_wide_fused_decode/w13_eager_control.json": "16bddddbb6f19def4e4fe9e2c1963fc92e5982cc0f132306da5061cf36252960",
+    "serving_v0523/candidates/v297_wide_fused_decode/w13_sm90a.json": "2f063a95b32e663d2627690217fec8cc3439733312dfae59a97d6cd2d7a36b6a",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_alternatives.json": "422a5a318870bb36c319a76275876118eae02938ad0b29186530acb94fd314bb",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_guest_cleanup.json": "e1966a2092930f7156429b6412ef264a1135c3d0dddc7e751a771dc1688a3fb0",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_host_cleanup.json": "7fc161c5ae691fabe1fc952959891a304e74501d3bc989db028fb25536126edd",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_partials.json": "c87a846800aafa42071e361db5aad944bf74b516107079783b8e8deef76542f6",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_sass.json": "01565b1b7eea3bb16ab3487719afe64c775d03ab77574ddee523a4bc2697db44",
+    "serving_v0523/candidates/v297_wide_fused_decode/w2_startup.json": "33cfedf51f9bf8df0e0666936f778f5c4d643c17fe94742137e3e76db9ee0c97",
+    "serving_v0523/candidates/v297_wide_fused_decode/work.json": "aa3f5c847a44b2c79087c2450dca00f21606dac4fcb714b6caba9a1ada42d66a"
+  },
+  "cleanup": [
+    {
+      "receipt": "serving_v0523/candidates/v297_wide_fused_decode/cleanup.json",
+      "disk_observation": {
+        "host_stage": "/private/tmp/okc-v297-wide-fused.SUoPiEWr",
+        "allocated_estimate_bytes": 154611712,
+        "actual_free_bytes_before": 39992176640,
+        "actual_free_bytes_after": 40147140608,
+        "net_filesystem_change_bytes": 154963968,
+        "confirmed_zero_open_files": true,
+        "unique_commits": 0,
+        "stashes": 0,
+        "checked_staged_tree": "f53b3f6f04851484810f87276c77079498ce1a9e",
+        "archived_official_patch_sha256": "2ad93af9d6674100c9ea90412b4068e7566b3aea044a264da17c774e13f98e07",
+        "guest": {
+          "path": "/tmp/okc-v297-gate.hVbicDwq",
+          "allocated_files_bytes": 101748736,
+          "available_before": 1814126592,
+          "available_after": 1915875328,
+          "delta": 101748736,
+          "open_files": 0,
+          "git_repository": false
+        },
+        "compiler_vm": "stopped by W2 owner"
+      }
+    },
+    {
+      "receipt": "serving_v0523/candidates/v297_wide_fused_decode/w2_guest_cleanup.json",
+      "disk_observation": {
+        "path": "/tmp/okc-v297-w2.2BqD8WI2",
+        "released_by": [
+          "root",
+          "bank",
+          "cold"
+        ],
+        "entries": [
+          "._include",
+          "final",
+          "images",
+          "include",
+          "kept",
+          "last",
+          "q",
+          "sweep",
+          "tune",
+          "vend"
+        ],
+        "file_types": {
+          "": 12,
+          ".sass": 64,
+          ".cubin": 64,
+          ".log": 64,
+          ".cu": 89,
+          ".sh": 8,
+          ".cuh": 112
+        },
+        "git_state": "no git directory, file or ancestor",
+        "open_files": [],
+        "file_count": 413,
+        "logical_bytes": 139949755,
+        "free_before_bytes": 1915875328,
+        "free_after_bytes": 2056781824,
+        "observed_free_delta_bytes": 140906496,
+        "absent": true
+      }
+    },
+    {
+      "receipt": "serving_v0523/candidates/v297_wide_fused_decode/w2_host_cleanup.json",
+      "disk_observation": {
+        "path": "/private/tmp/okc-v297-w2.utmqIhmZ",
+        "released_by": [
+          "root",
+          "bank",
+          "cold"
+        ],
+        "entries": [
+          "final",
+          "final.json",
+          "humming",
+          "images",
+          "kept",
+          "last",
+          "q",
+          "scan.py",
+          "sweep",
+          "three",
+          "three.json",
+          "tune",
+          "vend",
+          "w2.json",
+          "w2_startup.json"
+        ],
+        "file_types": {
+          ".json": 4,
+          ".py": 70,
+          ".cu": 94,
+          ".sh": 8,
+          ".cubin": 47,
+          ".sass": 47,
+          ".log": 47,
+          ".cuh": 56,
+          ".h": 5
+        },
+        "git_state": "no git directory, file or ancestor",
+        "open_files": [],
+        "file_count": 378,
+        "logical_bytes": 98525944,
+        "free_before_bytes": 39892340736,
+        "free_after_bytes": 39991746560,
+        "observed_free_delta_bytes": 99405824,
+        "absent": true
+      }
+    }
+  ]
+}

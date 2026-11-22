@@ -1,0 +1,26 @@
+# V162 one-user full-attention verification
+
+A zero-copy dense view of the target KV cache could enable Hopper tensor memory accelerator (TMA) loads during DFLASH verification. The H200 timings make this a low priority. At one user, the 16 full-attention layers together accounted for **0.642 ms** in the isolated reference. Removing that entire cost would change the illustrative V64 verification period from 19.69 ms to 19.04 ms, about **1.034×**. V64’s actual full-attention time and cache-contiguity rate were not profiled. We retained the experiment and did not export a serving patch. [Measurements and assumptions](check.json) · [V64 scored run](../../runs/abd217baf0ed49fd.json)
+
+## Why the long-prefill path does not carry over
+
+V64 captured eight verification tokens per request in a full CUDA graph. At one request, GQA packs eight query heads per KV head and eight tokens into 64 query rows. The pinned FA3 paging selector declined TMA in all 18 tested configurations, covering full and sliding attention at nine physical page sizes from 1 to 1,280. For the full-attention comparison its tile is 64 query rows by 128 key rows. The selector requires more than one query tile to qualify. Native dense dispatch with no page table still selects the TMA main loop. V143’s zero-copy prefill routing uses a Python-side physical-layout certificate at a different graph boundary. [V64 capture log](../../runs/abd217baf0ed49fd.log) · [V143 prefill design](../v143_zero_copy_prefill_spans/README.md) · [Pinned FA3 dispatch](https://github.com/sgl-project/sgl-attn/blob/f89bc2306632d1ec5f97b014dded4254f5b4a907/hopper/flash_api.cpp)
+
+A sliced dense descriptor captures the physical address of the first slot. A different start needs a different address even if both requests occupy consecutive slots. With the production full-graph replay method and a simulated captured operation, 12 of 16 replays retained a stale address. In 16 further examples the endpoints and length matched a continuous interval despite an interior slot belonging elsewhere. A safe implementation therefore needs an allocation guarantee or a current per-slot certificate and a separate graph route for fragmented tables. The native replay key has no Muse-specific physical-layout variant. [Executable graph and allocation cases](check.py)
+
+There is a graph-stable way to represent a varying start for **one continuous request**. Give FA3 the permanent pool base, device `leftpad_k=start` and `seqused_k=start+length`. The pinned varlen sequence descriptor computed the correct key offset, query count and live key length for all 46 legal tested shapes. This supplies neither the contiguity certificate nor a bounded physical descriptor for a ragged tail. Dense TMA loads tile-sized V blocks, and a whole-pool descriptor can expose slots following the request. Exact handling of the final tile would need a proven valid guard or an aligned-span restriction. Physical H200 parity for dense verification and its FP8 descales remains untested. [Pinned sequence descriptor](https://github.com/sgl-project/sgl-attn/blob/f89bc2306632d1ec5f97b014dded4254f5b4a907/hopper/seqlen.h) · [Pinned SM90 main loop](https://github.com/sgl-project/sgl-attn/blob/f89bc2306632d1ec5f97b014dded4254f5b4a907/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp) · [Source hashes and case counts](check.json)
+
+## Where the measured time went
+
+| H200 benchmark at one user | Layer multiplicity | Stock raw time | Submitted raw time |
+| --- | ---: | ---: | ---: |
+| Full attention at 80k context | 16 | 40.096 µs/layer | 18.080 µs/layer |
+| Sliding attention | 46 | 26.432 µs/layer | 10.576 µs/layer |
+| Decoder layer, weighted sum | 62 | 16.668 ms | 6.768 ms |
+| Routed expert computation, weighted sum | 60 | 8.648 ms | 3.991 ms |
+
+The first two rows come from the private H200 attention check. Across nine recorded profiles the stock full-attention time ranged from 39.904 to 40.400 µs. V4 saved 0.352 ms on full attention and 1.082 ms on both attention types combined. The 19.69 ms reference period divides V64’s mean four committed tokens by 203.2 median output tokens per second. The scorer does not report a mean verification period or per-layer timings. All speedup calculations assume the isolated reference costs transfer unchanged to V64. Even setting all 62 attention costs to zero under that assumption gives 1.104×. [Raw profiles and arithmetic](check.json) · [V140 serving-period derivation](../v140_decode_overlap_feasibility/README.md)
+
+The larger measured opportunity was routed expert execution, with a 4.657 ms difference between the isolated implementations. It is part of the decoder-layer measurement, so the rows overlap. V64 uses Humming on its serving path and the isolated benchmark has its own reference, which prevents transferring that delta directly. A one-user serving comparison of the routed-projection implementation in V129 would test the larger opportunity. [V129 implementation](../v129_routed_projection_pair/README.md) · [Benchmark identities](check.json)
+
+Run `python3 check.py` from this directory to repeat the host C++ geometry, production-method replay fixture and calculations. It fetches six files at the recorded FA3 commit, uses a temporary C++17 build, and reads the existing local H200 receipts.

@@ -1,0 +1,13 @@
+{
+ "fp4": "serving_v0523/variants/v40.py",
+ "cuh": [
+  [
+   "    // thread_k, thread_n, num_threads\n    {128, 128, 256},\n    {64, 128, 128}};\n\nthread_config_t large_batch_thread_configs[] = {",
+   "    // thread_k, thread_n, num_threads\n    {64, 128, 128}};\n\nthread_config_t large_batch_thread_configs[] = {"
+  ],
+  [
+   "allow_count = max(min(allow_count, thread_m_blocks == 1 ? 4 : 2), 1);",
+   "allow_count = max(min(allow_count, thread_m_blocks == 1 ? 8 : 2), 1);"
+  ]
+ ]
+}

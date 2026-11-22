@@ -1,0 +1,55 @@
+{
+  "candidate": "V135",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "tree": "79bc40b8a1b5f271780d0efe4173839ed4651f8f",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "patch_sha256": "5754c6ea8fe15f6d647682f5cda48db12254999f8f5eb79dd30f094458f8d375",
+  "delta_sha256": "e08dcd5c88abbf1e75131a93f9a2ab5765844e38124a25fc1c65354668400232",
+  "bytes": 54008,
+  "delta_bytes": 16315,
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "delta_paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py"
+  ],
+  "source_hashes": {
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh": "5e96e6b9cdcb596d0619fea393b27b00a51b66449b9a6d151d8a0454ad13c67b",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py": "8eb3dd0f3e1bcf3cb94212632d4e157a6924754a5d7cd304e3b1c99b986da1d4",
+    "python/sglang/srt/environ.py": "61687773b7d03914fafda4d8e286174da90a93999be36f1e21aa52d667cdeac9",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "74bd01518174dc343eca1a9c7d1f6d55d72b982bf815ec194aa3a063bce450fb",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "3edef7d7f658dd812ee2a426b71274f1dfb3ed978b3ed9201cd4ece4e8344528"
+  },
+  "fixed_flag_patterns": 76,
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "strict_full_delta_forward_reverse_tree": true,
+  "python_compiled": 10,
+  "longest_added_line": 98,
+  "physical_H200": false,
+  "official_export": "okc serve diff .",
+  "cpu_compared_bf16_values": 2932608,
+  "independent_finalizer_cases": 200,
+  "independent_finalizer_compared_bf16_values": 1874600,
+  "independent_finalizer_rounding_sensitive_values": 731934
+}

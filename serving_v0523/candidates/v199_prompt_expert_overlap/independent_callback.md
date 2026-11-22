@@ -1,0 +1,9 @@
+# Grouped prompt W2 binding and dispatch
+
+The frozen V199 export is `6a2c175fb20c4b6a0c8304467997f72f26a34e87f5f122434e4c975e274a5ec0`. Its W2 launcher applies to V198’s standard grouped prompt branch. Its real host callback reached the custom W2 after both the fused W13 and the ordinary W13 fallback. V199 supplies the actual current packed weights, scales, offsets, destination and locks to the Humming `launch_kernel` interface. The final per-expert BF16 global scale was applied once before weighting and normalization. [Official export](patch.diff) · [Source hashes and results](independent_callback.json)
+
+The test used 8,192 and 8,201 rows with empty, sparse and skewed local experts, including multiple routes per token. It exercised the real grouped admission threshold, sort, row mapping, activation storage, W2 launch adapter, postscale and finalizer wrapper. The device projections and final reduction used CPU stand-ins. All 50,350,080 BF16 outputs matched ordinary grouped W13/W2, with 36 nonempty weighted RMS finalizations across the two weight orderings. An empty local group returned zeros. Runs of 8,191 prompt rows kept the ordinary indexed route. [Independent fixture](independent_callback.py)
+
+The first adapter reused its prepared W2 even after a different tuning replaced the original one. The frozen adapter now checks the runtime tuning, compute configuration, layer metadata and both tensor bindings. Each of those changes caused the live grouped callback to use ordinary W2 in the replay. Six additional input/output dtype, shape or stride cases declined before issuing a custom launch. This evidence covers the standard prompt host path on simulated projections. H200 arithmetic, kernel time, register residency and transport remain hardware questions.
+
+Fixture cleanup retired one inspected, unused Python bytecode file. Free disk bytes changed from 46,574,522,368 to 46,574,522,368 (net +0 bytes).

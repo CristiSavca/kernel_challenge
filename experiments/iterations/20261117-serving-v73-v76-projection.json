@@ -1,0 +1,136 @@
+{
+  "updated_at_utc": "2026-11-17T18:57:36Z",
+  "objective": "Continue exact serving optimization toward 2x then 3x with sharded draft and target projections and Hopper decode residency.",
+  "completed_scored_incumbent": {
+    "candidate": "V44",
+    "job_id": "c3b7bd142c264853",
+    "score": 1.1847
+  },
+  "current_measurement": {
+    "candidate": "V64",
+    "private_check": {
+      "job_id": "ac89fddc4ee147ab",
+      "receipt": "serving_v0523/runs/ac89fddc4ee147ab.json",
+      "status": "done",
+      "passed": true,
+      "users": 16,
+      "repetitions": 1,
+      "indicative_at_stock_point_ratio": 1.412,
+      "score": null,
+      "tok_s_per_gpu": 17349.9,
+      "gpu_memory_over_stock_gb": 1.7,
+      "ttft_first_ratio": 0.6,
+      "ttft_later_ratio": 0.72,
+      "first_agreement": 0.95,
+      "later_agreement": 0.97,
+      "short_outputs": 0,
+      "acceptance": 4
+    },
+    "scored_run": {
+      "job_id": "abd217baf0ed49fd",
+      "submit_receipt": "serving_v0523/runs/v64_nov17_scored.submit.txt",
+      "submitted_at_utc": "2026-11-17T18:46:20.779025Z",
+      "patch_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+      "status": "running",
+      "result": null,
+      "score": null
+    },
+    "interpretation": "The 1.412 check ratio covers one concurrency and repetition. A full score and phase profile remain unavailable."
+  },
+  "queue_snapshot": {
+    "checked_at_utc": "2026-11-17T18:57:36Z",
+    "jobs": [
+      {
+        "candidate": "V62",
+        "job_id": "220305c15ded4f6b",
+        "mode": "check",
+        "users": 16,
+        "status": "queued",
+        "result": null
+      },
+      {
+        "candidate": "V68",
+        "job_id": "04b01f958aa5487c",
+        "mode": "check",
+        "users": 16,
+        "status": "queued",
+        "result": null
+      }
+    ],
+    "nov17_scored_remaining": 0,
+    "nov17_checks_remaining": 0,
+    "reset_utc": "00:00",
+    "previous_check_candidates_passed": ["V50", "V53", "V55", "V56"],
+    "nov17_runner_active": false,
+    "collector_pid": 54869
+  },
+  "next_private_plan": {
+    "gate": "V68 passes its pending private check",
+    "matched_candidates": ["V72", "V76"],
+    "users": 16,
+    "checks_held_in_reserve": 1,
+    "arm_status": "armed",
+    "arm_receipt": "serving_v0523/runs/nov18_decode_runner.launch.json"
+  },
+  "candidates": {
+    "v73_dflash_tp_context_projection": {
+      "sha256": "9d82d7f0eabe1635316daf72cde73130a7c37629af237bd39d9eb6d6e6983cf7",
+      "bytes": 133765,
+      "change": "Shard complete output channels of the BF16 DFLASH context projection and gather before RMSNorm.",
+      "source_weight_saving_mib_per_rank_tp8": 560,
+      "cpu": {
+        "constructors": 120,
+        "projection_gather": 336,
+        "checkpoint_shape": 924
+      },
+      "validation": "serving_v0523/candidates/v73_dflash_tp_context_projection/validation.json"
+    },
+    "v74_humming_decode_two_ctas": {
+      "sha256": "d6b6ab0136ca6ed063ba8ae31d95f5422cf1fc24c57813127f23c968fcf2ce9b",
+      "bytes": 130193,
+      "change": "Admit two resident CTAs for grouped Hopper decode variants that fit the native resource limits.",
+      "validation": "serving_v0523/candidates/v74_humming_decode_two_ctas/proof.json"
+    },
+    "v75_sharded_decode_projections": {
+      "sha256": "fe02db5dc89b286b914766c0a4079feba0027cbdfe960817ca648d885920bdaa",
+      "bytes": 137577,
+      "change": "Integrate V61 target projection sharding and gather with the V72 tree and workspace paths.",
+      "independent_review": "serving_v0523/candidates/v75_sharded_decode_projections/independent_review.md"
+    },
+    "v76_sharded_draft_target_decode": {
+      "sha256": "199c3bd308a30addd45b798208a4f1573c28d0b5deb470df0de63b171b3a05ac",
+      "bytes": 143800,
+      "files": 28,
+      "python_compiled": 25,
+      "max_added_line": 106,
+      "composition": "V72 plus the V73, V74 and V75 deltas.",
+      "independent_review": "serving_v0523/candidates/v76_sharded_draft_target_decode/independent_review.json",
+      "flags": [
+        "swa-full-tokens-ratio=0.25",
+        "moe-runner-backend=humming",
+        "speculative-moe-runner-backend=marlin",
+        "enable-layernorm-sp",
+        "speculative-dflash-tree",
+        "speculative-dflash-tp-context-projection"
+      ]
+    }
+  },
+  "runtime_state": {
+    "v73_through_v76_gpu_tested": false,
+    "v73_through_v76_submitted": false,
+    "two_x_or_three_x_measured": false,
+    "pending": [
+      "H200 JIT and collective execution",
+      "dynamic tree and changing-batch graph replay",
+      "numerical and later-turn agreement",
+      "exact output lengths",
+      "peak memory <= stock plus 2GB per rank",
+      "TTFT <= twice stock at each load",
+      "full serving throughput comparison"
+    ],
+    "limitations": "Component work and storage reductions have no measured serving speedup. Projection gathers, register pressure and post-capture KV sizing can affect the combined result.",
+    "paid_compute": false,
+    "scheduling_changed_by_this_update": false,
+    "protected_dirty_checkout_untouched": true
+  }
+}

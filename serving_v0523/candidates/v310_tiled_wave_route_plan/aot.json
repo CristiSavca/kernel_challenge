@@ -1,0 +1,320 @@
+{
+  "triton": "3.8.0",
+  "tiled_source_sha256": "e3365e4a92770d124e67dc04964546d6e460d21ab718430b6bd2eff897a9aa8d",
+  "wave_source_sha256": "dcd75384fd5e11f3a603e7654796348f13a91833d7b2ef0947f30913f97f8986",
+  "physical_H200": false,
+  "specializations": [
+    {
+      "kernel": "_count_tiles",
+      "constants": {
+        "EXPERTS": 1,
+        "BINS": 2,
+        "TILE": 256
+      },
+      "registers": 11,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 128
+    },
+    {
+      "kernel": "_prefix_tiles",
+      "constants": {
+        "WIDTH": 512
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 64
+    },
+    {
+      "kernel": "_wave_edges",
+      "constants": {
+        "EXPERTS": 1,
+        "BINS": 2,
+        "TILE": 256,
+        "TOPK": 1,
+        "WAVES": 1
+      },
+      "registers": 19,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 128
+    },
+    {
+      "kernel": "_place_tiles",
+      "constants": {
+        "EXPERTS": 1,
+        "BINS": 2,
+        "TILE": 256,
+        "TOPK": 1,
+        "WAVES": 1,
+        "SPAN": 131072
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 1024
+    },
+    {
+      "kernel": "_count_tiles",
+      "constants": {
+        "EXPERTS": 3,
+        "BINS": 4,
+        "TILE": 256
+      },
+      "registers": 10,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 128
+    },
+    {
+      "kernel": "_prefix_tiles",
+      "constants": {
+        "WIDTH": 512
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 64
+    },
+    {
+      "kernel": "_wave_edges",
+      "constants": {
+        "EXPERTS": 3,
+        "BINS": 4,
+        "TILE": 256,
+        "TOPK": 3,
+        "WAVES": 9
+      },
+      "registers": 22,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 128
+    },
+    {
+      "kernel": "_place_tiles",
+      "constants": {
+        "EXPERTS": 3,
+        "BINS": 4,
+        "TILE": 256,
+        "TOPK": 3,
+        "WAVES": 9,
+        "SPAN": 131072
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 1024
+    },
+    {
+      "kernel": "_count_tiles",
+      "constants": {
+        "EXPERTS": 32,
+        "BINS": 64,
+        "TILE": 256
+      },
+      "registers": 10,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 256
+    },
+    {
+      "kernel": "_prefix_tiles",
+      "constants": {
+        "WIDTH": 512
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 64
+    },
+    {
+      "kernel": "_wave_edges",
+      "constants": {
+        "EXPERTS": 32,
+        "BINS": 64,
+        "TILE": 256,
+        "TOPK": 8,
+        "WAVES": 8
+      },
+      "registers": 24,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 256
+    },
+    {
+      "kernel": "_place_tiles",
+      "constants": {
+        "EXPERTS": 32,
+        "BINS": 64,
+        "TILE": 256,
+        "TOPK": 8,
+        "WAVES": 8,
+        "SPAN": 131072
+      },
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 1024
+    },
+    {
+      "kernel": "_pack_wave",
+      "constants": {
+        "ROWS": 16903,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": false,
+        "PACKED_ORDER": false
+      },
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 0
+    },
+    {
+      "kernel": "_pack_wave",
+      "constants": {
+        "ROWS": 16903,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": false,
+        "PACKED_ORDER": true
+      },
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 0
+    },
+    {
+      "kernel": "_pack_wave",
+      "constants": {
+        "ROWS": 16903,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": true,
+        "PACKED_ORDER": false
+      },
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 0
+    },
+    {
+      "kernel": "_pack_wave",
+      "constants": {
+        "ROWS": 16903,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": true,
+        "PACKED_ORDER": true
+      },
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 0
+    },
+    {
+      "kernel": "_count_tiles",
+      "constants": {
+        "EXPERTS": 64,
+        "BINS": 128,
+        "TILE": 256
+      },
+      "registers": 10,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 512
+    },
+    {
+      "kernel": "_prefix_tiles",
+      "constants": {
+        "WIDTH": 2048
+      },
+      "registers": 64,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 256
+    },
+    {
+      "kernel": "_wave_edges",
+      "constants": {
+        "EXPERTS": 64,
+        "BINS": 128,
+        "TILE": 256,
+        "TOPK": 7,
+        "WAVES": 16
+      },
+      "registers": 25,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 512
+    },
+    {
+      "kernel": "_place_tiles",
+      "constants": {
+        "EXPERTS": 64,
+        "BINS": 128,
+        "TILE": 256,
+        "TOPK": 7,
+        "WAVES": 16,
+        "SPAN": 131072
+      },
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "shared_bytes": 1024
+    }
+  ]
+}

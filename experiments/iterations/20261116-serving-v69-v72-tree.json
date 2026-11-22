@@ -1,0 +1,183 @@
+{
+  "updated_at_utc": "2026-11-16T16:33:28.649505+00:00",
+  "objective": "Implement the next large decode optimization toward 2x then 3x without waiting for V68; preserve all serving rules.",
+  "incumbent": {
+    "candidate": "V44",
+    "job": "c3b7bd142c264853",
+    "score": 1.1847,
+    "peak_over_stock_gb": 1.8
+  },
+  "new_measurement": {
+    "updated_at_utc": "2026-11-16T16:32:18.167353+00:00",
+    "candidate": "V44",
+    "job": "d40c45e5ca484591",
+    "mode": "private one-user check",
+    "passed": true,
+    "score": null,
+    "indicative_stock_point_ratio": 1.084,
+    "gpu_memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "rung": {
+      "acceptance": 4,
+      "cache_hit": 0.92,
+      "concurrency": 1,
+      "reps": 3,
+      "spread": 0.0636,
+      "tok_s_per_gpu": 7004.4,
+      "tok_s_per_user_e2e": 151.2,
+      "tok_s_per_user_e2e_p50": 203.9,
+      "tok_s_per_user_p50": 231.5,
+      "truncated": false,
+      "ttft_first_p90_s": 7.322,
+      "ttft_later_p90_s": 0.218,
+      "ttft_p90_s": 0.242
+    },
+    "correctness": {
+      "agreement": 0.19,
+      "bounds": {
+        "agreement_min": 0.05,
+        "decode_kl_mean": 0.035,
+        "min_references": 24,
+        "prefill_kl_mean": 0.11,
+        "prefill_top1_min": 0.62
+      },
+      "decode_kl_mean": 0.015,
+      "invalid": 0,
+      "passed": true,
+      "prefill_kl_mean": 0.044,
+      "prefill_top1": 0.81,
+      "reasons": [],
+      "references": 24,
+      "short": 0
+    },
+    "later_turns": {
+      "passed": true,
+      "first_agreement": 0.95,
+      "later_agreement": 0.97,
+      "incomplete": false,
+      "insufficient": false
+    },
+    "short_outputs": 0,
+    "interpretation": "Passing check, not a frontier score. Mean acceptance four does not reveal selector entropy or predict a tree gain. +1.9 GB peak over stock leaves only 0.1 GB measured margin in this run."
+  },
+  "observation": "No new H200 result for V61-V72. V44 one-user check passed. Four existing private checks remain queued.",
+  "queued_snapshot": {
+    "checked_at_utc": "2026-11-16T16:32:39.843774+00:00",
+    "jobs": [
+      {
+        "job_id": "2eea52ae2db64189",
+        "mode": "check",
+        "status": "queued",
+        "submitted_at": 1794787387.347302
+      },
+      {
+        "job_id": "54654743532e4e50",
+        "mode": "check",
+        "status": "queued",
+        "submitted_at": 1794787385.6981542
+      },
+      {
+        "job_id": "8b71561950104724",
+        "mode": "check",
+        "status": "queued",
+        "submitted_at": 1794787383.8366838
+      },
+      {
+        "job_id": "fec66419d5154815",
+        "mode": "check",
+        "status": "queued",
+        "submitted_at": 1794781157.39632
+      }
+    ]
+  },
+  "diagnosis": "Fixed-width branch coverage can improve accepted target tokens per step while keeping target verification geometry fixed. Mean acceptance alone cannot quantify that gain. Activation transport and copy removal address separate overheads.",
+  "candidates": {
+    "v69_humming_decode_a_multicast": {
+      "path": "serving_v0523/candidates/v69_humming_decode_a_multicast/patch.diff",
+      "sha256": "ab4d289b3a4f7ced6695d69bdf3fe1d00c36e0ff90c03e5717804a887ef8f29f",
+      "bytes": 86388,
+      "gpu_tested": false
+    },
+    "v70_dflash_selector_tree": {
+      "path": "serving_v0523/candidates/v70_dflash_selector_tree/patch.diff",
+      "sha256": "b58dc56b9ac4c4c7422834d00a5c84be1a1e8d35c6939a5e28c03df0bfcc261f",
+      "bytes": 115912,
+      "gpu_tested": false
+    },
+    "v71_direct_multicast_workspace": {
+      "path": "serving_v0523/candidates/v71_direct_multicast_workspace/patch.diff",
+      "sha256": "31f15bb4e125f8574efe2ae2e2ed83f385825a47c4395716b55d7fa65b0d24e9",
+      "bytes": 96956,
+      "gpu_tested": false
+    },
+    "v72_tree_multicast_decode": {
+      "path": "serving_v0523/candidates/v72_tree_multicast_decode/patch.diff",
+      "sha256": "e90c47ab73e66158b678893bb6fc7950c3b52f38cc3213ac6d7b7716d1b19705",
+      "bytes": 128042,
+      "gpu_tested": false
+    }
+  },
+  "coordination": {
+    "root": "V71 direct multicast workspace implementation, V72 composition, final validation and evidence",
+    "memory_candidate": "V70 exact tree proposals, masking, target-greedy commit and prefix-tile refinement",
+    "perf_scan": "V69 paired activation multicast plus independent V70 kernel simulation",
+    "dense_critic": "Independent collective ownership, V72 composition, activation and live-rules review"
+  },
+  "experiment": {
+    "state": "SOURCE_READY_NOT_SUBMITTED",
+    "tree_flags": [
+      "swa-full-tokens-ratio=0.25",
+      "moe-runner-backend=humming",
+      "speculative-moe-runner-backend=marlin",
+      "enable-layernorm-sp",
+      "speculative-dflash-tree"
+    ],
+    "hypothesis": "V72 accepts more target-greedy tokens per eight-row verification step and lowers transport/staging overhead enough to cover frontier, metadata, broadcast and auxiliary-gather costs.",
+    "usefulness_gate": "All runtime gates then provisional >=5% over passing V68 at same load; full frontier required to claim 2x or 3x.",
+    "kill_or_pivot": "H200 compile/capture, agreement, output-count, later-turn, memory or TTFT failure blocks promotion. Regression requires a diagnosed change or isolated component comparison, never unchanged retries.",
+    "numeric_speed_prediction": null,
+    "limitations": "No selector confidence distribution or phase profile. Eight-row depth caps commit length; breadth may hurt depth. Component traffic and launch reductions do not establish whole-serving speedup.",
+    "runtime_gates": [
+      "flag acceptance",
+      "H200 JIT",
+      "tree preparation and changing-batch graph replay",
+      "output agreement and exact requested lengths",
+      "later-turn agreement",
+      "peak memory <= stock + 2GB/rank",
+      "TTFT <= 2x stock at each load",
+      "acceptance and throughput improvement"
+    ]
+  },
+  "validation": "serving_v0523/candidates/v72_tree_multicast_decode/validation.json",
+  "review": "serving_v0523/candidates/v72_tree_multicast_decode/independent_review.md",
+  "rules": {
+    "live_bundle_sha256": "71ecccaaf78c1993beb26fe217a9e4c2f1b25f8725895b65879a156e493e5d18",
+    "source_limits_pass": true,
+    "runtime_compliance_unverified": true,
+    "paid_compute": false,
+    "new_gpu_jobs": 0,
+    "scored_promotion": false,
+    "committed_or_pushed": false,
+    "protected_dirty_checkout_unchanged": true
+  },
+  "scheduled_checks": {
+    "unchanged": true,
+    "when": "2026-11-17T00:03:00Z",
+    "candidates": [
+      "V64",
+      "V62",
+      "V68"
+    ],
+    "users": 16,
+    "runner_sha256": "10e91ed68e614d87bc5ba5913ca5a6b11883e00c44b6147ceb57f0fe0a55d42c",
+    "pids": [
+      84529,
+      84530
+    ],
+    "collector_pid": 54869
+  },
+  "cleanup": "serving_v0523/runs/v71_v72_cleanup.json",
+  "two_x_or_three_x_measured": false
+}

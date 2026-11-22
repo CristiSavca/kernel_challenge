@@ -1,0 +1,242 @@
+{
+  "recorded_utc": "2026-11-19T04:17:23.467185+00:00",
+  "serving_objective": {
+    "four_load_target": 4.0,
+    "official_incumbent": {
+      "candidate": "V64",
+      "score": 1.4119,
+      "job": "abd217baf0ed49fd"
+    },
+    "uniform_further_factor": 2.8330618315744744
+  },
+  "current_candidate": "V256",
+  "patch": "serving_v0523/candidates/v256_window_backed_mixed_serving/patch.diff",
+  "measured_new_H200_runs": 0,
+  "new_jobs": 0,
+  "judge_state": "serving_v0523/candidates/v255_private_draft_window_metadata/judge_observation.json",
+  "window_backing": {
+    "capacity_source": "V68 archived slots; fixed-slot logical payload only",
+    "estimated_per_rank_device_bytes_released": 6566784000,
+    "estimated_per_rank_host_bytes_released": 43636344320,
+    "additional_FA_graph_bytes_at_archived_shape": 50333696,
+    "64_page_native_copy_counts": [
+      [
+        "consecutive",
+        128,
+        2
+      ],
+      [
+        "runs",
+        128,
+        20
+      ],
+      [
+        "fragmented",
+        128,
+        128
+      ]
+    ]
+  },
+  "runtime": {
+    "geometry": {
+      "runtime_fallbacks": 5,
+      "query_masks": 98064,
+      "ordered_split_intervals": 110322,
+      "other_width_multi_m_split_intervals": 13065,
+      "physical_owner_rows": 16870,
+      "sm90_tail_page_lanes": 1536,
+      "fa4_wrapper_calls": 40,
+      "attention_bf16_outputs": 5760
+    },
+    "native_metadata_SM90_builds": 36,
+    "projected_store_words": 545600,
+    "projected_store_unadapted_failures": 12
+  },
+  "official_rules": {
+    "public_contract": "https://openkernelchallenge.dev/api/v1/serving",
+    "full_export_bytes": 401834,
+    "source_files": 60,
+    "launch_flags": {
+      "--enable-layernorm-sp": "",
+      "--moe-runner-backend": "humming",
+      "--speculative-moe-runner-backend": "marlin",
+      "--swa-full-tokens-ratio": "0.25",
+      "--speculative-dflash-sp-prefill-context": "",
+      "--speculative-dflash-mixed-prefill": "",
+      "--max-prefill-tokens": "16640",
+      "--cuda-graph-max-bs-prefill": "16640"
+    },
+    "forbidden_flag_patterns": 76,
+    "open_physical_qualifications": [
+      "throughput",
+      "generated-token agreement",
+      "peak GPU memory",
+      "TTFT"
+    ]
+  },
+  "results": {
+    "V249": "Native private window-addressed cache for all eligible dense draft layers.",
+    "V250": "Cold router and pool projections already own distinct rows on each TP rank. Output sharding adds communication.",
+    "V251": "The archived /32 first wave took 212.780 of 304.429 seconds. Eliminating all following time gives 1.431x on that trace.",
+    "V252": "Paired router retains high and low BF16 factors but its accumulation order can move an eighth-expert boundary. Experimental.",
+    "V253": "Integrates storage with grouped D2H transfer of contiguous host page runs.",
+    "V254": "Preserves native GEMMs. Final FP32 addition runs inside the native expert routing kernel. Independent focused branch.",
+    "V255": "Bounded FA4 physical draft metadata for eager and captured verification, with V253 as parent.",
+    "V256": "Merges private storage, bounded draft metadata and D2H transfer with V248 mixed serving. Repairs projected writer recovery under new slot ownership."
+  },
+  "candidates": {
+    "V249": {
+      "directory": "serving_v0523/candidates/v249_private_draft_swa",
+      "evidence": {
+        "capacity.json": "20093975f232a5eab3faf647616553cf9010a81a2e80ec90e7b4e1ccc525267f",
+        "export_cleanup.json": "d05624a995b0b6ec73cd0b0ab97d3194e97a5241cb21b02fdc49036e7c7da204",
+        "independent_fa.json": "b723f4af9775fa571d7818a73c79b180ed9e9fb544f927e6d0f47914e5e74bfa",
+        "replay.json": "b949f9aea4f5ab07a9bec4eb9050cdcb587fa33c96ceeed17831031d0e147681",
+        "validation.json": "2c7452aa8b4c92bb78fd5aaba2d0855e90f73b277e659479fcee65a585461eda"
+      },
+      "parent": "V68",
+      "tree": "786f1d313451bfc392eac2a256c7eb7cc8748598",
+      "bytes": 95063,
+      "patch_sha256": "e2e70b3fcfc24179fe3af8dd721d8c8325ffefcf0fd706a98ebc15a1a8a4c997",
+      "delta_bytes": 10252,
+      "delta_sha256": "7aaf940c5d2e0d7539b98e2283ea1d8e8a52f61c8e030809ef669d6e5e27ab7d"
+    },
+    "V250": {
+      "directory": "serving_v0523/candidates/v250_cold_projection_ownership",
+      "evidence": {
+        "check.json": "0f19663e8db5fe9447ee60cce544c0d2e1c712985e8eaec826670e8d4a51284e",
+        "checkpoint_metadata.json": "425bd963865b38b84c316d3dcca505522744416844bbcd1b1779841fb7cff8bf",
+        "cleanup.json": "df0f320dc45a531a58a2220967d7a320aee143e72bb39693fa6dd47fde66a0de"
+      }
+    },
+    "V251": {
+      "directory": "serving_v0523/candidates/v251_hicache_residency",
+      "evidence": {
+        "trace.json": "695ec0b7d7ab7d67d4ae9b176ba18ef810277254bd616f66d1ccccd3b62f5af3"
+      }
+    },
+    "V252": {
+      "directory": "serving_v0523/candidates/v252_paired_prompt_router",
+      "evidence": {
+        "compiler_cleanup.json": "8bce0c98aa9f41231c6872c033f236f05a2aebf125393985935efdafb6cedf4b",
+        "export_cleanup.json": "11c0430c63da88ff453ff4dc7144a409a1f9f256c0fbc48d59479def0facf869",
+        "global_names.json": "9a04dc5ce8283c4eaa5623c293fca1d8f2dc4ace0c59358aa6e3929e3640af90",
+        "independent_router.json": "f3a7eb9af9c3b1a293e164f127ea40683de7f95bf957d65ceecaffb5fe2cf637",
+        "judge_observation.json": "ae6b75dfcfd4096b4b7af7fecb8e92c3943691298e213f9c56be339c48c644d6",
+        "kernel_replay.json": "66815b2256322866f129f80f3a622ff79980a425954638dc16ace716eaf98306",
+        "sm90a.json": "f032c1a9cc78e1e95f69f562c843d3b9a127a29d78f55f70b1013e73d8609905",
+        "validation.json": "048bf3d89ea6fd9333ebc6bcc6bef1b32cd6467839c2e0c65d14208768419014"
+      },
+      "parent": "V68",
+      "tree": "f756a14800e6919cb945898cb1709283333d39a5",
+      "bytes": 88361,
+      "patch_sha256": "102b780c335c093235d9091c280c01ccea4b8ef555abfe6a8f0412c1f4b4bb69",
+      "delta_bytes": 3494,
+      "delta_sha256": "e1be18cd0cbb3164cb976eeeb6154b938863d2d611d5ebc3c9fbefad1a6fb668"
+    },
+    "V253": {
+      "directory": "serving_v0523/candidates/v253_window_backed_cache_transfers",
+      "evidence": {
+        "broad_writer.json": "442ece5964cfd9fb7467cfb1fa1101f9b279d86dfd9e555aac9f7c30c1e40b21",
+        "copy_compatibility.json": "56682d8a46fa1c79f504e0d0f90081879f2800cb6e9231094835309cf9725c18",
+        "draft_swa_replay.json": "7b7ae40d72253e57f664bd08989e2b26ef65f0e1bdc94cab963692030fbda154",
+        "export_cleanup.json": "c5f65c307b6b81ac2bc4f1dd0135bbe6f662141fe25d0c9b85c372174e6c051e",
+        "global_names.json": "486cae08088e872ede570d955f427bbf9991950c735c9a5cf03aacb46049d598",
+        "independent_fa.json": "639a814f67be45d91c7a24cc8c76553b84b566613f138cb610733362504f58b8",
+        "integrated_copy.json": "3146944fbdf69bc312d38f9e60cfaac1aea27f3b373ff95cb5c76bb3f76ce963",
+        "validation.json": "19b41fd72096d130221b505cc8e109a62d4de6fe54e1047899ed37fe97ec0d2d"
+      },
+      "parent": "V249",
+      "tree": "f70af1ef859d1b75e9e61908cd67a71d981633f7",
+      "bytes": 99080,
+      "patch_sha256": "fa68814ee9dfc885f14cb4c1112939169b182b7fc638b4648463bb91ad8da8b4",
+      "delta_bytes": 4017,
+      "delta_sha256": "c92efa47d77eabc93f29444640e1bd35b5d8f6ebf30c26855fa0ca50a8fb8b18"
+    },
+    "V254": {
+      "directory": "serving_v0523/candidates/v254_split_logits_routing",
+      "evidence": {
+        "cleanup.json": "a7c746bb58a9ea2a9722e521e7a9c25bd15e108049cb801c6eaf80faff5cca62",
+        "dispatch.json": "4befedcf7d124cc0da80c523252c97f2d686ce06bd1d7bcdc721c4837e8861d7",
+        "guest_cleanup.json": "b06b7dc7de632f8e054b2a3456edc25856f0c4e69319745020280d847dddc977",
+        "sm90.json": "8250547a43a9a9fea81acd68204454773186e3d3085884766978dd5ee342880a",
+        "validation.json": "58a3ea0b71ddcd268c8e88fb8354aea25f3073011bc990a047c9e68380920bd7",
+        "warp.json": "5b81f5f32ab775c44cc4a3afc04be5affe7e590abf72d6d39ae1b97d912eb66e"
+      },
+      "parent": "V68",
+      "tree": "3abcbf0e5adbe7d2685e12a1abc26dcb39f06031",
+      "bytes": 99841,
+      "patch_sha256": "024363a36b759f212e4cf2b5c722cc846c462cad50fdaf6771071f114110b52b",
+      "delta_bytes": 15155,
+      "delta_sha256": "3fa0c56dab2f7629ce35ff2d15b1d7a2b28c4180da1d9c7899d9e17f84a34b38"
+    },
+    "V255": {
+      "directory": "serving_v0523/candidates/v255_private_draft_window_metadata",
+      "evidence": {
+        "cleanup.json": "6f2ac60c29da2053dc5258dc3812d44dc4e378b703cd7c258cecb4fa7c79f27c",
+        "compiler_cleanup.json": "195732d58c8c0f36f62abbe24cf5b792926fc899ed9406ed0c88d2433f91a6d1",
+        "independent_geometry.json": "457c5b94c477877bbe261bf9466cdd35b66f240d1299bb77aa131ea7df34156b",
+        "interpreter.json": "eee5d6315b12a43a28999df5b64d741f9ebc16ba71139c65d7c1b6990af509c8",
+        "judge_observation.json": "e0b9e8a2fc6c3f80ab255d63eb41901bd463f956b829dc686d9dc978d521c289",
+        "serving_replay.json": "f0994eaa2c6f7dc13bdf30f88d33c7ef7b0b3f4a9cb532620b511208afc9c4a0",
+        "sm90.json": "967b1452775dad1cb24e8817808c3a0897925b160398f2059130a7bfcbfb61c5",
+        "validation.json": "54b226956bcba2d6640bfca2f7aabf9d2373e99cb937440ba4a9bc49f3e9a561"
+      },
+      "parent": "V253",
+      "tree": "cadcca7f8f28b78b9c89e78a9eb5c42b26c062d7",
+      "bytes": 109582,
+      "patch_sha256": "07fe01b82c01587331fc3005989477c639141a0bc055a1ac59f2bacb478084cc",
+      "delta_bytes": 10935,
+      "delta_sha256": "61a5441c3a8a67f1a1f6cc3810d4f7821cc76f7303bfd8cea8027196e30a8f37"
+    },
+    "V256": {
+      "directory": "serving_v0523/candidates/v256_window_backed_mixed_serving",
+      "evidence": {
+        "draft_swa.json": "df41209c28aaf0db79cb164581f25ce223a337b8ac9baee2760ad96e7a946e5a",
+        "export_cleanup.json": "1214385adaa97309f9afe9d46b8d507cff108dc61b98e6b979699467afc4ce37",
+        "global_names.json": "dd924fddda5253f52560811afcbdf01f72999dc17ccd81d8ad80ae0cf8269326",
+        "inherited_controls.json": "8c26137fe0380c6cd51f38818e4026538646d73026275d54276feaef9dd393ce",
+        "integrated_copy.json": "ece49ca60c02e9f1dbb5f89620882e25ce45f944e67a77708898de907058e0ee",
+        "metadata_compiler_cleanup.json": "16f34a4413f68e2159b8d2aa1bc12adb4edff1d97e93c944de85c496c41365de",
+        "metadata_geometry.json": "4d6f7fa9d53d5b54c7591abac6fde1c09ae05173714ba6cb0d9ab79b7727e812",
+        "metadata_interpreter.json": "d03ff7ef60f799fb0f451ac4184da28db4ff9eacdc67c621371b65f3d61c8859",
+        "metadata_schedule.json": "186c64fe736820cbe5f1d32f22563fc566b1fd6361677c90e3fe6216adeabb46",
+        "metadata_serving.json": "92be5b6426cf23fd54deb40521276998c000019ab2d4daa0da747bf4e30e6e85",
+        "metadata_sm90.json": "fd818a61829ce1722c2383dddb3a8707a0ab0d9a043ec8a7a1e9a9a00aefdb14",
+        "metadata_unbacked.json": "75f992c592939948f71ac7edf12f7d560f292a628ce3c89d2657410f8fb76308",
+        "mixed_lifecycle.json": "23bea751998d3a66220f53bcc6a261e5eb48cef4f113bb0094900cf7bbe13c88",
+        "paired_store.json": "79e210a1219a936d219f70031aa34db2da0cbaeeda0d4a01609cb89b628b5519",
+        "target_graph.json": "df10da8890e794c4be89f15a39f39b7d019c829c30325cbaa0cac6d38b9d249c",
+        "validation.json": "c26a8484a3abd8dd6692217bf971c268d176f83acef2fbf44525a20891b02513"
+      },
+      "parent": "V248",
+      "tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "bytes": 401834,
+      "patch_sha256": "68ae741c12ba65c54580ab0d855f60a16ad4bbb35ad99be4e6688f1e87e10494",
+      "delta_bytes": 22341,
+      "delta_sha256": "464fc5f0dd5c8028e3754577afed4f32e8003bd1b4a77fd5b867493edcdd9026"
+    }
+  },
+  "quota": {
+    "scored": {
+      "per_day": 1,
+      "used": 0,
+      "left": 1
+    },
+    "checks": {
+      "per_day": 3,
+      "used": 3,
+      "left": 0
+    }
+  },
+  "mixed_scheduler": {
+    "compared_BF16_words": 1473120,
+    "accepted_verify_rows": 486,
+    "rejected_verify_rows": 378,
+    "prompt_rows": 216,
+    "same_virtual_new_swa_pairs": 27,
+    "limits": "Single-rank CPU serving control flow. Synthetic target layers, draft proposal and projection arithmetic. CUDA graph replay emulated."
+  },
+  "compiler_VM_at_close": "Stopped",
+  "decision": "Use V255 as the focused V68-family control and V256 for the combined V248 pipeline. Current V229/V198 conditional private standby is active."
+}

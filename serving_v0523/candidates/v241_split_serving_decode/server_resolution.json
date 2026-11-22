@@ -1,0 +1,363 @@
+{
+  "candidate": "V241",
+  "patch_sha256": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+  "tree": "bdcbadeed85c9294faa7c1959a2bc10baf4006e0",
+  "msgspec": "0.22.0",
+  "cases": [
+    {
+      "name": "standard",
+      "argv": [],
+      "extras": [],
+      "configured_graph_max": 16384,
+      "max_prefill_tokens": 16384,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "max_prefill_only",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16384,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "graph_max_only",
+      "argv": [
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16384,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "intact_chunk_both",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16640,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "partial_capacity",
+      "argv": [
+        "--max-prefill-tokens",
+        "16448",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [
+        8,
+        16,
+        32,
+        64
+      ],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16448,
+      "prepublish_and_runtime_ceiling": 16448,
+      "target_mixed_capacity": 16448,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "limit_decode",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--cuda-graph-max-bs-decode",
+        "5"
+      ],
+      "extras": [
+        8,
+        16,
+        32,
+        40
+      ],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16424,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "explicit_lists_lock",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--cuda-graph-bs-prefill",
+        "4096",
+        "16384"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": true
+    },
+    {
+      "name": "full_prefill",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--cuda-graph-backend-prefill",
+        "full"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "disabled_decode",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--disable-decode-cuda-graph"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "explicit_json_priority",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--cuda-graph-config",
+        "{\"prefill\":{\"max_bs\":16400}}"
+      ],
+      "extras": [
+        8,
+        16
+      ],
+      "configured_graph_max": 16400,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16400,
+      "target_mixed_capacity": 16400,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "low_provider",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "aligned_overrun",
+      "argv": [
+        "--max-prefill-tokens",
+        "16402",
+        "--cuda-graph-max-bs-prefill",
+        "16402"
+      ],
+      "extras": [
+        16
+      ],
+      "configured_graph_max": 16402,
+      "max_prefill_tokens": 16402,
+      "prepublish_and_runtime_ceiling": 16402,
+      "target_mixed_capacity": 16400,
+      "alignment": 16,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "draft_runner",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 0,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "other_algorithm",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 0,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "feature_off",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640"
+      ],
+      "extras": [],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 0,
+      "alignment": 8,
+      "max_running_requests": 32,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "raw_defaults",
+      "argv": [],
+      "extras": [],
+      "configured_graph_max": 16384,
+      "max_prefill_tokens": 16384,
+      "prepublish_and_runtime_ceiling": 16384,
+      "target_mixed_capacity": 16384,
+      "alignment": 8,
+      "max_running_requests": 48,
+      "block_size": 8,
+      "locked_bs": false
+    },
+    {
+      "name": "width4",
+      "argv": [
+        "--max-prefill-tokens",
+        "16640",
+        "--cuda-graph-max-bs-prefill",
+        "16640",
+        "--speculative-dflash-block-size",
+        "4"
+      ],
+      "extras": [
+        4,
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "configured_graph_max": 16640,
+      "max_prefill_tokens": 16640,
+      "prepublish_and_runtime_ceiling": 16640,
+      "target_mixed_capacity": 16512,
+      "alignment": 1,
+      "max_running_requests": 32,
+      "block_size": 4,
+      "locked_bs": false
+    }
+  ],
+  "source_sha256": {
+    "utils/common.py": "60c3b514fcaba47dce2b1f7b74484db809c0d635ba646d94554552170cf01d73",
+    "model_executor/cuda_graph_config.py": "0f6774dd498548e2220606c5e60eeb6c5a768ab50d7d978384ed0eab677ef8d0",
+    "arg_groups/arg_utils.py": "2a5b4e36dfb5ffcf2fe9dc9ead716f2e7951e3c5658e6333e2f68d2de4df4400",
+    "arg_groups/choices.py": "1a92af7024c6ccc8773e622b30ca4ae28125d67882c255d886b2d96d2a604dc1",
+    "arg_groups/field_order.py": "8d4947196d2d149daf72acc355d741dc530fae41308b89b9caf6996e41b2aeac",
+    "arg_groups/fields/__init__.py": "1123322908fef29cc844456dee627ea579251736bf4bea26e4e02bdf265e446f",
+    "arg_groups/fields/parallel.py": "1b4ffe3b3e17281607610a2b554df70e13c17a82580807a04603d417b114437a",
+    "arg_groups/fields/spec.py": "cf6f23f6dbe92e007af3fb1a83030df16905ce9226c0244345b651e1281f5895",
+    "arg_groups/fields/schedule.py": "67aa6f19add93821a0aa758a5d54a42c9c65a9e408a80c3fa4402bac459aaf9e",
+    "arg_groups/fields/exec_.py": "c3f07250a0e2e96e87de9a080d1a95de5f21773f089d96453242e4c171d135af",
+    "arg_groups/model_override_base.py": "506bb028350b67f0000189a7ed214f9df07172766434a69b1e20913f92cfa1f1",
+    "arg_groups/overrides.py": "434cac0b294fb847c096d2c3f10ef76f5a9233fe11da10b893318f5ff0fecb82",
+    "arg_groups/prefill_buffer_ceiling.py": "d097313913a8eae4f7804ba9034b721390277024c1a74b5d01b78120530c845d",
+    "arg_groups/cuda_graph_hook.py": "01f995a301b7142d84d0ade2b89ba7d8febb012154772e74ba6b67ea170d5549",
+    "speculative/dflash_utils.py": "72270b7d4e01012e4b0d04b283db0f57120be37ea0c94c820056ad9a5a9a0d5a",
+    "arg_groups/speculative_hook.py": "d10577c3b5f333ae560adc467e8ca8864196154da5a26683011328c6765a59f0",
+    "runtime_context.py": "4eeb7928b02009f8a8b64769c9056e260ef0f764a7199d819a81839f8f87e502",
+    "model_executor/runner/prefill_cuda_graph_runner.py": "74b5723446de8b21413ba44c2633e64c4eed81e898f7898d955a684bbc648fa1"
+  },
+  "checkpoint_fetch": "Synthetic checkpoint metadata with released DFLASH width 8; actual pinned config parser and width resolver.",
+  "physical_h200": false
+}

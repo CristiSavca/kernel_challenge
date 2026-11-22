@@ -1,0 +1,439 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_cluster_mlp.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_cluster_mlp.cuh
+new file mode 100644
+index 0000000..29a8680
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_cluster_mlp.cuh
+@@ -0,0 +1,272 @@
++#include "expert_skinny_gate_up.cuh"
++#include <cooperative_groups.h>
++
++namespace sglang {
++namespace muse_cluster_mlp {
++
++using namespace device;
++constexpr uint32_t kCluster = 8;
++constexpr uint32_t kWarps = 8;
++constexpr uint32_t kRows = 16;
++
++struct Bank {
++  const uint32_t* weight;
++  const uint8_t* scale;
++};
++
++struct Params {
++  bf16_t* rows;
++  Bank gate_up;
++  Bank down;
++  const bf16_t* gate_scale;
++  const int32_t* offsets;
++  uint32_t hidden;
++  uint32_t intermediate;
++  uint32_t experts;
++};
++
++struct Tile {
++  uint32_t expert;
++  uint32_t first;
++  uint32_t count;
++};
++
++SGL_DEVICE Tile locate(const Params& p, uint32_t ordinal) {
++  uint32_t lane = threadIdx.x % 32;
++  for (uint32_t base = 0; base < p.experts; base += 32) {
++    uint32_t e = base + lane;
++    uint32_t first = e < p.experts ? p.offsets[e] : 0;
++    uint32_t end = e < p.experts ? p.offsets[e + 1] : 0;
++    uint32_t jobs = (end - first + kRows - 1) / kRows;
++    uint32_t prefix = jobs;
++#pragma unroll
++    for (uint32_t d = 1; d < 32; d *= 2) {
++      uint32_t other = __shfl_up_sync(0xffffffffu, prefix, d);
++      if (lane >= d) prefix += other;
++    }
++    uint32_t owners = __ballot_sync(0xffffffffu, prefix > ordinal);
++    if (owners) {
++      int owner = __ffs(owners) - 1;
++      uint32_t previous = __shfl_sync(0xffffffffu, prefix - jobs, owner);
++      uint32_t begin = __shfl_sync(0xffffffffu, first, owner) + (ordinal - previous) * kRows;
++      uint32_t limit = __shfl_sync(0xffffffffu, end, owner);
++      return {base + static_cast<uint32_t>(owner), begin, min(kRows, limit - begin)};
++    }
++    ordinal -= __shfl_sync(0xffffffffu, prefix, 31);
++  }
++  return {};
++}
++
++template <uint32_t Rows>
++struct InputFragment {
++  uint32_t low[Rows], high[Rows];
++};
++
++template <uint32_t Rows>
++SGL_DEVICE InputFragment<Rows> load_rows(
++    const bf16_t* src, uint32_t stride, uint32_t count, uint32_t k) {
++  uint32_t lane = threadIdx.x % 32;
++  InputFragment<Rows> x{};
++#pragma unroll
++  for (uint32_t r = 0; r < Rows; ++r) {
++    uint32_t row = 8 * r + lane / 4;
++    if (row < count) {
++      const bf16_t* ptr = src + size_t(row) * stride + k + (lane % 4) * 2;
++      x.low[r] = *reinterpret_cast<const uint32_t*>(ptr);
++      x.high[r] = *reinterpret_cast<const uint32_t*>(ptr + 8);
++    }
++  }
++  return x;
++}
++
++template <uint32_t Rows>
++SGL_DEVICE void contract(
++    float4 (&out)[4][Rows], const Bank bank, size_t base, const InputFragment<Rows>& x) {
++  const uint32_t lane = threadIdx.x % 32;
++  using Words = AlignedVector<uint32_t, 4>;
++  using Scales = AlignedVector<uint16_t, 4>;
++  const auto w = *reinterpret_cast<const Words*>(bank.weight + 2 * base + lane * 4);
++  const auto s = *reinterpret_cast<const Scales*>(bank.scale + base + (lane / 4) * 8);
++#pragma unroll
++  for (uint32_t part = 0; part < 4; ++part) {
++    using muse_skinny_gate_up::broadcast_scale;
++    using muse_skinny_gate_up::operand_pair;
++    uint32_t low = broadcast_scale(s[part] & 255);
++    uint32_t high = broadcast_scale(s[part] >> 8);
++    uint32_t a0 = operand_pair(w[part], low, 0), a1 = operand_pair(w[part], high, 1);
++    uint32_t a2 = operand_pair(w[part], low, 2), a3 = operand_pair(w[part], high, 3);
++#pragma unroll
++    for (uint32_t r = 0; r < Rows; ++r) {
++      auto& d = out[part][r];
++      asm volatile(
++          "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 "
++          "{%0,%1,%2,%3},{%4,%5,%6,%7},{%8,%9},{%0,%1,%2,%3};"
++          : "+f"(d.x), "+f"(d.y), "+f"(d.z), "+f"(d.w)
++          : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(x.low[r]), "r"(x.high[r]));
++    }
++  }
++}
++
++template <uint32_t Rows>
++SGL_DEVICE void gate_rows(const Params& p, Tile tile, uint32_t rank, bf16_t* active) {
++  const uint32_t width = p.intermediate / kCluster, stride = width + 8;
++  const uint32_t lane = threadIdx.x % 32;
++  const float scale = cast<float>(p.gate_scale[tile.expert]);
++  const bf16_t* input = p.rows + size_t(tile.first) * p.hidden;
++  for (uint32_t band = threadIdx.x / 32 * 64; band < width; band += kWarps * 64) {
++    float4 gate[4][Rows] = {}, up[4][Rows] = {};
++    for (uint32_t k = 0; k < p.hidden; k += 16) {
++      const auto x = load_rows<Rows>(input, p.hidden, tile.count, k);
++      const size_t base = (size_t(tile.expert) * (p.hidden / 16) + k / 16) * (2 * p.intermediate)
++                        + rank * width + band;
++      contract(gate, p.gate_up, base, x);
++      contract(up, p.gate_up, base + p.intermediate, x);
++    }
++#pragma unroll
++    for (uint32_t part = 0; part < 4; ++part) {
++#pragma unroll
++      for (uint32_t r = 0; r < Rows; ++r) {
++        const auto g = gate[part][r], u = up[part][r];
++        const float gs[] = {g.x, g.y, g.z, g.w}, us[] = {u.x, u.y, u.z, u.w};
++#pragma unroll
++        for (uint32_t i = 0; i < 4; ++i) {
++          uint32_t row = r * 8 + (lane % 4) * 2 + i % 2;
++          uint32_t col = band + part * 16 + lane / 4 + (i / 2) * 8;
++          if (row < tile.count) {
++            float gate_value = muse_expert_scaled_silu::scale_and_round(cast<bf16_t>(gs[i]), scale);
++            float up_value = muse_expert_scaled_silu::scale_and_round(cast<bf16_t>(us[i]), scale);
++            active[row * stride + col] = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate_value) * up_value);
++          }
++        }
++      }
++    }
++  }
++}
++
++template <uint32_t Rows>
++SGL_DEVICE void down_rows(const Params& p, Tile tile, uint32_t rank, bf16_t* active) {
++  auto cluster = cooperative_groups::this_cluster();
++  const uint32_t width = p.hidden / kCluster;
++  const uint32_t inner = p.intermediate / kCluster, stride = inner + 8;
++  const uint32_t lane = threadIdx.x % 32;
++  for (uint32_t band = threadIdx.x / 32 * 64; band < width; band += kWarps * 64) {
++    const uint32_t column = rank * width + band;
++    float4 down[4][Rows] = {};
++    for (uint32_t peer = 0; peer < kCluster; ++peer) {
++      const bf16_t* values = cluster.map_shared_rank(active, peer);
++      for (uint32_t k = 0; k < inner; k += 16) {
++        const auto x = load_rows<Rows>(values, stride, tile.count, k);
++        const size_t base = (size_t(tile.expert) * (p.intermediate / 16)
++                           + (peer * inner + k) / 16) * p.hidden + column;
++        contract(down, p.down, base, x);
++      }
++    }
++#pragma unroll
++    for (uint32_t part = 0; part < 4; ++part) {
++#pragma unroll
++      for (uint32_t r = 0; r < Rows; ++r) {
++        const auto d = down[part][r];
++        const float values[] = {d.x, d.y, d.z, d.w};
++#pragma unroll
++        for (uint32_t i = 0; i < 4; ++i) {
++          uint32_t row = r * 8 + (lane % 4) * 2 + i % 2;
++          uint32_t col = column + part * 16 + lane / 4 + (i / 2) * 8;
++          if (row < tile.count) p.rows[size_t(tile.first + row) * p.hidden + col] = cast<bf16_t>(values[i]);
++        }
++      }
++    }
++  }
++}
++
++template <uint32_t Rows>
++SGL_DEVICE void project(const Params& p, Tile tile, bf16_t* active) {
++  auto cluster = cooperative_groups::this_cluster();
++  uint32_t rank = cluster.block_rank();
++  gate_rows<Rows>(p, tile, rank, active);
++  // Each block now owns one complete activation band for these rows. Its
++  // original input rows can be overwritten after every peer finishes W13.
++  cluster.sync();
++  down_rows<Rows>(p, tile, rank, active);
++  // Remote readers must finish before a block reuses its band or exits.
++  cluster.sync();
++}
++
++__global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant__ Params p) {
++  extern __shared__ __align__(16) unsigned char shared[];
++  auto* active = reinterpret_cast<bf16_t*>(shared);
++  for (uint32_t job = blockIdx.y;; job += gridDim.y) {
++    const Tile tile = locate(p, job);
++    if (!tile.count) return;
++    if (tile.count <= 8) project<1>(p, tile, active);
++    else project<2>(p, tile, active);
++  }
++}
++
++}  // namespace muse_cluster_mlp
++
++struct MuseClusterMLP {
++  static bool supported(int64_t device, int64_t hidden, int64_t intermediate, int64_t experts) {
++    using namespace muse_cluster_mlp;
++    int current = -1, capable = 0, sms = 0, shared_limit = 0;
++    CHECK_CUDA(cudaGetDevice(&current));
++    if (current != device || hidden <= 0 || intermediate <= 0 || experts <= 0 ||
++        hidden % (kCluster * 64) || intermediate % (kCluster * 64)) return false;
++    CHECK_CUDA(cudaDeviceGetAttribute(&capable, cudaDevAttrClusterLaunch, current));
++    CHECK_CUDA(cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, current));
++    CHECK_CUDA(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, current));
++    const size_t bytes = kRows * (intermediate / kCluster + 8) * sizeof(bf16_t);
++    if (!capable || experts * kCluster < sms || bytes > static_cast<size_t>(shared_limit)) return false;
++    cudaLaunchAttribute attr{};
++    attr.id = cudaLaunchAttributeClusterDimension;
++    attr.val.clusterDim = {kCluster, 1, 1};
++    cudaLaunchConfig_t cfg{};
++    cfg.gridDim = dim3(kCluster, static_cast<uint32_t>(experts), 1);
++    cfg.blockDim = dim3(32 * kWarps, 1, 1);
++    cfg.dynamicSmemBytes = bytes;
++    cfg.attrs = &attr;
++    cfg.numAttrs = 1;
++    int resident = 0;
++    auto status = cudaOccupancyMaxActiveClusters(&resident, run_kernel, &cfg);
++    if (status == cudaErrorInvalidValue || status == cudaErrorInvalidConfiguration ||
++        status == cudaErrorInvalidClusterSize || status == cudaErrorLaunchOutOfResources || status == cudaErrorNotSupported) {
++      (void)cudaGetLastError();
++      return false;
++    }
++    CHECK_CUDA(status);
++    return resident > 0;
++  }
++
++  static void run(tvm::ffi::TensorView rows, tvm::ffi::TensorView gate, tvm::ffi::TensorView gs,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView global,
++                  tvm::ffi::TensorView offsets) {
++    using namespace host;
++    using namespace muse_cluster_mlp;
++    auto m = SymbolicSize{"rows"}, h = SymbolicSize{"hidden"}, e = SymbolicSize{"experts"};
++    auto kg = SymbolicSize{"gate groups"}, wg = SymbolicSize{"gate words"}, ng = SymbolicSize{"gate width"};
++    auto kd = SymbolicSize{"down groups"}, wd = SymbolicSize{"down words"}, ends = SymbolicSize{"offsets"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({m, h}).with_dtype<bf16_t>().with_device(dev).verify(rows);
++    TensorMatcher({e, kg, wg}).with_dtype<int32_t>().with_device(dev).verify(gate);
++    TensorMatcher({e, kd, wd}).with_dtype<int32_t>().with_device(dev).verify(down);
++    TensorMatcher({e, kg, ng}).with_dtype<uint8_t>().with_device(dev).verify(gs);
++    TensorMatcher({e, kd, h}).with_dtype<uint8_t>().with_device(dev).verify(ds);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(global);
++    TensorMatcher({ends}).with_dtype<int32_t>().with_device(dev).verify(offsets);
++    const auto inner = kd.unwrap() * 16;
++    RuntimeCheck(kg.unwrap() * 16 == h.unwrap() && wd.unwrap() == 2 * h.unwrap() &&
++                 ng.unwrap() == 2 * inner && wg.unwrap() == 4 * inner, "incompatible expert banks");
++    RuntimeCheck(h.unwrap() % (64 * kCluster) == 0 && inner % (64 * kCluster) == 0 &&
++                 m.unwrap() > 0 && e.unwrap() > 0 && ends.unwrap() == e.unwrap() + 1, "invalid clustered expert geometry");
++    const Params p{
++        static_cast<bf16_t*>(rows.data_ptr()),
++        {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
++        {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
++        static_cast<const bf16_t*>(global.data_ptr()), static_cast<const int32_t*>(offsets.data_ptr()),
++        static_cast<uint32_t>(h.unwrap()), static_cast<uint32_t>(inner), static_cast<uint32_t>(e.unwrap())};
++    const size_t bytes = kRows * (inner / kCluster + 8) * sizeof(bf16_t);
++    auto launch = LaunchKernel(dim3(kCluster, p.experts), 32 * kWarps, dev.unwrap(), bytes);
++    launch.enable_cluster(dim3(kCluster, 1, 1))(run_kernel, p);
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index c21db4d..c441285 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2029,6 +2029,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_ROUTED_NORM = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_SKINNY_GATE_UP = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_CLUSTER_MLP = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 55e1149..ccb58a6 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -50,6 +50,20 @@ def _skinny_gate_up_module():
+         return None
+ 
+ 
++@cache_once
++def _cluster_mlp_module():
++    try:
++        return load_jit(
++            "muse_cluster_mlp",
++            cuda_files=["muse_spark/expert_cluster_mlp.cuh"],
++            cuda_wrappers=[("run", "MuseClusterMLP::run"), ("supported", "MuseClusterMLP::supported")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Falling back to grouped Humming experts: %s", exc)
++        return None
++
++
+ def _decode_tuning_config(
+     config: dict,
+     shape_n: int,
+@@ -156,6 +170,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS.get()
+         ):
+             resident_device = device
++    cluster_layout = prepare_grouped_decode and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_CLUSTER_MLP.get()
+     for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
+         packed = getattr(layer, checkpoint_name)
+         scales = getattr(layer, f"{checkpoint_name}_weight_scale")
+@@ -194,24 +209,30 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             },
+             already_padded=True,
+         )
++        warp_layout = (
++            meta.mma_type == MmaType.WGMMA
++            and not meta.use_packed_k_layout
++            and not meta.use_fused_e8m0_scale
++            and not meta.should_apply_bs_on_c
++            and tensors["weight"].shape == (experts, k // 16, n * 2)
++            and tensors["weight"].dtype == torch.int32
++            and tensors["weight_scale"].shape == (experts, k // 16, n)
++            and tensors["weight_scale"].dtype == torch.float8_e4m3fn
++            and tensors["weight"].is_contiguous()
++            and tensors["weight_scale"].is_contiguous()
++        )
++        cluster_layout = cluster_layout and warp_layout
+         if name == "w13":
++            gate_hidden, gate_inner = k, n // 2
+             layer.humming_skinny_gate_up = (
+                 prepare_grouped_decode
+                 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_SKINNY_GATE_UP.get()
+-                and meta.mma_type == MmaType.WGMMA
+-                and not meta.use_packed_k_layout
+-                and not meta.use_fused_e8m0_scale
+-                and not meta.should_apply_bs_on_c
+-                and (n // 2) % 64 == 0
+-                and tensors["weight"].shape == (experts, k // 16, n * 2)
+-                and tensors["weight"].dtype == torch.int32
+-                and tensors["weight_scale"].shape == (experts, k // 16, n)
+-                and tensors["weight_scale"].dtype == torch.float8_e4m3fn
+-                and tensors["weight"].is_contiguous()
+-                and tensors["weight_scale"].is_contiguous()
+-                # Build once during preparation, outside CUDA graph capture.
++                and warp_layout
++                and gate_inner % 64 == 0
+                 and _skinny_gate_up_module() is not None
+             )
++        else:
++            cluster_layout = cluster_layout and k == gate_inner and n == gate_hidden
+         params[meta.weight_name] = tensors["weight"]
+         params[meta.weight_scale_name] = tensors["weight_scale"]
+         # Stock Marlin collapses the gate/up global scales to the gate value
+@@ -263,6 +284,12 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             for _, tuning in decode_tunings[name]:
+                 HummingKernel.prepare_kernels(meta.to_str(), _GROUPED_COMPUTE, tuning)
+ 
++    layer.humming_cluster_mlp = False
++    if cluster_layout and torch.cuda.get_device_capability(packed.device) == (9, 0):
++        module = _cluster_mlp_module()
++        if module is not None:
++            layer.humming_cluster_mlp = module.supported(packed.get_device(), gate_hidden, gate_inner, experts)
++
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+     for name in ("gate_up_proj", "down_proj"):
+@@ -576,7 +603,6 @@ def humming_grouped_decode_outputs(
+     row_keys = local_ids.new_empty(slots)
+     row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+-    staging = hidden_states.new_empty(slots * intermediate)
+     # At sparse occupancy the warp kernel loads one packed weight tile for up
+     # to eight live routes and writes the activation directly into a second bank.
+     skinny_gate_up = layer.humming_skinny_gate_up and slots <= layer.global_num_experts
+@@ -587,16 +613,28 @@ def humming_grouped_decode_outputs(
+         )
+     layout = local_ids.new_empty((2 if active_groups else 1) * (experts + 1))
+     offsets = layout[: experts + 1] if active_groups else layout
+-    arena_width = intermediate if skinny_gate_up else 2 * intermediate
+-    arena = hidden_states.new_empty(slots * max(arena_width, hidden_size))
+-    inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    if skinny_gate_up:
+-        activations = arena[: slots * intermediate].view(slots, intermediate)
+-        outputs = staging[: slots * hidden_size].view(slots, hidden_size)
++    # Give dense-in-routes batches one full expert MLP per cluster. A
++    # sparse population has too few independent clusters to feed the bank.
++    clustered = (
++        getattr(layer, "humming_cluster_mlp", False)
++        and not skinny_gate_up
++        and slots >= 4 * layer.global_num_experts
++    )
++    if clustered:
++        inputs = hidden_states.new_empty((slots, hidden_size))
++        outputs = inputs
+     else:
+-        gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
+-        activations = staging[: slots * intermediate].view(slots, intermediate)
+-        outputs = arena[: slots * hidden_size].view(slots, hidden_size)
++        staging = hidden_states.new_empty(slots * intermediate)
++        arena_width = intermediate if skinny_gate_up else 2 * intermediate
++        arena = hidden_states.new_empty(slots * max(arena_width, hidden_size))
++        inputs = staging[: slots * hidden_size].view(slots, hidden_size)
++        if skinny_gate_up:
++            activations = arena[: slots * intermediate].view(slots, intermediate)
++            outputs = staging[: slots * hidden_size].view(slots, hidden_size)
++        else:
++            gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
++            activations = staging[: slots * intermediate].view(slots, intermediate)
++            outputs = arena[: slots * hidden_size].view(slots, hidden_size)
+     if norm_weight is not None:
+         map_or_plan = expert_map if expert_map is not None else topk_ids
+         route_tile = 0
+@@ -660,6 +698,13 @@ def humming_grouped_decode_outputs(
+             num_warps=8 if hidden_size >= 4096 else 4,
+         )
+ 
++    if clustered:
++        _cluster_mlp_module().run(
++            inputs, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
++            layer.w2_weight, layer.w2_weight_scale.view(torch.uint8), layer.w13_global_scale, offsets,
++        )
++        return outputs, row_map, local_ids
++
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+     if skinny_gate_up:
+         _skinny_gate_up_module().run(

@@ -1,0 +1,72 @@
+{
+  "candidate": "V168",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_sha256": "a8b11f1460005a0290dfef86e97a8f043c016ac8b4540f1f423cd7cdd6a6ba04",
+  "patch_sha256": "95816b34347ec23816b3def52e99265449ce0c8df523e0a36f587603ae57b574",
+  "bytes": 151455,
+  "delta_sha256": "670808c22379768c6a4e8ec6072ada5a9d22f38b0fc71895c7c6d3635ca27495",
+  "delta_bytes": 22610,
+  "window_budget_sha256": "c5bb5428d3df3aaab411d8cccf571fcad0a14d39bc4d95dbf0390e52b3ef2673",
+  "tree": "127fafbf1bbaf01796c8c9c18b37c607de47d76e",
+  "before_window_budget": "c8c99ccee54043f0d7e5bb1157fe4dbe0d9d5eab",
+  "component_sha256": {
+    "v163_sparse_prompt_exchange": "d4840308ea25166a1a3db0b4358beb6d59b9de97faaa43ef8a3795241bdc33a1",
+    "v164_tma_experts_sparse_prompt": "a8b11f1460005a0290dfef86e97a8f043c016ac8b4540f1f423cd7cdd6a6ba04",
+    "v165_streamed_expert_stages": "687ee3877a2fd0b97a76cb8ee6df260306d2acf57b91ebe16cfed6ebf95e0348",
+    "v167_sparse_expert_return": "de58851c3cef9bfdf1c432b566f9294b41bbd4a81cad62e182022de11a22ba5d"
+  },
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/moe/muse_spark_sparse_return.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/parallel.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/attention/prefill_kv_span.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh",
+    "python/sglang/kernels/ops/moe/muse_spark_sparse_return.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "cuda_paths_identical_to_v165": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh"
+  ],
+  "reducer_identical_to_v167": "c56c173b17b240863c237d4eb11860b61fc181452db8610712dfbc81f5dba497",
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--muse-sparse-prompt-exchange": ""
+  },
+  "official_export": "okc serve diff",
+  "strict_apply_both_orders_full_delta_reverse": true,
+  "max_added_line_chars": 137,
+  "fixed_flag_patterns": 76,
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "physical_H200": false,
+  "judge_submitted": false
+}

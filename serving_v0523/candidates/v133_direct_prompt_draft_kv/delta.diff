@@ -1,0 +1,190 @@
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 36502a5..3a3ebf1 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -67,6 +67,7 @@ def _fused_norm_rope_kernel_stacked(
+     WIDTH: tl.constexpr = 0,
+     CACHE_FP8: tl.constexpr = False,
+     cache_scale=1.0,
++    size_limit=None,
+ ):
+     """Fused RMSNorm(K) + RoPE(K) materialization. Grid: (total_ctx, num_kv_heads, n_layers)."""
+     ctx_id = tl.program_id(0)
+@@ -84,8 +85,18 @@ def _fused_norm_rope_kernel_stacked(
+     kv_base = kv_ptr + ctx_id * kv_stride_ctx + layer_id * kv_stride_layer
+     k_base = kv_base + head_id * head_dim
+     v_base = kv_base + kv_size + head_id * head_dim
+-    if WIDTH:
++    if Loc is not None:
+         slot = tl.load(Loc + ctx_id).to(tl.int64)
++        if size_limit is not None:
++            # The native BF16 store asserts bounds and reserves slot zero. Use an
++            # unsigned comparison so negative int64 indices also fail the check.
++            slot = tl.inline_asm_elementwise(
++                asm="{ .reg .pred bad; setp.ge.u64 bad, $1, $2; @bad trap; mov.b64 $0, $1; }",
++                constraints="=l,l,l", args=[slot, size_limit.to(tl.int64)],
++                dtype=tl.int64, is_pure=False, pack=1,
++            )
++            if slot == 0:
++                return
+         offset = slot * kv_size + head_id * head_dim
+         if CACHE_FP8:
+             dtype: tl.constexpr = tl.float8e4nv
+@@ -469,6 +480,7 @@ class FusedKVMaterializeHelper:
+         positions: torch.Tensor,
+         write_layer_kv: Callable[[int, torch.Tensor, torch.Tensor], None],
+         prefix_cache=None,
++        prompt_cache=None,
+     ) -> None:
+         """Materialize KV cache for all layers using batched projection."""
+         total_ctx = ctx_hidden.shape[0]
+@@ -501,45 +513,72 @@ class FusedKVMaterializeHelper:
+         )
+         cos_sin_cache = self._ensure_rope_cache(max_position)
+ 
+-        self._ensure_workspace(total_ctx, ctx_hidden.dtype)
+-        assert self._proj_workspace is not None
+-        assert self._k_workspace is not None
+-        assert self._v_workspace is not None
+-
+-        proj_out_2d = self._proj_workspace[:total_ctx]
+-        if self._mm_out_supported:
+-            try:
+-                torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
+-            except Exception:
+-                self._mm_out_supported = False
+-                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+-        else:
+-            proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
+-
+-        proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
+-        if prefix_cache is not None and self._prefix_cache is not None:
+-            pool, loc, lengths = prefix_cache
++        destination = None
++        if self._prefix_cache is not None and (prompt_cache is not None or prefix_cache is not None):
+             configured_pool, k_table, v_table, scaled_layers = self._prefix_cache
++            if prefix_cache is not None:
++                pool, loc, lengths = prefix_cache
++                if (
++                    loc.ndim == 2 and loc.shape[1] > 0
++                    and lengths.shape == (loc.shape[0],) and lengths.dtype == torch.int32
++                    and lengths.device == loc.device and lengths.is_contiguous()
++                    and (not scaled_layers or all(
++                        type(scale) in (int, float) and scale == 1
++                        for layer in scaled_layers for scale in (layer.k_scale, layer.v_scale)
++                    ))
++                ):
++                    destination = (loc, lengths, loc.shape[1], bool(scaled_layers))
++            else:
++                from sglang.srt.environ import envs
++                from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool, can_use_store_cache
++
++                pool, loc = prompt_cache
++                if (
++                    loc.ndim == 1 and not scaled_layers and type(pool) is MHATokenToKVPool
++                    and pool.store_dtype == pool.dtype == torch.bfloat16 and not pool.is_quantized_kv_cache
++                    and pool.size + pool.page_size > 0
++                    and not envs.SGLANG_ENABLE_ASYNC_ASSERT.get() and not torch.cuda.is_current_stream_capturing()
++                    and can_use_store_cache(2 * self.kv_size, 2 * self.kv_size)
++                    and getattr(pool.set_kv_buffer, "__func__", None) is MHATokenToKVPool.set_kv_buffer
++                    and "_store_kv_layer" not in vars(pool)
++                ):
++                    destination = (loc, None, 0, False)
++
+             if (
+-                pool is configured_pool and pool.k_data_ptrs is k_table and pool.v_data_ptrs is v_table
+-                and loc.ndim == 2 and loc.numel() == total_ctx and loc.shape[1] > 0
+-                and lengths.shape == (loc.shape[0],) and lengths.dtype == torch.int32
+-                and loc.dtype == torch.int64 and loc.device == lengths.device == proj_out.device
+-                and loc.is_contiguous() and lengths.is_contiguous() and positions.is_contiguous()
+-                and (not scaled_layers or all(
+-                    type(scale) in (int, float) and scale == 1
+-                    for layer in scaled_layers for scale in (layer.k_scale, layer.v_scale)
+-                ))
++                pool is not configured_pool or pool.k_data_ptrs is not k_table or pool.v_data_ptrs is not v_table
++                or loc.numel() != total_ctx or loc.dtype != torch.int64 or loc.device != ctx_hidden.device
++                or not loc.is_contiguous() or not positions.is_contiguous()
+             ):
+-                _fused_norm_rope_kernel_stacked[(total_ctx, self.num_kv_heads, self.n_layers)](
+-                    proj_out, self.k_norm_weights, self.eps_values, cos_sin_cache, positions,
+-                    k_table, v_table, proj_out.stride(0), proj_out.stride(1),
+-                    self.k_norm_weights.stride(0), cos_sin_cache.stride(0),
+-                    0, 0, 0, 0, 0, 0, total_ctx, self.n_layers, self.num_kv_heads,
+-                    self.head_dim, self.kv_size, self.rotary_dim, self.rotary_dim // 2,
+-                    triton.next_power_of_2(self.head_dim), loc, lengths, loc.shape[1], bool(scaled_layers), 1.0,
+-                )
+-                return
++                destination = None
++
++        if destination is not None and prefix_cache is None:
++            # Full prompt extents vary. Only the projection is live until the scatter completes.
++            proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++        else:
++            self._ensure_workspace(total_ctx, ctx_hidden.dtype)
++            proj_out_2d = self._proj_workspace[:total_ctx]
++            if self._mm_out_supported:
++                try:
++                    torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
++                except Exception:
++                    self._mm_out_supported = False
++                    proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++            else:
++                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++
++        proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
++        if destination is not None:
++            loc, lengths, width, fp8 = destination
++            _fused_norm_rope_kernel_stacked[(total_ctx, self.num_kv_heads, self.n_layers)](
++                proj_out, self.k_norm_weights, self.eps_values, cos_sin_cache, positions,
++                k_table, v_table, proj_out.stride(0), proj_out.stride(1),
++                self.k_norm_weights.stride(0), cos_sin_cache.stride(0),
++                0, 0, 0, 0, 0, 0, total_ctx, self.n_layers, self.num_kv_heads,
++                self.head_dim, self.kv_size, self.rotary_dim, self.rotary_dim // 2,
++                triton.next_power_of_2(self.head_dim), loc, lengths, width, fp8, 1.0,
++                size_limit=pool.size + pool.page_size if prefix_cache is None else None,
++            )
++            return
+         tmp_k = self._k_workspace[:, :total_ctx]
+         tmp_v = self._v_workspace[:, :total_ctx]
+         cache_k, cache_v = _fused_norm_rope_stacked(
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 1ba82fa..1f4155d 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -30,7 +30,7 @@ class Spec(msgspec.Struct):
+     # -------------------------------------------------------------------------
+     speculative_dflash_direct_prefix_kv: A[
+         bool,
+-        "Write eligible stacked DFLASH context KV directly to committed draft cache slots.",
++        "Write eligible stacked DFLASH context KV directly to physical prompt and committed decode slots.",
+     ] = False
+     speculative_algorithm: A[
+         Optional[str],
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 4f2b2d3..23ccf42 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -2039,6 +2039,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                         ctx_hidden=ctx_hidden,
+                         ctx_positions=positions,
+                         ctx_cache_loc=cache_loc,
++                        full_prompt=extend_lens is not None,
+                     )
+                     return
+                 except Exception as e:
+@@ -2093,6 +2094,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         ctx_cache_loc: torch.Tensor,
+         ctx_cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
++        full_prompt: bool = False,
+     ) -> None:
+         """Fused KV materialization using batched projection + Triton kernel."""
+         token_to_kv_pool = self.draft_model_runner.token_to_kv_pool
+@@ -2134,6 +2136,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 if ctx_cache_loc_2d is not None and commit_lens is not None
+                 and self._fused_kv_helper._prefix_cache is not None else None
+             ),
++            prompt_cache=(token_to_kv_pool, ctx_cache_loc) if full_prompt and ctx_cache_loc_2d is None else None,
+         )
+ 
+     def _update_target_mamba_state_after_verify(

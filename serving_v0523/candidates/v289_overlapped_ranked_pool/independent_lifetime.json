@@ -1,0 +1,87 @@
+{
+  "source_sha256": {
+    "python/sglang/srt/models/muse_spark.py": "c2da95fee8e5b9e8a84870a8fcb928e5289a5f11fb8edf320f566e6c5f07b370",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "1ed5c6c48d4ee599c4491ba617be1e549984e497f332ef51fbde2f99c6353ccf",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "10bab6cefc18853ce59e4ca6dcf35ec018b8c4efaa1c1874fb820d4353687b33",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9"
+  },
+  "production_order": [
+    "allocate_decode_plan",
+    "side_stream.wait_stream",
+    "try_decode_column_gather",
+    "self._routing_op()",
+    "prepare_ranked_pool",
+    "fill_decode_plan",
+    "main_stream.wait_stream",
+    "self.experts"
+  ],
+  "metadata_calls": [
+    "_ranked_pool_module",
+    "gain.data_ptr",
+    "gain.is_contiguous",
+    "humming_decode_eligible",
+    "packed.data_ptr",
+    "packed.is_contiguous",
+    "packed.view",
+    "topk_ids.numel",
+    "type",
+    "vars"
+  ],
+  "checked_paired_rank_calls": 34,
+  "adversarial_replays": {
+    "native_edges": {
+      "schedules": 9,
+      "invalid": 0,
+      "first_invalid": null
+    },
+    "without_producer_fork": {
+      "schedules": 81,
+      "invalid": 42,
+      "first_invalid": [
+        "reclaim1",
+        "gather1",
+        "route1",
+        "plan1",
+        "consume1",
+        "route2",
+        "plan2",
+        "reclaim2",
+        "gather2",
+        "consume2"
+      ]
+    },
+    "without_main_join": {
+      "schedules": 81,
+      "invalid": 72,
+      "first_invalid": [
+        "reclaim1",
+        "gather1",
+        "consume1",
+        "reclaim2",
+        "gather2",
+        "consume2",
+        "route1",
+        "plan1",
+        "route2",
+        "plan2"
+      ]
+    },
+    "if_side_helper_reads_packed_payload": {
+      "schedules": 9,
+      "invalid": 5,
+      "first_invalid": [
+        "reclaim1",
+        "gather1",
+        "route1",
+        "plan1",
+        "consume1",
+        "reclaim2",
+        "route2",
+        "plan2",
+        "gather2",
+        "consume2"
+      ]
+    }
+  },
+  "scope": "Host source and schedule replay. No real CUDA graph, allocator or timing measurement."
+}

@@ -1,0 +1,212 @@
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_peer_rows.py b/python/sglang/kernels/ops/moe/muse_spark_peer_rows.py
+new file mode 100644
+index 0000000..42af113
+--- /dev/null
++++ b/python/sglang/kernels/ops/moe/muse_spark_peer_rows.py
+@@ -0,0 +1,27 @@
++"""Read complete expert-input rows from the owning rank's published BF16 buffer."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit(do_not_specialize=["shard_rows"], do_not_specialize_on_alignment=["shard_rows"])
++def _read_peer_rows(peers, live_rows, output, shard_rows, HIDDEN: tl.constexpr, BLOCK: tl.constexpr):
++    dest = tl.program_id(0)
++    source = tl.load(live_rows + dest)
++    owner = source // shard_rows
++    local = source % shard_rows
++    base = tl.load(peers + owner).to(tl.pointer_type(tl.int16))
++    col = tl.program_id(1) * BLOCK + tl.arange(0, BLOCK)
++    bits = tl.load(base + local.to(tl.int64) * HIDDEN + col, mask=col < HIDDEN, other=0)
++    tl.store(output + dest.to(tl.int64) * HIDDEN + col, bits, mask=col < HIDDEN)
++
++
++def read_peer_rows(peers, live_rows, output, shard_rows):
++    rows, hidden = output.shape
++    if rows:
++        tile = min(2048, triton.next_power_of_2(hidden))
++        _read_peer_rows[(rows, triton.cdiv(hidden, tile))](
++            peers, live_rows, output.view(torch.int16),
++            shard_rows, HIDDEN=hidden, BLOCK=tile,
++        )
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_inputs.py b/python/sglang/srt/layers/muse_spark/peer_prompt_inputs.py
+new file mode 100644
+index 0000000..02a6ca1
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_inputs.py
+@@ -0,0 +1,102 @@
++"""Model-owned NVLink input buffer shared by successive sparse prompt layers."""
++
++import logging
++import threading
++
++import torch
++import torch.distributed as dist
++from triton.errors import TritonError
++
++from sglang.kernels.ops.moe.muse_spark_peer_rows import read_peer_rows
++
++logger = logging.getLogger(__name__)
++
++
++class PeerPromptInputs:
++    def __init__(self, storage, handle, group):
++        self.storage = storage
++        self.handle = handle
++        self.group = group
++        # Keep the remote views and rendezvous handle alive for the model's lifetime.
++        self.peers = [handle.get_remote_tensor(i, storage.shape, storage.dtype) for i in range(group.world_size)]
++        if handle.offset != 0 or self.peers[group.rank_in_group].data_ptr() != storage.data_ptr():
++            raise ValueError("Sparse prompt publication requires its own symmetric allocation")
++        self.addresses = torch.tensor([p.data_ptr() for p in self.peers], device=storage.device, dtype=torch.int64)
++        self.stream = torch.cuda.Stream(device=storage.device)
++        self.lock = threading.Lock()
++
++    def supports(self, shard, group):
++        return (
++            group is self.group and shard.device == self.storage.device and shard.dtype == self.storage.dtype
++            and 0 < shard.shape[0] <= self.storage.shape[0] and shard.shape[1] == self.storage.shape[1]
++        )
++
++    def read(self, shard, live_rows):
++        result = shard.new_empty((live_rows.numel(), shard.shape[1]))
++        caller = torch.cuda.current_stream(shard.device)
++        with self.lock:
++            self.stream.wait_stream(caller)
++            with torch.cuda.stream(self.stream):
++                self.storage[:shard.shape[0]].copy_(shard)
++                self.handle.barrier(channel=0)
++                read_peer_rows(self.addresses, live_rows, result, shard.shape[0])
++                # Every rank retires the previous rows, including a rank with no reads.
++                self.handle.barrier(channel=0)
++                shard.record_stream(self.stream)
++                live_rows.record_stream(self.stream)
++            caller.wait_stream(self.stream)
++        return result
++
++
++def prepare_peer_prompt_inputs(group, hidden, chunk_rows):
++    from sglang.srt.distributed.device_communicators.custom_all_reduce_v2 import CustomAllReduceV2
++
++    if group.world_size < 2 or dist.get_backend(group.cpu_group) != "gloo":
++        return None
++
++    def agree(value):
++        values = [None] * group.world_size
++        dist.all_gather_object(values, value, group=group.cpu_group)
++        return values
++
++    comm = group.ca_comm
++    rows = 0
++    if (
++        isinstance(comm, CustomAllReduceV2) and not comm.disabled and comm.has_multicast and comm.pull_enabled
++        and comm._is_graph_mode_supported and comm.rank == group.rank_in_group and comm.world_size == group.world_size
++        and torch.cuda.get_device_capability(comm.device)[0] == 9 and hidden > 0 and isinstance(chunk_rows, int) and chunk_rows > 0
++    ):
++        rows = min((chunk_rows + group.world_size - 1) // group.world_size, comm.max_pull_size // (2 * hidden))
++    proposals = agree((hidden, rows))
++    rows = min(capacity for _, capacity in proposals)
++    if rows <= 0 or any(width != hidden for width, _ in proposals):
++        return None
++    # A local allocation failure must be visible to all ranks before entering rendezvous.
++    storage = None
++    try:
++        from torch._C._distributed_c10d import _SymmetricMemory
++
++        # A separate raw allocation owns its signal pad. Pooled public views may share a pad.
++        with torch.inference_mode(False), torch.no_grad():
++            storage = _SymmetricMemory.empty_strided_p2p(
++                (rows, hidden), (hidden, 1), torch.bfloat16, comm.device
++            )
++    except (ImportError, OSError, RuntimeError) as exc:
++        logger.warning("Sparse prompt peer allocation unavailable: %s", exc)
++    if not all(agree(storage is not None)):
++        return None
++    workspace = None
++    try:
++        handle = _SymmetricMemory.rendezvous(storage, group.device_group.group_name)
++        if handle is not None and handle.rank == group.rank_in_group and handle.world_size == group.world_size:
++            workspace = PeerPromptInputs(storage, handle, group)
++            # Compile before accepting collective work. Read only this rank's own row.
++            index = torch.tensor([handle.rank * rows], dtype=torch.int64, device=comm.device)
++            storage[:1].zero_()
++            output = torch.empty_like(storage[:1])
++            read_peer_rows(workspace.addresses, index, output, rows)
++            torch.cuda.current_stream(comm.device).synchronize()
++    except (AttributeError, OSError, RuntimeError, ValueError, TritonError) as exc:
++        logger.warning("Sparse prompt peer reads unavailable: %s", exc)
++        workspace = None
++    return workspace if all(agree(workspace is not None)) else None
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+index e0e26f5..ca7fde7 100644
+--- a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -116,11 +116,12 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+     local = torch.zeros(padded_rows + 1, dtype=torch.uint8, device=shard.device)
+     route_counts = local.new_zeros(1, dtype=torch.int32)
+     histogram = False
++    peer_inputs = getattr(experts, "_peer_prompt_inputs", None)
+     if eligible:
+         local_ids = local_humming_expert_ids(experts, ids)
+         owned_slots = local_ids >= 0
+         local[:tokens] = owned_slots.any(dim=1)
+-        local[-1] = 1
++        local[-1] = 2 if peer_inputs is not None and peer_inputs.supports(shard, group) else 1
+         # FP32 exactly represents all integer bin counts at this bound; fixed
+         # endpoints avoid a range-discovery sync. The first bin is nonlocal.
+         histogram = (
+@@ -143,13 +144,18 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+     controls = size * size + size
+     expert_counts = descriptor[controls:] if histogram else None
+     local_route_count = sum(descriptor[controls:])
+-    width = _group_width(counts, padded_rows) if all(descriptor[size * size:controls]) else 0
++    votes = descriptor[size * size:controls]
++    width = _group_width(counts, padded_rows) if all(votes) else 0
+     if width:
+-        inputs = _exchange_inputs(shard, needs, counts, width, group)
+         # The stable route sort is unaffected by dropping entirely nonlocal tokens.
+         ends = torch.cumsum(needs[group.rank_in_group], dim=0, dtype=torch.int32)
+-        ordinals = torch.arange(1, inputs.shape[0] + 1, dtype=torch.int32, device=shard.device)
++        incoming = sum(owner[group.rank_in_group] for owner in counts)
++        ordinals = torch.arange(1, incoming + 1, dtype=torch.int32, device=shard.device)
+         live_rows = torch.searchsorted(ends, ordinals)
++        if width < size and min(votes) == 2:
++            inputs = peer_inputs.read(shard, live_rows)
++        else:
++            inputs = _exchange_inputs(shard, needs, counts, width, group)
+         compact_ids = local_ids.index_select(0, live_rows)
+         compact_scores = scores.index_select(0, live_rows)
+         # Grouped projection stages its inputs before the finalizer writes them back.
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 6fe08ff..ff7a7e4 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -101,7 +101,7 @@ from sglang.srt.model_executor.forward_context import (
+     get_token_to_kv_pool,
+ )
+ from sglang.srt.model_loader.weight_utils import default_weight_loader
+-from sglang.srt.runtime_context import get_forward, get_memory, get_parallel, get_spec
++from sglang.srt.runtime_context import get_forward, get_memory, get_parallel, get_schedule, get_spec
+ from sglang.srt.state_capturer.routed_experts import get_global_experts_capturer
+ from sglang.srt.utils import add_prefix, is_cpu, use_intel_amx_backend
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+@@ -1232,8 +1232,17 @@ class MuseSpark1xModel(nn.Module):
+                     else:
+                         linear._sp_use_cutlass = True
+             if replicate_expert_input:
++                peer_inputs = None
++                if moe_layers and backend.is_humming() and get_parallel().muse_sparse_prompt_exchange:
++                    from sglang.srt.layers.muse_spark.peer_prompt_inputs import prepare_peer_prompt_inputs
++
++                    peer_inputs = prepare_peer_prompt_inputs(
++                        get_parallel().tp_group, moe_layers[0].expert_hidden_size, get_schedule().chunked_prefill_size
++                    )
+                 for moe_layer in moe_layers:
+                     moe_layer.sp_replicate_expert_input = True
++                    if peer_inputs is not None:
++                        moe_layer.experts._peer_prompt_inputs = peer_inputs
+             elif moe_layers and not getattr(
+                 get_parallel(), "enable_megamoe_for_layernorm_sp", False
+             ):

@@ -1,0 +1,49 @@
+{
+  "device_sha256": "8b30e1f4d0e654a0ed9aa36a3a8f08b822647562bd2e48a65104795680e958e6",
+  "launcher_sha256": "f91a3e81faac2f885d0fae74e841f9a7d2e7f95f8689bc0ecba0abbd1286f7f4",
+  "cases": [
+    {
+      "tile_m": 136,
+      "intermediate": 384,
+      "base_swizzle": 1,
+      "bf16_outputs": 626688,
+      "guard_words": 417600,
+      "packed_weight_scale_addresses": 884736,
+      "gate_patterns": 48130,
+      "up_patterns": 21878
+    },
+    {
+      "tile_m": 152,
+      "intermediate": 4096,
+      "base_swizzle": 6,
+      "bf16_outputs": 7471104,
+      "guard_words": 4842048,
+      "packed_weight_scale_addresses": 884736,
+      "gate_patterns": 65536,
+      "up_patterns": 65536
+    },
+    {
+      "tile_m": 176,
+      "intermediate": 4096,
+      "base_swizzle": 3,
+      "bf16_outputs": 8650752,
+      "guard_words": 5431872,
+      "packed_weight_scale_addresses": 884736,
+      "gate_patterns": 65536,
+      "up_patterns": 65536
+    },
+    {
+      "tile_m": 176,
+      "intermediate": 128,
+      "base_swizzle": 7,
+      "bf16_outputs": 270336,
+      "guard_words": 170304,
+      "packed_weight_scale_addresses": 884736,
+      "gate_patterns": 22528,
+      "up_patterns": 22528
+    }
+  ],
+  "cuda": false,
+  "native_math": "CPU expf and software RN BF16; both oracle and source use same primitive",
+  "scope": "Actual packed map builder, shared BF16 epilogue read/store, cohort-relative output/IDs, independently assembled shared bands."
+}

@@ -1,0 +1,74 @@
+{
+  "row": 16,
+  "column": 0,
+  "full_shape": [
+    16384,
+    8192
+  ],
+  "half_shape": [
+    16384,
+    4096
+  ],
+  "TP": 8,
+  "assumed_channel_chunk_elements": 65536,
+  "assumed_ring": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "rank_inputs": [
+    16777216,
+    1,
+    -16777216,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "cases": [
+    {
+      "width": 8192,
+      "flat_offset": 131072,
+      "ring_order": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        0,
+        1,
+        2
+      ],
+      "result": {
+        "BF16_per_hop": 0.0,
+        "FP32_per_hop": 0.0
+      }
+    },
+    {
+      "width": 4096,
+      "flat_offset": 65536,
+      "ring_order": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        0,
+        1
+      ],
+      "result": {
+        "BF16_per_hop": 1.0,
+        "FP32_per_hop": 1.0
+      }
+    }
+  ],
+  "source": "https://github.com/NVIDIA/nccl/blob/v2.30.7-1/src/device/all_reduce.h#L11-L57",
+  "scope": "Source-level counterexample to size- or ring-family-only guarantees. One full interior loop, same ring/channel 0 and fixed per-channel chunk width. No claim that NCCL chooses this launch geometry on the judge."
+}

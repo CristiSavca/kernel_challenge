@@ -1,0 +1,11 @@
+# V266 combines compact prompt routing and fused decode staging
+
+V266 applies V258 and V261 to V256's window-backed draft serving implementation. On long prompts the expert owner builds a stable compact list of its own routes. At small target batches the same Humming adapter plans routes and stages the W13 input in a single GPU launch. Both use the original expert IDs and weights. The integration has no new launch flag or additional persistent state. [Integrated delta](delta.diff) · [Prompt route implementation](../v258_compact_prompt_route_plan/README.md) · [Decode staging implementation](../v261_fused_decode_route_staging/README.md)
+
+For 16,384 prompt tokens on TP8, the compact plan saves 1,439,612 bytes per rank on average in explicitly allocated routing arrays. Up to 256 decode route slots, the fused method removes one GPU launch per layer at the checkpoint's hidden width. The original model sends larger ordinary verification batches down the existing path. These operation counts do not establish end-to-end throughput. [Prompt allocation model](../v258_compact_prompt_route_plan/work.json) · [Decode exposure and overhead](../v261_fused_decode_route_staging/work.json)
+
+Both component orders and their reverses reproduce the same tree. On the one Python adapter they both edit, each merged definition matches its owning component. The public CLI produced a 409,238-byte patch, 362 bytes below the limit. The eight launch flags match V256. [Official patch](patch.diff) · [Rule and composition checks](validation.json)
+
+The integrated long-prompt model entry matched V256 across 126 Gloo rank cases at TP2/4/8, with host implementations of device packing and expert math. The independent small-decode entry matched across 180 paired calls, including 48 fallback pairs and 41,785,824 staged values per version. It exercised int32 and int64 IDs, empty ranks, repeated mappings and noncontiguous rejections. [Distributed prompt comparison](prompt_gloo.json) · [Decode entry](decode_entry.json) · [Python name check](global_names.json)
+
+V266 is an unsubmitted control for the combined MoE changes. It retains V256's private draft KV optimization. H200 memory, output agreement, time to first token and throughput are unmeasured.

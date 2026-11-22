@@ -1,0 +1,125 @@
+{
+  "parent_sha256": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+  "torch": "2.5.1",
+  "native_method_anchors": {
+    "mem_cache/unified_cache/components/swa.py:454": "_recover_from_incoming",
+    "mem_cache/rust_tree_core/adapter.py:156": "_cache_action_from_tagged",
+    "mem_cache/unified_cache/components/swa.py:1557": "apply_component_action",
+    "speculative/dflash_worker_v2.py:1951": "_draft_write_ids",
+    "mem_cache/kv_index_translator.py:122": "__init__",
+    "mem_cache/kv_index_translator.py:226": "space",
+    "mem_cache/kv_index_translator.py:473": "read_source",
+    "mem_cache/kv_index_translator.py:469": "_reads_translated",
+    "mem_cache/kv_index_translator.py:528": "_passthrough_table",
+    "mem_cache/kv_index_translator.py:232": "window_kv_kind",
+    "mem_cache/kv_loc_plan.py:124": "__init__",
+    "mem_cache/kv_loc_plan.py:191": "write_ids",
+    "mem_cache/kv_loc_plan.py:211": "_window_in",
+    "mem_cache/kv_loc_plan.py:228": "_cols",
+    "mem_cache/unified_cache/components/swa.py:239": "_translate_full_to_swa",
+    "mem_cache/unified_cache/components/swa.py:260": "_page_pairs",
+    "mem_cache/unified_cache/components/swa.py:288": "_transfer_swa_pages",
+    "mem_cache/unified_cache/components/swa.py:317": "_set_swa",
+    "mem_cache/layout/fused_draft.py:322": "prerequisite"
+  },
+  "cases": [
+    {
+      "rows": 1,
+      "allocator": "static",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 80
+    },
+    {
+      "rows": 1,
+      "allocator": "unified",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 80
+    },
+    {
+      "rows": 8,
+      "allocator": "static",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 640
+    },
+    {
+      "rows": 8,
+      "allocator": "unified",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 640
+    },
+    {
+      "rows": 65,
+      "allocator": "static",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 5200
+    },
+    {
+      "rows": 65,
+      "allocator": "unified",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 5200
+    },
+    {
+      "rows": 1024,
+      "allocator": "static",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 81920
+    },
+    {
+      "rows": 1024,
+      "allocator": "unified",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 81920
+    },
+    {
+      "rows": 2048,
+      "allocator": "static",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 163840
+    },
+    {
+      "rows": 2048,
+      "allocator": "unified",
+      "target_swa_correct": true,
+      "dense_draft_correct": true,
+      "skipped_draft_poison_words": 163840
+    }
+  ],
+  "total_poison_words": 503360,
+  "rust_core": {
+    "source": "rust/sglang-radix-tree/src/components/swa.rs",
+    "lines": [
+      468,
+      502
+    ],
+    "sha256": "5f209168ae589c449ea47484112823095a93773e262f1fa8b9f324238bd4e52f",
+    "executed": "Native Python component emits the action; same tagged tuple decoded with native Rust adapter and consumed by native Python allocator handler. Rust producer source checked, not run."
+  },
+  "archive": {
+    "log": "serving_v0523/runs/04b01f958aa5487c.log",
+    "log_sha256": "420bcc93feec5db58eed7a366e4b7f60a63e4c4c1d05582dc9fded7f3377a379",
+    "full_slots": 3420199,
+    "target_swa_slots": 855049,
+    "draft_bf16_slots": 3420199,
+    "reported_draft_gb": 8.16,
+    "logged_core": "RustUnifiedTreeCore",
+    "configured_v41_draft_backend": "fa4",
+    "bf16_draft_bytes_per_row": 2560,
+    "hypothetical_swa_capacity_difference_gib": 6.116
+  },
+  "alternative": {
+    "fa4_window_host_decline": "the draft's attention backend ['fa4'] carries no per-step sliding-window rail (only ['triton'] does)",
+    "triton_window_host_prerequisite": null,
+    "note": "A standalone SWA sidecar exists for a genuinely SWA-routed draft pool. The deployed full-addressed private draft's attention window does not establish that storage contract."
+  },
+  "scope": "Counterexample for omitting old private KV on a fresh middle chunk based solely on target SWA tombstones. Existing dense V241 preserves those bytes. Fixture uses five BF16 K/V layers of reduced feature width. No measurement or submission."
+}

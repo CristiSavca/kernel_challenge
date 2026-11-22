@@ -1,0 +1,43 @@
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..970c503 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -554,2 +554,3 @@ POSITIONAL_FIELD_ORDER = (
+     "return_aux_hidden_state_layer_ids",
++    "prefill_decode_interval_on_completion",
+ )
+diff --git a/python/sglang/srt/arg_groups/fields/schedule.py b/python/sglang/srt/arg_groups/fields/schedule.py
+index 66cac64..d71dd05 100644
+--- a/python/sglang/srt/arg_groups/fields/schedule.py
++++ b/python/sglang/srt/arg_groups/fields/schedule.py
+@@ -66,2 +66,8 @@ class Schedule(msgspec.Struct):
+     ] = 0
++    prefill_decode_interval_on_completion: A[
++        bool,
++        "With --prefill-decode-interval, run the decode interval after a prompt "
++        "finishes its prefill. Standalone intermediate chunks keep admitting "
++        "prompt work. Applies to colocated single-stage serving without DP attention.",
++    ] = False
+     enable_dynamic_chunking: A[
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index a50c085..3051a0e 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -1353,2 +1353,8 @@ class Scheduler(
+         self.prefill_decode_interval = get_schedule().prefill_decode_interval or 0
++        self.prefill_decode_interval_on_completion = (
++            get_schedule().prefill_decode_interval_on_completion
++            and get_parallel().pp_size == 1
++            and get_disagg().disaggregation_mode == DisaggregationMode.NULL.value
++            and not self.require_mlp_sync
++        )
+         self._prefill_decode_interval_remaining = 0
+@@ -1425,2 +1431,8 @@ class Scheduler(
+         if is_extend:
++            if (
++                self.prefill_decode_interval_on_completion
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.contains_last_prefill_chunk
++            ):
++                return
+             self._prefill_decode_interval_remaining = self.prefill_decode_interval

@@ -1,0 +1,28 @@
+{
+  "patch_sha256": "68ae741c12ba65c54580ab0d855f60a16ad4bbb35ad99be4e6688f1e87e10494",
+  "source_sha256": {
+    "python/sglang/kernels/ops/attention/flash_attn/cute/interface.py": "a05f987c6503f0431048b3f392838b2be00b4815959d5a9c02bebc670df2060b",
+    "python/sglang/kernels/ops/attention/flash_attn/cute/block_info.py": "607c304d0cd123595188537a9815d69282d3a7419cb457768d8c31993f25b359",
+    "python/sglang/kernels/ops/attention/flash_attn/cute/paged_kv.py": "9ee20882fb8d59003d8e75482231d00bb83c2326aea2c20496cca3d3f1fe16bd",
+    "python/sglang/kernels/ops/attention/flash_attention_v4.py": "ee34fddd7e9080268ea1e3ee8f11f32f0674b5d7eda3ff15c6f188de70dc6c01",
+    "python/sglang/srt/speculative/draft_worker_common.py": "9ad6a13fcbce3079b794ea6f47df9030d92d6a8a1bb2c33e0ed97d2d2ce48d49",
+    "python/sglang/srt/layers/attention/flashattention_backend.py": "6a8f57a1a41e8e5505adc6593498d7376cf637b6efcab5662eb5d80d0461b92c",
+    "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py": "3cd9da4d67263b2cbb1541a80768988b82428768a9e91cec942f14e3e2880e4a",
+    "python/sglang/srt/models/dflash.py": "1c8307ba7f63fd41f53435fbdabdad8c9e9a04847bef4959f1f8fc16ea6db0ae",
+    "python/sglang/kernels/ops/attention/metadata.py": "9ff1d96e06a69756b6e7b02330a54f03880cc2cacf4939805bc5625f90f8cee6"
+  },
+  "counts": {
+    "runtime_fallbacks": 5,
+    "query_masks": 98064,
+    "ordered_split_intervals": 110322,
+    "other_width_multi_m_split_intervals": 13065,
+    "physical_owner_rows": 16870,
+    "sm90_tail_page_lanes": 1536,
+    "fa4_wrapper_calls": 40,
+    "attention_bf16_outputs": 5760
+  },
+  "programs": 216,
+  "fresh_mapping_per_pass": 4,
+  "prefix_max": 131064,
+  "scope": "Native mask, tile, split arithmetic, fused Triton body and FA4 wrapper executed on CPU. A CPU BF16 output reference replaces FA4 device arithmetic. Leading zero-mapped slots and empty/short prefixes are compared to native address semantics. No physical H200 run."
+}

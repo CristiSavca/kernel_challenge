@@ -1,0 +1,58 @@
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+index d0b4ba7..835cc5a 100644
+--- a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
++++ b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+@@ -25,2 +25,19 @@ def wave_capacity(tokens, topk, experts, hidden, intermediate):
+ 
++def wave_workspace_elements(slots, topk, experts, global_experts, hidden, intermediate, rows):
++    from math import isqrt
++
++    # Size the common case from ownership. The planner still routes every slot,
++    # even if all experts selected by every token are on one rank.
++    local_share = (slots * experts + global_experts - 1) // global_experts
++    slack = 4 * (1 + isqrt(local_share - 1))
++    compact_rows = min(slots, local_share + slack + topk - 1)
++    # If the fused tensor-map binding declines, the same storage must also
++    # fit an ordinary wave. Keep the existing upper bound of 16 waves.
++    ordinary_width = max(hidden, intermediate) + max(hidden, 2 * intermediate)
++    minimum_rows = min(slots, (slots + 15) // 16 + topk - 1)
++    return min(rows * ordinary_width, max(
++        compact_rows * (hidden + intermediate), minimum_rows * ordinary_width,
++    ))
++
++
+ def plan_waves(local_ids, experts, capacity):
+@@ -102,14 +119,22 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+     intermediate = layer.intermediate_size_per_partition
+-    rows = min(tokens * topk, capacity + topk - 1)
++    slots = tokens * topk
++    rows = min(slots, capacity + topk - 1)
+     stage_width = max(hidden, intermediate)
+     output_width = max(hidden, 2 * intermediate)
+-    # Use the unfused wave's existing byte budget for both layouts.
+-    elements = rows * (stage_width + output_width)
++    ordinary_width = stage_width + output_width
++    elements = rows * ordinary_width
++    fused_available = getattr(layer, "humming_prompt_gate_up", None) is not None
++    global_experts = getattr(layer, "global_num_experts", experts)
++    conditional = getattr(layer, "humming_conditional_waves", False)
++    if conditional and fused_available and 0 < experts < global_experts:
++        elements = wave_workspace_elements(slots, topk, experts, global_experts, hidden, intermediate, rows)
++        rows = elements // ordinary_width
++        capacity = min(capacity, rows if rows == slots else rows - topk + 1)
+     workspace = hidden_states.new_empty(elements)
+     project = None
+-    if getattr(layer, "humming_prompt_gate_up", None) is not None:
++    if fused_available:
+         from sglang.srt.layers.muse_spark.decode_gate_up import bind_prompt_wave
+ 
+-        compact_rows = min(tokens * topk, elements // (hidden + intermediate))
+-        compact_capacity = compact_rows if compact_rows == tokens * topk else compact_rows - topk + 1
++        compact_rows = min(slots, elements // (hidden + intermediate))
++        compact_capacity = compact_rows if compact_rows == slots else compact_rows - topk + 1
+         if compact_capacity >= capacity:
+@@ -157,3 +182,3 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+     waves = token_bounds.numel() - 1
+-    if waves < 4 or not getattr(layer, "humming_conditional_waves", False):
++    if waves < 4 or not conditional:
+         for wave in range(waves):

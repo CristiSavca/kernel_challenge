@@ -1,0 +1,104 @@
+{
+  "checked_at_utc": "2026-11-18T16:39:12.308466+00:00",
+  "scored_incumbent": {
+    "candidate": "V64",
+    "score": 1.4119,
+    "receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+  },
+  "V88": {
+    "id": "30bb36feb528416f",
+    "result": "crashed",
+    "users": 4,
+    "failure": "NameError: name 'is_cuda' is not defined in candidate_topk during draft graph warmup",
+    "receipt": "serving_v0523/runs/30bb36feb528416f.json",
+    "speed": null
+  },
+  "V93": {
+    "id": "75557c21595347de",
+    "status": "queued",
+    "is_cuda_import_present": true
+  },
+  "Nov20": {
+    "V129": {
+      "users": 1,
+      "receipt": "serving_v0523/runs/nov20_v129_runner.launch.json"
+    },
+    "V132": {
+      "users": 32,
+      "conditional_receipt": "serving_v0523/runs/nov20_v132_runner.launch.json"
+    },
+    "private_checks_reserved": 1
+  },
+  "experiments": {
+    "V88a": {
+      "parent": "V88",
+      "finding": "One-file import repair on V88. Retains the five original flags. No H200 measurement.",
+      "patch_sha256": "7702a9b55582c1a7e0c884cddc7bfce6ec5142c65f5d0e30d7acdbd29f2743b2",
+      "bytes": 52498,
+      "receipt": "serving_v0523/candidates/v88a_draft_head_capture_fix/validation.json",
+      "new_h200_speedup": null
+    },
+    "V135": {
+      "parent": "V64",
+      "finding": "Compact large-prefill local expert work and per-expert output scaling on the parent packed Humming weights.",
+      "patch_sha256": "5754c6ea8fe15f6d647682f5cda48db12254999f8f5eb79dd30f094458f8d375",
+      "bytes": 54008,
+      "receipt": "serving_v0523/candidates/v135_compact_scaled_prefill/validation.json",
+      "new_h200_speedup": null
+    },
+    "V136": {
+      "parent": "V64",
+      "finding": "Fuse target verify Q/K normalization, RoPE and FP8 cache storage. Stable on-device bounds follow the native VMM capacity on replay. 24 AOT Hopper specializations, 2,402,816 interpreter bytes and 62 native Radix/FA3 operand cases. No physical-H200 result.",
+      "patch_sha256": "31049ac77578b164c17099385f57186be8b82f812a98880785ea87889aa30666",
+      "bytes": 59910,
+      "receipt": "serving_v0523/candidates/v136_fused_verify_qk_rope_cache/validation.json",
+      "new_h200_speedup": null
+    },
+    "V137": {
+      "parent": "V95",
+      "finding": "Pack unequal full-attention prefix KV lengths with a private 256-row zero guard per request under a total 32 MiB cap. A synthetic pair used 20.23 MiB versus 36.21 MiB rectangular; production frequency unmeasured.",
+      "patch_sha256": "59fada41eb92456666b270904c5ee36fde4cf4e6b65cc68a94dfcba4e5fa0c1d",
+      "bytes": 58147,
+      "receipt": "serving_v0523/candidates/v137_ragged_full_fp8_prefill/validation.json",
+      "new_h200_speedup": null
+    },
+    "V138": {
+      "parent": "V64",
+      "finding": "Project each TP rank\u2019s token rows while a second CUDA stream exchanges shards around the ring. Supports BF16 QKV during sequence-parallel prompt layers. Physical NCCL overlap and throughput unmeasured.",
+      "patch_sha256": "b8b05d5a04688209d6f5a7746ea8c06f39fe8452eca626103e0f4f4bbce4f52a",
+      "bytes": 49729,
+      "receipt": "serving_v0523/candidates/v138_pipelined_qkv_ring/validation.json",
+      "new_h200_speedup": null
+    },
+    "V139": {
+      "parent": "V64",
+      "finding": "Integrate V129 sparse expert projections, V135 compact prefill scaling and V136 fused verify Q/K plus cache stores. Four V64 flags; official export, strict full/delta apply and reverse pass. No H200 performance result.",
+      "patch_sha256": "c4428099805f991512ff14783368efdada1985b6a4b15c039a17aa54ac4782ed",
+      "bytes": 84277,
+      "receipt": "serving_v0523/candidates/v139_integrated_experts_verify/validation.json",
+      "new_h200_speedup": null,
+      "regression_receipt": "serving_v0523/candidates/v139_integrated_experts_verify/regression.json"
+    },
+    "V134": {
+      "source": "V64",
+      "finding": "Native write-back HiCache flag control defers host transfers until eviction; steady-state transfer and later-turn latency tradeoff unmeasured.",
+      "receipt": "serving_v0523/runs/v134_hicache_control.json",
+      "new_h200_speedup": null
+    }
+  },
+  "Nov19": {
+    "current_eligible": [
+      "V120b/32",
+      "V102/16 while V93 pending",
+      "V139/4"
+    ],
+    "receipt": "serving_v0523/runs/nov19_integrated_verify_runner.launch.json",
+    "arm_time": "2026-11-18T16:38:22.291768+00:00",
+    "pid": 9409,
+    "sleep_prevention_pid": 9413,
+    "shared_lock_verified": true,
+    "tests": 106,
+    "submitted_on_arm": false,
+    "third_slot": "V139 replaces the prior V126/1 or tree alternatives. V126 remains an offline reserve."
+  }
+}

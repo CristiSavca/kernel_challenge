@@ -1,0 +1,105 @@
+{
+  "pid": 3084,
+  "caffeinate_pid": 3087,
+  "armed_at_utc": "2026-11-18T18:22:56.718556+00:00",
+  "exclusive_lock": "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/runs/nov20_v141_runner.lock",
+  "arbitration_lock": "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/runs/nov20_v132_v141_arbitration.lock",
+  "plan": {
+    "mode": "check",
+    "candidate": "v141",
+    "sha256": "dacec92848e669b47532fb53738c869f89efdfdf538a5a12415a20b98c3532a4",
+    "flags": {
+      "--swa-full-tokens-ratio": "0.25",
+      "--moe-runner-backend": "humming",
+      "--speculative-moe-runner-backend": "marlin",
+      "--enable-layernorm-sp": ""
+    },
+    "users": 32,
+    "comparison_job": "abd217baf0ed49fd",
+    "comparison_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+    "v64_32user_tokens_s_gpu": 20547.4,
+    "start_utc": "2026-11-20T00:03:00+00:00",
+    "end_utc_exclusive": "2026-11-20T07:59:00+00:00",
+    "resets_at": "2026-11-21T00:00:00Z",
+    "maximum_private_checks": 1,
+    "required_quota": {
+      "per_day": 3,
+      "used": 2,
+      "left": 1
+    },
+    "preceding_reservations": [
+      {
+        "candidate": "v129",
+        "sha256": "f20be13ffbc4d3ae2da7d473b3f8ea4b5ccd19fb42ea55a46ba954efced751e2",
+        "users": 1,
+        "receipt": "v129_nov20_check1.submit.txt"
+      },
+      {
+        "candidate": "v132",
+        "sha256": "45c62ddfc33bb0060b836a235367f6bbb6dba08fd4c98eddcaa6c880fcbbc4d0",
+        "users": 32,
+        "receipt": "v132_nov20_check32.submit.txt"
+      }
+    ],
+    "parent": {
+      "candidate": "v139",
+      "sha256": "c4428099805f991512ff14783368efdada1985b6a4b15c039a17aa54ac4782ed",
+      "users": 4,
+      "states": [
+        "queued",
+        "running",
+        "passed"
+      ],
+      "receipt": "v139_nov19_check4.submit.txt"
+    },
+    "alternate_second_slot": {
+      "start_utc": "2026-11-20T00:13:00+00:00",
+      "quota": {
+        "per_day": 3,
+        "used": 1,
+        "left": 2
+      },
+      "reserve_checks": 1,
+      "requires_unattempted": "v132_nov20_check32",
+      "prefer_V132_if_comparator_passed": true
+    },
+    "arbitration_lock": "nov20_v132_v141_arbitration.lock",
+    "receipt": "v141_nov20_check32.submit.txt"
+  },
+  "source_sha256": {
+    "nov20_check_slots.py": "df08468e3660489e6dafd12d3e48260d4494c4be42a0c9e98f028309c3c0c6ff",
+    "submit_nov17_integrated_checks.py": "b04830f38a89cf0bb00f65a44bba504e8f9dad4205d4fefe02a80c616ce4028f",
+    "submit_nov18_decode_checks.py": "867e850280d53c9665cde4ae3698f12f0931fd8e82953f1913d5122e95929117",
+    "submit_nov19_decode_checks.py": "4cc3c2ce9a362a15e73142c8c397ca7d001e44728566305d5afa23e2f026e426",
+    "submit_nov19_integrated_verify.py": "715b090f29fb7cdd01f32e6410f4763e25e6b90c43391fee3bf4dc69824006c8",
+    "submit_nov20_v129_check.py": "fd380e447581d4c97e2e0a14d0f592722ef179d76049c2c123353c54698ce0e3",
+    "submit_nov20_v132_check.py": "501b3d5283e36b9ac9def8ad2e5cc71f4210dd1721dc9604e65388c743e1695c",
+    "submit_nov20_v141_check.py": "56c35603dd8be3acb4a533af3f26a6c8d73dd3de9f12d7f4301ddddeec9b40a1",
+    "submit_nov20_v154c_check.py": "9a128b25e76f6c9820cad77874fce048181d056dc5fcfda0333973a66e8807d2",
+    "test_nov20_pending_schema.py": "28080777a72c32fca76b4dad9c6e6ed61a11a7a3d952c1ce3a0b7423f951e9ef",
+    "test_nov20_slot_arbitration.py": "6c0de3ffabe4ce459f53bcd1a65583c2b2ad5dece4a1ad885f66debb109a1a4d",
+    "test_nov20_v132_check.py": "bb4dde09b48999cf837b145aa487996e713f26402dbb68be49e493b59cef1cdd",
+    "test_nov20_v141_check.py": "5a14cfd65fb2c01c9e835159acc8e4db7e746a89d03f1c8b9252893d35128cf4",
+    "test_nov20_v154c_check.py": "961ac9442017ec65d6394aeb30089bac19e1bc786ae809169091c56f8dcab34b"
+  },
+  "previous_activation": {
+    "pid": 74393,
+    "caffeinate_pid": 74403,
+    "manifest": "serving_v0523/runs/history/nov20_v141_runner_pre_pending_schema_cd0739dc80da.json",
+    "manifest_sha256": "cd0739dc80da5ed39792eab1742c28a2f32398fd37cceb1f7434ffa3979fe986"
+  },
+  "submitted_on_arm": false,
+  "schema_regressions": "nov20_pending_schema.cpu.json",
+  "unaffected_waiters": {
+    "nov19_integrated_verify_runner": {
+      "pid": 75333,
+      "caffeinate_pid": 75340,
+      "manifest_sha256": "e37d99d09bf3381f458409f2377c676ebbb3e3d9bcf84320258dacc09e3979d3"
+    },
+    "nov20_v129_runner": {
+      "pid": 47821,
+      "caffeinate_pid": 47831,
+      "manifest_sha256": "cfd88cff697afb827d2436812ad07761d82075653117bf3f84ba8da9b8c8e94f"
+    }
+  }
+}

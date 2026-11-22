@@ -1,0 +1,90 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index c3995cd..b84fd16 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -80,7 +80,10 @@ def _partition_attention(
+     current = partition * partition_width
+     partition_end = tl.minimum(current + partition_width, total)
+     request = tl.sum(((ends <= current) & (requests < B)).to(tl.int32))
+-    packed_row = tl.arange(0, TILE_M)
++    # All query bands see the same ordered key partition. Each owns different
++    # query/head pairs and therefore independent softmax states.
++    packed_row = tl.program_id(2) * TILE_M + tl.arange(0, TILE_M)
++    rows_per_slot: tl.constexpr = tl.cdiv(MAX_Q * GQA, TILE_M) * TILE_M
+     dims = tl.arange(0, D)
+     q_token = packed_row // GQA
+     q_head = kv_head * GQA + packed_row % GQA
+@@ -167,7 +170,7 @@ def _partition_attention(
+             # Intersections of two sorted interval partitions fit in P+B-1
+             # slots. Along the key stream, partition+request strictly increases
+             # at each distinct nonempty intersection.
+-            slot = ((partition + request) * H_KV + kv_head) * TILE_M + packed_row
++            slot = ((partition + request) * H_KV + kv_head) * rows_per_slot + packed_row
+             row_lse = row_max + tl.log2(tl.where(row_sum > 0, row_sum, 1.0))
+             tl.store(LSE + slot, row_lse)
+             tl.store(
+@@ -277,7 +280,7 @@ def paged_verify_attention(
+         or not 1 <= batch <= 64
+         or not 1 < max_q <= 16
+         or q.shape != (batch * max_q, kv_heads * groups, head_dim)
+-        or not 16 <= max_q * groups <= 64
++        or not 16 <= max_q * groups <= 128
+         or page_table.stride(1) != 1
+         or not cache_seqlens.is_contiguous()
+         or not cu_seqlens_q.is_contiguous()
+@@ -303,11 +306,13 @@ def paged_verify_attention(
+     ):
+         return None
+ 
+-    tile_m = triton.next_power_of_2(max_q * groups)
++    tile_m = min(64, triton.next_power_of_2(max_q * groups))
++    query_bands = triton.cdiv(max_q * groups, tile_m)
++    rows_per_slot = query_bands * tile_m
+     tile_n = 64 if window_left >= 0 else 128
+     partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
+     partial = torch.empty(
+-        (partitions + batch - 1, kv_heads, tile_m, head_dim),
++        (partitions + batch - 1, kv_heads, rows_per_slot, head_dim),
+         device=q.device,
+         dtype=torch.float32,
+     )
+@@ -317,7 +322,7 @@ def paged_verify_attention(
+     ks_strides = k_descale.stride() if k_descale is not None else (0, 0)
+     vs_strides = v_descale.stride() if v_descale is not None else (0, 0)
+     block_batch = triton.next_power_of_2(batch)
+-    _partition_attention[(partitions, kv_heads)](
++    _partition_attention[(partitions, kv_heads, query_bands)](
+         q,
+         k,
+         v,
+@@ -360,7 +365,7 @@ def paged_verify_attention(
+         groups,
+         head_dim,
+         window_left,
+-        tile_m,
++        rows_per_slot,
+         tile_n,
+         partitions,
+         block_batch,
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 7505e0d..ebf9278 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -409,7 +409,7 @@ class FlashAttentionBackend(AttentionBackend):
+             and self.kv_cache_dtype_str != "auto"
+             and self.page_size == 1
+             and self.topk == 1
+-            and 2 <= self.speculative_num_draft_tokens <= 8
++            and 2 <= self.speculative_num_draft_tokens <= 16
+             and 1 <= (model_runner.max_running_requests or 0) <= 64
+             and max(get_exec().graph.cuda_graph_config.decode.bs, default=0) <= 64
+             and not self._disable_scheduler_metadata_precompute
+@@ -432,7 +432,7 @@ class FlashAttentionBackend(AttentionBackend):
+         return bool(layers) and all(
+             layer.head_dim == layer.v_head_dim == 64
+             and layer.tp_q_head_num % layer.tp_k_head_num == 0
+-            and 16 <= width * (layer.tp_q_head_num // layer.tp_k_head_num) <= 64
++            and 16 <= width * (layer.tp_q_head_num // layer.tp_k_head_num) <= 128
+             and layer.attn_type is AttentionType.DECODER
+             and not layer.is_cross_attention
+             and layer.logit_cap == 0.0

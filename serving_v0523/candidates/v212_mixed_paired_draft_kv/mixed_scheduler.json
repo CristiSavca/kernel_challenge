@@ -1,0 +1,145 @@
+{
+  "torch": "2.5.1",
+  "actual_gloo": true,
+  "physical_H200": false,
+  "parent_sha256": "e8a04e873ea3dafcc84dd97c49de239b42fe389cd63dbeab4f444279c1f7d082",
+  "candidate_sha256": "29bde7114a37475fd512f0d2d01b5c43688da3cc8e07e938988dfb9cb5bbc2d6",
+  "tested_sources": {
+    "V211": {
+      "models/muse_spark.py": "338a39878b6bbefadbf3d432e3cfa04fd4fb5b1193b0be21f20dbf5d4d7528c7",
+      "speculative/dflash_mixed_forward.py": "a5e087bcf3a6d9eb51c59050c9cdf697811fba2dc097ebf3677873b49eb5c322",
+      "speculative/dflash_worker_v2.py": "c4e62c2d249824d59a267282e99622fb0b5c63de88f8b638d0a6ecf9a7137260"
+    },
+    "V212": {
+      "models/muse_spark.py": "10a8cd5dd7cd4d8826ff7715e8166b9d9238740404c9e8d24dd0db22b2427302",
+      "speculative/dflash_mixed_forward.py": "4b92520b0704b7c6b0410fe99a76a4e76ac3abecbcac4b127c3209572654863f",
+      "speculative/dflash_worker_v2.py": "9728f9cb7f25bc6043e36ea5511cac16f3e41f785475634d9a25728f172ae62d"
+    }
+  },
+  "worlds": {
+    "4": {
+      "scheduler_calls": 78,
+      "v211_v212_pairs": 39,
+      "paired_reroutes": {
+        "paired": 3,
+        "partial_tail": 3,
+        "long_unaligned": 3,
+        "wide_bucket_padding": 2
+      },
+      "cache_words_checked_per_rank": 2364480,
+      "checked_rejected_slots": 546,
+      "accepted_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "tail_partial_write_recoveries": 6,
+      "after_exchange_workspace_declines": 3,
+      "examples": [
+        {
+          "version": "V211",
+          "backend": "FULL",
+          "case": "paired",
+          "projected": false,
+          "context": true,
+          "head_cols": 11,
+          "committed": 5,
+          "specific_commits": [
+            1,
+            4
+          ],
+          "failure_after_layer_recovered": false,
+          "rejected": 11,
+          "wire_bytes": 0,
+          "cache_words": 32760,
+          "rows": 544
+        },
+        {
+          "version": "V212",
+          "backend": "FULL",
+          "case": "paired",
+          "projected": true,
+          "context": true,
+          "head_cols": 11,
+          "committed": 5,
+          "specific_commits": [
+            1,
+            4
+          ],
+          "failure_after_layer_recovered": false,
+          "rejected": 11,
+          "wire_bytes": 30848,
+          "cache_words": 32760,
+          "rows": 544
+        }
+      ]
+    },
+    "8": {
+      "scheduler_calls": 78,
+      "v211_v212_pairs": 39,
+      "paired_reroutes": {
+        "paired": 3,
+        "partial_tail": 3,
+        "long_unaligned": 3,
+        "wide_bucket_padding": 2
+      },
+      "cache_words_checked_per_rank": 4576320,
+      "checked_rejected_slots": 546,
+      "accepted_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "tail_partial_write_recoveries": 6,
+      "after_exchange_workspace_declines": 3,
+      "examples": [
+        {
+          "version": "V211",
+          "backend": "FULL",
+          "case": "paired",
+          "projected": false,
+          "context": true,
+          "head_cols": 6,
+          "committed": 5,
+          "specific_commits": [
+            1,
+            4
+          ],
+          "failure_after_layer_recovered": false,
+          "rejected": 11,
+          "wire_bytes": 0,
+          "cache_words": 63480,
+          "rows": 1056
+        },
+        {
+          "version": "V212",
+          "backend": "FULL",
+          "case": "paired",
+          "projected": true,
+          "context": true,
+          "head_cols": 6,
+          "committed": 5,
+          "specific_commits": [
+            1,
+            4
+          ],
+          "failure_after_layer_recovered": false,
+          "rejected": 11,
+          "wire_bytes": 56256,
+          "cache_words": 63480,
+          "rows": 1056
+        }
+      ]
+    }
+  }
+}

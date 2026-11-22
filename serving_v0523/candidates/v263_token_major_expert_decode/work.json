@@ -1,0 +1,49 @@
+{
+  "input_sha256": {
+    "experiments/modal_serving/20261112T191039Z/result.json": "5d49c6c7a47c8597057d7a75cb9c18c46ea85c673cae92afb5c740aad8bbf555",
+    "serving_v0523/candidates/v191_decode_gate_up_epilogue/config.json": "ab7d8b9dc91d2e54f558d087f02ccc18858a5ab610c5392d0a629c7a509e5d41",
+    "serving_v0523/candidates/v261_fused_decode_route_staging/work.json": "de70fb3f7ab721c4ef92408c24b6a7326d1a69f0b9fe1179c51a15f401289f03",
+    "serving_v0523/runs/abd217baf0ed49fd.json": "aa6b0fecfc6180f7d34097432345352006182185f8e5c8a67091cc433ae9a479",
+    "serving_v0523/candidates/v262_decode_phase_budget/check.json": "cbdc77d744ea9fcde14cc1e463180eb88ba86689f788b6fbe1a8ac9cfc3833cd"
+  },
+  "source": "c2c29a0e560ce5ef257819222b94bf4c162a0806d503e5408701e1bdad134099",
+  "kernel_shape": [
+    8,
+    256,
+    128
+  ],
+  "eligible_native_DFlash_request_counts": [
+    1
+  ],
+  "archived_scheduler_snapshots": {
+    "one_request": 69,
+    "all": 147
+  },
+  "observed_one_rank": {
+    "rows": 8,
+    "routed_slots": 64,
+    "live": 10,
+    "per_layer_removed_staging_bytes": 163840,
+    "across_62_layers_bytes": 10158080,
+    "per_rank_removed_staging_CTAs_per_62_layers": 3968,
+    "before_after_plan_CTAs": [
+      65,
+      1
+    ],
+    "before_after_staging_launches": [
+      1,
+      1
+    ],
+    "original_inputs_bytes": 65536,
+    "routed_slot_arena_bytes": 524288,
+    "retained_W2_output_arena": true,
+    "isolated_native_Marlin_us": 129.79
+  },
+  "matrix_issue": "Unchanged M8,N256,K128 CTA count and HGMMA count per existing expert job. Eight original rows replace eight staged tile rows. The direct epilogue selects the routed token. All two-way K partials for eight rows are reduced in direct mode.",
+  "wall_time_scale": {
+    "service_period_proxy_ms": 19.68503937007874,
+    "at_4_8_TB_s_staging_payload_us_per_layer": 0.034133333333333335,
+    "saving_per_layer_us_needed_for_5pct_period_throughput": 15.119077857203349
+  },
+  "limitations": "The H200 histogram comes from a separate one-rank Marlin control. Unique and L2-resident bytes, masked reduction savings forgone, TMA bandwidth, and graph execution time are not measured."
+}

@@ -1,0 +1,60 @@
+{
+  "profile_evidence": "experiments/candidates/muse_attention_decode/profiles/87a9bddc1b013ff3b31a56aacaf53cb0bea500153b0304a9d4d3f90f6eb87f0c.c21d391dbf604bb5.json",
+  "serving_evidence": "serving_v0523/runs/04b01f958aa5487c.json",
+  "standalone_raw": [
+    {
+      "load": "verify 1",
+      "base_raw_us": 40.09599983692169,
+      "raw_us": 18.079999834299088,
+      "replay_overhead_us": 4.064000211656094,
+      "baseline_net_us": 36.0319996252656,
+      "native_net_us": 14.015999622642994,
+      "paired_ratio": 2.5648774975997477,
+      "profile": "total                                                             13.6 \u00b5s",
+      "empirical_floor_us": 4.282026666666667,
+      "weight": 16
+    },
+    {
+      "load": "verify 16",
+      "base_raw_us": 208.92800390720367,
+      "raw_us": 105.15199974179268,
+      "replay_overhead_us": 3.711999859660864,
+      "baseline_net_us": 205.2160040475428,
+      "native_net_us": 101.43999988213181,
+      "paired_ratio": 2.023130051375505,
+      "profile": "total                                                            100.0 \u00b5s",
+      "empirical_floor_us": 63.39242666666667,
+      "weight": 16
+    },
+    {
+      "load": "verify 32",
+      "base_raw_us": 392.89601147174835,
+      "raw_us": 189.29599970579147,
+      "replay_overhead_us": 3.8399999029934406,
+      "baseline_net_us": 389.0560115687549,
+      "native_net_us": 185.45599980279803,
+      "paired_ratio": 2.0956553528273987,
+      "profile": "total                                                            185.3 \u00b5s",
+      "empirical_floor_us": 126.78485333333334,
+      "weight": 16
+    }
+  ],
+  "matched_V68": {
+    "acceptance": 4,
+    "cache_hit": 0.92,
+    "concurrency": 16,
+    "reps": 1,
+    "spread": 0,
+    "tok_s_per_gpu": 17512.9,
+    "tok_s_per_user_e2e": 25,
+    "tok_s_per_user_e2e_p50": 46,
+    "tok_s_per_user_p50": 48,
+    "truncated": false,
+    "ttft_first_p90_s": 50.737,
+    "ttft_later_p90_s": 0.264,
+    "ttft_p90_s": 0.42
+  },
+  "illustrative_seconds_per_step": 0.08333333333333333,
+  "illustrative_seconds_per_step_scope": "Ratio of published acceptance to p50 per-user decode rate; not a measured mean or an attention-stage duration.",
+  "projected_mechanism": "Same logical K/V bytes. Certified partitions replace per-token indexed physical loads with aligned, pipelined descriptor K and V loads."
+}

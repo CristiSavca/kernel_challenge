@@ -1,0 +1,145 @@
+{
+  "source_sha256": "382e9be2f9acf20668de2a0107367b98e5538180047ca87cb4467a53efce5755",
+  "compiler": "Triton 3.8.0 / ptxas CUDA 12.9",
+  "target": "Hopper sm90",
+  "cuda_execution": false,
+  "ordered_pair_reduction_sha256": "1f66a5f9bdc3802c21b0c95091e7b33c138ccbe111f63cfd6aaa1bedb1b5ed84",
+  "ptx_butterfly_partners": [
+    16,
+    16,
+    8,
+    8,
+    4,
+    4,
+    2,
+    2,
+    1,
+    1,
+    4,
+    4,
+    2,
+    2,
+    1,
+    1
+  ],
+  "ptx_butterfly_mask": 31,
+  "scalar_ops": [
+    "arith.divf",
+    "tt.extern_elementwise",
+    "arith.mulf"
+  ],
+  "libdevice": [
+    "__nv_tanhf"
+  ],
+  "layout": {
+    "none": "#blocked = #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [8], order = [0]}>",
+    "rank_even": "#blocked = #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [8], order = [0]}>",
+    "aligned": "#blocked = #ttg.blocked<{sizePerThread = [4], threadsPerWarp = [32], warpsPerCTA = [8], order = [0]}>"
+  },
+  "compiled_cubins": [
+    {
+      "tag": "old-fp32-none",
+      "sha256": "ff1895ee4c9bd16c2bd63c07bdd4716eb4b7e702e8fea74915c0a1e58aedbedc",
+      "bytes": 47328,
+      "registers": 64,
+      "zero_spills": true
+    },
+    {
+      "tag": "old-fp32-rank_even",
+      "sha256": "ff1895ee4c9bd16c2bd63c07bdd4716eb4b7e702e8fea74915c0a1e58aedbedc",
+      "bytes": 47328,
+      "registers": 64,
+      "zero_spills": true
+    },
+    {
+      "tag": "old-fp32-aligned",
+      "sha256": "f4fc0e00bc7dee9a7d0d53dd9f5b6a514bbbc48d502dcd02b8104d508253da6b",
+      "bytes": 45024,
+      "registers": 40,
+      "zero_spills": true
+    },
+    {
+      "tag": "old-i32-none",
+      "sha256": "25ab5be0db5fb3b54fd2c60d00bcdee706a575df7d2bc7ec0addf8bee23fa040",
+      "bytes": 47456,
+      "registers": 64,
+      "zero_spills": true
+    },
+    {
+      "tag": "old-i32-rank_even",
+      "sha256": "25ab5be0db5fb3b54fd2c60d00bcdee706a575df7d2bc7ec0addf8bee23fa040",
+      "bytes": 47456,
+      "registers": 64,
+      "zero_spills": true
+    },
+    {
+      "tag": "old-i32-aligned",
+      "sha256": "c386766fe8700c90b909c41a09981346faa04828305b7c51d984f5348bfc21ea",
+      "bytes": 45024,
+      "registers": 40,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-fp32-none",
+      "sha256": "6903a0241e37b0dad818a1d82c8f6737fdb36fce8b55738cafe711a7277fcc68",
+      "bytes": 47456,
+      "registers": 48,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-fp32-rank_even",
+      "sha256": "6903a0241e37b0dad818a1d82c8f6737fdb36fce8b55738cafe711a7277fcc68",
+      "bytes": 47456,
+      "registers": 48,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-fp32-aligned",
+      "sha256": "27b7375bd3b407a074325b7b992c35c01f2cecd09e351fb5f5f611149e9e8790",
+      "bytes": 44256,
+      "registers": 32,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-i32-none",
+      "sha256": "db82eb1da9ceb5b8000b371f101b519d348d944b98b9cbaaaab04f703d82d082",
+      "bytes": 47456,
+      "registers": 48,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-i32-rank_even",
+      "sha256": "db82eb1da9ceb5b8000b371f101b519d348d944b98b9cbaaaab04f703d82d082",
+      "bytes": 47456,
+      "registers": 48,
+      "zero_spills": true
+    },
+    {
+      "tag": "new-i32-aligned",
+      "sha256": "53b71b4eaf31d7fa9e56d3b4e6f7bc698fe4df26d5ab61cc96395e048bddfd0a",
+      "bytes": 44256,
+      "registers": 32,
+      "zero_spills": true
+    }
+  ],
+  "unpack": [
+    {
+      "rows_divisible_16": false,
+      "cubin_sha256": "ad475789d26681457a1932b262aa92a3b68614bda0928f11f06c30a62bf1689a",
+      "bytes": 5648,
+      "compiler": [
+        "ptxas info    : Used 10 registers, used 0 barriers",
+        "ptxas info    : Compile time = 2.442 ms"
+      ]
+    },
+    {
+      "rows_divisible_16": true,
+      "cubin_sha256": "ad475789d26681457a1932b262aa92a3b68614bda0928f11f06c30a62bf1689a",
+      "bytes": 5648,
+      "compiler": [
+        "ptxas info    : Used 10 registers, used 0 barriers",
+        "ptxas info    : Compile time = 1.127 ms"
+      ]
+    }
+  ]
+}

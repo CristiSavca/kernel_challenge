@@ -1,0 +1,183 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 0a3d17b..cffda5d 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -421,2 +421,3 @@ def paged_verify_attention(
+     origins=None,
++    workspace_limit_bytes=None,
+ ):
+@@ -454,4 +455,7 @@ def paged_verify_attention(
+     partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
++    slots = partitions + batch - 1
++    if workspace_limit_bytes is not None and slots * kv_heads * tile_m * (head_dim + 1) * 4 > workspace_limit_bytes:
++        return None
+     partial = torch.empty(
+-        (partitions + batch - 1, kv_heads, tile_m, head_dim),
++        (slots, kv_heads, tile_m, head_dim),
+         device=q.device,
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index f24e564..09e92a8 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -106,2 +106,3 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     count = batch.batch_size
++    mixed = getattr(batch, "mixed_verify_logits_indices", None) is not None
+     if (
+@@ -111,3 +112,5 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         or layer.attn_type in (AttentionType.ENCODER_ONLY, AttentionType.DECODER_BIDIRECTIONAL)
+-        or getattr(batch, "mixed_verify_logits_indices", None) is not None
++        or (mixed and (
++            not getattr(batch, "mixed_verify_is_causal", False) or batch.spec_info is not None
++        ))
+         or torch.compiler.is_compiling() or not k.is_cuda or torch.cuda.is_current_stream_capturing()
+@@ -124,2 +127,6 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     table, slots, owner = metadata.page_table, write.loc, pool
++    window = layer.sliding_window_size
++    left = -1 if window is None or window < 0 else window
++    if mixed and (type(pool) is not SWAKVPool or left == 0 or pool.layers_mapping[layer.layer_id][1] != (left > 0)):
++        return None
+     if type(pool) is SWAKVPool:
+@@ -145,4 +152,5 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         return None
+-    window = layer.sliding_window_size
+-    left = -1 if window is None or window < 0 else window
++    packed_count = batch.mixed_verify_prompt_count if mixed and left < 0 else count
++    if mixed and left < 0 and (not 0 < packed_count < count or getattr(batch, "_attn_output", None) is None):
++        return None
+     layouts = getattr(metadata, "_batched_prompt_layouts", None)
+@@ -152,3 +160,3 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     # The cached entries contain only offsets and lengths for this forward.
+-    identity = (left, h, d, n, id(lengths), id(cuq))
++    identity = (left, h, d, n, packed_count, id(lengths), id(cuq))
+     if identity in layouts:
+@@ -164,4 +172,4 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         return None
+-    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows, prefixes)]
+-    capacity = sum(visible) + 256 * count
++    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows[:packed_count], prefixes)]
++    capacity = sum(visible) + 256 * packed_count
+     # Bound both the packed allocation and the contiguous FP8 operands held for the writer.
+@@ -171,3 +179,3 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     if left < 0:
+-        used = lengths
++        used = lengths if packed_count == count else lengths[:packed_count]
+     else:
+@@ -176,3 +184,9 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     starts = torch.nn.functional.pad(torch.cumsum(used + 256, 0, dtype=torch.int32), (1, 0))
+-    layout = starts, used, capacity, max(visible)
++    tail = None
++    if packed_count < count:
++        cut = sum(rows[:packed_count])
++        cuk = metadata.cu_seqlens_k
++        tail = (cut, max(rows[:packed_count]), max(rows[packed_count:]), cuq[packed_count:] - cut,
++                cuk[packed_count:] - cuk[packed_count] if cuk is not None else None)
++    layout = (starts, used, capacity, max(visible)), tail
+     layouts[identity] = layout
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index cb5247b..d1f31dc 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -1978,7 +1978,8 @@ class FlashAttentionBackend(AttentionBackend):
+                 result = None
+-                if (
++                verify_eligible = (
+                     self._hopper_verify_sms
+                     and self.topk <= 1
+-                    and forward_batch.forward_mode.is_target_verify()
+-                    and forward_batch.spec_algorithm is not None
++                    and (forward_batch.forward_mode.is_target_verify()
++                         or (batched_prompt_kv is not None and batched_prompt_kv[1] is not None))
++                    and getattr(forward_batch, "spec_algorithm", None) is not None
+                     and forward_batch.spec_algorithm.is_dflash()
+@@ -1994,3 +1995,4 @@ class FlashAttentionBackend(AttentionBackend):
+                     and kwargs.keys() <= {"k_descale", "v_descale"}
+-                ):
++                )
++                if verify_eligible and forward_batch.forward_mode.is_target_verify():
+                     origins = None
+@@ -2029,7 +2031,44 @@ class FlashAttentionBackend(AttentionBackend):
+ 
++                    layout, tail = batched_prompt_kv
++                    starts, used, _, max_used = layout
++                    if tail:
++                        # The two roles write disjoint slices of the graph's output buffer.
++                        count = used.shape[0]
++                        cut, max_seqlen_q, max_tail, cu_tail, cuk_tail = tail
++                        full_out = _fa_out
++                        tail_out = full_out[cut:]
++                        tail_query = query[cut:]
++                        tail_pages, tail_lengths = page_table[count:], cache_seqlens[count:]
++                        tail_scales = {k: v[count:] for k, v in kwargs.items()}
++                        tail_result = None
++                        if (verify_eligible and max_tail == self.speculative_num_draft_tokens
++                                and tail_query.shape[0] == max_tail * tail_lengths.shape[0]):
++                            # The certified causal tail has a uniform width. Complete its workspace
++                            # before packing the prompt, with the live FP8 write operands accounted for.
++                            available = 32 * 1024 * 1024 - write_k.nbytes - write_v.nbytes
++                            tail_result = paged_verify_attention(
++                                tail_query, key_cache, value_cache, tail_pages, tail_lengths, cu_tail,
++                                max_q=max_tail, window_left=window_size[0], softmax_scale=layer.scaling,
++                                k_descale=tail_scales.get("k_descale"), v_descale=tail_scales.get("v_descale"),
++                                out=tail_out, num_sms=self._hopper_verify_sms, workspace_limit_bytes=available,
++                            )
++                        if tail_result is None:
++                            tail_result = flash_attn_with_kvcache(
++                                q=tail_query, k_cache=key_cache, v_cache=value_cache,
++                                page_table=tail_pages, cache_seqlens=tail_lengths,
++                                cu_seqlens_q=cu_tail, cu_seqlens_k_new=cuk_tail, max_seqlen_q=max_tail,
++                                softmax_scale=layer.scaling, causal=causal, window_size=window_size,
++                                softcap=layer.logit_cap, num_splits=self.num_splits, out=tail_out,
++                                ver=self.fa_impl_ver, **tail_scales,
++                            )
++                        if tail_result.data_ptr() != tail_out.data_ptr():
++                            tail_out.copy_(tail_result)
++                        query, _fa_out = query[:cut], full_out[:cut]
++                        page_table, cache_seqlens = page_table[:count], cache_seqlens[:count]
++                        cu_seqlens_q = cu_seqlens_q[:count + 1]
++                        kwargs = {k: v[:count] for k, v in kwargs.items()}
+                     dense_k, dense_v = pack_prompt_rows(
+                         key_cache, value_cache, write_k, write_v, page_table, cache_seqlens,
+-                        cu_seqlens_q, batched_prompt_kv,
++                        cu_seqlens_q, layout,
+                     )
+-                    starts, used, _, max_used = batched_prompt_kv
+                     result = self.flash_attn_varlen_func(
+@@ -2041,2 +2080,6 @@ class FlashAttentionBackend(AttentionBackend):
+                     )
++                    if tail:
++                        if result.data_ptr() != _fa_out.data_ptr():
++                            _fa_out.copy_(result)
++                        result = full_out
+                 if result is None:
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 515efd6..f42be6f 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -840,2 +840,4 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     muse_ranked_pool: bool = False
++    mixed_verify_is_causal: bool = False
++    mixed_verify_prompt_count: int = 0
+ 
+@@ -1534,2 +1536,3 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+         )
++        self.mixed_verify_prompt_count = prompt_count
+         self.mixed_verify_logits_indices = torch.cat((prompt_ends, tail_rows))
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 68c3d65..186a7e2 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2099,2 +2099,4 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
++            mixed_verify_is_causal=forward_batch.mixed_verify_is_causal,
++            mixed_verify_prompt_count=forward_batch.mixed_verify_prompt_count,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index f3044da..344d042 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -192,2 +192,5 @@ def try_forward_proposed_mixed(
+     _, _, prompt_fb, mixed_fb = views
++    # The agreed plan proves a top-1 causal chain for every tail and the native
++    # reservation for every proposal row. This forward alone owns the proof.
++    mixed_fb.mixed_verify_is_causal = True
+     worker.consume_decode_proposal(decode_batch, proposal)

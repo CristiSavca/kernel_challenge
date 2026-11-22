@@ -1,0 +1,67 @@
+{
+  "candidate": "V136",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "scored_parent_job": "abd217baf0ed49fd",
+  "patch_sha256": "31049ac77578b164c17099385f57186be8b82f812a98880785ea87889aa30666",
+  "delta_sha256": "6a58397eb1d1735c3abf6633e891012777bae71ddb2e380c5ef5b574bc29d3ca",
+  "bytes": 59910,
+  "tree": "732ef73e96bae8fad44eea1437b5ef78f1061fd5",
+  "parent_tree": "b5a37c2923f8d1ab24c1c5cf7920a21e2c086774",
+  "official_export_matches_git": true,
+  "applies_and_reverses": true,
+  "parent_plus_delta_exact": true,
+  "flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "fixed_flag_patterns": 76,
+  "full_patch_files": [
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "kernel_sha256": "d47b65a1f63e472403f405368a3173fda1b2d411925ad0db01964b2b52e2c5b1",
+  "release_sm90_assemblies": 24,
+  "interpreter_cases": 28,
+  "interpreter_bytes": 2402816,
+  "replayed_dynamic_bounds_cases": 3,
+  "host_dispatch": {
+    "torch": "2.5.1",
+    "selected_physical_paths": 36,
+    "guarded_native_fallbacks": 558,
+    "full_swa_vmm_failure_and_publication": true,
+    "distinct_full_swa_bounds": [
+      366,
+      92
+    ],
+    "release_source_sha256": "e979e1978c368391a45dbcaa9257b2f29fcf461b57ab98f563ab30216092063f"
+  },
+  "independent_fa3_operands": {
+    "complete_native_radix_and_forward_extend": true,
+    "passed_layers": 62,
+    "raw_v_reads": 0,
+    "selected_full_layers": 16,
+    "selected_sliding_layers": 46,
+    "hardware": false
+  },
+  "h200_execution": null
+}

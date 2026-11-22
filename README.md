@@ -1,5 +1,9 @@
 # Open Kernel Challenge
 
+The serving track closed November 20, 2026. **V204 earned a four-load serving score of 1.5487× stock SGLang.** V312 is the last local candidate and has no official serving score. [Serving results and patches](serving_v0523/RESULTS.md) · [Aggregate run data](serving_v0523/results.json)
+
+## November 4 handoff
+
 Competition workspace for **CristiSavca**, initialized October 24, 2026.
 Handoff updated November 4, 2026 after the V33 private check.
 **Optimization is paused by the user.** Start with [the Claude handoff](HANDOFF_CLAUDE.md)
@@ -9,7 +13,7 @@ The target is a competitive SGLang serving entry. The $100,000 prize pool is
 awarded on that track; first place is $50,000 plus a signed H200. Kernel results
 earn serving-queue priority for the overall top 50.
 
-## Latest measured state
+## November 4 measured state
 
 CristiSavca was #409 overall in the last saved board snapshot. Public scores are dense projections 1.4868×,
 attention 2.6120×, experts 2.3737× and whole decoder 2.1812×. The decoder leader

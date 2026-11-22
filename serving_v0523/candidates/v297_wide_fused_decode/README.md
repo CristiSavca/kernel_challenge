@@ -1,0 +1,30 @@
+# V297 wider fused decode projections
+
+V297 halves the number of expert output tiles in its eligible M16 and M24 grouped decode kernels. W13 produces 512 gate/up channels per CTA and writes 256 compact BF16 activations. W2 produces 256 output channels per CTA. The change runs inside the ranked Humming callbacks that V295 uses. V275’s ordinary wide Humming entries did not cover these fused callbacks. The target remains an unmeasured candidate for an official H200 correctness and throughput check. [Standalone patch](patch.diff) · [Source and export validation](validation.json)
+
+The original narrow tuning keys continue to select the kernels at graph capture. Startup checks the native M/N/K layout, installed Humming version and compiled instruction stream. W13 separately prepares the wider tensor-map box over the original weight and scale storage. Each projection can independently select its original narrow implementation if wide compilation or configuration fails. A stale W13 weight binding still declines to the ordinary Humming path. M8 retains the narrow kernel. W2 also compiled for a 19-expert 5120-by-3072 layer. A 4992-wide output uses the original tile. [Startup coverage](w2_startup.json) · [Ranked model replay](independent_dispatch.json) · [Registered launcher](independent_ffi.json)
+
+## Hopper arithmetic and instruction counts
+
+Each widened warp group reads the original packed weights and FP8 scales, performs Humming’s original BF16 dequantization just before each band’s matrix instruction, then waits for four bands at each K16 step. The W13 partials preserve their two-way FP32 accumulation. W2 preserves its four-way reduction tree. W13 keeps the existing BF16 gate, up, scale and SiLU sequence and the native compact output layout. W13 uses four TMA stages and W2 uses three. A 32-register producer and 112-register math worker fit the same 61,440-register CTA allocation. The new schedule leaves each register source live until its group drains. [Packed gate and scale offsets](independent_w13_maps.json) · [S2R fragment addresses](independent_w13_operands.json) · [BF16 output writer](independent_w13_writer.json) · [W2 FP32 reduction checks](w2_partials.json)
+
+| Projection | M | Narrow full-width K-loop sites | Wide full-width K-loop sites | Sections of K per traversal, narrow / wide | Fewer sites for equal outputs and K |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| W13 | 16 | 1,153 | 2,213 | 4 / 4 | 4.0% |
+| W13 | 24 | 1,172 | 2,247 | 4 / 4 | 4.1% |
+| W2 | 16 | 1,145 | 1,666 | 4 / 3 | 3.0% |
+| W2 | 24 | 1,169 | 1,679 | 4 / 3 | 4.2% |
+
+Each wide tile covers twice as many output channels. These are static instruction sites in the full-width recurring loop. All five fused W13 images and seven W2 images compiled offline with CUDA 12.9 for SM90a. All selected images have zero stack frame, spill stores and spill loads. The first eager four-band W13 design spilled 604/484 bytes at M16 and 1,732/1,228 at M24 and serialized matrix operations. Alternate register budgets can also satisfy matrix/drain counts while introducing local loads or stores. Startup rejects those instructions on a four-band image. [W13 machine code](w13_sm90a.json) · [In-flight register lifetime checks](independent_lifetimes.json) · [W2 machine code](w2_sass.json) · [Reproducible eager W13 control](w13_eager_control.diff) · [Physical spill control](w13_eager_control.json) · [Spill predicate ablation](independent_spill_guard.json)
+
+## End-to-end exposure
+
+On a historical 32-user shape with 256 verification rows and 33 expert row tiles, the two eligible projections issue 1,056 output tiles compared with 2,112. They request 198 MiB less logical activation TMA traffic together. All unique expert weights, scale bytes and dot products remain required. H200 L2 reuse, persistent load balance, TMA overlap and actual token throughput need device measurement. Wider tiles have higher shared storage requirements, and halving jobs can expose an uneven last wave. The archived scheduler reports entered an eligible row bin in 11 of 21 observations at 16 users and 18 of 24 at 32 users. The one- and four-user reports remained in M8. [Route and cache model](work.json) · [Archive and capture keys](independent_exposure.json)
+
+On the official curve, doubling whole-rung throughput and per-user rate at 16 and 32 users while holding the lower-load V64 observations fixed yields a 2.3722× challenge score. That scenario requires approximately 3.258× at both high rungs to reach 4×. It describes the scale of the end-to-end objective. V297’s tile count has no measured score yet. [Official score sensitivity](high_load_score.json)
+
+The host model replay covered 56 paired calls with 31,395,840 normalized BF16 words and 31,023,104 output words. The ordinary decode controls matched through 34 calls. Four- and eight-rank prompt routing matched 861,584 route pairs and 7,813,888 BF16 activation words through 276 calls. Native configuration checks accepted all 40,320 orderings of eight flags and exercised 17 server configurations. The latest recorded judge observation was 07:48 UTC on 19 November, with four older checks queued and no check quota remaining. [Ordinary decode](ordinary_decode.json) · [Prompt routing](prompt_routes.json) · [Prompt capture](prompt_graph.json) · [Native flags](flags.json) · [Server configurations](server_config.json) · [Judge observation](judge_observation.json)
+
+## Export
+
+The V295-based candidate preserves ranked pooling, peer-published prompt routes, mixed attention and the eight launch flags. Including V296’s additional prompt normalization exceeded the 409,600-byte export budget. The standalone official export is 405,695 bytes over 61 allowed paths. Only seven kernel and adapter files differ from V295. SHA-256 is `2ad93af9d6674100c9ea90412b4068e7566b3aea044a264da17c774e13f98e07`. Git tree is `f53b3f6f04851484810f87276c77079498ce1a9e`. Local native compilation and host replays leave device-generated tokens and score unverified. [V295 delta](delta.diff) · [Parent](../v295_published_prompt_routes/README.md) · [Validation](validation.json)

@@ -1,0 +1,153 @@
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index decdd00..09e92a8 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -112,7 +112,6 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         or layer.attn_type in (AttentionType.ENCODER_ONLY, AttentionType.DECODER_BIDIRECTIONAL)
+         or (mixed and (
+             not getattr(batch, "mixed_verify_is_causal", False) or batch.spec_info is not None
+-            or layer.sliding_window_size is None or layer.sliding_window_size <= 0
+         ))
+         or torch.compiler.is_compiling() or not k.is_cuda or torch.cuda.is_current_stream_capturing()
+         or torch.are_deterministic_algorithms_enabled() or torch.is_grad_enabled()
+@@ -126,7 +125,9 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         return None
+     pool = backend.token_to_kv_pool
+     table, slots, owner = metadata.page_table, write.loc, pool
+-    if mixed and (type(pool) is not SWAKVPool or not pool.layers_mapping[layer.layer_id][1]):
++    window = layer.sliding_window_size
++    left = -1 if window is None or window < 0 else window
++    if mixed and (type(pool) is not SWAKVPool or left == 0 or pool.layers_mapping[layer.layer_id][1] != (left > 0)):
+         return None
+     if type(pool) is SWAKVPool:
+         _, sliding = pool.layers_mapping[layer.layer_id]
+@@ -149,14 +150,15 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         or "set_kv_buffer" in vars(pool) or "set_kv_buffer" in vars(owner) or "_store_kv_layer" in vars(owner)
+     ):
+         return None
+-    window = layer.sliding_window_size
+-    left = -1 if window is None or window < 0 else window
++    packed_count = batch.mixed_verify_prompt_count if mixed and left < 0 else count
++    if mixed and left < 0 and (not 0 < packed_count < count or getattr(batch, "_attn_output", None) is None):
++        return None
+     layouts = getattr(metadata, "_batched_prompt_layouts", None)
+     if layouts is None:
+         metadata._batched_prompt_layouts = layouts = {}
+     # Ordinary eager/Breakable metadata is created anew for each live forward.
+     # The cached entries contain only offsets and lengths for this forward.
+-    identity = (left, h, d, n, id(lengths), id(cuq))
++    identity = (left, h, d, n, packed_count, id(lengths), id(cuq))
+     if identity in layouts:
+         return layouts[identity]
+     rows, prefixes, host = batch.extend_seq_lens_cpu, batch.extend_prefix_lens_cpu, batch.seq_lens_cpu
+@@ -168,18 +170,24 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     totals = [p + r for p, r in zip(prefixes, rows)]
+     if totals != host.tolist() or max(totals) != metadata.max_seq_len_k:
+         return None
+-    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows, prefixes)]
+-    capacity = sum(visible) + 256 * count
++    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows[:packed_count], prefixes)]
++    capacity = sum(visible) + 256 * packed_count
+     # Bound both the packed allocation and the contiguous FP8 operands held for the writer.
+     if 2 * (capacity + n) * h * d > 32 * 1024 * 1024:
+         layouts[identity] = None
+         return None
+     if left < 0:
+-        used = lengths
++        used = lengths if packed_count == count else lengths[:packed_count]
+     else:
+         qlens = cuq[1:] - cuq[:-1]
+         used = qlens + (lengths - qlens).clamp(max=left)
+     starts = torch.nn.functional.pad(torch.cumsum(used + 256, 0, dtype=torch.int32), (1, 0))
+-    layout = starts, used, capacity, max(visible)
++    tail = None
++    if packed_count < count:
++        cut = sum(rows[:packed_count])
++        cuk = metadata.cu_seqlens_k
++        tail = (cut, max(rows[:packed_count]), max(rows[packed_count:]), cuq[packed_count:] - cut,
++                cuk[packed_count:] - cuk[packed_count] if cuk is not None else None)
++    layout = (starts, used, capacity, max(visible)), tail
+     layouts[identity] = layout
+     return layout
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index cb5247b..74952fd 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -2027,11 +2027,32 @@ class FlashAttentionBackend(AttentionBackend):
+                 ):
+                     from sglang.kernels.ops.attention.batched_prompt_kv import pack_prompt_rows
+ 
++                    layout, tail = batched_prompt_kv
++                    starts, used, _, max_used = layout
++                    if tail:
++                        # The two roles write disjoint slices of the graph's output buffer.
++                        count = used.shape[0]
++                        cut, max_seqlen_q, max_tail, cu_tail, cuk_tail = tail
++                        full_out = _fa_out
++                        tail_out = full_out[cut:]
++                        tail_result = flash_attn_with_kvcache(
++                            q=query[cut:], k_cache=key_cache, v_cache=value_cache,
++                            page_table=page_table[count:], cache_seqlens=cache_seqlens[count:],
++                            cu_seqlens_q=cu_tail, cu_seqlens_k_new=cuk_tail, max_seqlen_q=max_tail,
++                            softmax_scale=layer.scaling, causal=causal, window_size=window_size,
++                            softcap=layer.logit_cap, num_splits=self.num_splits, out=tail_out,
++                            ver=self.fa_impl_ver, **{k: v[count:] for k, v in kwargs.items()},
++                        )
++                        if tail_result.data_ptr() != tail_out.data_ptr():
++                            tail_out.copy_(tail_result)
++                        query, _fa_out = query[:cut], full_out[:cut]
++                        page_table, cache_seqlens = page_table[:count], cache_seqlens[:count]
++                        cu_seqlens_q = cu_seqlens_q[:count + 1]
++                        kwargs = {k: v[:count] for k, v in kwargs.items()}
+                     dense_k, dense_v = pack_prompt_rows(
+                         key_cache, value_cache, write_k, write_v, page_table, cache_seqlens,
+-                        cu_seqlens_q, batched_prompt_kv,
++                        cu_seqlens_q, layout,
+                     )
+-                    starts, used, _, max_used = batched_prompt_kv
+                     result = self.flash_attn_varlen_func(
+                         q=query, k=dense_k, v=dense_v, cu_seqlens_q=cu_seqlens_q,
+                         cu_seqlens_k=starts, seqused_k=used, max_seqlen_q=max_seqlen_q,
+@@ -2039,6 +2060,10 @@ class FlashAttentionBackend(AttentionBackend):
+                         softmax_scale=layer.scaling, softcap=layer.logit_cap,
+                         num_splits=self.num_splits, out=_fa_out, **kwargs,
+                     )
++                    if tail:
++                        if result.data_ptr() != _fa_out.data_ptr():
++                            _fa_out.copy_(result)
++                        result = full_out
+                 if result is None:
+                     if direct_prompt_kv is not None:
+                         key_cache, value_cache, cache_seqlens = complete_direct_prompt_kv(
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index bf7fe8b..3206191 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -838,6 +838,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
+     muse_decode_column_gather: bool = False
+     mixed_verify_is_causal: bool = False
++    mixed_verify_prompt_count: int = 0
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+@@ -1532,6 +1533,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+         tail_rows = torch.arange(
+             sum(lengths[:prompt_count]), self.input_ids.numel(), device=self.input_ids.device
+         )
++        self.mixed_verify_prompt_count = prompt_count
+         self.mixed_verify_logits_indices = torch.cat((prompt_ends, tail_rows))
+ 
+     def contains_mm_inputs(self) -> bool:
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 1ed8573..186a7e2 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2098,6 +2098,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
+             mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
+             mixed_verify_is_causal=forward_batch.mixed_verify_is_causal,
++            mixed_verify_prompt_count=forward_batch.mixed_verify_prompt_count,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,

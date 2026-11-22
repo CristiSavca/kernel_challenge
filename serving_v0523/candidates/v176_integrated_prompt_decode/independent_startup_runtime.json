@@ -1,0 +1,146 @@
+{
+  "complete_pinned_modules": [
+    "sglang.srt.arg_groups.arg_utils",
+    "sglang.srt.arg_groups.choices",
+    "sglang.srt.arg_groups.prefill_buffer_ceiling",
+    "sglang.srt.arg_groups.fields.parallel",
+    "sglang.srt.arg_groups.fields.spec",
+    "sglang.srt.environ",
+    "sglang.srt.runtime_context",
+    "sglang.srt.layers.dflash_context_projection",
+    "sglang.srt.layers.muse_spark.prefill_expert_tiles",
+    "sglang.kernels.jit.utils.common",
+    "sglang.srt.layers.muse_spark.muse_spark_humming_moe",
+    "sglang.srt.layers.muse_spark.muse_spark_humming_moe",
+    "sglang.srt.layers.muse_spark.muse_spark_humming_moe"
+  ],
+  "native_option_defaults": [
+    "muse_sparse_prompt_exchange",
+    "speculative_dflash_sp_prefill_context",
+    "speculative_dflash_share_verify_schedule"
+  ],
+  "real_environment_defaults": {
+    "SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR": true,
+    "SGLANG_ENABLE_MUSE_SPARK_MEDIUM_ROUTE_PAIR": true,
+    "SGLANG_ENABLE_MUSE_SPARK_COMPACT_PREFILL": true,
+    "SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR": true,
+    "SGLANG_ENABLE_DETERMINISTIC_INFERENCE": false
+  },
+  "vendor_calls_bound": {
+    "HummingInputSchema": 1,
+    "HummingWeightSchema": 1,
+    "HummingMethod.prepare_layer_meta": 1,
+    "transform_humming_tensors": 1,
+    "HummingKernel.prepare_kernels": 2,
+    "HummingMethod.forward_layer": 2,
+    "HummingMethod.get_default_tuning_configs": 2,
+    "HummingKernel.current_context": 1
+  },
+  "full_startup": [
+    {
+      "optional_selected": false,
+      "jit_failure": false,
+      "missing_tma": false,
+      "narrow_build_declined": false,
+      "requested_widths": [
+        176,
+        176
+      ],
+      "prepared_banks": [
+        "w13",
+        "w2"
+      ]
+    },
+    {
+      "optional_selected": true,
+      "jit_failure": false,
+      "missing_tma": false,
+      "narrow_build_declined": false,
+      "requested_widths": [
+        176,
+        176,
+        136,
+        136,
+        152,
+        152
+      ],
+      "prepared_banks": [
+        "w13",
+        "w2"
+      ]
+    },
+    {
+      "optional_selected": true,
+      "jit_failure": false,
+      "missing_tma": false,
+      "narrow_build_declined": true,
+      "requested_widths": [
+        176,
+        176,
+        136,
+        152
+      ],
+      "prepared_banks": [
+        "w13",
+        "w2"
+      ]
+    },
+    {
+      "optional_selected": true,
+      "jit_failure": false,
+      "missing_tma": true,
+      "narrow_build_declined": false,
+      "requested_widths": [
+        176,
+        176,
+        136,
+        136,
+        152,
+        152
+      ],
+      "prepared_banks": [
+        "w13",
+        "w2"
+      ]
+    },
+    {
+      "optional_selected": false,
+      "jit_failure": true,
+      "missing_tma": false,
+      "narrow_build_declined": false,
+      "requested_widths": [
+        176,
+        176
+      ],
+      "prepared_banks": [
+        "w13",
+        "w2"
+      ]
+    }
+  ],
+  "jit_modules": [
+    "muse_expert_prefill_scaled_silu",
+    "muse_route_pair",
+    "muse_tma_route_pair",
+    "muse_medium_route_pair",
+    "muse_expert_prefill_scaled_silu",
+    "muse_route_pair",
+    "muse_tma_route_pair",
+    "muse_medium_route_pair",
+    "muse_expert_prefill_scaled_silu",
+    "muse_route_pair",
+    "muse_medium_route_pair"
+  ],
+  "torch": "2.5.1",
+  "msgspec": "0.22.0",
+  "mocked_boundaries": [
+    "parent package conveniences",
+    "Triton decorator",
+    "JIT wrappers and device query",
+    "CUDA weight-repack operator",
+    "FP8 gather uses uint8 views with the real vendor permutation",
+    "vendor compilation/driver context",
+    "explicit RuntimeContext config bags"
+  ],
+  "hardware": false
+}

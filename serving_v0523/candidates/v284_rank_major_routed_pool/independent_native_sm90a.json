@@ -1,0 +1,152 @@
+{
+  "target": "sm_90a",
+  "nvcc": "12.9.86",
+  "device_execution": false,
+  "division_comparison": "static instructions and reciprocal sites; no timing",
+  "upstream": {
+    "revision": "5c4886908584029761b579af026dcfb627c84070",
+    "sha256": {
+      "aten/src/ATen/native/cuda/layer_norm_kernel.cu": "aca7054f068c01c4e7a3ba598764747e8cbdce2d06f4b6206b3b67eb3562eae4",
+      "aten/src/ATen/cuda/DeviceUtils.cuh": "8cbc981d74ab0e205ae7e8d17290c7dc23dc98c774838d2fdc376bf6745afcaa",
+      "c10/cuda/CUDAMathCompat.h": "cd73fc8e5760c1798fdc8ee19e9e65ac41191986bbb6ba12ef872b130ba7d2df",
+      "aten/src/ATen/native/cuda/thread_constants.h": "cf53b44ad55ef33337d809ed67103d425790a7fe024a669543c8d8f35eb9982a",
+      "aten/src/ATen/native/layer_norm.cpp": "30658907d8863565c331de5e58f26c023d898d502f8a2ed119763684112f0c90",
+      "torch/headeronly/macros/Export.h": "6c2dbf6f93ebce560141d9260617b6307da710e003b1c1ea74bba205505070ef",
+      "torch/headeronly/macros/Macros.h": "01931f2ea0848f35f8701687dd7cf880266c7cd59320996d98c6c36ae50e5c50",
+      "torch/headeronly/util/bit_cast.h": "f9804d63b3d269d63222817723207efd1bd8d7d7af188561f99b7d562f25893f",
+      "torch/headeronly/util/BFloat16.h": "cd57705b38b05660840228071eb0ee6dac46f350d1bdfa11496eca643790be69"
+    }
+  },
+  "files": {
+    "ranked_pool_norm.cuh": "9a1dc3db3505a03ec2f44ef1042cdf690d1af1c3d9b0ba98c77f6f7571d6459e",
+    "donor.cu": "7a41c652db2a20850a5d218e4743af3ffb5171089416ab928424f7b58654a97e",
+    "golden.cu": "8e241860f5bf8ee554d6209378b459cfcfb00c9a608740fab1b7a5df742f0875"
+  },
+  "compiled": {
+    "golden": {
+      "source_sha256": "8e241860f5bf8ee554d6209378b459cfcfb00c9a608740fab1b7a5df742f0875",
+      "sass_sha256": "2d9a889d17720d7c053b92dba4336ec87c016835c2409402dd25b7765fd9a78c",
+      "ptxas": "Used 24 registers, used 1 barriers",
+      "stack_spill_bytes": 0,
+      "static_instructions_with_operands": 390,
+      "static_mufu_rcp_sites": 3,
+      "dependent_square_FFMA_groups_of_four_before_shuffles": 1,
+      "shuffle_then_FADD_offsets": [
+        16,
+        8,
+        4,
+        2,
+        1
+      ],
+      "division_exception_test_sites": 2,
+      "rsqrt": "non-FTZ predicate at 2^-126; subnormal x2^24, MUFU.RSQ, x2^12",
+      "weighted_output_FMUL_FMUL_BF16_conversion_PCs_hex": [
+        [
+          "b00",
+          "b30",
+          "b70"
+        ],
+        [
+          "a60",
+          "a80",
+          "b70"
+        ],
+        [
+          "b20",
+          "b50",
+          "b80"
+        ],
+        [
+          "b10",
+          "b40",
+          "b80"
+        ]
+      ]
+    },
+    "donor": {
+      "source_sha256": "7a41c652db2a20850a5d218e4743af3ffb5171089416ab928424f7b58654a97e",
+      "sass_sha256": "fb85db7809081e7b8d3405acd889cff6c533d91c9e9f58ba12334d0cc7bb41ca",
+      "ptxas": "Used 32 registers, used 1 barriers, 16 bytes smem",
+      "stack_spill_bytes": 0,
+      "static_instructions_with_operands": 688,
+      "static_mufu_rcp_sites": 2,
+      "dependent_square_FFMA_groups_of_four_before_shuffles": 5,
+      "shuffle_then_FADD_offsets": [
+        16,
+        8,
+        4,
+        2,
+        1
+      ],
+      "division_exception_test_sites": 1,
+      "rsqrt": "non-FTZ predicate at 2^-126; subnormal x2^24, MUFU.RSQ, x2^12",
+      "weighted_output_FMUL_FMUL_BF16_conversion_PCs_hex": [
+        [
+          "dc0",
+          "e20",
+          "e90"
+        ],
+        [
+          "e00",
+          "e40",
+          "ea0"
+        ],
+        [
+          "e10",
+          "e50",
+          "ec0"
+        ],
+        [
+          "de0",
+          "e30",
+          "ee0"
+        ]
+      ]
+    }
+  },
+  "before_shift_mask": {
+    "source_sha256": null,
+    "sass_sha256": "a2017f4514f11ef3e86d1ff2e444573f45cc3e000195e96236c61f10fe6001df",
+    "ptxas": "Used 30 registers, used 1 barriers, 16 bytes smem",
+    "stack_spill_bytes": 0,
+    "static_instructions_with_operands": 798,
+    "static_mufu_rcp_sites": 6,
+    "dependent_square_FFMA_groups_of_four_before_shuffles": 5,
+    "shuffle_then_FADD_offsets": [
+      16,
+      8,
+      4,
+      2,
+      1
+    ],
+    "division_exception_test_sites": 1,
+    "rsqrt": "non-FTZ predicate at 2^-126; subnormal x2^24, MUFU.RSQ, x2^12",
+    "weighted_output_FMUL_FMUL_BF16_conversion_PCs_hex": [
+      [
+        "1530",
+        "1580",
+        "15f0"
+      ],
+      [
+        "1560",
+        "15a0",
+        "1600"
+      ],
+      [
+        "1550",
+        "1590",
+        "1620"
+      ],
+      [
+        "1570",
+        "15b0",
+        "1630"
+      ]
+    ],
+    "header_sha256": "a7616c59c59e468b3ced56c6ec2ef69bb5d322d74952dba2fb8401f0c497e75d"
+  },
+  "cubin_sha256": {
+    "donor.1.sm_90a.cubin": "1c15b59f1f9e3b02528df3ef027147792cf04caf001cd6c4808fa4fc6c13f6f6",
+    "golden.1.sm_90a.cubin": "37c1b19446e700975c39a11a3af9c51300a2407ee9d7a9527cf839db6a7c1fcf"
+  }
+}

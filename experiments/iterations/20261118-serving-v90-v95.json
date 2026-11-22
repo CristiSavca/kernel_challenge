@@ -1,0 +1,63 @@
+{
+  "recorded_at": "2026-11-18T07:29:36.423432+00:00",
+  "objective": "4x over stock across four loads",
+  "measured_score": 1.4119,
+  "measured_scored_job": "abd217baf0ed49fd",
+  "remaining_factor_for_4x": 2.8331,
+  "candidates": {
+    "89": {
+      "patch": "serving_v0523/candidates/v89_paired_expert_dequant/patch.diff",
+      "sha256": "e20ea10ed16c9b4dec6e0d4c834ef44c086f5cbf468ee6574a5a258800da6e18"
+    },
+    "90": {
+      "patch": "serving_v0523/candidates/v90_activated_expert_down/patch.diff",
+      "sha256": "45fba4620ea380966400f7114df6070624839eff0407b2c375e92bad034f71a6"
+    },
+    "91": {
+      "patch": "serving_v0523/candidates/v91_reduced_target_argmax/patch.diff",
+      "sha256": "af9d3b66082d965c33fd434d94f5ec0530b8dda08ceb39c25dc46274b2681212"
+    },
+    "92": {
+      "patch": "serving_v0523/candidates/v92_dense_fp8_prefill/patch.diff",
+      "sha256": "115bc232f08da78868eca502352fbb997247b5623882b4588f1b239f65381d00"
+    },
+    "93": {
+      "patch": "serving_v0523/candidates/v93_expert_argmax_dense_prefill/patch.diff",
+      "sha256": "995c3f3c78750bbf99e6c3db3f8ab0fa8353be87cbffb07b1d15c49e6a4c0fdb"
+    },
+    "94": {
+      "patch": "serving_v0523/candidates/v94_clustered_expert_down/patch.diff",
+      "sha256": "242e038af77f04804623b4dc6fcbbed114a104dbc0554294c2750aed4ea558f2"
+    },
+    "95": {
+      "patch": "serving_v0523/candidates/v95_v64_dense_fp8_prefill/patch.diff",
+      "sha256": "e9359287a5e70dff46449743557bf4622c121ae7adb0c36c119a1b2d7ca311e9"
+    }
+  },
+  "nov18_checks": {
+    "V87/4": "00c134c978104d65",
+    "V88/4": "30bb36feb528416f",
+    "V93/16": "75557c21595347de"
+  },
+  "v93_judge_status": "queued",
+  "quota": {
+    "scored": {
+      "per_day": 1,
+      "used": 0,
+      "left": 1
+    },
+    "checks": {
+      "per_day": 3,
+      "used": 3,
+      "left": 0
+    }
+  },
+  "reset": "2026-11-19T00:00:00Z",
+  "note": "V93 uses V90 block-local expert activation. V94 cluster speed is unmeasured. V95 isolates prefill on measured V64. No scored action this iteration.",
+  "observation": "V64 first-turn p90 at 16 and 32 users was 50.063 s and about 110 s. Its scored memory margin, from the rounded report, is only about 0.1 GB per GPU.",
+  "hypothesis": "Removing expert activation traffic and target selection collectives reduces time per decode step. Dense FA3 reduces full-attention prefill time when the K/V packing cost is amortized over many query tiles.",
+  "comparison": "Compare V93 private 16 users to the official V64 private check ac89fddc4ee147ab, as well as the 1.5919 scored V64 rung. Account for differences in samples, paired repetitions and the stock reference. Four-load timing must establish the target.",
+  "decision": "Use the unclustered V90 first. V94 also removes redundant activation evaluations but adds cluster barriers and peer traffic. An independent V64+packer control (V95) can distinguish the prefill effect.",
+  "recovery": "If agreement or memory fails, inspect the same official result and compare independent V88/V95 controls before choosing another run. Promote a passing candidate with a useful measured gain and check all four loads.",
+  "validation": "Independent reviewers audited V90 CTA mapping, V91 reduction and collectives, V92 dense FA3 semantics, exact V93 composition, V94 cluster ownership and the V95 transplant."
+}

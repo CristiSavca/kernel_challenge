@@ -1,0 +1,183 @@
+{
+  "per_rank_shape": {
+    "experts": 32,
+    "hidden": 4096,
+    "inner": 4096,
+    "bands": 32
+  },
+  "eligible_projection_pair": {
+    "previous_grid_launches": 4,
+    "new_grid_launches": 2,
+    "ctas_before": 4096,
+    "ctas_after": 2048,
+    "nominal_full_weight_sweeps_same": true
+  },
+  "compiled_unpartitioned_residency_upper_bound": {
+    "V173_tiny": 4,
+    "V173_hot": 8,
+    "V174": 4,
+    "assumptions": "132 SMs, 65536 registers and 228 KiB shared per SM, 256-register warp allocation"
+  },
+  "uniform_top8_without_replacement": {
+    "512": {
+      "local_routes": 64.0,
+      "active": 27.8053109606888,
+      "light": 27.80002358944434,
+      "hot": 0.00528737124445851,
+      "hot_route_fraction": 0.0007604701088271369,
+      "v173_v174_nominal_weight_bytes_per_layer_rank": 787211507.144996,
+      "former_vector_hot_fraction_nominal_weight_bytes": 0.00019015688904094823,
+      "swept_full_banks_per_projection": {
+        "W13": 27.805310960968814,
+        "W2": 27.8053109606888
+      },
+      "nominal_input_bytes_per_projection": {
+        "V173": 16789974.571277335,
+        "V174": 16777216.0,
+        "saved": 12758.571277335286
+      },
+      "relative_input_traffic_saved": 0.0007598922334975668,
+      "down_8row_mma_groups": {
+        "V173": 27.810598332493292,
+        "V174": 27.810598332213274
+      },
+      "relative_down_mma_groups_saved": 1.0068699355999408e-11,
+      "resident_block_wave_equivalents_per_bank": {
+        "V173_summed_ceilings": 1.6850101378828224,
+        "V174": 1.6851703612538664
+      },
+      "hypothetical_pair_throughput_if_only_former_vector_sweeps_double": 1.0000950874852907
+    },
+    "1024": {
+      "local_routes": 128.0,
+      "active": 31.450143245733827,
+      "light": 30.825865989980837,
+      "hot": 0.6242772557529902,
+      "hot_route_fraction": 0.04651234931568361,
+      "v173_v174_nominal_weight_bytes_per_layer_rank": 890402717.9603645,
+      "former_vector_hot_fraction_nominal_weight_bytes": 0.019850130377496486,
+      "swept_full_banks_per_projection": {
+        "W13": 31.450161898084062,
+        "W2": 31.450143245733827
+      },
+      "nominal_input_bytes_per_projection": {
+        "V173": 35115127.46227335,
+        "V174": 33554432.0,
+        "saved": 1560695.4622733518
+      },
+      "relative_input_traffic_saved": 0.044445103152483685,
+      "down_8row_mma_groups": {
+        "V173": 32.07445780618729,
+        "V174": 32.074439153845276
+      },
+      "relative_down_mma_groups_saved": 5.815325741875131e-07,
+      "resident_block_wave_equivalents_per_bank": {
+        "V173_summed_ceilings": 1.8871517950216565,
+        "V174": 1.9060692876202319
+      },
+      "hypothetical_pair_throughput_if_only_former_vector_sweeps_double": 1.0100245595962294
+    },
+    "2048": {
+      "local_routes": 256.0,
+      "active": 31.99055179843087,
+      "light": 18.952441933211254,
+      "hot": 13.038109865219617,
+      "hot_route_fraction": 0.5448276720903497,
+      "v173_v174_nominal_weight_bytes_per_layer_rank": 907619236.7299834,
+      "former_vector_hot_fraction_nominal_weight_bytes": 0.4088126125970143,
+      "swept_full_banks_per_projection": {
+        "W13": 32.092121608731,
+        "W2": 31.990551798719043
+      },
+      "nominal_input_bytes_per_projection": {
+        "V173": 103671630.14974788,
+        "V174": 67108864.0,
+        "saved": 36562766.14974788
+      },
+      "relative_input_traffic_saved": 0.35267860741588614,
+      "down_8row_mma_groups": {
+        "V173": 45.23180128396257,
+        "V174": 45.13025259119847
+      },
+      "relative_down_mma_groups_saved": 0.0022450729327930297,
+      "resident_block_wave_equivalents_per_bank": {
+        "V173_summed_ceilings": 1.5437270827770342,
+        "V174": 1.9388213211170227
+      },
+      "hypothetical_pair_throughput_if_only_former_vector_sweeps_double": 1.2569229845796144
+    }
+  },
+  "standalone_h200_diagnostic": {
+    "source": "20261104-moe-hardware-profile-recovered.json",
+    "sha256": "0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7",
+    "counts": [
+      5,
+      7,
+      0,
+      0,
+      3,
+      12,
+      0,
+      8,
+      17,
+      1,
+      73,
+      2,
+      22,
+      10,
+      5,
+      0,
+      16,
+      0,
+      5,
+      4,
+      2,
+      2,
+      2,
+      0,
+      36,
+      1,
+      16,
+      61,
+      2,
+      32,
+      3,
+      7
+    ],
+    "model": {
+      "local_routes": 354,
+      "active": 26,
+      "light": 16,
+      "hot": 10,
+      "hot_route_fraction": 0.8333333333333334,
+      "v173_v174_nominal_weight_bytes_per_layer_rank": 1000341504,
+      "former_vector_hot_fraction_nominal_weight_bytes": 0.5471698113207547,
+      "swept_full_banks_per_projection": {
+        "W13": 38,
+        "W2": 30
+      },
+      "nominal_input_bytes_per_projection": {
+        "V173": 170131456,
+        "V174": 92798976,
+        "saved": 77332480
+      },
+      "relative_input_traffic_saved": 0.45454545454545453,
+      "down_8row_mma_groups": {
+        "V173": 59,
+        "V174": 57
+      },
+      "relative_down_mma_groups_saved": 0.03389830508474576,
+      "resident_block_wave_equivalents_per_bank": {
+        "V173_summed_ceilings": 1.2727272727272727,
+        "V174": 1.5757575757575757
+      },
+      "hypothetical_pair_throughput_if_only_former_vector_sweeps_double": 1.3766233766233766
+    }
+  },
+  "limitations": [
+    "Input bytes count source requests from the projection's own lanes; caches and transaction coalescing can reduce DRAM bytes.",
+    "The two former grids have different work per resident CTA. Wave-equivalent sums are not elapsed time.",
+    "New W2 uses two ring buffers, whereas the parent tiny W2 used three. Lost lookahead can outweigh launch or warp improvements.",
+    "The observed histogram uses a different standalone kernel; the scored serving receipt contains no expert histogram."
+  ]
+}

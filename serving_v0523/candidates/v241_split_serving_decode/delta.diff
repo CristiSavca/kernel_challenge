@@ -1,0 +1,486 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 0a3d17b..f747a32 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -321,14 +321,14 @@ def _merge_partitions(
+     PARTITIONS: tl.constexpr,
+     BLOCK_B: tl.constexpr,
+     BLOCK_SPLITS: tl.constexpr,
++    ROWS: tl.constexpr,
+ ):
+     request = tl.program_id(0)
+     kv_head = tl.program_id(1)
+-    packed_row = tl.program_id(2)
++    first_row = tl.program_id(2) * ROWS
+     q_start = tl.load(CuQ + request)
+     q_length = tl.load(CuQ + request + 1) - q_start
+-    q_token = packed_row // GQA
+-    if q_token >= q_length:
++    if first_row >= q_length * GQA:
+         return
+ 
+     requests, ends, _, width = _plan(
+@@ -339,33 +339,39 @@ def _merge_partitions(
+     split_begin = req_start // width
+     split_end = (req_end - 1) // width + 1
+     dims = tl.arange(0, D)
+-    max_lse = tl.full((), float("-inf"), tl.float32)
+-    den = tl.full((), 0.0, tl.float32)
+-    output = tl.zeros((D,), tl.float32)
+-    if req_start < req_end:
+-        for start in range(split_begin, split_end, BLOCK_SPLITS):
+-            parts = start + tl.arange(0, BLOCK_SPLITS)
+-            live = parts < split_end
+-            slots = ((parts + request) * H_KV + kv_head) * TILE_M + packed_row
+-            lse = tl.load(LSE + slots, live, other=float("-inf"))
+-            partial = tl.load(
+-                Partial + slots[:, None] * D + dims[None, :],
+-                live[:, None],
+-                other=0.0,
+-            )
+-            next_max = tl.maximum(max_lse, tl.max(lse, axis=0))
+-            base = tl.where(next_max == float("-inf"), 0.0, next_max)
+-            weights = tl.exp2(lse - base)
+-            old_weight = tl.exp2(max_lse - base)
+-            output = output * old_weight + tl.sum(weights[:, None] * partial, axis=0)
+-            den = den * old_weight + tl.sum(weights, axis=0)
+-            max_lse = next_max
+-    output /= tl.where(den > 0, den, 1.0)
+-    if VScale is not None:
+-        output *= tl.load(VScale + request * VS_ROW + kv_head * VS_HEAD)
+-    q_head = kv_head * GQA + packed_row % GQA
+-    q_row = (q_start + q_token) * (H_KV * GQA) + q_head
+-    tl.store(Out + q_row * D + dims, output)
++    row_count = ROWS
++    if GQA % ROWS:
++        row_count = tl.minimum(ROWS, q_length * GQA - first_row)
++    for offset in range(row_count):
++        packed_row = first_row + offset
++        q_token = packed_row // GQA
++        max_lse = tl.full((), float("-inf"), tl.float32)
++        den = tl.full((), 0.0, tl.float32)
++        output = tl.zeros((D,), tl.float32)
++        if req_start < req_end:
++            for start in range(split_begin, split_end, BLOCK_SPLITS):
++                parts = start + tl.arange(0, BLOCK_SPLITS)
++                live = parts < split_end
++                slots = ((parts + request) * H_KV + kv_head) * TILE_M + packed_row
++                lse = tl.load(LSE + slots, live, other=float("-inf"))
++                partial = tl.load(
++                    Partial + slots[:, None] * D + dims[None, :],
++                    live[:, None],
++                    other=0.0,
++                )
++                next_max = tl.maximum(max_lse, tl.max(lse, axis=0))
++                base = tl.where(next_max == float("-inf"), 0.0, next_max)
++                weights = tl.exp2(lse - base)
++                old_weight = tl.exp2(max_lse - base)
++                output = output * old_weight + tl.sum(weights[:, None] * partial, axis=0)
++                den = den * old_weight + tl.sum(weights, axis=0)
++                max_lse = next_max
++        output /= tl.where(den > 0, den, 1.0)
++        if VScale is not None:
++            output *= tl.load(VScale + request * VS_ROW + kv_head * VS_HEAD)
++        q_head = kv_head * GQA + packed_row % GQA
++        q_row = (q_start + q_token) * (H_KV * GQA) + q_head
++        tl.store(Out + q_row * D + dims, output)
+ 
+ 
+ def _direct_tile_args(k, v, page_table, origins, window_left, tile_n, max_q=0):
+@@ -419,6 +425,7 @@ def paged_verify_attention(
+     out,
+     num_sms,
+     origins=None,
++    workspace_limit_bytes=None,
+ ):
+     """Return BF16 attention, or None when the native FA3 route is needed."""
+     batch, _ = page_table.shape
+@@ -452,8 +459,11 @@ def paged_verify_attention(
+     tile_m = triton.next_power_of_2(max_q * groups)
+     tile_n = 64 if window_left >= 0 else 128
+     partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
++    slots = partitions + batch - 1
++    if workspace_limit_bytes is not None and slots * kv_heads * tile_m * (head_dim + 1) * 4 > workspace_limit_bytes:
++        return None
+     partial = torch.empty(
+-        (partitions + batch - 1, kv_heads, tile_m, head_dim),
++        (slots, kv_heads, tile_m, head_dim),
+         device=q.device,
+         dtype=torch.float32,
+     )
+@@ -493,7 +503,10 @@ def paged_verify_attention(
+         **direct,
+         num_warps=4,
+     )
+-    _merge_partitions[(batch, kv_heads, max_q * groups)](
++    # Keep at least one grid wave while amortizing the request scan across heads.
++    programs_per_sm = max(1, batch * kv_heads * max_q * groups // max(1, num_sms))
++    merge_rows = min(4, 1 << (programs_per_sm.bit_length() - 1))
++    _merge_partitions[(batch, kv_heads, triton.cdiv(max_q * groups, merge_rows))](
+         partial,
+         lse,
+         cache_seqlens,
+@@ -511,6 +524,7 @@ def paged_verify_attention(
+         partitions,
+         block_batch,
+         16,
++        merge_rows,
+         num_warps=4,
+     )
+     return out
+diff --git a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+index 99ebaf4..27fe724 100644
+--- a/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
++++ b/python/sglang/kernels/ops/sampling/softcap_row_argmax.py
+@@ -5,6 +5,8 @@ import triton
+ import triton.language as tl
+ from triton.language.extra import libdevice
+ 
++from sglang.kernels.numerics import mul_rn_f32
++
+ 
+ @triton.jit
+ def _softcap_row_argmax_kernel(
+@@ -16,6 +18,7 @@ def _softcap_row_argmax_kernel(
+     softcapping_value,
+     BLOCK_SIZE: tl.constexpr,
+     FIRST_NAN: tl.constexpr = False,
++    SCALE: tl.constexpr = None,
+ ):
+     row = tl.program_id(0).to(tl.int64)
+     best_val = -float("inf")
+@@ -24,6 +27,8 @@ def _softcap_row_argmax_kernel(
+         cols = start + tl.arange(0, BLOCK_SIZE)
+         mask = cols < valid_width
+         x = tl.load(logits_ptr + row * row_stride + cols, mask=mask, other=0.0)
++        if SCALE is not None:
++            x = mul_rn_f32(x, SCALE)
+         x = x / softcapping_value
+         x = libdevice.tanh(x)
+         x = x * softcapping_value
+@@ -42,7 +47,7 @@ def _softcap_row_argmax_kernel(
+     tl.store(out_ptr + row * 2 + 1, (best_idx + col_offset).to(tl.float32))
+ 
+ 
+-def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset, *, first_nan=False):
++def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset, *, first_nan=False, scale=None):
+     """Per row of a vocab shard: ``(max, first argmax + col_offset)`` of the
+     softcapped logits over the first ``valid_width`` columns, as fp32 ``[rows, 2]``."""
+     assert logits.dtype == torch.float32 and logits.stride(1) == 1
+@@ -57,6 +62,7 @@ def softcap_row_argmax(logits, final_logit_softcapping, valid_width, col_offset,
+         final_logit_softcapping,
+         BLOCK_SIZE=4096,
+         FIRST_NAN=first_nan,
++        SCALE=scale,
+         num_warps=8,
+     )
+     return out
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index decdd00..09e92a8 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -112,7 +112,6 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         or layer.attn_type in (AttentionType.ENCODER_ONLY, AttentionType.DECODER_BIDIRECTIONAL)
+         or (mixed and (
+             not getattr(batch, "mixed_verify_is_causal", False) or batch.spec_info is not None
+-            or layer.sliding_window_size is None or layer.sliding_window_size <= 0
+         ))
+         or torch.compiler.is_compiling() or not k.is_cuda or torch.cuda.is_current_stream_capturing()
+         or torch.are_deterministic_algorithms_enabled() or torch.is_grad_enabled()
+@@ -126,7 +125,9 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         return None
+     pool = backend.token_to_kv_pool
+     table, slots, owner = metadata.page_table, write.loc, pool
+-    if mixed and (type(pool) is not SWAKVPool or not pool.layers_mapping[layer.layer_id][1]):
++    window = layer.sliding_window_size
++    left = -1 if window is None or window < 0 else window
++    if mixed and (type(pool) is not SWAKVPool or left == 0 or pool.layers_mapping[layer.layer_id][1] != (left > 0)):
+         return None
+     if type(pool) is SWAKVPool:
+         _, sliding = pool.layers_mapping[layer.layer_id]
+@@ -149,14 +150,15 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         or "set_kv_buffer" in vars(pool) or "set_kv_buffer" in vars(owner) or "_store_kv_layer" in vars(owner)
+     ):
+         return None
+-    window = layer.sliding_window_size
+-    left = -1 if window is None or window < 0 else window
++    packed_count = batch.mixed_verify_prompt_count if mixed and left < 0 else count
++    if mixed and left < 0 and (not 0 < packed_count < count or getattr(batch, "_attn_output", None) is None):
++        return None
+     layouts = getattr(metadata, "_batched_prompt_layouts", None)
+     if layouts is None:
+         metadata._batched_prompt_layouts = layouts = {}
+     # Ordinary eager/Breakable metadata is created anew for each live forward.
+     # The cached entries contain only offsets and lengths for this forward.
+-    identity = (left, h, d, n, id(lengths), id(cuq))
++    identity = (left, h, d, n, packed_count, id(lengths), id(cuq))
+     if identity in layouts:
+         return layouts[identity]
+     rows, prefixes, host = batch.extend_seq_lens_cpu, batch.extend_prefix_lens_cpu, batch.seq_lens_cpu
+@@ -168,18 +170,24 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     totals = [p + r for p, r in zip(prefixes, rows)]
+     if totals != host.tolist() or max(totals) != metadata.max_seq_len_k:
+         return None
+-    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows, prefixes)]
+-    capacity = sum(visible) + 256 * count
++    visible = [r + (p if left < 0 else min(p, left)) for r, p in zip(rows[:packed_count], prefixes)]
++    capacity = sum(visible) + 256 * packed_count
+     # Bound both the packed allocation and the contiguous FP8 operands held for the writer.
+     if 2 * (capacity + n) * h * d > 32 * 1024 * 1024:
+         layouts[identity] = None
+         return None
+     if left < 0:
+-        used = lengths
++        used = lengths if packed_count == count else lengths[:packed_count]
+     else:
+         qlens = cuq[1:] - cuq[:-1]
+         used = qlens + (lengths - qlens).clamp(max=left)
+     starts = torch.nn.functional.pad(torch.cumsum(used + 256, 0, dtype=torch.int32), (1, 0))
+-    layout = starts, used, capacity, max(visible)
++    tail = None
++    if packed_count < count:
++        cut = sum(rows[:packed_count])
++        cuk = metadata.cu_seqlens_k
++        tail = (cut, max(rows[:packed_count]), max(rows[packed_count:]), cuq[packed_count:] - cut,
++                cuk[packed_count:] - cuk[packed_count] if cuk is not None else None)
++    layout = (starts, used, capacity, max(visible)), tail
+     layouts[identity] = layout
+     return layout
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index cb5247b..d1f31dc 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -1976,11 +1976,12 @@ class FlashAttentionBackend(AttentionBackend):
+             else:
+                 query = q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim)
+                 result = None
+-                if (
++                verify_eligible = (
+                     self._hopper_verify_sms
+                     and self.topk <= 1
+-                    and forward_batch.forward_mode.is_target_verify()
+-                    and forward_batch.spec_algorithm is not None
++                    and (forward_batch.forward_mode.is_target_verify()
++                         or (batched_prompt_kv is not None and batched_prompt_kv[1] is not None))
++                    and getattr(forward_batch, "spec_algorithm", None) is not None
+                     and forward_batch.spec_algorithm.is_dflash()
+                     and getattr(forward_batch.spec_info, "ragged_verify_layout", None)
+                     is None
+@@ -1992,7 +1993,8 @@ class FlashAttentionBackend(AttentionBackend):
+                     and causal
+                     and layer.logit_cap == 0.0
+                     and kwargs.keys() <= {"k_descale", "v_descale"}
+-                ):
++                )
++                if verify_eligible and forward_batch.forward_mode.is_target_verify():
+                     origins = None
+                     if window_size[0] < 0 and page_table is metadata.page_table:
+                         origins = getattr(metadata, "verify_tile_origins", None)
+@@ -2027,11 +2029,48 @@ class FlashAttentionBackend(AttentionBackend):
+                 ):
+                     from sglang.kernels.ops.attention.batched_prompt_kv import pack_prompt_rows
+ 
++                    layout, tail = batched_prompt_kv
++                    starts, used, _, max_used = layout
++                    if tail:
++                        # The two roles write disjoint slices of the graph's output buffer.
++                        count = used.shape[0]
++                        cut, max_seqlen_q, max_tail, cu_tail, cuk_tail = tail
++                        full_out = _fa_out
++                        tail_out = full_out[cut:]
++                        tail_query = query[cut:]
++                        tail_pages, tail_lengths = page_table[count:], cache_seqlens[count:]
++                        tail_scales = {k: v[count:] for k, v in kwargs.items()}
++                        tail_result = None
++                        if (verify_eligible and max_tail == self.speculative_num_draft_tokens
++                                and tail_query.shape[0] == max_tail * tail_lengths.shape[0]):
++                            # The certified causal tail has a uniform width. Complete its workspace
++                            # before packing the prompt, with the live FP8 write operands accounted for.
++                            available = 32 * 1024 * 1024 - write_k.nbytes - write_v.nbytes
++                            tail_result = paged_verify_attention(
++                                tail_query, key_cache, value_cache, tail_pages, tail_lengths, cu_tail,
++                                max_q=max_tail, window_left=window_size[0], softmax_scale=layer.scaling,
++                                k_descale=tail_scales.get("k_descale"), v_descale=tail_scales.get("v_descale"),
++                                out=tail_out, num_sms=self._hopper_verify_sms, workspace_limit_bytes=available,
++                            )
++                        if tail_result is None:
++                            tail_result = flash_attn_with_kvcache(
++                                q=tail_query, k_cache=key_cache, v_cache=value_cache,
++                                page_table=tail_pages, cache_seqlens=tail_lengths,
++                                cu_seqlens_q=cu_tail, cu_seqlens_k_new=cuk_tail, max_seqlen_q=max_tail,
++                                softmax_scale=layer.scaling, causal=causal, window_size=window_size,
++                                softcap=layer.logit_cap, num_splits=self.num_splits, out=tail_out,
++                                ver=self.fa_impl_ver, **tail_scales,
++                            )
++                        if tail_result.data_ptr() != tail_out.data_ptr():
++                            tail_out.copy_(tail_result)
++                        query, _fa_out = query[:cut], full_out[:cut]
++                        page_table, cache_seqlens = page_table[:count], cache_seqlens[:count]
++                        cu_seqlens_q = cu_seqlens_q[:count + 1]
++                        kwargs = {k: v[:count] for k, v in kwargs.items()}
+                     dense_k, dense_v = pack_prompt_rows(
+                         key_cache, value_cache, write_k, write_v, page_table, cache_seqlens,
+-                        cu_seqlens_q, batched_prompt_kv,
++                        cu_seqlens_q, layout,
+                     )
+-                    starts, used, _, max_used = batched_prompt_kv
+                     result = self.flash_attn_varlen_func(
+                         q=query, k=dense_k, v=dense_v, cu_seqlens_q=cu_seqlens_q,
+                         cu_seqlens_k=starts, seqused_k=used, max_seqlen_q=max_seqlen_q,
+@@ -2039,6 +2078,10 @@ class FlashAttentionBackend(AttentionBackend):
+                         softmax_scale=layer.scaling, softcap=layer.logit_cap,
+                         num_splits=self.num_splits, out=_fa_out, **kwargs,
+                     )
++                    if tail:
++                        if result.data_ptr() != _fa_out.data_ptr():
++                            _fa_out.copy_(result)
++                        result = full_out
+                 if result is None:
+                     if direct_prompt_kv is not None:
+                         key_cache, value_cache, cache_seqlens = complete_direct_prompt_kv(
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index f5a0acb..820d968 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -296,6 +296,7 @@ class LogitsProcessorOutput:
+     dflash_prefill_context_done: bool = False
+     dflash_prefill_kv_projected: bool = False
+     dflash_verify_fc_shard: Optional[torch.Tensor] = None
++    dflash_verify_logit_scale: Optional[float] = None
+ 
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+@@ -559,7 +560,14 @@ class LogitsProcessor(nn.Module):
+         # Extract MIS / setwise indices before ForwardBatch → LogitsMetadata conversion
+         multi_item_delimiter_indices = None
+         token_indices_to_pool = None
++        scale_sink = None
+         if isinstance(logits_metadata, ForwardBatch):
++            if (
++                logits_metadata.dflash_verify_raw_buffer is not None
++                and logits_metadata.forward_mode.is_target_verify()
++                and getattr(self._get_logits, "__func__", None) is LogitsProcessor._get_logits
++            ):
++                scale_sink = []
+             multi_item_delimiter_indices = logits_metadata.multi_item_delimiter_indices
+             token_indices_to_pool = logits_metadata.token_indices_to_pool
+             logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
+@@ -686,7 +694,8 @@ class LogitsProcessor(nn.Module):
+ 
+         if not logits_metadata.extend_return_logprob:
+             # Compute logits for both input and sampled tokens.
+-            logits = self._get_logits(pruned_states, lm_head, logits_metadata)
++            kwargs = {"scale_sink": scale_sink} if scale_sink is not None else {}
++            logits = self._get_logits(pruned_states, lm_head, logits_metadata, **kwargs)
+             sampled_logits = (
+                 logits[sample_indices] if sample_indices is not None else logits
+             )
+@@ -694,6 +703,7 @@ class LogitsProcessor(nn.Module):
+             # Decode mode or extend mode without return_logprob.
+             return LogitsProcessorOutput(
+                 next_token_logits=sampled_logits,
++                dflash_verify_logit_scale=scale_sink[0] if scale_sink else None,
+                 hidden_states=hidden_states_to_store,
+                 last_hidden_states=last_hidden_states_to_store,
+                 mm_input_embeds=logits_metadata.mm_input_embeds,
+@@ -1018,6 +1028,7 @@ class LogitsProcessor(nn.Module):
+         logits_metadata: LogitsMetadata,
+         embedding_bias: Optional[torch.Tensor] = None,
+         use_logits_buffer: bool = True,
++        scale_sink=None,
+     ) -> torch.Tensor:
+         """Get logits from hidden_states.
+ 
+@@ -1066,6 +1077,15 @@ class LogitsProcessor(nn.Module):
+             torch.cuda.synchronize()
+             _trace_e2e_logits("post_lm_head_sync_returned")
+ 
++        if (
++            scale_sink is not None and self.defer_verify_gather
++            and 0 < logits.shape[1] < self.vocab_size and type(self.logit_scale) is float
++            and torch.finfo(torch.float32).tiny <= self.logit_scale <= torch.finfo(torch.float32).max
++            and getattr(self._can_gather_softcap_fused, "__func__", None) is LogitsProcessor._can_gather_softcap_fused
++            and self._can_gather_softcap_fused(logits, local_hidden_states, lm_head, logits_metadata)
++        ):
++            scale_sink.append(self.logit_scale)
++            return logits
+         if self.logit_scale is not None:
+             logits.mul_(self.logit_scale)
+ 
+@@ -1170,7 +1190,7 @@ class LogitsProcessor(nn.Module):
+         """Full softcapped logits from a target-verify vocab shard."""
+         return self._gather_softcap_fused(logits, None, use_buffer=False)
+ 
+-    def deferred_argmax(self, logits: torch.Tensor, *, first_nan: bool = False) -> torch.Tensor:
++    def deferred_argmax(self, logits: torch.Tensor, *, first_nan: bool = False, scale=None) -> torch.Tensor:
+         """``argmax`` of the full softcapped logits from a target-verify vocab
+         shard, gathering only each rank's row maxima. Ties resolve to the lowest
+         vocab index, as ``torch.argmax`` over the gathered row does."""
+@@ -1179,7 +1199,7 @@ class LogitsProcessor(nn.Module):
+         col_offset = group.rank_in_group * shard_width
+         valid_width = max(0, min(shard_width, self.vocab_size - col_offset))
+         local = softcap_row_argmax(
+-            logits, self.final_logit_softcapping, valid_width, col_offset, first_nan=first_nan
++            logits, self.final_logit_softcapping, valid_width, col_offset, first_nan=first_nan, scale=scale
+         )
+         gathered = torch.empty(
+             (group.world_size, num_tokens, 2), dtype=local.dtype, device=local.device
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index bf7fe8b..3206191 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -838,6 +838,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
+     muse_decode_column_gather: bool = False
+     mixed_verify_is_causal: bool = False
++    mixed_verify_prompt_count: int = 0
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+@@ -1532,6 +1533,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+         tail_rows = torch.arange(
+             sum(lengths[:prompt_count]), self.input_ids.numel(), device=self.input_ids.device
+         )
++        self.mixed_verify_prompt_count = prompt_count
+         self.mixed_verify_logits_indices = torch.cat((prompt_ends, tail_rows))
+ 
+     def contains_mm_inputs(self) -> bool:
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 1ed8573..186a7e2 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2098,6 +2098,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
+             mixed_verify_sharded_logits=forward_batch.mixed_verify_sharded_logits,
+             mixed_verify_is_causal=forward_batch.mixed_verify_is_causal,
++            mixed_verify_prompt_count=forward_batch.mixed_verify_prompt_count,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index cbff5eb..2ea5319 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -3449,15 +3449,18 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if target_lp is not None and target_lp.is_deferred_shard(
+             logits_output.next_token_logits
+         ):
++            scale = getattr(logits_output, "dflash_verify_logit_scale", None)
++            logits = logits_output.next_token_logits
+             if self._can_skip_verify_logits(batch, sampling_info):
+-                target_predict = target_lp.deferred_argmax(
+-                    logits_output.next_token_logits
+-                )
++                kwargs = {"scale": scale} if scale is not None else {}
++                target_predict = target_lp.deferred_argmax(logits, **kwargs)
+                 logits_output.next_token_logits = None
+             else:
+                 logits_output.next_token_logits = target_lp.finish_deferred_gather(
+-                    logits_output.next_token_logits
++                    logits if scale is None else logits * scale
+                 )
++            if scale is not None:
++                logits_output.dflash_verify_logit_scale = None
+ 
+         grammar_mask = None
+         if batch.has_grammar:

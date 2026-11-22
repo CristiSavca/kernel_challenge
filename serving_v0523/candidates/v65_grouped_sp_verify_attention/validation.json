@@ -1,0 +1,62 @@
+{
+  "state": "CPU_AND_INDEPENDENT_SOURCE_REVIEW_PASS_GPU_PENDING",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "sha256": "80e41ae32e748857053f553359f4d555cbe983534cff465f4910551723c30337",
+  "bytes": 62373,
+  "parents": {
+    "v44": "0822e1279e1710bbb30f2e0e541dcf0055a105e7bc1032ae5b081638c1d27b4c",
+    "v62": "f0595f55c6c13380f67ed033bb4174780276188c44d779dfd9fee00bf517541f",
+    "v64": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a"
+  },
+  "files": [
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "attention_delta_files": [
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py"
+  ],
+  "disjoint_deltas": true,
+  "exact_parent_source_parity": true,
+  "max_added_line": 98,
+  "python_compiled": 11,
+  "gpu_tested": false,
+  "scratch": "/var/folders/5k/_z9k5ddd6w1d8z97dkgyqmyr0000gn/T/okc-v65-compose-3mznk4i8",
+  "cpu": {
+    "v64_integration": {
+      "cases": 54,
+      "prenorm_calls": 324,
+      "passed": true
+    },
+    "v62_attention": {
+      "numerical_cases": 110,
+      "ownership_plans": 890,
+      "max_relative_l2": 0.001629,
+      "passed": true
+    },
+    "executed_against_combined_source": true,
+    "cuda_executed": false
+  },
+  "independent_review": "rules_audit.md",
+  "queue": {
+    "submitted": false,
+    "nov17_checks": [
+      "V64",
+      "V62",
+      "V68"
+    ],
+    "contained_in": "V68",
+    "automatic_scored_promotion": false
+  },
+  "scratch_removed": true,
+  "cleanup_ledger": "../../runs/v65_v68_cleanup.json"
+}

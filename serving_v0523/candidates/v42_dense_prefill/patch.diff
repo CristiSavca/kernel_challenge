@@ -1,0 +1,447 @@
+diff --git a/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh b/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh
+new file mode 100644
+index 0000000..cbd2635
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/gemm/marlin_moe/nvfp4_marlin_dequant.cuh
+@@ -0,0 +1,168 @@
++// Dequantize rows of one Marlin-packed NVFP4 expert matrix to dense BF16.
++//
++// Input is exactly what the Marlin MoE kernel reads: E2M1 codes repacked by
++// gptq_marlin_repack (16 x 64 tiles of 128 words, see gptq_marlin_repack.cuh)
++// and block scales permuted and re-encoded by nvfp4_marlin_process_scales.
++// Output is out[n - row_begin, k] = code(n, k) * scale(n, k / 16), the value the
++// Marlin kernel forms in registers. A code has at most 2 significant bits and a
++// scale 4, so the product is exact in BF16 and equals the top half of its FP32
++// encoding. The per-expert global scale is not applied here; like Marlin, the
++// caller applies it to the GEMM output.
++//
++// One block handles one 64-row n tile over 64 k tiles. It first builds a table
++// of every code * scale product in shared memory (16 codes for each of the 128
++// scale encodings Marlin keeps, plus a zero row), so the hot loop is a table
++// lookup per value. A warp owns 8 k tiles and walks the 64 rows; its two
++// stores per row together cover 256 contiguous bytes.
++
++#pragma once
++
++#include <sgl_kernel/tensor.h>
++#include <sgl_kernel/utils.h>
++
++#include <sgl_kernel/utils.cuh>
++
++#include <tvm/ffi/container/tensor.h>
++
++#include <cstdint>
++
++namespace sglang {
++
++namespace nvfp4_marlin {
++
++constexpr int kTileK = 16;
++constexpr int kTileN = 64;
++constexpr int kTileWords = kTileK * kTileN / 8;
++constexpr int kWarps = 8;                 // one per group of 8 k tiles
++constexpr int kBlockKTiles = kWarps * 8;  // k tiles per thread block
++constexpr int kThreads = kWarps * 32;
++constexpr int kScaleRows = 129;           // 128 kept scale encodings + a zero row
++constexpr int kTableSize = kScaleRows * 16;
++
++struct DequantParams {
++  const uint32_t* __restrict__ qweight;  // [K / 16, 2 * N]
++  const uint8_t* __restrict__ scales;    // [K / 16, N]
++  uint32_t* __restrict__ out;            // [rows, K] BF16, two values per word
++  int size_n;
++  int size_k;
++  int row_begin;
++};
++
++// Position of row n (within its 64-row tile) in a processed scale row:
++// marlin_permute_scales applies scale_perm, then nvfp4_marlin_process_scales
++// swaps the middle two entries of every group of four.
++__device__ __forceinline__ int scale_position(int n_local) {
++  const int p = (n_local % 8) * 8 + n_local / 8;
++  const int r = p % 4;
++  return p - r + (r == 1 ? 2 : r == 2 ? 1 : r);
++}
++
++// A processed scale byte holds the 5-bit exponent e and top 3 mantissa bits m of
++// half(scale * 128), so scale = (1 + m / 8) * 2^(e - 22). The Marlin BF16 decode
++// keeps only e >= 16, that is scale >= 2^-6 (E4M3's smallest normal); below
++// that its product underflows to 0. Table row: byte - 128 when kept, else 128.
++__device__ __forceinline__ uint32_t scale_row(uint32_t byte) { return byte >= 128u ? byte - 128u : 128u; }
++
++__device__ __forceinline__ float decode_scale_row(uint32_t row) {
++  const uint32_t byte = row + 128u;
++  const uint32_t bits = row >= 128u ? 0u : (((byte >> 3) + 105u) << 23) | ((byte & 7u) << 20);
++  return __uint_as_float(bits);
++}
++
++// E2M1: sign, 2 exponent bits e, 1 mantissa bit m. Magnitude is m / 2 for e == 0
++// and (1 + m / 2) * 2^(e - 1) otherwise, built directly as FP32 bits.
++__device__ __forceinline__ float decode_code(uint32_t code) {
++  const uint32_t e = (code >> 1) & 3u;
++  const uint32_t m = code & 1u;
++  const uint32_t magnitude = e == 0 ? m * 0x3F000000u : ((e + 126u) << 23) | (m << 22);
++  return __uint_as_float(((code & 8u) << 28) | magnitude);
++}
++
++__launch_bounds__(kThreads) __global__ void dequant_kernel(const DequantParams __grid_constant__ params) {
++  // BF16 is the top half of FP32, and code * scale has no bits below it.
++  __shared__ uint16_t table[kTableSize];
++  for (int i = threadIdx.x; i < kTableSize; i += kThreads) {
++    const float value = decode_code(i & 15) * decode_scale_row(i >> 4);
++    table[i] = static_cast<uint16_t>(__float_as_uint(value) >> 16);
++  }
++  __syncthreads();
++
++  const int n_tiles = params.size_n / kTileN;
++  const int n_tile = params.row_begin / kTileN + blockIdx.x;
++  const int lane = threadIdx.x % 32;
++  const int k_tile = (blockIdx.y * kWarps + threadIdx.x / 32) * 8 + lane / 4;
++  if (k_tile >= params.size_k / kTileK) return;
++  // Each lane owns one mma row pair of its k tile: tile columns 2 * pair + {0, 1}
++  // and 2 * pair + {8, 9}.
++  const int pair = lane % 4;
++
++  const uint32_t* __restrict__ tile =
++      params.qweight + (static_cast<int64_t>(k_tile) * n_tiles + n_tile) * kTileWords;
++  const uint8_t* __restrict__ tile_scales =
++      params.scales + static_cast<int64_t>(k_tile) * params.size_n + n_tile * kTileN;
++  uint32_t* __restrict__ dst =
++      params.out + (static_cast<int64_t>(blockIdx.x) * kTileN * params.size_k + k_tile * kTileK) / 2 + pair;
++
++  // gptq_marlin_repack: word th * 4 + warp of a tile holds, for mma thread th
++  // (column th / 4, row pair th % 4) of warp `warp`, the codes of matrix rows
++  // warp * 16 + th / 4 and + 8 at tile columns 2 * (th % 4) + {0, 1, 8, 9}, in
++  // nibble order {b1 c0, b1 c8, b2 c0, b2 c8, b1 c1, b1 c9, b2 c1, b2 c9}.
++  for (int n_local = 0; n_local < kTileN; ++n_local) {
++    const uint32_t word = tile[((n_local % 8) * 4 + pair) * 4 + n_local / 16] >> (((n_local % 16) / 8) * 8);
++    const uint16_t* __restrict__ row = table + scale_row(tile_scales[scale_position(n_local)]) * 16;
++    uint32_t* __restrict__ out = dst + static_cast<int64_t>(n_local) * params.size_k / 2;
++    out[0] = row[word & 15u] | (static_cast<uint32_t>(row[(word >> 16) & 15u]) << 16);
++    out[4] = row[(word >> 4) & 15u] | (static_cast<uint32_t>(row[(word >> 20) & 15u]) << 16);
++  }
++}
++
++}  // namespace nvfp4_marlin
++
++void nvfp4_marlin_dequant(
++    tvm::ffi::TensorView qweight,  // [K / 16, 2 * N] int32
++    tvm::ffi::TensorView scales,   // [K / 16, N] uint8
++    tvm::ffi::TensorView out,      // [rows, K] bf16
++    int64_t row_begin) {
++  using namespace host;
++
++  SymbolicSize KT{"k_tiles"};
++  SymbolicSize N2{"packed_n"};
++  SymbolicSize N{"size_n"};
++  SymbolicSize R{"rows"};
++  SymbolicSize K{"size_k"};
++  SymbolicDevice device_;
++  device_.set_options<kDLCUDA>();
++
++  TensorMatcher({KT, N2}).with_dtype<int32_t>().with_device(device_).verify(qweight);
++  TensorMatcher({KT, N}).with_dtype<uint8_t>().with_device(device_).verify(scales);
++  TensorMatcher({R, K}).with_dtype<bf16_t>().with_device(device_).verify(out);
++
++  const int size_n = static_cast<int>(N.unwrap());
++  const int size_k = static_cast<int>(K.unwrap());
++  const int rows = static_cast<int>(R.unwrap());
++  RuntimeCheck(size_k % nvfp4_marlin::kTileK == 0 && size_n % nvfp4_marlin::kTileN == 0, "unsupported shape");
++  RuntimeCheck(KT.unwrap() * nvfp4_marlin::kTileK == size_k, "qweight rows do not match size_k");
++  RuntimeCheck(N2.unwrap() == 2 * static_cast<int64_t>(size_n), "qweight columns do not match size_n");
++  RuntimeCheck(
++      row_begin >= 0 && row_begin % nvfp4_marlin::kTileN == 0 && rows % nvfp4_marlin::kTileN == 0 &&
++          row_begin + rows <= size_n,
++      "rows must be whole 64-row tiles inside the matrix");
++  RuntimeCheck(reinterpret_cast<uintptr_t>(out.data_ptr()) % 4 == 0, "out must be 4-byte aligned");
++  if (rows == 0) return;
++
++  const nvfp4_marlin::DequantParams params{
++      .qweight = static_cast<const uint32_t*>(qweight.data_ptr()),
++      .scales = static_cast<const uint8_t*>(scales.data_ptr()),
++      .out = static_cast<uint32_t*>(out.data_ptr()),
++      .size_n = size_n,
++      .size_k = size_k,
++      .row_begin = static_cast<int>(row_begin),
++  };
++
++  const int k_tiles = size_k / nvfp4_marlin::kTileK;
++  const dim3 grid(
++      rows / nvfp4_marlin::kTileN, (k_tiles + nvfp4_marlin::kBlockKTiles - 1) / nvfp4_marlin::kBlockKTiles);
++  LaunchKernel(grid, nvfp4_marlin::kThreads, device_.unwrap(), 0)(nvfp4_marlin::dequant_kernel, params);
++}
++
++}  // namespace sglang
+diff --git a/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py b/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py
+new file mode 100644
+index 0000000..a9dfc59
+--- /dev/null
++++ b/python/sglang/kernels/ops/moe/nvfp4_marlin_dequant.py
+@@ -0,0 +1,43 @@
++"""Dequantize rows of one Marlin-packed NVFP4 expert matrix to dense BF16."""
++
++from __future__ import annotations
++
++from typing import TYPE_CHECKING
++
++import torch
++
++from sglang.kernels.jit.utils import cache_once, load_jit
++
++if TYPE_CHECKING:
++    from tvm_ffi.module import Module
++
++
++@cache_once
++def _jit_module() -> Module:
++    return load_jit(
++        "nvfp4_marlin_dequant",
++        cuda_files=["gemm/marlin_moe/nvfp4_marlin_dequant.cuh"],
++        cuda_wrappers=[("nvfp4_marlin_dequant", "nvfp4_marlin_dequant")],
++    )
++
++
++def nvfp4_marlin_dequant(
++    qweight: torch.Tensor,
++    scales: torch.Tensor,
++    out: torch.Tensor,
++    row_begin: int = 0,
++) -> torch.Tensor:
++    """Write ``out[n, k] = code(row_begin + n, k) * scale(row_begin + n, k // 16)``.
++
++    ``qweight`` is one expert of a Marlin-repacked NVFP4 weight, int32
++    ``[K / 16, 2 * N]``, and ``scales`` its processed block scales,
++    ``[K / 16, N]`` with one byte per element. ``out`` is BF16 ``[rows, K]``;
++    ``row_begin`` and ``rows`` are multiples of 64. The product is exact in
++    BF16, so ``out`` holds the operand the Marlin kernel forms in registers.
++    The per-expert global scale is left to the caller.
++    """
++    assert out.dtype == torch.bfloat16 and out.is_contiguous()
++    _jit_module().nvfp4_marlin_dequant(
++        qweight.contiguous(), scales.contiguous().view(torch.uint8), out, row_begin
++    )
++    return out
+diff --git a/python/sglang/srt/arg_groups/muse_spark_hook.py b/python/sglang/srt/arg_groups/muse_spark_hook.py
+index 2dd159c..9d39ea6 100644
+--- a/python/sglang/srt/arg_groups/muse_spark_hook.py
++++ b/python/sglang/srt/arg_groups/muse_spark_hook.py
+@@ -16,12 +16,14 @@ MUSE_SPARK_ARCHITECTURES = ("MuseSparkForConditionalGeneration",)
+ MUSE_SPARK_CHAT_TEMPLATE_FILE = "chat_template.jinja"
+ 
+ # Graph-pool and KV-sizing switches the reference launcher (sglang_meta) sets.
++# Out-of-window SWA slots keep the generic default (freed): 46 of Muse's 62 layers
++# are sliding-window, so pinning a running request's whole context in the SWA pool
++# caps how many long requests fit at once.
+ MUSE_SPARK_ENV_DEFAULTS = (
+     (envs.SGLANG_ENABLE_CUDA_GRAPH_DEDUP, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_BORROW, True),
+     (envs.SGLANG_ENABLE_GRAPH_POOL_PRECARVE, True),
+     (envs.SGLANG_ENABLE_POST_CAPTURE_KV_SIZING, True),
+-    (envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS, False),
+ )
+ 
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 41c463d..6a137bf 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -35,6 +35,12 @@ from sglang.srt.layers.muse_spark.muse_spark_nvfp4_moe import (
+     MuseSparkNvFp4FusedMoEMethod,
+ )
+ from sglang.srt.layers.quantization.base_config import QuantizationConfig
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph import (
++    eager_on_graph,
++)
++from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context import (
++    is_in_breakable_cuda_graph,
++)
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+ 
+ if TYPE_CHECKING:
+@@ -51,6 +57,14 @@ _NVFP4_PER_TOKEN_SCALE_INV = 1.0 / (448.0 * 6.0)
+ 
+ _MARLIN_SHAPE_ALIGNMENT = 64
+ _MARLIN_BLOCK_SIZE_M_CANDIDATES = (8, 16, 32, 48, 64)
++# Expected routes per local expert from which dequantizing an expert to BF16 and
++# running dense GEMMs beats the Marlin W4A16 kernels. Dequantization is a fixed
++# cost per expert, so the dense path wins once enough rows share it: measured
++# on Hopper with 4096-wide experts it ties Marlin at 384 and is 1.2x faster at
++# 512 and 1.6x at 1024.
++_DENSE_MIN_ROUTES_PER_EXPERT = 384
++# nvfp4_marlin_process_global_scale stores the global scale times 2 ** 119.
++_MARLIN_GLOBAL_SCALE_EXPONENT = 119
+ 
+ 
+ def _resolve_moe_runner_backend():
+@@ -407,11 +421,25 @@ class MuseSpark1xFp4Experts(nn.Module):
+         local_topk_ids = local_topk_ids.contiguous()
+         topk_weights = topk_scores.to(torch.float32).contiguous()
+ 
++        # Expected routes per local expert. Under expert parallelism only
++        # num_local_experts / global_num_experts of the routes land on this rank.
++        routes_per_expert = num_tokens * topk / self.global_num_experts
++        if self._use_dense_experts(hidden_states, routes_per_expert):
++            expert_outputs = torch.empty(
++                (num_tokens, topk, size_k),
++                device=hidden_states.device,
++                dtype=hidden_states.dtype,
++            )
++            self._dense_expert_outputs(hidden_states, local_topk_ids, expert_outputs)
++            return expert_outputs, local_topk_ids
+         for block_size_m in _MARLIN_BLOCK_SIZE_M_CANDIDATES:
+-            if num_tokens * topk / self.num_local_experts / block_size_m < 0.9:
++            if routes_per_expert / block_size_m < 0.9:
+                 break
+ 
+-        if num_tokens == 1 and topk <= 32 and expert_map is None:
++        # The ids are already local, with -1 for experts on other ranks, so align
++        # over the local experts. The -1 routes form the inactive prefix that the
++        # sorted Marlin kernels skip, with or without expert parallelism.
++        if num_tokens == 1 and topk <= 32:
+             from sglang.kernels.ops.moe.moe_align_single_token import (
+                 moe_align_single_token,
+             )
+@@ -422,16 +450,11 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 )
+             )
+         else:
+-            align_num_experts = (
+-                self.global_num_experts
+-                if expert_map is not None
+-                else self.num_local_experts
+-            )
+             sorted_token_ids, expert_ids, num_tokens_post_padded = moe_align_block_size(
+                 local_topk_ids,
+                 block_size_m,
+-                align_num_experts,
+-                return_inactive_prefix_count=expert_map is None,
++                self.num_local_experts,
++                return_inactive_prefix_count=True,
+             )
+ 
+         # Both aligners emit ascending block IDs with inactive blocks first;
+@@ -468,7 +491,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=topk,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens,
+             size_n=gemm1_n,
+@@ -478,7 +501,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         )
+         silu_and_mul(
+             cache1.view(-1, gemm1_n),
+@@ -504,7 +527,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             moe_block_size=block_size_m,
+             top_k=1,
+             mul_topk_weights=False,
+-            is_ep=expert_map is not None,
++            is_ep=False,
+             b_q_type=scalar_types.float4_e2m1f,
+             size_m=num_tokens * topk,
+             size_n=size_k,
+@@ -514,9 +537,96 @@ class MuseSpark1xFp4Experts(nn.Module):
+             use_fp32_reduce=True,
+             is_zp_float=False,
+             expert_ids_are_sorted=True,
+-            has_inactive_prefix_count=expert_map is None,
++            has_inactive_prefix_count=True,
+         ).view(num_tokens, topk, size_k), local_topk_ids
+ 
++    def _use_dense_experts(
++        self, hidden_states: torch.Tensor, routes_per_expert: float
++    ) -> bool:
++        if routes_per_expert < _DENSE_MIN_ROUTES_PER_EXPERT:
++            return False
++        if hidden_states.dtype != torch.bfloat16:
++            return False
++        # The rows per expert depend on routing, so this path runs eagerly: as a
++        # break in a breakable graph, never inside a full CUDA graph.
++        return (
++            not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph()
++        )
++
++    def _dense_expert_outputs_impl(
++        self,
++        hidden_states: torch.Tensor,
++        local_topk_ids: torch.Tensor,
++        expert_outputs: torch.Tensor,
++    ) -> None:
++        """Large batches: dense BF16 GEMMs per routed local expert.
++
++        Each expert matrix is dequantized from the Marlin layout to the BF16
++        operand the Marlin kernel forms in registers, so the math is the same
++        W4A16 product with FP32 accumulation; only the summation order differs.
++        The dense copy lives in two reused buffers, one expert at a time, so it
++        costs no extra weight memory.
++        """
++        from sglang.kernels.ops.activation.activation import silu_and_mul
++        from sglang.kernels.ops.moe.nvfp4_marlin_dequant import nvfp4_marlin_dequant
++
++        size_k = hidden_states.shape[1]
++        topk = local_topk_ids.shape[1]
++        size_n = self.intermediate_size_per_partition
++        num_experts = self.num_local_experts
++
++        # Local routes grouped by expert; bucket 0 holds the other ranks' routes.
++        flat_ids = local_topk_ids.reshape(-1)
++        order = torch.argsort(flat_ids, stable=True)
++        counts = torch.bincount(flat_ids + 1, minlength=num_experts + 1).tolist()
++        counts = counts[: num_experts + 1]
++        num_routes = sum(counts[1:])
++        if num_routes == 0:
++            return
++        slots = order[counts[0] : counts[0] + num_routes]
++        route_expert = flat_ids[slots].long()
++        unscale = 2.0**-_MARLIN_GLOBAL_SCALE_EXPONENT
++        dtype = hidden_states.dtype
++        scale13 = (self.w13_weight_scale_2.float() * unscale).to(dtype)[route_expert]
++        scale2 = (self.w2_weight_scale_2.float() * unscale).to(dtype)[route_expert]
++
++        # GEMM1 reads `rows`; GEMM2 then reuses it for the outputs.
++        rows = hidden_states.index_select(
++            0, torch.div(slots, topk, rounding_mode="floor")
++        )
++        gate_up = rows.new_empty((num_routes, 2 * size_n))
++        w13 = rows.new_empty((2 * size_n, size_k))
++        start = 0
++        for expert, count in enumerate(counts[1:]):
++            if count:
++                nvfp4_marlin_dequant(
++                    self.w13_weight[expert], self.w13_weight_scale[expert], w13
++                )
++                stop = start + count
++                torch.mm(rows[start:stop], w13.t(), out=gate_up[start:stop])
++                start = stop
++        gate_up.mul_(scale13.unsqueeze(1))
++        activated = silu_and_mul(gate_up, rows.new_empty((num_routes, size_n)))
++
++        w2 = rows.new_empty((size_k, size_n))
++        start = 0
++        for expert, count in enumerate(counts[1:]):
++            if count:
++                nvfp4_marlin_dequant(
++                    self.w2_weight[expert], self.w2_weight_scale[expert], w2
++                )
++                stop = start + count
++                torch.mm(activated[start:stop], w2.t(), out=rows[start:stop])
++                start = stop
++        rows.mul_(scale2.unsqueeze(1))
++        expert_outputs.view(-1, size_k).index_copy_(0, slots, rows)
++
++    # Capture runs a break only to record its buffers, before the routing ids
++    # exist, so the GEMMs are skipped then (warmup and replay run them).
++    _dense_expert_outputs = eager_on_graph(
++        True, capture_stub=lambda *args, **kwargs: None
++    )(_dense_expert_outputs_impl)
++
+     def _forward_marlin(
+         self,
+         hidden_states: torch.Tensor,

@@ -1,0 +1,333 @@
+{
+  "at_utc": "2026-11-18T19:24:14.217055+00:00",
+  "previous_turn": "V160 delivered a normally dispatched mixed speculative verification candidate; the official performance target remains outstanding.",
+  "score": {
+    "candidate": "V64",
+    "official_four_load": 1.4119,
+    "per_load": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "target": 4,
+    "remaining_multiplier": 2.8330618315744744
+  },
+  "target_four_load": 4,
+  "required_incremental_geomean": 2.8330618315744744,
+  "candidates": {
+    "V161": {
+      "sha256": "2a5421304f5dc49a031618036674fd0125f80a125f4b10910a1389a0bda1f67f",
+      "tree": "e5648d97d600148fb2c66f860074dab19918dfef",
+      "bytes": 130020,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "path": "serving_v0523/candidates/v161_tma_expert_channels/validation.json"
+    },
+    "V162": {
+      "kind": "Feasibility study",
+      "report": "serving_v0523/candidates/v162_dense_verify_span_feasibility/README.md",
+      "evidence_sha256": "d373455c34f551bff52d4c9557359fe70a452f7634d02632cd613b5d220b5c72"
+    },
+    "V163": {
+      "sha256": "d4840308ea25166a1a3db0b4358beb6d59b9de97faaa43ef8a3795241bdc33a1",
+      "tree": "aff28f2cc94bd57228886740f691d7543f9a13ac",
+      "bytes": 53638,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": ""
+      },
+      "path": "serving_v0523/candidates/v163_sparse_prompt_exchange/validation.json"
+    },
+    "V164": {
+      "sha256": "a8b11f1460005a0290dfef86e97a8f043c016ac8b4540f1f423cd7cdd6a6ba04",
+      "tree": "c45818ae2d5edecf97d279c55f473e8c0cd2f169",
+      "bytes": 140262,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": ""
+      },
+      "path": "serving_v0523/candidates/v164_tma_experts_sparse_prompt/validation.json"
+    }
+  },
+  "evidence_files": {
+    "experiments/iterations/20261118-serving-one-user-phase.json": "91f9e2b5435429d25958b3990d7c53be0161636d73b040509c53e16764c618bc",
+    "serving_v0523/candidates/v161_tma_expert_channels/sm90.json": "3fc5f0259879b6301a59afd65bf25c69ce7d0369fefe42683a9541168e158f9e",
+    "serving_v0523/candidates/v161_tma_expert_channels/warp.json": "10ff0762595d66136f3283920409982b7205ce2f2127691d4fb4102b13dd1093",
+    "serving_v0523/candidates/v162_dense_verify_span_feasibility/check.json": "d373455c34f551bff52d4c9557359fe70a452f7634d02632cd613b5d220b5c72",
+    "serving_v0523/candidates/v163_sparse_prompt_exchange/geometry.json": "04a556956e62787d4206f105f1aaf3f1ad9446f14aa42dd5b359ee42de2c091f",
+    "serving_v0523/candidates/v163_sparse_prompt_exchange/independent_transport.json": "5404078bbdd723f288fb6c25c1e37653e56e016425df4ae6d9f477780c9c7e94",
+    "serving_v0523/candidates/v163_sparse_prompt_exchange/boundary_check.json": "c01e2f42ac27d654885c5a451138836ec054ea1f1b9648ef6d45b82aafe69cdc",
+    "serving_v0523/candidates/v164_tma_experts_sparse_prompt/dispatch.json": "134c60b05287b1021d0f3a4674b1a3ce10c5f2e643df5508fc7c364e6e4e83fa",
+    "serving_v0523/candidates/v164_tma_experts_sparse_prompt/transport.json": "5404078bbdd723f288fb6c25c1e37653e56e016425df4ae6d9f477780c9c7e94",
+    "serving_v0523/candidates/v164_tma_experts_sparse_prompt/integration.json": "6909948f18d0d158668a082e63f242baca71ba6dae64f2ab0c480d77e24ba3be",
+    "serving_v0523/candidates/v164_tma_experts_sparse_prompt/independent_windows.json": "a30131983f044c4f44101cd67b98c1b3b845d9ecac8e8f91a7396a327039dbf3",
+    "serving_v0523/candidates/v163_sparse_prompt_exchange/cleanup.json": "b5b3eb03dc0f20400f0c0ae23d1584750d0e53055155a6e8299e17a68d385fb3",
+    "serving_v0523/runs/nov20_v163_runner.plan.json": "761cdc4f24f738f0eb8e3132bb3d80ae58ced8e9fe73d4f2cb5a1eb82d4f87b1",
+    "serving_v0523/runs/nov20_v163_runner.launch.json": "7c36a33f127fc795985ed7c81ae3a2d26688d51377d198ad60dae92b80d06a0f",
+    "serving_v0523/runs/nov20_v163_runner.cpu.json": "7a0e5352b2678332b26447873dbe8914e0104f0eb70deb734e8febd464b787a3"
+  },
+  "measurements": {
+    "client_and_frontier": "experiments/iterations/20261118-serving-one-user-phase.json",
+    "phase_study_limits": [
+      "Each trace measured three sequential, one-user conversations. Wall runs from client start to final response, including gaps.",
+      "Client TTFT includes scheduling, network and first-token work. After-first duration includes transmission and client overhead.",
+      "The archived speedups hold all TTFT and gaps fixed; the historical and official workloads have different lengths and generated content.",
+      "Official percentiles and aggregate throughput cannot reconstruct the V64 time budget. Paired aggregates do not isolate a kernel effect."
+    ],
+    "estimated_full_attention_maximum_at_one_user": 1.0336879189104895,
+    "v161_steady_instruction_sites": {
+      "gate_up": [
+        987,
+        728
+      ],
+      "down": [
+        681,
+        426
+      ],
+      "meaning": "SM90a static steady loop over 128 input features, not cycles or wall time"
+    },
+    "v163_expected_remote_mib": {
+      "original": 112,
+      "uniform_top8": 74.13
+    },
+    "v163_archived_shapes": {
+      "1": {
+        "all_prompt_calls": 54,
+        "live_prompt_rows": 303536,
+        "eligible_at_live_shape": 17,
+        "eligible_live_rows": 268481,
+        "eligible_at_captured_shape": 17,
+        "eligible_captured_rows": 269312
+      },
+      "4": {
+        "all_prompt_calls": 127,
+        "live_prompt_rows": 669797,
+        "eligible_at_live_shape": 35,
+        "eligible_live_rows": 571372,
+        "eligible_at_captured_shape": 35,
+        "eligible_captured_rows": 571392
+      },
+      "16": {
+        "all_prompt_calls": 241,
+        "live_prompt_rows": 1415564,
+        "eligible_at_live_shape": 75,
+        "eligible_live_rows": 1228800,
+        "eligible_at_captured_shape": 75,
+        "eligible_captured_rows": 1228800
+      },
+      "32": {
+        "all_prompt_calls": 351,
+        "live_prompt_rows": 2825080,
+        "eligible_at_live_shape": 150,
+        "eligible_live_rows": 2455793,
+        "eligible_at_captured_shape": 150,
+        "eligible_captured_rows": 2456064
+      }
+    },
+    "v164_cpu": {
+      "cases": 864,
+      "rows": 664128,
+      "multiwindow_calls": 36,
+      "transport_rank_cases": 672,
+      "physical_H200": false,
+      "independent_bitwise_bfloat16_elements": 3932160
+    }
+  },
+  "judge": {
+    "observed_utc": "2026-11-18T19:21:20.058435+00:00",
+    "job": "75557c21595347de",
+    "candidate": "V93/16",
+    "status": "queued",
+    "quota": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "reset": "2026-11-19T00:00:00Z",
+    "new_submissions": 0,
+    "live_existing_runner_pids": {
+      "nov19_decode_runner": 75333,
+      "nov20_v129_runner": 47821,
+      "nov20_v132_runner": 3073,
+      "nov20_v141_runner": 3084,
+      "nov20_v154c_runner": 3094
+    },
+    "nov19_plan": [
+      "V120b/32",
+      "V147/16 if V93 pending",
+      "V139/4"
+    ],
+    "nov20_primary_plan": "V129/1 plus conditional V132/32 and V141/32. V154c/16 only for an unused private slot.",
+    "standalone_kernel_open": false,
+    "serving_open": true,
+    "serving_close": "2026-11-20T00:00:00-08:00",
+    "official_status_at_observation": {
+      "board": "serving",
+      "content_hash": "dd914a8050ce08c034d9eaa6cf8680c8c834bc1ebe3572d233c69a953afa3690",
+      "created_at": 1794986590.9584968,
+      "duplicate_of": null,
+      "id": "75557c21595347de",
+      "mode": "check",
+      "payload_ref": "serving/dd914a8050ce08c034d9eaa6cf8680c8c834bc1ebe3572d233c69a953afa3690.diff",
+      "result": null,
+      "serving_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-dflash-compact-context": "",
+        "--speculative-dflash-fused-candidate-head": "",
+        "--speculative-dflash-reduced-target-argmax": "",
+        "--speculative-dflash-tp-context-projection": "",
+        "--speculative-dflash-tp-conv-projection": "",
+        "--speculative-dflash-tree": "",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "status": "queued",
+      "team": "CristiSavca"
+    },
+    "official_quota_at_observation": {
+      "limits": {
+        "scored": {
+          "per_day": 1,
+          "used": 0,
+          "left": 1
+        },
+        "checks": {
+          "per_day": 3,
+          "used": 3,
+          "left": 0
+        }
+      },
+      "priority": {
+        "top": 0,
+        "size": 102,
+        "tiers": [
+          {
+            "name": "overall top 50",
+            "size": 50
+          },
+          {
+            "name": "top 10 on a problem board",
+            "size": 4
+          },
+          {
+            "name": "rest of the overall top 100",
+            "size": 48
+          }
+        ]
+      },
+      "resets_at": "2026-11-19T00:00:00Z",
+      "serving_priority": false,
+      "serving_tier": null
+    },
+    "nov20_v163_conditional_private_check": {
+      "candidate": "V163",
+      "comparison": "ac89fddc4ee147ab",
+      "comparison_tokens_s_gpu": 17349.9,
+      "scope": "16 users, V163 prompt exchange on V64, second slot only, one check reserved",
+      "requires": {
+        "prior_acceptance": "v129_nov20_check1",
+        "both_terminal_failures": [
+          "v120b_nov19_check32",
+          "v139_nov19_check4"
+        ],
+        "peers_unattempted": [
+          "v132_nov20_check32",
+          "v141_nov20_check32",
+          "v154c_nov20_check16"
+        ],
+        "quota": {
+          "per_day": 3,
+          "used": 1,
+          "left": 2
+        },
+        "resets_at": "2026-11-21T00:00:00Z"
+      },
+      "window_start": "2026-11-20T00:03:00+00:00",
+      "window_end_exclusive": "2026-11-20T07:59:00+00:00",
+      "launch": "serving_v0523/runs/nov20_v163_runner.launch.json",
+      "cpu_tests": "serving_v0523/runs/nov20_v163_runner.cpu.json",
+      "confirmed_worker_pid": 31570,
+      "confirmed_caffeinate_pid": 31571,
+      "confirmed_holding_lock": true,
+      "local_verification_utc": "2026-11-18T19:31:53.191206+00:00",
+      "test_methods": 72,
+      "official_job_submitted_at_verification": false
+    }
+  },
+  "time_to_results": {
+    "scope": "Own archived terminal serving checks created at or after 2026-11-15T00:00Z; de-duplicated by official job ID. Includes two failed model runs.",
+    "queue_hours_by_job": {
+      "ac89fddc4ee147ab": 16.635951176020836,
+      "30bb36feb528416f": 9.221434550086657,
+      "54654743532e4e50": 23.872845868931876,
+      "2eea52ae2db64189": 36.96072253260348,
+      "f5e8cfbf3278419e": 10.534937958253755,
+      "fec66419d5154815": 19.591899320748116,
+      "00c134c978104d65": 13.10030533876684,
+      "8b71561950104724": 20.608108779324425,
+      "d40c45e5ca484591": 16.07561096045706,
+      "04b01f958aa5487c": 34.02546605070432,
+      "220305c15ded4f6b": 19.145794829328853
+    },
+    "minimum_hours": 9.221434550086657,
+    "median_hours": 19.145794829328853,
+    "maximum_hours": 36.96072253260348,
+    "checks_waiting_over_eight_hours": 11,
+    "meaning": "The final private window is under eight hours. Physical measurements on Nov 20 could arrive after scoring closes."
+  },
+  "hardware_gates": [
+    "stock model output agreement and exact requested length",
+    "peak <=2 GB over stock/GPU",
+    "TTFT <=2x stock at each load",
+    "four-load throughput frontier at stock per-user speed"
+  ],
+  "new_paid_allocations": 0,
+  "scratch_cleanup": "serving_v0523/candidates/v163_sparse_prompt_exchange/cleanup.json"
+}

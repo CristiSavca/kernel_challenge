@@ -1,0 +1,57 @@
+{
+  "parent": "V284",
+  "candidate": "V289",
+  "phase_definition": "P = main pool projection and gather, R = gate and route, Q = route planning. The fused norm/staging waits for both input and plan.",
+  "baseline_segment": "max(P,R)+Q",
+  "early_segment": "max(P,R+Q)",
+  "ideal_saved_per_layer": "min(Q,max(0,P-R))",
+  "verified_duration_triplets": 4913,
+  "sparse_layers": 62,
+  "by_rung": [
+    {
+      "users": 1,
+      "rows": 8,
+      "plan_integer_payload_bytes": 900,
+      "V64_proxy_verify_ms": 19.68503937007874,
+      "exposed_overlap_us_per_layer_for_1_63pct_verify": 5.092256568454869,
+      "exposed_overlap_us_per_layer_for_uniform_4x_score_verify_scenario": 205.4321612960121,
+      "native_single_gpu_pool_us": 25.32800007611513,
+      "native_single_gpu_router_us": 30.224000103771687
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "plan_integer_payload_bytes": 3204,
+      "V64_proxy_verify_ms": 35.587188612099645,
+      "exposed_overlap_us_per_layer_for_1_63pct_verify": 9.20593002411058,
+      "exposed_overlap_us_per_layer_for_uniform_4x_score_verify_scenario": 371.386256008449,
+      "native_single_gpu_pool_us": 25.776000693440437,
+      "native_single_gpu_router_us": 19.120000302791595
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "plan_integer_payload_bytes": 12420,
+      "V64_proxy_verify_ms": 79.84031936127744,
+      "exposed_overlap_us_per_layer_for_1_63pct_verify": 20.65362344730597,
+      "exposed_overlap_us_per_layer_for_uniform_4x_score_verify_scenario": 833.2098837395141,
+      "native_single_gpu_pool_us": 29.23200000077486,
+      "native_single_gpu_router_us": 20.287999883294106
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "plan_integer_payload_bytes": 24708,
+      "V64_proxy_verify_ms": 96.99769053117784,
+      "exposed_overlap_us_per_layer_for_1_63pct_verify": 25.09200603800302,
+      "exposed_overlap_us_per_layer_for_uniform_4x_score_verify_scenario": 1012.2634164923131,
+      "native_single_gpu_pool_us": 34.84800085425377,
+      "native_single_gpu_router_us": 21.296000108122826
+    }
+  ],
+  "scope": "Native standalone pool and router measurements are context only. V289 shards its projection and gathers; no trace measures P,R,Q in this graph. Contention can erase overlap. The same four int32 tensors are allocated earlier on eligible graphs. Whole allocator peaks and hardware effects are unknown.",
+  "input_sha256": {
+    "standalone_projection_and_v64_period": "63a550d323260e3536cbf888e91fdc3633d65427850ad894299427032df52848",
+    "fixed_interactivity_frontier": "f4ee935c467b0898a8f2a56e43d02b3bcb2b7d850c7dfc4c2c8cfcb9706e0252"
+  }
+}

@@ -1,0 +1,347 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+index 13758cf..3b586d2 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -14,6 +14,17 @@ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>
+                 kRegsBKDim == 1 && final_regs_c_index() == 0 && kSwizzleBytes == 128);
+   static constexpr uint32_t bands = MuseOverlapCtx::WarpShape::N / 16;
+   static_assert((bands == 2 || bands == 4) && sizeof(regs_b[0]) == bands * sizeof(uint4));
++#ifdef MUSE_FULL_K_STAGE
++  static_assert(bands == 2 && MuseOverlapCtx::BlockShape::M == 8);
++  static constexpr uint32_t slices = 4;
++#else
++  static constexpr uint32_t slices = bands == 4 ? 1 : 2;
++#endif
++  typename MmaOpClass::BRegisters held[4][2][1];
++  CUDA_INLINE auto& operands(uint32_t iteration) {
++    if constexpr (slices == 4) return held[iteration];
++    else return regs_b[iteration % 2];
++  }
+   CUDA_INLINE void transform_b(uint32_t buffer, uint32_t iteration) {
+     if constexpr (bands == 2) Base::transform_b(buffer, iteration);
+   }
+@@ -30,67 +41,38 @@ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>
+         + stage * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
+     auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
+     const uint32_t buffer = iteration % 2;
++    auto& input = operands(iteration);
++    if constexpr (slices == 4) {
++      PRAGMA_UNROLL
++      for (uint32_t j = 0; j < bands; ++j)
++        PRAGMA_UNROLL
++        for (uint32_t i = 0; i < 4; ++i) input[j][0][i] = regs_b[buffer][j][0][i];
++    }
+     if constexpr (bands == 2) wgmma_fence();
+     PRAGMA_UNROLL
+     for (uint32_t j = 0; j < bands; ++j) {
+       if constexpr (bands == 4) {
+         static_assert(!kHasZeroPoint && !kUseFusedE8m0Scale && ElementB::kBits == 4 && ElementA::kBits == 16);
+-        auto* frag = reinterpret_cast<uint32_t*>(&regs_b[buffer][j][0]);
++        auto* frag = reinterpret_cast<uint32_t*>(&input[j][0]);
+         uint4 zp{};
+         dequant<ElementB, ElementA, false, false, kNumWarpShapeNSplits>(regs_qb[buffer], frag, j, reinterpret_cast<uint32_t*>(&zp));
+         arith.may_apply_bs_and_zp_on_b(frag, j, buffer);
+         wgmma_fence();
+       }
+-      MmaOpClass::fma(desc, regs_b[buffer][j][0], regs_c[0][j][0], true);
++      MmaOpClass::fma(desc, input[j][0], regs_c[0][j][0], true);
+     }
+-    if (bands == 4 || iteration % 2 == 1) {
++    if (iteration % slices + 1 == slices) {
+       wgmma_commit();
+       wgmma_wait<0>();
+-      // Keep both register-source fragments alive through the async group's
+-      // completion, including the first fragment's four-word halves.
+       PRAGMA_UNROLL
+-      for (uint32_t b = 0; b < (bands == 4 ? 1 : 2); ++b) {
+-        auto* values = reinterpret_cast<uint32_t*>(&regs_b[bands == 4 ? buffer : b]);
++      for (uint32_t b = 0; b < slices; ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&operands(iteration + 1 - slices + b));
+         PRAGMA_UNROLL
+         for (uint32_t i = 0; i < bands * 4; ++i) warpgroup_fence_operand(values[i]);
+       }
+     }
+   }
+ };
+-#ifdef MUSE_FULL_K_STAGE
+-// Hold all four K16 operands until the last tensor operation completes.
+-struct MuseFullStageMma : MuseOverlapMma {
+-  using MuseOverlapMma::MuseOverlapMma;
+-  static_assert(bands == 2 && MuseOverlapCtx::BlockShape::M == 8);
+-  typename MmaOpClass::BRegisters held[4][2];
+-  CUDA_INLINE void run(uint32_t stage_id, uint32_t iteration) {
+-    const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
+-        + stage_id * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
+-    auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
+-    PRAGMA_UNROLL
+-    for (unsigned j = 0; j < 2; ++j)
+-      PRAGMA_UNROLL
+-      for (unsigned i = 0; i < 4; ++i) held[iteration][j][i] = regs_b[iteration % 2][j][0][i];
+-    wgmma_fence();
+-    PRAGMA_UNROLL
+-    for (unsigned j = 0; j < 2; ++j)
+-      MmaOpClass::fma(desc, held[iteration][j], regs_c[0][j][0], true);
+-    if (iteration == 3) {
+-      wgmma_commit();
+-      wgmma_wait<0>();
+-      PRAGMA_UNROLL
+-      for (unsigned k = 0; k < 4; ++k)
+-        PRAGMA_UNROLL
+-        for (unsigned j = 0; j < 2; ++j)
+-          PRAGMA_UNROLL
+-          for (unsigned i = 0; i < 4; ++i) warpgroup_fence_operand(held[k][j][i]);
+-    }
+-  }
+-};
+-using MuseSelectedMma = MuseFullStageMma;
+-#else
+-using MuseSelectedMma = MuseOverlapMma;
+-#endif
+ template <> struct MmaSelector<MmaType::WGMMA, MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>> {
+-  using Type = MuseSelectedMma;
++  using Type = MuseOverlapMma;
+ };
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index cffda5d..257cff3 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -75,7 +75,7 @@ def _accumulate_tiles(
+     V_PAGE: tl.constexpr, V_TOKEN: tl.constexpr, V_HEAD: tl.constexpr,
+     WINDOW_LEFT: tl.constexpr, TILE_N: tl.constexpr, TILE_M: tl.constexpr,
+     D: tl.constexpr, ORIGIN_STRIDE: tl.constexpr, DIRECT: tl.constexpr,
+-    InitialMax=None, InitialSum=None, InitialAcc=None, origin_base=0,
++    InitialMax=None, InitialSum=None, InitialAcc=None, origin_base=0, ONE_TILE: tl.constexpr = False,
+ ):
+     if InitialMax is None:
+         row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
+@@ -83,7 +83,7 @@ def _accumulate_tiles(
+         acc = tl.zeros((TILE_M, D), tl.float32)
+     else:
+         row_max, row_sum, acc = InitialMax, InitialSum, InitialAcc
+-    for tile in tl.range(tile_start, tile_end, num_stages=2):
++    for tile in tl.range(tile_start, tile_start + 1 if ONE_TILE else tile_end, num_stages=2):
+         tokens = tile * TILE_N + tl.arange(0, TILE_N)
+         live = tokens < length
+         if WINDOW_LEFT >= 0:
+@@ -205,23 +205,36 @@ def _partition_attention(
+     VDesc=None,
+     ORIGIN_STRIDE: tl.constexpr = 0,
+     CAPACITY: tl.constexpr = 0,
++    ONE_TILE: tl.constexpr = False,
++    SEGMENT_LANES: tl.constexpr = 0,
+ ):
+     partition = tl.program_id(0)
+     kv_head = tl.program_id(1)
+-    requests, ends, total, partition_width = _plan(
+-        Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
+-    )
++    if B == 1:
++        _, total = _tile_geometry(tl.load(Lengths), tl.load(CuQ + 1) - tl.load(CuQ), WINDOW_LEFT, TILE_N)
++        partition_width = tl.maximum(1, tl.cdiv(total, PARTITIONS))
++        request = 0
++    else:
++        requests, ends, total, partition_width = _plan(
++            Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
++        )
++    if ONE_TILE:
++        partition_width = 1
+     current = partition * partition_width
+     partition_end = tl.minimum(current + partition_width, total)
+-    request = tl.sum(((ends <= current) & (requests < B)).to(tl.int32))
++    if B != 1:
++        request = tl.sum(((ends <= current) & (requests < B)).to(tl.int32))
+     packed_row = tl.arange(0, TILE_M)
+     dims = tl.arange(0, D)
+     q_token = packed_row // GQA
+     q_head = kv_head * GQA + packed_row % GQA
+     while current < partition_end:
+-        req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
+-        req_end = tl.sum(tl.where(requests == request, ends, 0))
+-        if current < req_end:
++        if B == 1:
++            req_start, req_end = 0, total
++        else:
++            req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
++            req_end = tl.sum(tl.where(requests == request, ends, 0))
++        if B == 1 or ONE_TILE or current < req_end:
+             segment_end = tl.minimum(req_end, partition_end)
+             length = tl.load(Lengths + request)
+             q_start = tl.load(CuQ + request)
+@@ -243,7 +256,7 @@ def _partition_attention(
+                     K, V, Pages, Origins, KDesc, VDesc, request, kv_head, tile_start, tile_end,
+                     length, q_length, q_positions, q_live, query, dims, scale,
+                     PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                    WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False,
++                    WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False, ONE_TILE=ONE_TILE,
+                 )
+             else:
+                 row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
+@@ -254,15 +267,24 @@ def _partition_attention(
+                 if WINDOW_LEFT >= 0:
+                     origin_base = tl.maximum(length - MAX_Q - WINDOW_LEFT, 0) // TILE_N
+                 while cursor < tile_end:
+-                    if WINDOW_LEFT >= 0:
++                    if ONE_TILE:
++                        # One certificate covers the entire intersection. SWA boundary tiles require masked page reads.
++                        complete = True
++                        if WINDOW_LEFT >= 0:
++                            first_live = tl.maximum(length - q_length - WINDOW_LEFT, 0)
++                            complete = (cursor * TILE_N >= first_live) & ((cursor + 1) * TILE_N <= length)
++                        origin = tl.load(Origins + request * ORIGIN_STRIDE + cursor - origin_base, complete, other=-1)
++                        direct = (origin > 0) & (origin <= CAPACITY - TILE_N)
++                        stop = tile_end
++                    elif WINDOW_LEFT >= 0:
+                         stop, direct = _window_tile_run(
+                             Origins + request * ORIGIN_STRIDE, cursor, tile_end,
+                             tl.maximum(length - q_length - WINDOW_LEFT, 0), length,
+                             origin_base, CAPACITY - TILE_N, TILE_N,
+                         )
+-                    elif tile_end - tile_start <= 32:
++                    elif SEGMENT_LANES or tile_end - tile_start <= 32:
+                         # One warp vote covers the entire short intersection.
+-                        lanes = cursor + tl.arange(0, 32)
++                        lanes = cursor + tl.arange(0, SEGMENT_LANES or 32)
+                         live_lanes = lanes < tile_end
+                         origins = tl.load(Origins + request * ORIGIN_STRIDE + lanes, live_lanes, other=1)
+                         fits = (origins > 0) & (origins <= CAPACITY - TILE_N)
+@@ -277,14 +299,14 @@ def _partition_attention(
+                             K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,
+                             length, q_length, q_positions, q_live, query, dims, scale,
+                             PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True, row_max, row_sum, acc, origin_base,
++                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True, row_max, row_sum, acc, origin_base, ONE_TILE,
+                         )
+                     else:
+                         row_max, row_sum, acc = _accumulate_tiles(
+                             K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,
+                             length, q_length, q_positions, q_live, query, dims, scale,
+                             PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False, row_max, row_sum, acc,
++                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False, row_max, row_sum, acc, ONE_TILE=ONE_TILE,
+                         )
+                     cursor = stop
+             # Intersections of two sorted interval partitions fit in P+B-1
+@@ -298,6 +320,8 @@ def _partition_attention(
+                 acc / tl.where(row_sum > 0, row_sum, 1.0)[:, None],
+             )
+             current = segment_end
++        if B == 1 or ONE_TILE:
++            current = partition_end
+         request += 1
+ 
+ 
+@@ -321,6 +345,7 @@ def _merge_partitions(
+     PARTITIONS: tl.constexpr,
+     BLOCK_B: tl.constexpr,
+     BLOCK_SPLITS: tl.constexpr,
++    ONE_TILE: tl.constexpr = False,
+ ):
+     request = tl.program_id(0)
+     kv_head = tl.program_id(1)
+@@ -331,13 +356,19 @@ def _merge_partitions(
+     if q_token >= q_length:
+         return
+ 
+-    requests, ends, _, width = _plan(
+-        Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
+-    )
+-    req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
+-    req_end = tl.sum(tl.where(requests == request, ends, 0))
+-    split_begin = req_start // width
+-    split_end = (req_end - 1) // width + 1
++    if B == 1:
++        req_start = 0
++        _, req_end = _tile_geometry(tl.load(Lengths), q_length, WINDOW_LEFT, TILE_N)
++        width = tl.maximum(1, tl.cdiv(req_end, PARTITIONS))
++    else:
++        requests, ends, _, width = _plan(Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B)
++        req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
++        req_end = tl.sum(tl.where(requests == request, ends, 0))
++    if ONE_TILE:
++        split_begin, split_end = req_start, req_end
++    else:
++        split_begin = req_start // width
++        split_end = (req_end - 1) // width + 1
+     dims = tl.arange(0, D)
+     max_lse = tl.full((), float("-inf"), tl.float32)
+     den = tl.full((), 0.0, tl.float32)
+@@ -453,6 +484,15 @@ def paged_verify_attention(
+     tile_m = triton.next_power_of_2(max_q * groups)
+     tile_n = 64 if window_left >= 0 else 128
+     partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
++    # Bound the number of live key tiles without fetching device lengths. A window can start mid-tile.
++    capacity = triton.cdiv(page_table.shape[1] * page_size, tile_n)
++    if window_left >= 0:
++        capacity = min(capacity, triton.cdiv(window_left + max_q + tile_n - 1, tile_n))
++    tile_bound = max(1, batch * capacity)
++    one_tile = tile_bound <= partitions
++    partitions = min(partitions, tile_bound)
++    segment_bound = triton.cdiv(tile_bound, partitions)
++    segment_lanes = triton.next_power_of_2(segment_bound) if window_left < 0 and segment_bound <= 32 else 0
+     slots = partitions + batch - 1
+     if workspace_limit_bytes is not None and slots * kv_heads * tile_m * (head_dim + 1) * 4 > workspace_limit_bytes:
+         return None
+@@ -494,7 +534,7 @@ def paged_verify_attention(
+         tile_n,
+         partitions,
+         block_batch,
+-        **direct,
++        ONE_TILE=one_tile, SEGMENT_LANES=segment_lanes, **direct,
+         num_warps=4,
+     )
+     _merge_partitions[(batch, kv_heads, max_q * groups)](
+@@ -515,6 +555,7 @@ def paged_verify_attention(
+         partitions,
+         block_batch,
+         16,
++        ONE_TILE=one_tile,
+         num_warps=4,
+     )
+     return out
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+index 5abf8ec..eeaf045 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -30,17 +30,16 @@ def enable_full_pair(kernel):
+                         "            if (warp_iter_id + 1 == Ctx::kWarpIters) consumer.arrive(stage_id);\n"
+                         "            mma.transform_b(\n")
+     prefetch = "s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);"
+-    loop = loop.replace(prefetch, "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch)
++    guarded = "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch
++    loop = loop.replace(prefetch, guarded)
+     full_stage = getattr(kernel, "full_stage", False)
+     if full_stage and (tuple(kernel.warp_shape) != (8, 32, 64) or kernel.num_stages != 4
+                        or kernel.num_ctas_per_sm != 1):
+         raise ValueError("unsupported complete decode stage")
+     if kernel.warp_shape[1] == 64 or full_stage:
+-        # 512 math lanes at 112 registers plus 128 loader lanes at 32 exactly
+-        # consume the original 61,440-register CTA pool.
++        # Preserve the CTA register budget of 512 * 112 + 128 * 32.
+         loop = loop.replace("? 40 : 24;", "? 32 : 24;").replace("? 96 : 232;", "? 112 : 232;")
+     if kernel.warp_shape[1] == 64 or (full_stage and kernel.block_shape[2] == 128):
+-        guarded = "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch
+         loop = loop.replace(guarded, "").replace("            mma.transform_b(", "            " + guarded + "\n            mma.transform_b(")
+     include = "#include <humming/kernel/humming_ws.cuh>"
+     if kernel.code.count(include) != 1:
+@@ -139,7 +138,7 @@ def _prepare_down(context, meta, compute, tuning):
+             and config.get("num_ctas_per_sm", 1) == 1):
+         wide = config | {"block_shape": (m, 256, 256), "warp_shape": (m, 64, 64), "num_stages": 3}
+         variants.insert(0, (LiveDecodeDownKernel, wide))
+-    if tuple(config["block_shape"]) == (8, 128, 256):
++    if (m, n, k) == (8, 128, 256):
+         variants.insert(0, (FullStageDecodeDownKernel, config))
+     for variant, geometry in variants:
+         try:
+diff --git a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+index 2418a36..120c317 100644
+--- a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
++++ b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+@@ -49,7 +49,7 @@ def adapt_residual_tiles(kernel, paired, *, decode_width=None):
+         declaration = "CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {"
+         code = _replace_once(code, declaration, declaration + " run_as<MmaOpClass>(stage, iteration); }\n"
+                              "  template<class SliceOp> CUDA_INLINE void run_as(uint32_t stage, uint32_t iteration) {")
+-        code = _replace_once(code, "MmaOpClass::fma(desc, regs_b", "SliceOp::fma(desc, regs_b")
++        code = _replace_once(code, "MmaOpClass::fma(desc, input", "SliceOp::fma(desc, input")
+     code = _replace_once(code, location, "".join(operations) + location)
+     # Keep the entire accumulator lifetime in one width-specialized branch.
+     # Joining those arrays before the epilogue spills the full-width hot loop.

@@ -1,0 +1,294 @@
+--- a/submit_nov19_decode_checks.py
++++ b/submit_nov19_decode_checks.py
+@@ -84,19 +84,15 @@
+     V111.flags | {"--speculative-dflash-direct-prefix-kv": "",
+                   "--speculative-dflash-parallel-verify-context": ""},
+ )
+-V120b = Candidate(
+-    "v120b", "v120b_native_muse_prompt",
+-    "0cb0a90248b98b07047075964ee6bf7200d9ebaadcf9b2eb4b10fd6098f9f7b7", V120.flags,
+-)
+-LEGACY_EXPERT_ALTERNATIVES = (V100c, V106, V89, V116, V111, V120)
+-ALTERNATIVES = (V116b, V120b, V80a)
++LEGACY_EXPERT_ALTERNATIVES = (V100c, V106, V89, V116, V111)
++ALTERNATIVES = (V116b, V120, V80a)
+ PREFILL_ALTERNATIVES = (V98, V102, V95)
+ TREE_ALTERNATIVES = (V101b, V79a)
+ CANDIDATES = (*ALTERNATIVES, *PREFILL_ALTERNATIVES, *TREE_ALTERNATIVES)
+ 
+ 
+ def check_load(candidate):
+-    if candidate in (V100c, V106, V111, V120, V120b):
++    if candidate in (V100c, V106, V111, V120):
+         return 32
+     return 4 if candidate in (V87, V89, V116, V116b) else 16
+ 
+@@ -127,7 +123,7 @@
+     if not isinstance(meta, dict) or (meta.get("candidate"), meta.get("sha256"), meta.get("flags"),
+                                      meta.get("users")) != (V87.name, V87.sha256, V87.flags, 4):
+         return None, "V87 submission metadata mismatch"
+-    return parent_choice(V87, V87_JOB, 4, V116b, V80a, okc, execute, pending=V120b)
++    return parent_choice(V87, V87_JOB, 4, V116b, V80a, okc, execute, pending=V120)
+ 
+ 
+ def v64_gate(runs):
+@@ -246,7 +242,7 @@
+             return "waiting", "V87 evidence unavailable"
+         if choice != candidate:
+             return "waiting", reason
+-        if candidate == V120b:
++        if candidate == V120:
+             return v64_gate(runs)
+     state, detail = job_state(V68_JOB, V68.sha256, V68.flags, okc=okc, execute=execute)
+     if state not in ("passed", "queued", "running"):
+@@ -344,7 +340,7 @@
+     if candidate in ALTERNATIVES:
+         evidence["comparison_receipt"] = prefix(V87)
+         evidence["exclusive_alternatives"] = [c.name for c in ALTERNATIVES]
+-        if candidate == V120b:
++        if candidate == V120:
+             evidence.update(shared_jobs=[], decision_receipt=prefix(V87),
+                             comparison_receipt=f"{V64_JOB}.json", comparison_job=V64_JOB)
+     else:
+@@ -369,7 +365,7 @@
+         checks[candidate.name] = {"candidate": candidate.name, "users": check_load(candidate),
+                                   "flags": candidate.flags, "sha256": candidate.sha256}
+     first = {"alternatives": [checks[c.name] for c in ALTERNATIVES], "decision_receipt": prefix(V87),
+-             "when_passed": V116b.name, "when_queued_or_running_and_v64_passed": V120b.name,
++             "when_passed": V116b.name, "when_queued_or_running_and_v64_passed": V120.name,
+              "legacy_attempt_receipts": [prefix(c) for c in LEGACY_EXPERT_ALTERNATIVES],
+              "v64_scored_receipt": f"{V64_JOB}.json", "when_failed_or_skipped": V80a.name,
+              "when_unknown": "defer this slot"}
+--- a/test_nov19_decode_checks.py
++++ b/test_nov19_decode_checks.py
+@@ -23,7 +23,7 @@
+         self.on_quota = lambda: None
+         self.at = r.START
+         self.submit_result = 0
+-        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120b","v101b","v102"), 1)}
++        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v120","v101b","v102"), 1)}
+         self.jobs[r.V68_JOB] = {"id": r.V68_JOB, "board":"serving", "mode":"check",
+                                 "status":"queued", "result":None}
+         self.ids[r.V87.name] = r.V87_JOB
+@@ -83,7 +83,7 @@
+         self.assertEqual(checks[0]["decision_receipt"], "v87_nov18_check4")
+         alternatives = checks[0]["alternatives"]
+         self.assertEqual([(v["candidate"], v["users"], len(v["flags"])) for v in alternatives],
+-                         [("v116b", 4, 9), ("v120b", 32, 11), ("v80a", 16, 7)])
++                         [("v116b", 4, 9), ("v120", 32, 11), ("v80a", 16, 7)])
+         self.assertEqual(alternatives[0]["flags"], r.V87.flags)
+         self.assertEqual(checks[1]["decision_receipt"], "v93_nov18_check16")
+         self.assertEqual(checks[1]["v93_job"], r.V93_JOB)
+@@ -97,7 +97,7 @@
+                          r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""})
+         self.assertEqual(checks[2]["alternatives"][1]["flags"], r.V76a.flags | {"--speculative-num-draft-tokens": "12"})
+         self.assertEqual([r.prefix(c) for c in r.CANDIDATES],
+-                         ["v116b_nov19_check4", "v120b_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
++                         ["v116b_nov19_check4", "v120_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
+                           "v101b_nov19_check16", "v79a_nov19_check16"])
+         self.assertEqual(r.START.isoformat(), "2026-11-19T00:03:00+00:00")
+         self.assertEqual(r.END.hour,22)
+@@ -242,8 +242,8 @@
+         self.assertTrue(self.offer(r.V98).startswith("submitted"))
+         self.assertEqual(self.left,1)
+ 
+-    def test_first_slot_tracks_v87_and_exact_v120b_payload(self):
+-        for state, selected in (("queued",r.V120b),("running",r.V120b),("done",r.V116b)):
++    def test_first_slot_tracks_v87_and_exact_v120_payload(self):
++        for state, selected in (("queued",r.V120),("running",r.V120),("done",r.V116b)):
+             with self.subTest(state=state):
+                 self.job(r.V87, state=state)
+                 for other in r.ALTERNATIVES:
+@@ -255,22 +255,22 @@
+                 meta = json.loads(self.receipt(selected).read_text().splitlines()[0])
+                 self.assertEqual((meta["candidate"],meta["flags"],meta["users"],meta["sha256"]),
+                                  (selected.name,selected.flags,r.check_load(selected),selected.sha256))
+-                if selected == r.V120b:
++                if selected == r.V120:
+                     self.assertEqual(meta["evidence"]["comparison_job"],r.V64_JOB)
+                     self.assertEqual(meta["evidence"]["shared_jobs"],[])
+                     self.assertEqual(meta["evidence"]["decision_receipt"],r.prefix(r.V87))
+                 self.receipt(selected).unlink()
+ 
+-    def test_v120b_independent_of_v68_and_optional_regressions(self):
++    def test_v120_independent_of_v68_and_optional_regressions(self):
+         self.job(r.V87,state="queued")
+         self.jobs[r.V68_JOB]["status"]="failed"
+         self.job(r.V72a,passed=False)
+         self.job(r.V76a,state="failed")
+-        self.assertTrue(self.offer(r.V120b).startswith("submitted"))
++        self.assertTrue(self.offer(r.V120).startswith("submitted"))
+         polled=[cmd[3] for cmd in self.commands if len(cmd)==5 and cmd[1:3]==["serve","status"]]
+         self.assertEqual(polled,[r.V87_JOB,r.V87_JOB])
+ 
+-    def test_v120b_rejects_malformed_scored_parent_without_consuming_slot(self):
++    def test_v120_rejects_malformed_scored_parent_without_consuming_slot(self):
+         from copy import deepcopy
+         self.job(r.V87,state="running")
+         for field,bad in (("id","different"),("status","queued"),("board","other"),("mode","check"),
+@@ -284,47 +284,47 @@
+                 else:
+                     invalid[field]=bad
+                 self.v64_path.write_text(json.dumps(invalid))
+-                self.assertTrue(self.offer(r.V120b).startswith("waiting"))
++                self.assertTrue(self.offer(r.V120).startswith("waiting"))
+         self.v64_path.write_text("invalid")
+-        self.assertTrue(self.offer(r.V120b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V120).startswith("waiting"))
+         self.v64_path.unlink()
+-        self.assertTrue(self.offer(r.V120b).startswith("waiting"))
+-        self.assertFalse(self.receipt(r.V120b).exists())
++        self.assertTrue(self.offer(r.V120).startswith("waiting"))
++        self.assertFalse(self.receipt(r.V120).exists())
+         self.assertEqual(self.left,3)
+         self.job(r.V87)
+         self.assertTrue(self.offer(r.V116b).startswith("submitted"))
+ 
+-    def test_v120b_revalidates_frozen_parent_after_quota(self):
++    def test_v120_revalidates_frozen_parent_after_quota(self):
+         self.job(r.V87,state="running")
+         self.on_quota=self.v64_path.unlink
+-        self.assertEqual(self.offer(r.V120b),"quota request failed")
+-        self.assertFalse(self.receipt(r.V120b).exists())
++        self.assertEqual(self.offer(r.V120),"quota request failed")
++        self.assertFalse(self.receipt(r.V120).exists())
+         self.assertEqual(self.left,3)
+ 
+     def test_pending_v87_completes_before_independent_check(self):
+         self.job(r.V87,state="running")
+         self.on_quota=lambda: self.job(r.V87)
+-        self.assertEqual(self.offer(r.V120b),"quota request failed")
+-        self.assertFalse(self.receipt(r.V120b).exists())
++        self.assertEqual(self.offer(r.V120),"quota request failed")
++        self.assertFalse(self.receipt(r.V120).exists())
+         self.assertTrue(self.offer(r.V116b).startswith("submitted"))
+ 
+-    def test_v120b_cannot_claim_unknown_or_wrong_v87(self):
++    def test_v120_cannot_claim_unknown_or_wrong_v87(self):
+         self.job(r.V87,state="queued")
+         path=self.receipt(r.V87)
+         good=path.read_text()
+         for wrong in (good.replace(r.V87_JOB,"1234567890abcdef"),good.replace(r.V87.sha256,"0"*64),
+                       good.replace('"users": 4','"users": 16'),"ambiguous"):
+             path.write_text(wrong)
+-            self.assertTrue(self.offer(r.V120b).startswith("waiting"))
++            self.assertTrue(self.offer(r.V120).startswith("waiting"))
+         path.unlink()
+-        self.assertTrue(self.offer(r.V120b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V120).startswith("waiting"))
+         self.assertEqual(self.left,3)
+ 
+-    def test_old_first_slot_attempt_blocks_v120b(self):
++    def test_old_first_slot_attempt_blocks_v120(self):
+         self.job(r.V87,state="running")
+         for past in (r.V89,r.V116,r.V116b,r.V80a):
+             self.receipt(past).write_text("uncertain old attempt")
+-            self.assertEqual(self.offer(r.V120b),"attempt recorded")
++            self.assertEqual(self.offer(r.V120),"attempt recorded")
+             self.receipt(past).unlink()
+         self.assertEqual(self.left,3)
+ 
+@@ -412,13 +412,13 @@
+                                    "--users", "4", *flags, "--no-wait"])
+ 
+     def test_recovered_legacy_first_slot_attempt_during_quota(self):
+-        for legacy in (r.V100c, r.V106, r.V89, r.V116, r.V111, r.V120):
+-            for state, selected in (("running", r.V120b), ("done", r.V116b), ("failed", r.V80a)):
++        for legacy in (r.V100c, r.V106, r.V89, r.V116, r.V111):
++            for state, selected in (("running", r.V120), ("done", r.V116b), ("failed", r.V80a)):
+                 self.job(r.V87, state=state)
+                 self.on_quota = lambda: self.receipt(legacy).write_text("recovered uncertain attempt")
+                 self.assertEqual(self.offer(selected), "quota request failed")
+                 self.assertFalse(self.receipt(selected).exists())
+-                self.assertEqual(self.offer(r.V120b), "attempt recorded")
++                self.assertEqual(self.offer(r.V120), "attempt recorded")
+                 self.receipt(legacy).unlink()
+         self.assertEqual(self.left, 3)
+ 
+@@ -431,11 +431,11 @@
+                 if len(calls) == 2:
+                     self.receipt(r.V106).write_text("previous check32 submit attempt")
+             return self.execute(cmd, **kwargs)
+-        result = r.run_candidate(r.V120b, runs=self.runs, okc="mock", execute=recover,
++        result = r.run_candidate(r.V120, runs=self.runs, okc="mock", execute=recover,
+                                  clock=lambda: self.at)
+         self.assertEqual(result, "quota request failed")
+         self.assertEqual(len(calls), 2)
+-        self.assertFalse(self.receipt(r.V120b).exists())
++        self.assertFalse(self.receipt(r.V120).exists())
+         self.assertEqual(self.left, 3)
+ 
+     def test_recovered_v111_first_slot_attempt_survives_migration_and_restart(self):
+@@ -455,34 +455,24 @@
+         self.assertTrue(self.offer(r.V79a).startswith("submitted"))
+         self.assertEqual(self.left, 1)
+ 
+-    def test_v120_attempt_prevents_a_second_private_check_after_correction(self):
+-        self.assertEqual(r.prefix(r.V120), "v120_nov19_check32")
+-        self.assertNotIn(r.V120, r.CANDIDATES)
+-        self.assertEqual(r.V120b.flags, r.V120.flags)
+-        self.receipt(r.V120).write_text("original check was attempted")
+-        for candidate in r.ALTERNATIVES:
+-            self.assertEqual(self.offer(candidate), "attempt recorded")
+-        self.assertFalse(self.commands)
+-        self.assertEqual(self.left, 3)
+-
+-    def test_v120b_exact_frozen_payload_and_cli_flags(self):
++    def test_v120_exact_frozen_payload_and_cli_flags(self):
+         import hashlib
+         root = r.ROOT / "serving_v0523/candidates"
+         self.assertEqual(r.V111.flags, r.V106.flags | {"--speculative-dflash-sp-prefill-context": ""})
+-        self.assertEqual(r.V120b.flags, r.V111.flags | {"--speculative-dflash-direct-prefix-kv": "",
++        self.assertEqual(r.V120.flags, r.V111.flags | {"--speculative-dflash-direct-prefix-kv": "",
+                                                        "--speculative-dflash-parallel-verify-context": ""})
+-        manifest = json.loads((root / r.V120b.directory / "validation.json").read_text())
+-        self.assertEqual(manifest["launch_flags"], r.V120b.flags)
+-        self.assertEqual(manifest["patch_sha256"], r.V120b.sha256)
++        manifest = json.loads((root / r.V120.directory / "validation.json").read_text())
++        self.assertEqual(manifest["launch_flags"], r.V120.flags)
++        self.assertEqual(manifest["patch_sha256"], r.V120.sha256)
+         self.assertEqual(r.V106.flags, r.V100c.flags)
+         self.assertEqual(r.plan()["checks"][0]["legacy_attempt_receipts"],
+-                         [r.prefix(r.V100c), r.prefix(r.V106), r.prefix(r.V89), r.prefix(r.V116), r.prefix(r.V111), r.prefix(r.V120)])
+-        for candidate in (r.V100c, r.V106, r.V111, r.V120, r.V120b):
++                         [r.prefix(r.V100c), r.prefix(r.V106), r.prefix(r.V89), r.prefix(r.V116), r.prefix(r.V111)])
++        for candidate in (r.V100c, r.V106, r.V111, r.V120):
+             self.assertEqual(hashlib.sha256((root / candidate.directory / "patch.diff").read_bytes()).hexdigest(),
+                              candidate.sha256)
+-        self.assertEqual(len({c.sha256 for c in (r.V100c, r.V106, r.V111, r.V120, r.V120b)}), 5)
++        self.assertEqual(len({c.sha256 for c in (r.V100c, r.V106, r.V111, r.V120)}), 4)
+         self.job(r.V87, state="running")
+-        self.assertTrue(self.offer(r.V120b).startswith("submitted"))
++        self.assertTrue(self.offer(r.V120).startswith("submitted"))
+         command = self.commands[-1]
+         expected_flags = [
+             "chunked-prefill-size=16320", "cuda-graph-max-bs-prefill=16384", "enable-layernorm-sp",
+@@ -491,7 +481,7 @@
+             "speculative-dflash-sp-prefill-context", "speculative-moe-runner-backend=marlin",
+             "swa-full-tokens-ratio=0.25",
+         ]
+-        self.assertEqual(command, ["mock", "serve", "check", str(root/r.V120b.directory/"patch.diff"), "--users", "32",
++        self.assertEqual(command, ["mock", "serve", "check", str(root/r.V120.directory/"patch.diff"), "--users", "32",
+                                    *(item for flag in expected_flags for item in ("--flag", flag)), "--no-wait"])
+ 
+     def test_v80a_for_exact_failure_or_skip_and_no_v116b(self):
+@@ -525,8 +515,8 @@
+     def test_alternative_checked_again_after_quota(self):
+         job=self.job(r.V87, state="running")
+         self.on_quota=lambda: self.jobs[job].update(status="failed")
+-        self.offer(r.V120b)
+-        self.assertFalse(self.receipt(r.V120b).exists())
++        self.offer(r.V120)
++        self.assertFalse(self.receipt(r.V120).exists())
+         self.assertEqual(self.left,3)
+         self.assertTrue(self.offer(r.V80a).startswith("submitted"))
+ 
+@@ -564,7 +554,7 @@
+             self.assertTrue(release.wait(3))
+         self.on_quota=hold_quota
+         results=[]
+-        thread=threading.Thread(target=lambda: results.append(self.offer(r.V120b)))
++        thread=threading.Thread(target=lambda: results.append(self.offer(r.V120)))
+         thread.start()
+         try:
+             self.assertTrue(entered.wait(3))

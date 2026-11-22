@@ -1,0 +1,12 @@
+{
+  "withdrawn_patch_sha256": "ba8c83294a22fd1f578049dc5c2872c1d8891d6881c111b421ec9d59e4b7537b",
+  "final_patch_sha256": "734cc00c345e97f9b43e33487fc580ba79951a7cd0935c9ad9285b634f82969c",
+  "torch": "2.5.1",
+  "backend": "CPU Inductor",
+  "failing_expression": "vals.contiguous().view(torch.int16).to(torch.int32) inside torch.compile",
+  "lowering": "The generated C++ converted BF16 to float, back to BF16, and then bit_cast to int16.",
+  "witness": {"tp": 4, "rows": 7, "k": 16, "rank": 1, "row": 5, "slot": 5, "original_bf16_hex": "ffa0", "old_compiled_bf16_hex": "7fc0", "expected_signed_packet": -6274284, "old_signed_packet": 2143306516},
+  "correction": "View the native score storage as int16 outside compilation; use integer inputs and outputs for the three compiled kernels. Use the original eager ATen BF16-to-FP32 widening on the decoded bits.",
+  "final_exhaustive_replay": "compiled_words.json",
+  "withdrawn_patch_submitted": false
+}

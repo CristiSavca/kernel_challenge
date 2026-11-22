@@ -1,0 +1,231 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+new file mode 100644
+index 0000000..d98bbf0
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh
+@@ -0,0 +1,29 @@
++struct MuseFullWidth {};
++template <class Op, bool Paired, class Ctx, class MMA>
++CUDA_INLINE void muse_residual_mma(MMA& mma, uint32_t stage, uint32_t iter) {
++  using Storage = typename Ctx::SharedStorage;
++  static_assert(Ctx::kIsGroupedContiguousGemm && Ctx::kNumMathThreads == 256 && Ctx::kWarpIters == 4);
++  static_assert(Ctx::BlockShape::M == 176 && Ctx::BlockShape::N == 256 && Ctx::BlockShape::K == 64);
++  static_assert(Ctx::WarpShape::M == 176 && Ctx::WarpShape::N == 32 && Ctx::WarpShape::K == 64);
++  static_assert(MMA::kSwizzleBytes == 128 && !MMA::kUsePackedKLayout && MMA::kPackedKFactor == 1);
++  static_assert(MMA::final_regs_c_index() == 0 && sizeof(mma.regs_b[0]) == 2 * sizeof(uint4));
++  uint32_t addr = cast_smem_ptr_to_uint(&mma.ctx.smem) + offsetof(Storage, stages) +
++      stage * sizeof(typename Storage::StageStorage) + iter * 2 * sizeof(int4) + mma.smem_offset;
++  uint64_t desc = make_wgmma_smem_desc<128>(addr);
++  wgmma_fence();
++  PRAGMA_UNROLL
++  for (uint32_t j = 0; j < 2; ++j)
++    Op::fma(desc, mma.regs_b[iter % 2][j][0], mma.regs_c[0][j][0], true);
++  if (!Paired || iter % 2) {
++    wgmma_commit();
++    wgmma_wait<0>();
++    if constexpr (Paired) {
++      PRAGMA_UNROLL
++      for (uint32_t b = 0; b < 2; ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&mma.regs_b[b]);
++        PRAGMA_UNROLL
++        for (uint32_t j = 0; j < 8; ++j) warpgroup_fence_operand(values[j]);
++      }
++    }
++  }
++}
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 2943ce1..06c66dc 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -39,6 +39,7 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     # normal code cache key. Load the CUfunction directly for the compact ABI.
+     class GroupedDecodeGateUpKernel(HummingKernel):
+         both_pairs = False
++        residual_tiles = False
+ 
+         @staticmethod
+         def _get_compiler():
+@@ -55,7 +56,12 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             assembly = subprocess.check_output([binary, "-sass", self.kernel_filename], text=True)
+             opcode = f"HGMMA.64x{self.block_shape[0]}x16.F32.BF16"
+             drains = 8 if self.both_pairs else (16 if prompt else 12)
+-            if assembly.count(opcode) != 32 or assembly.count("WARPGROUP.DEPBAR.LE") != drains or "UTMALDG.4D" not in assembly:
++            valid = assembly.count(opcode) == 32 and assembly.count("WARPGROUP.DEPBAR.LE") == drains
++            if self.residual_tiles:
++                from sglang.srt.layers.muse_spark.residual_prompt_mma import has_residual_isa
++
++                valid = has_residual_isa(assembly, drains)
++            if not valid or "UTMALDG.4D" not in assembly:
+                 raise RuntimeError("grouped gate/up kernel lacks its Hopper matrix or paired tensor instruction")
+             KernelRuntime.load_cubin(self)
+ 
+@@ -81,8 +87,15 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             if not prompt:
+                 pair = header.with_name("grouped_decode_mma_pair.cuh")
+                 self.code += "\n#define MUSE_OVERLAP_CONTEXT MuseGateCtx\n" + pair.read_text()
++            if self.residual_tiles:
++                from sglang.srt.layers.muse_spark.residual_prompt_mma import adapt_residual_tiles
++
++                adapt_residual_tiles(self, paired=False)
+             KernelRuntime.prepare(self)
+ 
++    class GroupedResidualPromptGateUpKernel(GroupedDecodeGateUpKernel):
++        residual_tiles = True
++
+     class GroupedDecodeFullPairGateUpKernel(GroupedDecodeGateUpKernel):
+         both_pairs = True
+ 
+@@ -102,7 +115,12 @@ def _compile(context, meta, compute, tuning, prompt=False):
+                                            "use_fused_e8m0_scale", "input_scale_group_size",
+                                            "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
+         return None
+-    variants = (GroupedDecodeGateUpKernel,) if prompt else (GroupedDecodeFullPairGateUpKernel, GroupedDecodeGateUpKernel)
++    if prompt and config["block_shape"][0] == 176:
++        variants = (GroupedResidualPromptGateUpKernel, GroupedDecodeGateUpKernel)
++    elif prompt:
++        variants = (GroupedDecodeGateUpKernel,)
++    else:
++        variants = (GroupedDecodeFullPairGateUpKernel, GroupedDecodeGateUpKernel)
+     for variant in variants:
+         try:
+             kernel = variant(**config)
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index 36f623f..fc5a4a6 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -58,12 +58,18 @@ def _prepare(context, meta, compute, tuning):
+     from humming.kernel.humming import HummingKernel
+ 
+     class PromptWeightPipeline(HummingKernel):
++        residual_tiles = False
++
+         @staticmethod
+         def _get_compiler():
+             return NVCCCompiler
+ 
+         def prepare(self):
+             adapt_prompt_weights(self)
++            if self.residual_tiles:
++                from sglang.srt.layers.muse_spark.residual_prompt_mma import adapt_residual_tiles
++
++                adapt_residual_tiles(self, paired=True)
+             KernelRuntime.prepare(self)
+ 
+         def load_cubin(self):
+@@ -72,11 +78,18 @@ def _prepare(context, meta, compute, tuning):
+                 if not tool:
+                     raise RuntimeError("CUDA disassembler unavailable")
+                 isa = subprocess.check_output([tool, "-sass", self.kernel_filename], text=True)
+-                if (isa.count("HGMMA.64x176x16.F32.BF16") != 32 or isa.count("WARPGROUP.DEPBAR.LE") != 8
+-                        or "UTMALDG.2D" not in isa or "UTMALDG.3D" not in isa):
++                valid = isa.count("HGMMA.64x176x16.F32.BF16") == 32 and isa.count("WARPGROUP.DEPBAR.LE") == 8
++                if self.residual_tiles:
++                    from sglang.srt.layers.muse_spark.residual_prompt_mma import has_residual_isa
++
++                    valid = has_residual_isa(isa, 8)
++                if not valid or "UTMALDG.2D" not in isa or "UTMALDG.3D" not in isa:
+                     raise RuntimeError("grouped prompt Hopper instructions unavailable")
+                 HummingKernel.load_cubin(self)
+ 
++    class ResidualPromptWeightPipeline(PromptWeightPipeline):
++        residual_tiles = True
++
+     cfg = json.loads(meta) | json.loads(compute) | json.loads(tuning)
+     cfg.pop("sublayer_name", None)
+     required = {"gemm_type": "grouped_contiguous", "mma_type": "wgmma", "use_f16_accum": False,
+@@ -91,14 +104,15 @@ def _prepare(context, meta, compute, tuning):
+                                         "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))
+             or any(cfg.get(k, 1) != 1 for k in ("multi_cast_size_a", "multi_cast_size_b"))):
+         return None
+-    try:
+-        cfg.update(use_tma_bs=False, use_cp_async=False)
+-        kernel = PromptWeightPipeline(**cfg)
+-        kernel.check_context()
+-        return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+-    except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+-        logging.getLogger(__name__).warning("Using ordinary grouped prompt down projection: %s", exc)
+-        return None
++    cfg.update(use_tma_bs=False, use_cp_async=False)
++    for variant in (ResidualPromptWeightPipeline, PromptWeightPipeline):
++        try:
++            kernel = variant(**cfg)
++            kernel.check_context()
++            return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
++        except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++            logging.getLogger(__name__).warning("Grouped prompt down projection %s unavailable: %s", variant.__name__, exc)
++    return None
+ 
+ 
+ def _binding(tensor):
+diff --git a/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+new file mode 100644
+index 0000000..8be1b21
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/residual_prompt_mma.py
+@@ -0,0 +1,66 @@
++"""Specialize the tensor instruction width on the final tile of each grouped expert."""
++import hashlib
++from pathlib import Path
++
++
++_WIDTHS = (32, 96)
++
++
++def has_residual_isa(assembly, drains):
++    return (
++        all(assembly.count(f"HGMMA.64x{width}x16.F32.BF16") == 32 for width in (*_WIDTHS, 176))
++        and assembly.count("WARPGROUP.DEPBAR.LE") == drains * (len(_WIDTHS) + 1)
++    )
++
++
++def _replace_once(text, old, new):
++    if text.count(old) != 1:
++        raise ValueError("unsupported Humming residual-tile loop")
++    return text.replace(old, new)
++
++
++def adapt_residual_tiles(kernel, paired):
++    import humming
++    from humming.config.mma import WgmmaOpClassImpl
++    from sglang.kernels import jit
++
++    header = Path(humming.__path__[0]) / "include/humming/kernel/humming_ws.cuh"
++    source = header.read_text()
++    if hashlib.sha256(source.encode()).hexdigest() != "6a148cc29b81d4009066667c347d9091a8a138009f7884226e9969a6936e2899":
++        raise ValueError("unsupported Humming scheduler")
++    code = kernel.code
++    if not paired:
++        code = _replace_once(code, "#include <humming/kernel/humming_ws.cuh>", source.replace("#pragma once", "", 1))
++    location = "template <bool kUseTma>\nclass KernelTensorParamType"
++    operations = []
++    for width in _WIDTHS:
++        op = WgmmaOpClassImpl(width, 64, 16, "bf16", "bf16", "f32")
++        operations.append(f"struct MuseResidual{width} {{\n" + op.to_cpp_str() + "\n};\n")
++    template = Path(jit.__file__).parent / "csrc/muse_spark/residual_prompt_mma.cuh"
++    operations.append(template.read_text())
++    code = _replace_once(code, location, "".join(operations) + location)
++    # Keep the entire accumulator lifetime in one width-specialized branch.
++    # Joining those arrays before the epilogue spills the full-width hot loop.
++    mma = "    auto mma = MMA(ctx, mainloop_arith);"
++    reader = "    auto s2r_pipe = S2RMemoryPipeline(ctx, mma, epilogue);"
++    code = _replace_once(code, mma, "")
++    code = _replace_once(code, reader, "")
++    start = code.index("      mma.zero_accum();")
++    last = "      if constexpr (!kReduceOverlapLastStageOnly) consumer.arrive(kNumStages);"
++    end = code.index(last, start) + len(last)
++    body = mma + "\n" + reader + "\n" + code[start:end]
++    op = "mma.run(stage_id, warp_iter_id);"
++    paired_arg = "true" if paired else "false"
++    run = (
++        "if constexpr (std::is_same_v<Op, MuseFullWidth>) " + op +
++        f" else muse_residual_mma<Op, {paired_arg}, Ctx>(mma, stage_id, warp_iter_id);"
++    )
++    body = _replace_once(body, op, run)
++    # Both offsets are absolute rows at the current expert's end and tile start.
++    # Every math warp observes this decision once before traversing K.
++    dispatch = "      const auto live = scheduler.current_shape_m - scheduler.m_offset;\n"
++    for i, width in enumerate(_WIDTHS):
++        dispatch += f"      {'else ' if i else ''}if (live <= {width}) compute(MuseResidual{width}{{}});\n"
++    dispatch += "      else compute(MuseFullWidth{});\n"
++    begin = "      auto compute = [&](auto op) {\n        using Op = decltype(op);\n"
++    kernel.code = code[:start] + begin + body + "      };\n" + dispatch + code[end:]

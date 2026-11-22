@@ -1,0 +1,162 @@
+diff --git a/python/sglang/srt/layers/communication/sp_half_qkv.py b/python/sglang/srt/layers/communication/sp_half_qkv.py
+new file mode 100644
+index 0000000..13087a2
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_half_qkv.py
+@@ -0,0 +1,116 @@
++"""Overlap a half-batch QKV projection with the exchange of the other half."""
++
++import torch
++
++from sglang.srt.runtime_context import get_exec, get_lora, get_parallel
++from sglang.srt.utils.custom_op import register_custom_op
++
++
++def half_qkv_eligible(rows, channels, size):
++    # Both GEMMs should have enough rows to amortize a second weight read and launch.
++    return rows >= 512 and (size // 2) * rows >= channels
++
++
++def _exchange_half(comm, rank, base, local, cohort):
++    """Gather all token shards within this half of the tensor-parallel group."""
++    cohort[rank - base].copy_(local)
++    comm.group_start()
++    try:
++        for offset in range(cohort.shape[0]):
++            peer = base + offset
++            if peer != rank:
++                comm.send(local, peer)
++                comm.recv(cohort[offset], peer)
++    finally:
++        comm.group_end()
++
++
++def _exchange_peer(comm, buddy, owned, remote):
++    comm.group_start()
++    try:
++        comm.send(owned, buddy)
++        comm.recv(remote, buddy)
++    finally:
++        comm.group_end()
++
++
++def enable_half_qkv(linears, group):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
++
++    size = group.world_size
++    if size < 4 or size % 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return
++    comm = group.pynccl_comm
++    ready = (
++        comm is not None and comm.available and not get_lora().enable_lora
++        and get_parallel().attn_tp_group.ranks == group.ranks
++        and torch.cuda.get_device_capability(comm.device)[0] == 9
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not is_batch_invariant_mode_enabled() and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and all(
++            type(fc.quant_method) is UnquantizedLinearMethod and "apply" not in vars(fc.quant_method)
++            and fc.bias is None and not fc.gather_output and fc.weight.device == comm.device
++            and fc.weight.dtype == torch.bfloat16 and not fc.weight.requires_grad
++            and fc.weight.ndim == 2 and fc.weight.is_contiguous()
++            for fc in linears
++        )
++    )
++    vote = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if not vote.item():
++        return
++    # Establish these peer connections before the first graph capture.
++    half, rank = size // 2, group.rank_in_group
++    probe = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
++    owned = probe.new_empty((half, 1))
++    remote = torch.empty_like(owned)
++    with comm.change_state(enable=True):
++        _exchange_half(comm, rank, (rank // half) * half, probe, owned)
++        _exchange_peer(comm, (rank + half) % size, owned, remote)
++    group.sp_qkv_cohort_stream = torch.cuda.Stream(device=comm.device)
++    for fc in linears:
++        fc._sp_half_qkv = True
++
++
++def _half_qkv_shape(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
++    return local.new_empty((local.shape[0] * size, weight.shape[0]))
++
++
++def _project(rows, weight, dest, dispatch):
++    if dispatch:
++        from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++        dest.copy_(bf16_gemm_dispatch(rows, weight, None))
++    else:
++        # This is the same out-parameter path used by UnquantizedLinearMethod.apply_into.
++        torch.mm(rows, weight.t(), out=dest)
++
++
++@register_custom_op(fake_impl=_half_qkv_shape)
++def half_qkv(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool) -> torch.Tensor:
++    group = get_parallel().tp_group
++    rank, half = group.rank_in_group, size // 2
++    base = (rank // half) * half
++    rows, hidden = local.shape
++    owned = local.new_empty((half, rows, hidden))
++    remote = torch.empty_like(owned)
++    output = local.new_empty((size * rows, weight.shape[0]))
++    compute = torch.cuda.current_stream(local.device)
++    transfer = group.sp_qkv_cohort_stream
++    comm = group.pynccl_comm
++    with comm.change_state(enable=True):
++        _exchange_half(comm, rank, base, local, owned)
++        transfer.wait_stream(compute)
++        try:
++            with torch.cuda.stream(transfer):
++                _exchange_peer(comm, (rank + half) % size, owned, remote)
++            _project(owned.flatten(0, 1), weight, output.narrow(0, base * rows, half * rows), dispatch)
++        finally:
++            # Join even if projection fails. Both buffers were allocated on the caller stream.
++            compute.wait_stream(transfer)
++        _project(remote.flatten(0, 1), weight, output.narrow(0, (half - base) * rows, half * rows), dispatch)
++    return output
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 8af97f1..90241fc 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -256,6 +256,20 @@ def column_parallel_g_matmul(
+     tile-gated all-gather; other models retain their existing implementation.
+     """
+     num_tokens = sp_num_tokens()
++    if (
++        getattr(linear, "_sp_half_qkv", False) and bias is None
++        and input_parallel.dtype == torch.bfloat16 and not input_parallel.requires_grad
++        and not torch.is_autocast_enabled() and not torch.are_deterministic_algorithms_enabled()
++    ):
++        from sglang.srt.layers.communication.sp_half_qkv import half_qkv, half_qkv_eligible
++        from sglang.srt.layers.quantization.unquant import get_bf16_gemm_backend
++
++        size = get_parallel().tp_group.world_size
++        if half_qkv_eligible(input_parallel.shape[0], linear.weight.shape[0], size):
++            backend = get_bf16_gemm_backend()
++            return half_qkv(
++                input_parallel.contiguous(), linear.weight, size, backend.is_cutedsl() or backend.is_gemv()
++            )[:num_tokens]
+     if sp_fused_matmul_eligible(linear):
+         if getattr(linear, "_sp_use_cutlass", False):
+             from sglang.kernels.ops.communication.sp_collective_gemm import (
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index b3091c9..cf39dbb 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1248,6 +1248,10 @@ class MuseSpark1xModel(nn.Module):
+             # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
+             backend = get_moe_runner_backend()
+             replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            if replicate_expert_input:
++                from sglang.srt.layers.communication.sp_half_qkv import enable_half_qkv
++
++                enable_half_qkv([layer.self_attn.qkv_proj for layer in self.layers], get_parallel().tp_group)
+             moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]

@@ -1,0 +1,114 @@
+{
+  "candidate_sha256": "102b780c335c093235d9091c280c01ccea4b8ef555abfe6a8f0412c1f4b4bb69",
+  "tree": "f756a14800e6919cb945898cb1709283333d39a5",
+  "host_order_sensitivity": {
+    "tested_finite_logits": 256,
+    "different_from_CPU_BLAS": 68,
+    "positions": [
+      72,
+      114,
+      6
+    ],
+    "native_cpu_score": 1.0,
+    "paired_emulator_score": 0.0,
+    "intervening_score": 0.5,
+    "example_top8": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8
+      ]
+    ]
+  },
+  "sources": {
+    "python/sglang/srt/models/muse_spark.py": "58785babab5e8ac961e8d3d31a02a1f43a2ee61880dfdb8ed519e7de317c0a03",
+    "python/sglang/kernels/ops/moe/muse_spark_paired_router.py": "fe06f2eda20344c5cd713198ea14d6eff4d2c30ad99e605d8339ea111013c38c",
+    "python/sglang/kernels/ops/moe/muse_spark_routing.py": "8ef4dfcf1f2d3f8ec1b188edeed54cc0797a42f38ee6aeae8f32b96575f21b84"
+  },
+  "normal_SP_calls": [
+    {
+      "rows": 1024,
+      "features": 128,
+      "experts": 256,
+      "paired": false,
+      "logits": 262144,
+      "selected_experts": 8192,
+      "checked_return": 1024
+    },
+    {
+      "rows": 1025,
+      "features": 128,
+      "experts": 256,
+      "paired": true,
+      "logits": 262400,
+      "selected_experts": 8200,
+      "checked_return": 1025
+    },
+    {
+      "rows": 2048,
+      "features": 8192,
+      "experts": 256,
+      "paired": true,
+      "logits": 524288,
+      "selected_experts": 16384,
+      "checked_return": 2048
+    },
+    {
+      "rows": 1025,
+      "features": 130,
+      "experts": 256,
+      "paired": false,
+      "logits": 262400,
+      "selected_experts": 8200,
+      "checked_return": 1025
+    },
+    {
+      "rows": 1031,
+      "features": 128,
+      "experts": 256,
+      "paired": true,
+      "logits": 263936,
+      "selected_experts": 8248,
+      "checked_return": 1031
+    }
+  ],
+  "stats": {
+    "legacy_mm": 14,
+    "new_launch": 3,
+    "checked_device_ctas": 300
+  },
+  "shape_assumption": "SM90 with 132 SMs, TP8, BF16 input; public V68 reports TP8 and static Breakable prefill.",
+  "physical_H200": false,
+  "limitation": "The full-size paired host launch uses CPU GEMM for its result plus four independently executed physical-shape CTAs. Synthetic routing uses the pinned native Torch reference. These results do not establish that the original H200 cuBLAS and Triton choose identical FP32 summation order.",
+  "order_witness": {
+    "BF16_products": [
+      16777216,
+      1,
+      -16777216
+    ],
+    "finite_alternate_FP32_results": [
+      0,
+      1
+    ],
+    "competitor_logit": 0.5,
+    "top8_eighth_ids": [
+      8,
+      7
+    ]
+  }
+}

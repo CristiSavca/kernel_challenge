@@ -1,0 +1,217 @@
+{
+  "passed": true,
+  "patch_sha256": "734cc00c345e97f9b43e33487fc580ba79951a7cd0935c9ad9285b634f82969c",
+  "paired_cpu_hook_and_eager_runs": [
+    {
+      "batch": 1,
+      "selector_rows": 7,
+      "candidate_words": 112
+    },
+    {
+      "batch": 4,
+      "selector_rows": 28,
+      "candidate_words": 448
+    },
+    {
+      "batch": 16,
+      "selector_rows": 112,
+      "candidate_words": 1792
+    },
+    {
+      "batch": 32,
+      "selector_rows": 224,
+      "candidate_words": 3584
+    }
+  ],
+  "source_trace": [
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 858,
+      "statement": "self._draft_sampler = self._maybe_build_draft_sampler()"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 861,
+      "statement": "make_draft_sampler_capture_hook(self._draft_sampler)"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 863,
+      "statement": "self._draft_worker.init_cuda_graphs("
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 1012,
+      "statement": "_selector_shard_starts(self.draft_model, lm_head)"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 1030,
+      "statement": "self.draft_model.lm_head = lm_head"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 1043,
+      "statement": "shard_starts=shard_starts"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 248,
+      "statement": "group = get_parallel().tp_group"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 251,
+      "statement": "torch.distributed.get_backend(group.cpu_group)"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 261,
+      "statement": "DFlash2DraftModel.compute_candidates"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 264,
+      "statement": "weight.dtype == torch.bfloat16"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 267,
+      "statement": "0 < k <= size <= 65536"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 274,
+      "statement": "group.all_gather_object("
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 277,
+      "statement": "torch.tensor([spec[1]"
+    },
+    {
+      "file": "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py",
+      "line": 1483,
+      "statement": "for capture_hook in self.model_runner.capture_tail_hooks:"
+    },
+    {
+      "file": "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py",
+      "line": 1484,
+      "statement": "capture_hook(self, out, forward_batch, num_tokens)"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3185,
+      "statement": "self._draft_sampler.stage_sampling_params("
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3193,
+      "statement": "draft_out = self.draft_model_runner.forward(forward_batch)"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3237,
+      "statement": "elif self._draft_sampler is not None and draft_out.can_run_graph:"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3247,
+      "statement": "self._draft_sampler.candidate_out[:bs]"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3248,
+      "statement": "self._draft_sampler.q_out[:bs]"
+    },
+    {
+      "file": "python/sglang/srt/speculative/dflash_worker_v2.py",
+      "line": 3261,
+      "statement": "draft_next = self._propose_selector_block("
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 406,
+      "statement": "backend=\"gloo\""
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 1609,
+      "statement": "group=self.cpu_group"
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 2229,
+      "statement": "return get_parallel().tp_group"
+    },
+    {
+      "file": "python/sglang/srt/distributed/communication_op.py",
+      "line": 84,
+      "statement": "return get_tp_group().all_gather(input_, dim)"
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 1431,
+      "statement": "self.all_gather_into_tensor(output_tensor, input_)"
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 1435,
+      "statement": "output_tensor.movedim(0, dim)"
+    },
+    {
+      "file": "python/sglang/srt/distributed/parallel_state.py",
+      "line": 1341,
+      "statement": "pynccl_comm.all_gather("
+    },
+    {
+      "file": "python/sglang/srt/distributed/device_communicators/pynccl_wrapper.py",
+      "line": 184,
+      "statement": "return cls.ncclInt32"
+    },
+    {
+      "file": "python/sglang/srt/models/dflash.py",
+      "line": 69,
+      "statement": "_flashinfer_top_k(scores, k, sorted=True, deterministic=True)"
+    },
+    {
+      "file": "python/sglang/srt/models/dflash.py",
+      "line": 184,
+      "statement": "candidate_shard_starts is not None and not with_partition"
+    },
+    {
+      "file": "python/sglang/srt/models/dflash.py",
+      "line": 189,
+      "statement": "tensor_model_parallel_all_gather(vals.float()"
+    },
+    {
+      "file": "python/sglang/srt/models/muse_spark.py",
+      "line": 1357,
+      "statement": "self.lm_head = ParallelLMHead("
+    },
+    {
+      "file": "python/sglang/srt/models/muse_spark.py",
+      "line": 1360,
+      "statement": "quant_config=None"
+    }
+  ],
+  "judge_observations": [
+    {
+      "candidate": "V64",
+      "path": "../../runs/ac89fddc4ee147ab.log",
+      "sha256": "2a7c5a0fd7bf1bd323af62df08b664533da15e3b832ca76d331de79515d15cb2",
+      "line": 123,
+      "folded_selector": true
+    },
+    {
+      "candidate": "V68",
+      "path": "../../runs/04b01f958aa5487c.log",
+      "sha256": "420bcc93feec5db58eed7a366e4b7f60a63e4c4c1d05582dc9fded7f3377a379",
+      "line": 119,
+      "folded_selector": true
+    }
+  ],
+  "flashinfer_radix_source": "https://github.com/flashinfer-ai/flashinfer/blob/v0.7.2/flashinfer/topk.py#L962-L997",
+  "flashinfer_contract": "Pinned deterministic radix path allocates top-k values with input.dtype and returns int64 local indices.",
+  "limitation": "Archived jobs establish capture for their respective parents. New CUDA capture, NCCL latency and H200 speed remain unmeasured."
+}

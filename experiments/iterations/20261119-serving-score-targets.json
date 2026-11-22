@@ -1,0 +1,68 @@
+{
+  "official_V64": 1.4119,
+  "break_even": {
+    "2": {
+      "speed_and_throughput_all_loads": 1.2986976323611428,
+      "speed_and_throughput_16_32_only": 1.6646259298272639,
+      "cold_and_streaming_equal": 1.3300278190243253,
+      "cold_only": 1.6730318369739017,
+      "streaming_only": 2.8386423292156913
+    },
+    "3": {
+      "speed_and_throughput_all_loads": 1.8009822544039298,
+      "speed_and_throughput_16_32_only": 2.4470515835281406,
+      "cold_and_streaming_equal": 1.895399780308243,
+      "cold_only": 3.6987241293489634,
+      "streaming_only": null
+    }
+  },
+  "examples": [
+    {
+      "cold_elapsed_factor": 1,
+      "streaming_elapsed_factor": 1,
+      "modeled_score": 1.4119041967138868
+    },
+    {
+      "cold_elapsed_factor": 0.8,
+      "streaming_elapsed_factor": 0.6666666666666666,
+      "modeled_score": 2.0088346723012473
+    },
+    {
+      "cold_elapsed_factor": 0.7142857142857143,
+      "streaming_elapsed_factor": 0.7692307692307692,
+      "modeled_score": 2.052729994761312
+    },
+    {
+      "cold_elapsed_factor": 1,
+      "streaming_elapsed_factor": 0.5,
+      "modeled_score": 1.8431815279832293
+    },
+    {
+      "cold_elapsed_factor": 0.5,
+      "streaming_elapsed_factor": 1,
+      "modeled_score": 2.219103552870681
+    },
+    {
+      "cold_elapsed_factor": 0.5,
+      "streaming_elapsed_factor": 0.5,
+      "modeled_score": 3.187033499184856
+    }
+  ],
+  "V204_single_rung": {
+    "stock_normalized_user_speed_factor": 1.05668016194332,
+    "stock_normalized_gpu_throughput_factor": 1.0544452527546861,
+    "modeled_if_only_16_moves": 1.4243374439476324,
+    "modeled_if_16_and_32_move": 1.46242124757643,
+    "modeled_if_all_loads_move": 1.5207147395551726
+  },
+  "assumptions": "Apply relative wall-time and user-time deltas from the 767-request V41 trace to V64's hardware-scored curve. Initial TTFT includes queueing. Preserve later-turn TTFT, client gaps, requests and schedule. Separate private V204/V64 checks used different nodes with one repetition. No result predicts how V204 actually scales.",
+  "source_sha256": {
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__load.json": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+    "serving_v0523/runs/abd217baf0ed49fd.json": "aa6b0fecfc6180f7d34097432345352006182185f8e5c8a67091cc433ae9a479",
+    "serving_v0523/runs/ac89fddc4ee147ab.json": "545dd1af119639f8ff6cf6fc997e2007926110980f673969d1452c4537cae0aa",
+    "serving_v0523/runs/7fcdf9abf39b486a.json": "372d4f8067f8ecce129854c45c73f84036e6b996331d04f2bc7439e385207feb",
+    "serving_v0523/candidates/v195_fused_expert_affine_verify/score_headroom.py": "c18eacd9538ae05742727245c759c8ff1c31a8b4bb3dc14f69e24d46953a77c1",
+    "serving_v0523/candidates/v265_native_serving_profile/audit.py": "e42d725325dfbbcee731772121b4fecaa5dcea105759b85065dcaba99d7df294",
+    "tools/okc_node_loadgen.py": "d9e845a151b04ff3cc3aa359a69e7955df94d0cf16e24ba638fb58e245bfb0b2"
+  }
+}

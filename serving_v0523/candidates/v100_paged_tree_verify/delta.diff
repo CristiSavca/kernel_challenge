@@ -1,0 +1,399 @@
+diff --git a/python/sglang/kernels/ops/attention/metadata.py b/python/sglang/kernels/ops/attention/metadata.py
+index ba48665..debc937 100644
+--- a/python/sglang/kernels/ops/attention/metadata.py
++++ b/python/sglang/kernels/ops/attention/metadata.py
+@@ -292,6 +292,16 @@ def _fused_decode_metadata_kernel(
+         )
+ 
+ 
++@triton.jit
++def _draft_page_index(token_index, PAGE_SIZE: tl.constexpr, PAGE_SHIFT: tl.constexpr):
++    if PAGE_SHIFT >= 0:
++        return token_index >> PAGE_SHIFT
++    # Preserve floor division, including a negative unmapped slot.
++    return tl.where(
++        token_index >= 0, token_index // PAGE_SIZE, (token_index + 1) // PAGE_SIZE - 1
++    )
++
++
+ @triton.jit
+ def _draft_extend_metadata_kernel(
+     # Input tensors
+@@ -322,8 +332,8 @@ def _draft_extend_metadata_kernel(
+     B,
+     max_seq_pages,
+     tokens_per_req,
+-    PAGE_SIZE_ONE: tl.constexpr,
+-    SHIFT: tl.constexpr,
++    PAGE_SIZE: tl.constexpr,
++    PAGE_SHIFT: tl.constexpr,
+     BLOCK_COLS: tl.constexpr,
+     HAS_SWA: tl.constexpr,
+     OUT_BLOCK: tl.constexpr,
+@@ -368,10 +378,12 @@ def _draft_extend_metadata_kernel(
+         return
+ 
+     seq_len = tl.load(seq_lens + pid_b * seq_lens_stride_0).to(tl.int32)
+-    if PAGE_SIZE_ONE:
++    if PAGE_SIZE == 1:
+         num_live_pages = seq_len
++    elif PAGE_SHIFT >= 0:
++        num_live_pages = (seq_len + PAGE_SIZE - 1) >> PAGE_SHIFT
+     else:
+-        num_live_pages = (seq_len + (1 << SHIFT) - 1) >> SHIFT
++        num_live_pages = tl.cdiv(seq_len, PAGE_SIZE)
+     num_live_pages = tl.minimum(num_live_pages, max_seq_pages)
+     if pid_c * BLOCK_COLS >= num_live_pages:
+         return
+@@ -382,30 +394,21 @@ def _draft_extend_metadata_kernel(
+     col_offsets = pid_c * BLOCK_COLS + tl.arange(0, BLOCK_COLS)
+     mask = col_offsets < num_live_pages
+ 
+-    if PAGE_SIZE_ONE:
+-        col_idx = col_offsets
+-    else:
+-        col_idx = col_offsets << SHIFT
++    col_idx = col_offsets * PAGE_SIZE
+ 
+     rt_offsets = row_offset + col_idx * req_to_token_stride_1
+     page_index = tl.load(
+         req_to_token + rt_offsets, mask=mask, other=0, cache_modifier=".cg"
+     )
+ 
+-    if PAGE_SIZE_ONE:
+-        page_table_val = page_index
+-    else:
+-        page_table_val = page_index >> SHIFT
++    page_table_val = _draft_page_index(page_index, PAGE_SIZE, PAGE_SHIFT)
+ 
+     pt_offsets = pid_b * page_table_stride_0 + col_offsets * page_table_stride_1
+     tl.store(page_table + pt_offsets, page_table_val, mask=mask, cache_modifier=".cg")
+ 
+     if HAS_SWA:
+         swa_loc = tl.load(full_to_swa_index_mapping + page_index, mask=mask, other=0)
+-        if PAGE_SIZE_ONE:
+-            swa_page_table_val = swa_loc
+-        else:
+-            swa_page_table_val = swa_loc >> SHIFT
++        swa_page_table_val = _draft_page_index(swa_loc, PAGE_SIZE, PAGE_SHIFT)
+         tl.store(
+             swa_page_table + pt_offsets,
+             swa_page_table_val.to(tl.int32),
+@@ -441,8 +444,9 @@ def draft_extend_set_metadata(
+     row tails keep stale values that attention kernels never read past
+     cache_seqlens, matching the eager replay path's bounded writes.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
++    page_shift = (
++        page_size.bit_length() - 1 if page_size & (page_size - 1) == 0 else -1
+     )
+ 
+     batch_size = cache_seqlens_int32.shape[0]
+@@ -492,8 +496,8 @@ def draft_extend_set_metadata(
+         batch_size,
+         max_seq_pages,
+         tokens_per_req,
+-        PAGE_SIZE_ONE=page_size == 1,
+-        SHIFT=(page_size).bit_length() - 1 if page_size > 1 else 0,
++        PAGE_SIZE=page_size,
++        PAGE_SHIFT=page_shift,
+         BLOCK_COLS=BLOCK_COLS,
+         num_warps=8,
+         num_stages=3,
+@@ -533,9 +537,7 @@ def normal_decode_set_metadata(
+     independently of address translation. ``skip_page_table=True`` leaves
+     both page tables untouched and computes only lengths and the prefix sum.
+     """
+-    assert page_size > 0 and (page_size & (page_size - 1)) == 0, (
+-        f"page_size must be a power of two, got {page_size}"
+-    )
++    assert page_size > 0, f"page_size must be positive, got {page_size}"
+     if swa_page_table is not None and not skip_page_table:
+         assert (full_to_swa_index_mapping is None) != (swa_v2p is None), (
+             "SWA output requires exactly one token-slot or page mapping"
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index de337c2..8a73920 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -272,6 +272,7 @@ def paged_verify_attention(
+         q.dtype != torch.float8_e4m3fn
+         or q.dtype != k.dtype
+         or q.dtype != v.dtype
++        or page_size < 1
+         or head_dim != 64
+         or v.shape != k.shape
+         or not 1 <= batch <= 64
+@@ -293,8 +294,7 @@ def paged_verify_attention(
+         or (
+             tree_depths is not None
+             and (
+-                page_size != 1
+-                or tree_depths.shape != (batch, max_q)
++                tree_depths.shape != (batch, max_q)
+                 or tree_ancestors.shape != (batch, max_q)
+                 or not tree_depths.is_contiguous()
+                 or not tree_ancestors.is_contiguous()
+diff --git a/python/sglang/kernels/ops/memory/allocator.py b/python/sglang/kernels/ops/memory/allocator.py
+index f0f4a77..704d845 100644
+--- a/python/sglang/kernels/ops/memory/allocator.py
++++ b/python/sglang/kernels/ops/memory/allocator.py
+@@ -151,7 +151,9 @@ def alloc_extend_kernel(
+     num_part1 = (
+         min(seq_len, (pre_len + page_size - 1) // page_size * page_size) - pre_len
+     )
+-    offset_one_page = tl.arange(0, page_size)
++    # Only the vector extent needs to be a power of two. The two partial-page
++    # stores below mask against the number of actual tokens in the page.
++    offset_one_page = tl.arange(0, triton.next_power_of_2(page_size))
+     tl.store(
+         out_indices + output_start_loc + offset_one_page,
+         last_loc + 1 + offset_one_page,
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 9200091..fa163b8 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -408,7 +408,9 @@ class FlashAttentionBackend(AttentionBackend):
+             and not self.is_draft_runner
+             and self._hopper_verify_sms
+             and self.kv_cache_dtype_str != "auto"
+-            and self.page_size == 1
++            # Paged trees also require physical KV row compaction before commit.
++            # The DFLASH worker checks that capability before it enables trees.
++            and self.page_size >= 1
+             and self.topk == 1
+             and 2 <= self.speculative_num_draft_tokens <= 8
+             and 1 <= (model_runner.max_running_requests or 0) <= 64
+diff --git a/python/sglang/srt/speculative/dflash_tree_kv.py b/python/sglang/srt/speculative/dflash_tree_kv.py
+new file mode 100644
+index 0000000..4b1d7c3
+--- /dev/null
++++ b/python/sglang/srt/speculative/dflash_tree_kv.py
+@@ -0,0 +1,123 @@
++"""Compact accepted DFLASH target KV in the request's original paged slots."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _compact_tree_rows(
++    Pointers, Strides, Mapping, Slots, Order, Lengths,
++    WIDTH: tl.constexpr, ROWS: tl.constexpr, WORDS: tl.constexpr,
++    TRANSLATE: tl.constexpr,
++):
++    request = tl.program_id(0)
++    buffer = tl.program_id(1)
++    tile = tl.program_id(2)
++    length = tl.load(Lengths + request)
++    if length > 1:
++        nodes = tl.arange(0, ROWS)
++        live = (nodes < length) & (nodes < WIDTH)
++        # Each entry in Order names a node of the same physical reservation.
++        order = tl.load(Order + request * WIDTH + nodes, live, other=0)
++        move = live & (nodes != order)
++        if tl.sum(move.to(tl.int32), 0) != 0:
++            source = tl.load(Slots + request * WIDTH + order, move, other=0).to(tl.int64)
++            dest = tl.load(Slots + request * WIDTH + nodes, move, other=0).to(tl.int64)
++            if TRANSLATE:
++                source = tl.load(Mapping + source, move & (source > 0), other=0).to(tl.int64)
++                dest = tl.load(Mapping + dest, move & (dest > 0), other=0).to(tl.int64)
++            move = move & (source > 0) & (dest > 0)
++            base = tl.load(Pointers + buffer).to(tl.pointer_type(tl.uint32))
++            stride = tl.load(Strides + buffer) // 4
++            cols = tile * WORDS + tl.arange(0, WORDS)
++            active = move[:, None] & (cols[None, :] < stride)
++            values = tl.load(base + source[:, None] * stride + cols[None, :], active, other=0)
++            # One CTA owns these columns for every slot in this request. Snapshot
++            # even cycles before any thread overwrites another thread's source.
++            tl.debug_barrier()
++            tl.store(base + dest[:, None] * stride + cols[None, :], values, active)
++
++
++def _supports_mha(pool):
++    from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
++
++    if type(pool) is not MHATokenToKVPool or pool.kv_cache_layout != "nhd" or pool.is_quantized_kv_cache:
++        return False
++    if pool.layer_num == 0:
++        return True
++    ptrs, strides = pool.data_ptrs, pool.data_strides
++    if not (
++        ptrs.is_cuda and ptrs.device == strides.device
++        and ptrs.dtype == torch.uint64 and strides.dtype == torch.int64
++        and ptrs.shape == strides.shape == (2 * pool.layer_num,)
++        and ptrs.is_contiguous() and strides.is_contiguous()
++    ):
++        return False
++    for buffers, dim in ((pool.k_buffer, pool.head_dim), (pool.v_buffer, pool.v_head_dim)):
++        if len(buffers) != pool.layer_num:
++            return False
++        for tensor in buffers:
++            if not (
++                tensor.device == ptrs.device and tensor.dtype == pool.store_dtype
++                and tensor.ndim == 3 and tensor.shape[1:] == (pool.head_num, dim)
++                and tensor.is_contiguous() and tensor.stride(0) == pool.head_num * dim
++                and tensor.stride(0) * tensor.element_size() % 4 == 0
++                and tensor.data_ptr() % 4 == 0
++            ):
++                return False
++    return True
++
++
++def tree_kv_compaction_supported(pool):
++    """Check fixed NHD layouts and the legacy SWA map on this TP rank at startup."""
++    from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
++
++    if type(pool) is not SWAKVPool:
++        return _supports_mha(pool) and pool.layer_num > 0
++    full, swa = pool.full_kv_pool, pool.swa_kv_pool
++    if not (_supports_mha(full) and _supports_mha(swa)):
++        return False
++    if not swa.layer_num:
++        return full.layer_num > 0
++    mapping = pool.full_to_swa_index_mapping
++    return (
++        mapping is not None and mapping.device == swa.data_ptrs.device
++        and mapping.dtype in (torch.int32, torch.int64) and mapping.ndim == 1
++        and mapping.is_contiguous()
++        and (not full.layer_num or full.data_ptrs.device == mapping.device)
++    )
++
++
++def _compact_mha(pool, slots, order, lengths, mapping):
++    if not pool.layer_num:
++        return
++    batch, width = slots.shape
++    max_bytes = pool.head_num * max(pool.head_dim, pool.v_head_dim) * pool.store_dtype.itemsize
++    words = 32
++    grid = (batch, pool.data_ptrs.numel(), triton.cdiv(max_bytes, 4 * words))
++    _compact_tree_rows[grid](
++        pool.data_ptrs, pool.data_strides, mapping, slots, order, lengths,
++        width, triton.next_power_of_2(width), words, mapping is not None,
++        num_warps=1,
++    )
++
++
++def compact_tree_kv(pool, slots, order, lengths):
++    """Use the live pool arrays to move only accepted rows, including the identity root."""
++    from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
++
++    batch, width = order.shape
++    slots = slots.view(batch, width)
++    if not (
++        1 <= width <= 8 and lengths.shape == (batch,)
++        and slots.is_contiguous() and order.is_contiguous() and lengths.is_contiguous()
++    ):
++        raise ValueError("DFLASH KV compaction requires contiguous request rows of width 1 through 8")
++    if not batch:
++        return
++    if type(pool) is SWAKVPool:
++        _compact_mha(pool.full_kv_pool, slots, order, lengths, None)
++        _compact_mha(pool.swa_kv_pool, slots, order, lengths, pool.full_to_swa_index_mapping)
++    else:
++        _compact_mha(pool, slots, order, lengths, None)
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index fc23075..887bffe 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -68,6 +68,10 @@ from sglang.srt.speculative.base_spec_worker import BaseSpecWorker
+ from sglang.srt.speculative.dflash_dp import gather_draft_embedding
+ from sglang.srt.speculative.dflash_info import DFlashVerifyInput
+ from sglang.srt.speculative.dflash_info_v2 import DFlashDraftInputV2
++from sglang.srt.speculative.dflash_tree_kv import (
++    compact_tree_kv,
++    tree_kv_compaction_supported,
++)
+ from sglang.srt.speculative.dflash_utils import (
+     _get_or_create_chain_verify_buffers,
+     apply_dflash_simulated_acceptance,
+@@ -731,7 +735,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         )
+         if get_spec().speculative_dflash_tree:
+             backend = self.model_runner.attn_backend
+-            if (
++            eligible = (
+                 getattr(backend, "supports_dflash_tree", False)
+                 and self.selector is not None
+                 and 2 <= self.selector.top_k <= 32
+@@ -744,7 +748,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 and self.model_runner.lora_manager is None
+                 and self.model_runner.decode_attn_backend is None
+                 and SIMULATE_ACC_LEN <= 0
+-            ):
++            )
++            if self.page_size > 1:
++                eligible = self._prepare_paged_tree_commit(eligible)
++            if eligible:
+                 backend.enable_dflash_tree = True
+                 self._tree_verify_backend = backend
+                 self._tree_commit_done = torch.get_device_module(self.device).Event()
+@@ -753,6 +760,29 @@ class DFlashWorkerV2(BaseSpecWorker):
+             elif self._target_tp_rank == 0:
+                 logger.warning("DFLASH tree conditions unmet; using linear verification.")
+ 
++    def _prepare_paged_tree_commit(self, eligible: bool) -> bool:
++        # A rank that cannot compact its KV must follow the same linear path as
++        # its peers. Check once before graph capture and keep runtime GPU-only.
++        if eligible:
++            pool = self.model_runner.token_to_kv_pool
++            try:
++                eligible = tree_kv_compaction_supported(pool)
++                if eligible:
++                    width = int(self.block_size)
++                    slots = torch.zeros((1, width), dtype=torch.int64, device=self.device)
++                    order = torch.arange(width, dtype=torch.int64, device=self.device)[None, :]
++                    lengths = torch.zeros((1,), dtype=torch.int32, device=self.device)
++                    compact_tree_kv(pool, slots, order, lengths)
++            except Exception as exc:
++                logger.warning("DFLASH paged tree commit unavailable during setup: %s", exc)
++                eligible = False
++        group = get_dp_tp_group()
++        if group.world_size == 1:
++            return eligible
++        vote = torch.tensor(int(eligible), dtype=torch.int32, device="cpu")
++        torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++        return bool(vote.item())
++
+     def init_cuda_graphs(self):
+         target_dp_enabled = get_parallel().attn_dp_enabled
+         with (
+@@ -825,11 +855,12 @@ class DFlashWorkerV2(BaseSpecWorker):
+             advantage = torch.zeros((1,), dtype=torch.int32, device=device)
+             select_dflash_tree(tree, tree.tokens, advantage)
+             update_dflash_tree_advantage(tree, tree.tokens, committed, lengths, advantage)
+-        req_table = self.model_runner.req_to_token_pool.req_to_token
+-        scratch = torch.empty_strided(
+-            (1, width), req_table.stride(), dtype=req_table.dtype, device=device
+-        )
+-        reorder_dflash_tree_slots(scratch, prefix, prefix, tree.tokens, order)
++        if self.page_size == 1:
++            req_table = self.model_runner.req_to_token_pool.req_to_token
++            scratch = torch.empty_strided(
++                (1, width), req_table.stride(), dtype=req_table.dtype, device=device
++            )
++            reorder_dflash_tree_slots(scratch, prefix, prefix, tree.tokens, order)
+ 
+     def _warm_eager_selector(self) -> None:
+         # Build selector kernels before serving rather than under the watchdog.
+@@ -3134,7 +3165,17 @@ class DFlashWorkerV2(BaseSpecWorker):
+         # Consume in this step: every decode graph size shares one aux output,
+         # which the next target forward overwrites (resolve_aux_hidden_states_width).
+         cache_loc = self._draft_write_ids(kv_loc_plan)
+-        if order is not None:
++        if order is not None and self.page_size > 1:
++            # Slots within a physical page stay in their original order. Move
++            # accepted target KV before publishing the new lengths. Draft KV
++            # is regenerated below from the same accepted hidden rows.
++            compact_tree_kv(
++                self.model_runner.token_to_kv_pool,
++                verify_out_cache_loc_2d,
++                order,
++                commit_lens,
++            )
++        elif order is not None:
+             cache_loc = reorder_dflash_tree_slots(
+                 self.model_runner.req_to_token_pool.req_to_token,
+                 batch.req_pool_indices[:bs],

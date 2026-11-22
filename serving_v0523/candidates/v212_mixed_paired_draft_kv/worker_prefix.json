@@ -1,0 +1,66 @@
+{
+  "counts": {
+    "cases": 84,
+    "cache_bf16_words": 1330560,
+    "untouched_slots": 6412,
+    "standalone_projection_mms_removed": 84,
+    "malformed_rejections_before_sampling_or_writes": 7
+  },
+  "cases_by_mode": {
+    "fused": 12,
+    "warm": 12,
+    "per_layer": 12,
+    "partial_prompt": 12,
+    "partial_tail": 12,
+    "nonunit": 12,
+    "hardware_fallback": 12
+  },
+  "nonunit_negative_control": {
+    "v211_patch_sha256": "e8a04e873ea3dafcc84dd97c49de239b42fe389cd63dbeab4f444279c1f7d082",
+    "v211_worker_sha256": "c4e62c2d249824d59a267282e99622fb0b5c63de88f8b638d0a6ecf9a7137260",
+    "scale": 2,
+    "cache_quantization_scale": null,
+    "affected_layer": 3,
+    "v211_incorrect_physical_v_words": 330,
+    "v212_incorrect_physical_v_words": 0,
+    "v212_all_KV_words_bitwise_equal_to_sequential": 14880,
+    "producer": "With the ordinary context carrier, exact V211 initialization, mixed settlement and cache writer selected the unscaled fused path. V212 initializer selected ordinary kv_proj_only and applied the model scale."
+  },
+  "hardware_fallbacks": {
+    "unsupported_world_sizes": [
+      1,
+      2
+    ],
+    "missing_transport_world_sizes": [
+      4,
+      8
+    ],
+    "rank_agreement": "Modeled unanimous Gloo capability signatures; no P2P transport allowed."
+  },
+  "torch": "2.5.1",
+  "methods_from_stage": {
+    "python/sglang/srt/layers/rotary_embedding/utils.py": "828a50285218e40c3429d2f4e75b1d051e3a89d831a7ab005e8c2609278aeddc",
+    "python/sglang/srt/layers/rotary_embedding/base.py": "2a2abfbef7be789d2e992478714a5040583e71ed71a1accd1fecd65cab5da297",
+    "python/sglang/srt/layers/layernorm.py": "dca150fc6e2c469d036633d0abd1b39d95480b8ade6c2f2e5260c6240c49d68e",
+    "python/sglang/srt/models/dflash.py": "1c8307ba7f63fd41f53435fbdabdad8c9e9a04847bef4959f1f8fc16ea6db0ae",
+    "python/sglang/srt/mem_cache/memory_pool.py": "d1ddb4994b0464f9bf2072388c2b02e493d31f305a3e5afc96cf5690dc3370f6",
+    "python/sglang/srt/mem_cache/kv_loc_plan.py": "2afcf4d67e2265f3726c3ce4c26f7ed4c1188272712e1872cf9cf14d97aa876a",
+    "python/sglang/srt/model_executor/forward_batch_info.py": "50b7fb93edc1da482327b56cadb473bbb181ecb784cc41cbf9d0f4519d8476a1",
+    "python/sglang/srt/speculative/dflash_worker_v2.py": "9728f9cb7f25bc6043e36ea5511cac16f3e41f785475634d9a25728f172ae62d",
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py": "a81f8a0d4cb3f4a9a9124085f0f01d49500ed3b32f7bb5ebf902e6effdab0fc6",
+    "python/sglang/srt/speculative/draft_worker_common.py": "9ad6a13fcbce3079b794ea6f47df9030d92d6a8a1bb2c33e0ed97d2d2ce48d49",
+    "python/sglang/kernels/ops/speculative/dflash.py": "b4f181c9013915cd64e93348e5d0bdaef3032f8e2826963083c682c85f0e2b8b"
+  },
+  "kv_heads": 2,
+  "head_dim": 8,
+  "layers": 5,
+  "partial_rotary_dim": 6,
+  "draft_widths": [
+    2,
+    5,
+    8
+  ],
+  "comparison": "Exact staged native mixed settlement and greedy acceptance, retained V211 context carrier versus V212 raw K/V. All physical BF16 cache words compared with stale sentinel, rejected and padded activations poisoned, simultaneous short, intermediate and full acceptance, nonidentity physical remaps.",
+  "emulated": "Host tensors; target FP32 logits and projected/context carriers are supplied. TP sync, terminal GPU NHD/prefix scatter and fused CUDA norm/RoPE are CPU doubles. Native MHATokenToKVPool dispatch, worker writer, helper host code and per-layer norm/RoPE execute. Unsupported hardware fixture supplies no SP context. No H200 timing or accuracy claim.",
+  "physical_h200": false
+}

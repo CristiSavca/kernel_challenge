@@ -1,0 +1,107 @@
+{
+  "hidden_width": 8192,
+  "sparse_layers": 62,
+  "bound_layers": 61,
+  "torch": "2.5.1",
+  "source_tail_sha256": "71c469f433b1c9c2419af9e6168c3223a1fd119eba0352507f817fcde1847848",
+  "cases": [
+    {
+      "users": 1,
+      "rows": 8,
+      "world": 4,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 262144,
+      "copy_payload_bytes_per_eligible_boundary": 131072,
+      "modeled_eligible_boundaries": 0,
+      "modeled_copy_launches_avoided": 0,
+      "modeled_copy_read_write_MiB_per_rank_pass": 0
+    },
+    {
+      "users": 1,
+      "rows": 8,
+      "world": 8,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 262144,
+      "copy_payload_bytes_per_eligible_boundary": 131072,
+      "modeled_eligible_boundaries": 0,
+      "modeled_copy_launches_avoided": 0,
+      "modeled_copy_read_write_MiB_per_rank_pass": 0
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "world": 4,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 1048576,
+      "copy_payload_bytes_per_eligible_boundary": 524288,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 61.0
+    },
+    {
+      "users": 4,
+      "rows": 32,
+      "world": 8,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 1048576,
+      "copy_payload_bytes_per_eligible_boundary": 524288,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 61.0
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "world": 4,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 4194304,
+      "copy_payload_bytes_per_eligible_boundary": 2097152,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 244.0
+    },
+    {
+      "users": 16,
+      "rows": 128,
+      "world": 8,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 4194304,
+      "copy_payload_bytes_per_eligible_boundary": 2097152,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 244.0
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "world": 4,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 8388608,
+      "copy_payload_bytes_per_eligible_boundary": 4194304,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 488.0
+    },
+    {
+      "users": 32,
+      "rows": 256,
+      "world": 8,
+      "original_allocates_new_storage": true,
+      "raw_aliases_receive": true,
+      "copy_read_write_bytes_per_eligible_boundary": 8388608,
+      "copy_payload_bytes_per_eligible_boundary": 4194304,
+      "modeled_eligible_boundaries": 61,
+      "modeled_copy_launches_avoided": 61,
+      "modeled_copy_read_write_MiB_per_rank_pass": 488.0
+    }
+  ],
+  "assumptions": "Representative equal-length eight-position target verification batches. Native eight-row multicast is available. Remaining 61 nonterminal layer boundaries select the single-CTA JIT and column gather at larger rows.",
+  "scope": "Logical reads and writes in the removed reorder, excluding gather, normalization, cache effects and allocator reuse. No HBM-traffic, device-peak or latency measurement."
+}

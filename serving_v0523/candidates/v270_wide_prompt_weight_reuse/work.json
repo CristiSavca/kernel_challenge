@@ -1,0 +1,365 @@
+{
+  "assumption": "Uniform independent distinct top-8 among 256 experts, 32 resident per rank. W2 only. No timing.",
+  "samples": [
+    {
+      "tokens": 8192,
+      "rows": {
+        "ResidualPromptWeightPipeline": {
+          "expected_rank_routes": 8192,
+          "mean_m_tiles": 63.99999853188508,
+          "mean_ctas": 1023.9999765101613,
+          "mean_clusters": 1023.9999765101613,
+          "issued_tensor_rows": 9079.797068085376,
+          "finest8_tensor_rows": 8304.0,
+          "excess_rows_vs_finest8": 775.7970680853759,
+          "extra_TFLOP_vs_finest8": 0.026031429966870117,
+          "per_width_m_tiles": {
+            "32": 0.030537084251831395,
+            "96": 27.2475666674267,
+            "176": 36.721894780206554
+          },
+          "W2_packed_request_MiB": 575.9999867869658,
+          "A_multicast_full_box_MiB": 1407.9999677014719,
+          "four_K64_stage_consumer_warp_site_proxy": 8181644.203728249
+        },
+        "WidePromptWeightPipeline": {
+          "expected_rank_routes": 8192,
+          "mean_m_tiles": 47.4682753659302,
+          "mean_ctas": 1518.9848117097663,
+          "mean_clusters": 759.4924058548831,
+          "issued_tensor_rows": 8729.945959361787,
+          "finest8_tensor_rows": 8304.0,
+          "excess_rows_vs_finest8": 425.94595936178666,
+          "extra_TFLOP_vs_finest8": 0.014292374729079835,
+          "per_width_m_tiles": {
+            "32": 14.795941319071654,
+            "128": 0.672334046858158,
+            "224": 0.6744662764515562,
+            "256": 31.32553372354883
+          },
+          "W2_packed_request_MiB": 427.21447829337177,
+          "A_multicast_full_box_MiB": 1518.9848117097663,
+          "four_K64_stage_consumer_warp_site_proxy": 7242028.088056825
+        }
+      },
+      "ideal_equal_job_waves": {
+        "48": {
+          "fixed_grid_66": 23,
+          "sized_grid": 16
+        },
+        "60": {
+          "fixed_grid_66": 22,
+          "sized_grid": 13
+        },
+        "62": {
+          "fixed_grid_66": 22,
+          "sized_grid": 13
+        },
+        "64": {
+          "fixed_grid_66": 22,
+          "sized_grid": 12
+        },
+        "65": {
+          "fixed_grid_66": 22,
+          "sized_grid": 12
+        },
+        "66": {
+          "fixed_grid_66": 12,
+          "sized_grid": 12
+        }
+      },
+      "assumed_equal_cost_logical_cluster_jobs": 759,
+      "packed_weight_request_reduction": 0.2583081803934528,
+      "consumer_warp_site_proxy_reduction": 0.11484441174345561,
+      "issued_tensor_row_change": -0.0385307189246864
+    },
+    {
+      "tokens": 10240,
+      "rows": {
+        "ResidualPromptWeightPipeline": {
+          "expected_rank_routes": 10240,
+          "mean_m_tiles": 65.08660820289899,
+          "mean_ctas": 1041.3857312463838,
+          "mean_clusters": 1041.3857312463838,
+          "issued_tensor_rows": 11291.696955819192,
+          "finest8_tensor_rows": 10352.0,
+          "excess_rows_vs_finest8": 939.6969558191922,
+          "extra_TFLOP_vs_finest8": 0.03153099760464209,
+          "per_width_m_tiles": {
+            "32": 1.0807178278944305,
+            "96": 0.09903400842789922,
+            "176": 63.906856366576655
+          },
+          "W2_packed_request_MiB": 585.7794738260909,
+          "A_multicast_full_box_MiB": 1431.9053804637776,
+          "four_K64_stage_consumer_warp_site_proxy": 8354015.697642609
+        },
+        "WidePromptWeightPipeline": {
+          "expected_rank_routes": 10240,
+          "mean_m_tiles": 63.99685753546363,
+          "mean_ctas": 2047.8994411348363,
+          "mean_clusters": 1023.9497205674181,
+          "issued_tensor_rows": 12180.415935247518,
+          "finest8_tensor_rows": 10352.0,
+          "excess_rows_vs_finest8": 1828.415935247518,
+          "extra_TFLOP_vs_finest8": 0.06135145816697925,
+          "per_width_m_tiles": {
+            "32": 1.1223677052425614,
+            "128": 30.868599454970283,
+            "224": 0.005890550645058659,
+            "256": 31.999999824605727
+          },
+          "W2_packed_request_MiB": 575.9717178191727,
+          "A_multicast_full_box_MiB": 2047.8994411348363,
+          "four_K64_stage_consumer_warp_site_proxy": 9748003.75294518
+        }
+      },
+      "ideal_equal_job_waves": {
+        "48": {
+          "fixed_grid_66": 31,
+          "sized_grid": 22
+        },
+        "60": {
+          "fixed_grid_66": 30,
+          "sized_grid": 18
+        },
+        "62": {
+          "fixed_grid_66": 30,
+          "sized_grid": 17
+        },
+        "64": {
+          "fixed_grid_66": 30,
+          "sized_grid": 16
+        },
+        "65": {
+          "fixed_grid_66": 30,
+          "sized_grid": 16
+        },
+        "66": {
+          "fixed_grid_66": 16,
+          "sized_grid": 16
+        }
+      },
+      "assumed_equal_cost_logical_cluster_jobs": 1024,
+      "packed_weight_request_reduction": 0.016743085828627047,
+      "consumer_warp_site_proxy_reduction": -0.16686442852817907,
+      "issued_tensor_row_change": 0.0787055287531715
+    },
+    {
+      "tokens": 12288,
+      "rows": {
+        "ResidualPromptWeightPipeline": {
+          "expected_rank_routes": 12288,
+          "mean_m_tiles": 94.40825746702,
+          "mean_ctas": 1510.53211947232,
+          "mean_clusters": 1510.53211947232,
+          "issued_tensor_rows": 13234.663736731187,
+          "finest8_tensor_rows": 12400.0,
+          "excess_rows_vs_finest8": 834.6637367311869,
+          "extra_TFLOP_vs_finest8": 0.02800666759701251,
+          "per_width_m_tiles": {
+            "32": 14.842481036462017,
+            "96": 15.54840385267254,
+            "176": 64.01737257788544
+          },
+          "W2_packed_request_MiB": 849.67431720318,
+          "A_multicast_full_box_MiB": 2076.98166427444,
+          "four_K64_stage_consumer_warp_site_proxy": 12074010.043697134
+        },
+        "WidePromptWeightPipeline": {
+          "expected_rank_routes": 12288,
+          "mean_m_tiles": 64.00000000333587,
+          "mean_ctas": 2048.000000106748,
+          "mean_clusters": 1024.000000053374,
+          "issued_tensor_rows": 13782.314878810701,
+          "finest8_tensor_rows": 12400.0,
+          "excess_rows_vs_finest8": 1382.314878810701,
+          "extra_TFLOP_vs_finest8": 0.04638279060364191,
+          "per_width_m_tiles": {
+            "32": 3.836016486184642e-06,
+            "128": 16.434219736761435,
+            "224": 15.565754264691364,
+            "256": 32.00002216586658
+          },
+          "W2_packed_request_MiB": 576.0000000300229,
+          "A_multicast_full_box_MiB": 2048.000000106748,
+          "four_K64_stage_consumer_warp_site_proxy": 9748480.034552328
+        }
+      },
+      "ideal_equal_job_waves": {
+        "48": {
+          "fixed_grid_66": 31,
+          "sized_grid": 22
+        },
+        "60": {
+          "fixed_grid_66": 30,
+          "sized_grid": 18
+        },
+        "62": {
+          "fixed_grid_66": 30,
+          "sized_grid": 17
+        },
+        "64": {
+          "fixed_grid_66": 30,
+          "sized_grid": 16
+        },
+        "65": {
+          "fixed_grid_66": 30,
+          "sized_grid": 16
+        },
+        "66": {
+          "fixed_grid_66": 16,
+          "sized_grid": 16
+        }
+      },
+      "assumed_equal_cost_logical_cluster_jobs": 1024,
+      "packed_weight_request_reduction": 0.32209319692513927,
+      "consumer_warp_site_proxy_reduction": 0.19260626757212096,
+      "issued_tensor_row_change": 0.041380057172104356
+    },
+    {
+      "tokens": 14336,
+      "rows": {
+        "ResidualPromptWeightPipeline": {
+          "expected_rank_routes": 14336,
+          "mean_m_tiles": 96.00260984867033,
+          "mean_ctas": 1536.0417575787253,
+          "mean_clusters": 1536.0417575787253,
+          "issued_tensor_rows": 15582.034885261128,
+          "finest8_tensor_rows": 14448.000000000002,
+          "excess_rows_vs_finest8": 1134.034885261126,
+          "extra_TFLOP_vs_finest8": 0.038051896443122256,
+          "per_width_m_tiles": {
+            "32": 0.03207967095623104,
+            "96": 16.372562193589427,
+            "176": 79.59796798412468
+          },
+          "W2_packed_request_MiB": 864.023488638033,
+          "A_multicast_full_box_MiB": 2112.0574166707474,
+          "four_K64_stage_consumer_warp_site_proxy": 12304184.696433544
+        },
+        "WidePromptWeightPipeline": {
+          "expected_rank_routes": 14336,
+          "mean_m_tiles": 64.03841525212198,
+          "mean_ctas": 2049.2292880679033,
+          "mean_clusters": 1024.6146440339517,
+          "issued_tensor_rows": 15420.467290029397,
+          "finest8_tensor_rows": 14448.000000000002,
+          "excess_rows_vs_finest8": 972.4672900293954,
+          "extra_TFLOP_vs_finest8": 0.03263058755551562,
+          "per_width_m_tiles": {
+            "32": 0.0383020852910508,
+            "128": 0.02958602782691685,
+            "224": 30.031260495212095,
+            "256": 33.93926664379191
+          },
+          "W2_packed_request_MiB": 576.3457372690978,
+          "A_multicast_full_box_MiB": 2049.2292880679033,
+          "four_K64_stage_consumer_warp_site_proxy": 9757280.621854454
+        }
+      },
+      "ideal_equal_job_waves": {
+        "48": {
+          "fixed_grid_66": 31,
+          "sized_grid": 22
+        },
+        "60": {
+          "fixed_grid_66": 30,
+          "sized_grid": 18
+        },
+        "62": {
+          "fixed_grid_66": 30,
+          "sized_grid": 17
+        },
+        "64": {
+          "fixed_grid_66": 30,
+          "sized_grid": 17
+        },
+        "65": {
+          "fixed_grid_66": 30,
+          "sized_grid": 16
+        },
+        "66": {
+          "fixed_grid_66": 16,
+          "sized_grid": 16
+        }
+      },
+      "assumed_equal_cost_logical_cluster_jobs": 1025,
+      "packed_weight_request_reduction": 0.3329513087918523,
+      "consumer_warp_site_proxy_reduction": 0.20699494825669584,
+      "issued_tensor_row_change": -0.010368837986915014
+    },
+    {
+      "tokens": 16384,
+      "rows": {
+        "ResidualPromptWeightPipeline": {
+          "expected_rank_routes": 16384,
+          "mean_m_tiles": 103.30954070308462,
+          "mean_ctas": 1652.952651249354,
+          "mean_clusters": 1652.952651249354,
+          "issued_tensor_rows": 17157.297135677407,
+          "finest8_tensor_rows": 16496.0,
+          "excess_rows_vs_finest8": 661.2971356774069,
+          "extra_TFLOP_vs_finest8": 0.022189449770882323,
+          "per_width_m_tiles": {
+            "32": 6.807943312632049,
+            "96": 0.5604773880809181,
+            "176": 95.94112000237166
+          },
+          "W2_packed_request_MiB": 929.7858663277616,
+          "A_multicast_full_box_MiB": 2272.8098954678617,
+          "four_K64_stage_consumer_warp_site_proxy": 13250374.828151837
+        },
+        "WidePromptWeightPipeline": {
+          "expected_rank_routes": 16384,
+          "mean_m_tiles": 79.62392007867231,
+          "mean_ctas": 2547.965442517514,
+          "mean_clusters": 1273.982721258757,
+          "issued_tensor_rows": 17029.71250063169,
+          "finest8_tensor_rows": 16496.0,
+          "excess_rows_vs_finest8": 533.7125006316892,
+          "extra_TFLOP_vs_finest8": 0.01790841980999597,
+          "per_width_m_tiles": {
+            "32": 13.278459697121862,
+            "128": 2.345459997967907,
+            "224": 2.4817871129134574,
+            "256": 61.51821327066908
+          },
+          "W2_packed_request_MiB": 716.6152807080508,
+          "A_multicast_full_box_MiB": 2547.965442517514,
+          "four_K64_stage_consumer_warp_site_proxy": 12161656.311346693
+        }
+      },
+      "ideal_equal_job_waves": {
+        "48": {
+          "fixed_grid_66": 38,
+          "sized_grid": 27
+        },
+        "60": {
+          "fixed_grid_66": 38,
+          "sized_grid": 22
+        },
+        "62": {
+          "fixed_grid_66": 38,
+          "sized_grid": 21
+        },
+        "64": {
+          "fixed_grid_66": 38,
+          "sized_grid": 20
+        },
+        "65": {
+          "fixed_grid_66": 38,
+          "sized_grid": 20
+        },
+        "66": {
+          "fixed_grid_66": 20,
+          "sized_grid": 20
+        }
+      },
+      "assumed_equal_cost_logical_cluster_jobs": 1274,
+      "packed_weight_request_reduction": 0.2292684728169071,
+      "consumer_warp_site_proxy_reduction": 0.08216511086856537,
+      "issued_tensor_row_change": -0.007436173310795824
+    }
+  ]
+}

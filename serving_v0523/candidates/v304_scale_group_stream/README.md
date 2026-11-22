@@ -1,0 +1,3 @@
+# V304 decode scale conversion study
+
+Six selected Hopper W13 and W2 geometries were disassembled with alternative FP8 scale unpacking. Replacing the scale path with a positive-only operation reduced hot-loop instruction counts, but an ordinary zero scale violates that specialization. A zero-aware packed-byte variant reduced static sites by roughly 1–2%. A single-multiply formulation cut packed multiplies while increasing total hot-loop sites. None of these variants was promoted or timed on an H200. [Baseline and first variants](baseline_ablation.json) · [Zero-aware variants](zero_aware_ablation.json) · [Single-multiply variants](single_multiply_ablation.json)

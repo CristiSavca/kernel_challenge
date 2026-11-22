@@ -1,0 +1,215 @@
+{
+  "objective": "Official four-load 4\u00d7 serving score",
+  "observed_utc": "2026-11-19 07:01:08 UTC",
+  "official_incumbent": {
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "passed": true
+  },
+  "next_mixed_serving_candidate": "V291",
+  "candidates": [
+    {
+      "candidate": "V286",
+      "parent": "V279",
+      "parent_tree": "f8c2c4055b660f859f7d075dede43293130d9c85",
+      "tree": "46d6cff688e08f538f30126f84f4bef2421e87c2",
+      "patch_sha256": "24a46b8dda475a12cb20e3c1075f411d8e671e8af080f1e32b9b8e5da9f15f17",
+      "delta_sha256": "d4233f15379ca5bc8d6b371efcdf5b993f1b58f5ab32b8b5570805edb98c27b9",
+      "bytes": 407889,
+      "paths": 59,
+      "directory": "serving_v0523/candidates/v286_alternating_peer_prompt_inputs",
+      "submitted": false
+    },
+    {
+      "candidate": "V287",
+      "parent": "V68",
+      "parent_tree": "f9966bf0dfca287d58d8d24ea2d055b3c2162702",
+      "tree": "b3ae7779a56f0332ded37c90ac5e784d4ce3c90b",
+      "patch_sha256": "03daf46c9daaa6c9566daf1532faa534f1b4e0b5160206e13462a03465f00a7c",
+      "delta_sha256": "86eebeae4e0ca3758688e38b1553534295468d35de870363a74413e2e2bbf6a1",
+      "bytes": 76814,
+      "paths": 18,
+      "directory": "serving_v0523/candidates/v287_prompt_completion_decode",
+      "submitted": false
+    },
+    {
+      "candidate": "V289",
+      "parent": "V284",
+      "parent_tree": "f03597033db52d3fe58c559b430b5a79c53e101a",
+      "tree": "bd28b7bbeabf0fe250a481e3a96753c2088089b0",
+      "patch_sha256": "a0c4736a58123f20ff81edcfef81b4ffc4645efea59f02b2343f74e72627fce3",
+      "delta_sha256": "a22458d4d4cabb9e84cc660e04fdde721ee783c33dfe10f198f59ab1f22f1e76",
+      "bytes": 364906,
+      "paths": 56,
+      "directory": "serving_v0523/candidates/v289_overlapped_ranked_pool",
+      "submitted": false
+    },
+    {
+      "candidate": "V290",
+      "parent": "V289",
+      "parent_tree": "bd28b7bbeabf0fe250a481e3a96753c2088089b0",
+      "tree": "a024fdaa7a134625083a6557fd5a6e05a0894e44",
+      "patch_sha256": "7447546233cc23eff964102d160c184e0e9831c97a2ba0f019a31c3ac93b55e8",
+      "delta_sha256": "e08f3007d824c6f0508e3ec0ffc142891e39ebb0a73e878f25d649225574613b",
+      "bytes": 391998,
+      "paths": 61,
+      "directory": "serving_v0523/candidates/v290_mixed_ranked_peer_serving",
+      "submitted": false
+    },
+    {
+      "candidate": "V291",
+      "parent": "V290",
+      "parent_tree": "a024fdaa7a134625083a6557fd5a6e05a0894e44",
+      "tree": "7c7319c4a98fb10931ec00011563f49b9837c93b",
+      "patch_sha256": "53e373dcb0061d91a0181e02f8f49b6e8fb46b27346c5706e9f5c0492ccd7db0",
+      "delta_sha256": "17513c81876db744dc33b1205e0a732c8485667cc368503e838ae22a4e4deb4b",
+      "bytes": 396795,
+      "paths": 61,
+      "directory": "serving_v0523/candidates/v291_mixed_ranked_attention",
+      "submitted": false
+    }
+  ],
+  "V288_physical_comparison": {
+    "matched_four_user_16k_chunks": 19,
+    "V41_mean_seconds": 1.4023576159295994,
+    "V44_mean_seconds": 1.2248605377226685,
+    "standalone_kernel_ablation": false,
+    "new_hardware_used": false
+  },
+  "V291": {
+    "decode": "Fresh current-route planner on the router stream while ranked pool projection and gather complete. Fused ranked RMSNorm and W13 staging after join.",
+    "prompt": "Peer packing alternates two published BF16 slabs, with unanimous one-slab fallback. Intact prompt can share target with a verified causal cohort. Direct sliding-window and bounded full-prompt dense FA3 apply to eligible rows, using a paged verification tail.",
+    "ranked_model_pairs": 34,
+    "transition_calls": 24,
+    "transition_nonstub_BF16_words": 794112,
+    "paired_split_KV_bytes": 133264128,
+    "paged_tail_reference_scalars": 409600,
+    "max_fixture_relative_l2": 0.0022435027888285243,
+    "runtime_configurations": 17,
+    "permutations": 40320,
+    "exposure": {
+      "users": 32,
+      "logged_repetitions": 1,
+      "archived_wall_seconds": 304.4294033150002,
+      "full_chunk_join_opportunities": 145,
+      "full_attention_prompt_packs_fitting_byte_cap": 115,
+      "full_layers": 16,
+      "sliding_layers": 46,
+      "fit_full_layer_calls": 1840,
+      "size_eligible_prompt_layer_calls": 9300,
+      "ranked_nodes_removed_vs_V229_per_eligible_TP8_verify": 185,
+      "uniform_logical_MiB_removed_vs_V229_per_eligible_TP8_verify": 984.0,
+      "V64_period_proxy_ms": 96.99769053117784,
+      "at_one_fully_hidden_round_per_join_seconds": 14.064665127020787,
+      "illustrative_wall_ratio_if_only_this_work_were_free": 1.048437924022012
+    },
+    "synthetic_peer_input": {
+      "dense_remote_per_rank_MiB": 112.0,
+      "highest_peer_input_per_rank_MiB": 74.703125,
+      "highest_peer_output_per_rank_MiB": 74.65625,
+      "least_saved_per_rank_MiB": 37.296875
+    },
+    "campaign": "No new private or scored submissions. The existing conditional V229/V198 standby retains its prior selection.",
+    "hardware_limits": "V291 throughput, whole-model output agreement, stock-relative TTFT and peak memory unverified."
+  },
+  "V287": "Independent V68 scheduler ablation. At 32 users, 31 early standalone decode opportunities replace the existing interval's 146 rounds in a fixed-trace model. Excluded from V291.",
+  "judge": {
+    "observed_utc": "2026-11-19 07:01:08 UTC",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "mode": "check",
+        "status": "queued",
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "mode": "check",
+        "status": "queued",
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "mode": "check",
+        "status": "queued",
+        "users": 32
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "mode": "check",
+        "status": "queued",
+        "users": 4
+      }
+    },
+    "incumbent": {
+      "job_id": "abd217baf0ed49fd",
+      "score": 1.4119,
+      "passed": true
+    },
+    "visible_run_count": 28,
+    "new_submissions": 0,
+    "paid_allocations": 0
+  },
+  "source_receipts": {
+    "serving_v0523/candidates/v286_alternating_peer_prompt_inputs/work.json": "e134a4793078b1119d40feb9a61e0c48052b8d213af6db5d3d02549d48d63560",
+    "serving_v0523/candidates/v286_alternating_peer_prompt_inputs/ordering.json": "ef598a376e07a0007d082cd2eb7b6b038399dcaf862fd51f768045751d4545ef",
+    "serving_v0523/candidates/v287_prompt_completion_decode/cold_replay.json": "56325aba9b0fa8c334ad3584b47e5586679809c286198f22d877504ee1ad77b9",
+    "serving_v0523/candidates/v288_paired_cold_and_verify_intervals/check.json": "a02eb4c029a237848ddd4f163a32e6acf20362e3acd4e1195781245852a4c076",
+    "serving_v0523/candidates/v289_overlapped_ranked_pool/independent_lifetime.json": "d6623df622c163b7af6bffd0dae0682ba80a567a448655a82a0693d5b8f9d099",
+    "serving_v0523/candidates/v290_mixed_ranked_peer_serving/peer_grouped.json": "d44003fa229e507fee352e2f5c39278b27a5b7ec22d99ca738b4871aa0d88221",
+    "serving_v0523/candidates/v290_mixed_ranked_peer_serving/routed_payload.json": "247f9d882356c9c62b89b6558247e341141e04824cf8724dcc5bd2afa9e4a636",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/validation.json": "13cb57c854465ae2fa19c826f4911a9ffa247130cdaa196977ade199956725bf",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/flags.json": "7ee3a3a8a9b98435876452c8776febc84874a147ab32e418eead0292f3f67ae6",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/work.json": "4f1d8bda9c3b67f8dab40b01d4ba524aa32e3b8cae6ff2318dceb5ba9c44ba00",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/attention_abi.json": "4ffb5890532a136d83a2b154a7f008067f0bba64c3369649af0e6ff29b89c418",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/transitions.json": "1a8c8a68856d2ee3ba625976d9075a431fc27ee782ac986dc65da5d61756df58",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/full_attention.json": "1512cf7e82fa1b3f6a5da3d57c9066e2dc38ad6ba094ced76de1e5cca13ff212",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/paged_tail.json": "019b4d7c85724ad49d4ec9a2c4e509a065b546a560094f2db0b7ed9fb0b7a3fe",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/certificate.json": "bd1f3108fd13c46012a7b2c7e409a9bb5404fe8f7d7d05b12085176604a01153",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/independent_causal_attention.json": "2554322c9dc62e61ed3563b5bcb8beb811192e94c112dfe824435dbee97a3bcd",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/server_config.json": "f2628322915d0f3a39588f8be13a0325da574f2be218b236a8aaf80165ede155",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/peer_capacity.json": "15f720239605b79702162e8ddf11c95984b2d7cd656627ea47745f4d6530100a",
+    "serving_v0523/candidates/v291_mixed_ranked_attention/judge_observation.json": "aadd43faaa6ddfd28d0eac26f9e750d88f69bb18df02255840fe066b66a192d1"
+  },
+  "cleanup": [
+    {
+      "candidate": "V286",
+      "cleanup_receipt": "serving_v0523/candidates/v286_alternating_peer_prompt_inputs/cleanup.json",
+      "observed_free_change_bytes": 53907456
+    },
+    {
+      "candidate": "V287",
+      "cleanup_receipt": "serving_v0523/candidates/v287_prompt_completion_decode/cleanup.json",
+      "observed_free_change_bytes": 49078272
+    },
+    {
+      "candidate": "V289",
+      "cleanup_receipt": "serving_v0523/candidates/v289_overlapped_ranked_pool/export_cleanup.json",
+      "observed_free_change_bytes": 50999296
+    },
+    {
+      "candidate": "V290",
+      "cleanup_receipt": "serving_v0523/candidates/v290_mixed_ranked_peer_serving/cleanup.json",
+      "observed_free_change_bytes": 53186560
+    },
+    {
+      "candidate": "V291",
+      "cleanup_receipt": "serving_v0523/candidates/v291_mixed_ranked_attention/cleanup.json",
+      "observed_free_change_bytes": 52428800
+    }
+  ],
+  "final_verification": "Repeated V291 verification from the existing pinned SGLang checkout using an isolated temporary Git index after export. All 61 paths and 11 bound evidence files matched the frozen manifest."
+}

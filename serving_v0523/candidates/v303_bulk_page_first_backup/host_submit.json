@@ -1,0 +1,29 @@
+{
+  "tree": "37088c0b5ac55d1e22516be62bb9b535ab374f0c",
+  "parent": "673ac11b38d2419c523293d9ba7825f931587c7a",
+  "machine": "arm64",
+  "system": "Darwin",
+  "torch": "2.5.1",
+  "repetitions": 41,
+  "cases": [
+    {
+      "host_slots": "contiguous",
+      "median_ms": {
+        "stock staged": 1.385333,
+        "V298": 0.039541,
+        "bulk": 0.185167
+      },
+      "bulk_minus_V298_paired_median_ms": 0.145291
+    },
+    {
+      "host_slots": "two out-of-order runs",
+      "median_ms": {
+        "stock staged": 1.352042,
+        "V298": 1.380709,
+        "bulk": 0.204125
+      },
+      "bulk_minus_V298_paired_median_ms": -1.1722920000000001
+    }
+  ],
+  "scope": "Full/SWA/draft at 16K each. Single-thread Apple CPU, real Python and Torch CPU index work, synthetic shuffled or linear host slots, meta staging. CUDA calls are no-ops. Allocation, GPU execution and copy time excluded."
+}

@@ -1,0 +1,101 @@
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index be516cf..81adb28 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -23,10 +23,15 @@ class DFlashGatheredLinear(nn.Linear):
+ 
+         set_weight_attrs(self.weight, {"weight_loader": load_weight})
+ 
+-    def forward(self, inputs):
++    def forward(self, inputs, *, rank_major=False):
+         # Each output retains the original full-K dot product and output dtype.
+         # Restore complete output channels in checkpoint order.
+         projected = F.linear(inputs, self.weight)
++        if rank_major:
++            shape = (self.tp_group.world_size, *projected.shape)
++            if projected.shape[0] == 0:
++                return projected.new_empty(shape)
++            return self.tp_group.all_gather(projected, 0).view(shape)
+         if projected.shape[0] == 0:
+             return inputs.new_empty((0, self.full_output_size))
+         return self.tp_group.all_gather(projected, -1)
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index 8fb78ca..654a6c3 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -564,6 +564,28 @@ def _grouped_conv(hidden_states, delta, base, block_size, num_groups, group_size
+     return out.flatten(-2)
+ 
+ 
++@torch.compile(dynamic=True, backend=get_compiler_backend(), disable=_is_npu)
++def _rank_major_grouped_conv(hidden, bank, base, block_size, groups, group_size, taps, side):
++    # A tap occupies one rank slice or a row of adjacent rank slices. Keep the
++    # rank axis explicit so these views address the NCCL output directly.
++    parts = max(1, bank.shape[0] // (2 * taps))
++    per_part = groups // parts
++    blocks = hidden.unflatten(-1, (parts, per_part, group_size))
++    position = torch.arange(hidden.shape[0], device=hidden.device) % block_size
++    for tap in range(taps):
++        start = (side * taps + tap) * groups
++        rank, offset = start // bank.shape[2], start % bank.shape[2]
++        delta = bank[rank : rank + parts, :, offset : offset + per_part].permute(1, 0, 2)
++        coeff = base[tap].view(1, parts, per_part, group_size) + delta.unsqueeze(-1)
++        if tap == 0:
++            out = coeff * blocks
++        else:
++            shifted = F.pad(blocks[:-tap], (0, 0, 0, 0, 0, 0, tap, 0))
++            shifted = torch.where((position >= tap).view(-1, 1, 1, 1), shifted, 0)
++            out = out + coeff * shifted
++    return out.flatten(1)
++
++
+ class DFlashGroupedConv(nn.Module):
+     """Grouped dynamic depthwise K-tap convolution across one DFlash block.
+ 
+@@ -613,7 +635,37 @@ class DFlashGroupedConv(nn.Module):
+             self.taps,
+         )
+ 
++    def _can_use_rank_major(self, hidden):
++        projection = self.kernel_projection
++        if type(projection) is not DFlashGatheredLinear or hidden.ndim != 2 or hidden.shape[0] == 0:
++            return False
++        partitions = 2 * self.taps
++        ranks = projection.tp_group.world_size
++        # Other rank layouts can split a tap into unequal pieces.
++        return (
++            (ranks % partitions == 0 or partitions % ranks == 0)
++            and not torch.is_grad_enabled()
++            and not projection._forward_hooks
++            and not projection._forward_pre_hooks
++            and not torch.nn.modules.module._global_forward_hooks
++            and not torch.nn.modules.module._global_forward_pre_hooks
++            and "forward" not in vars(projection)
++            and projection._compiled_call_impl is None
++        )
++
++    def _convolve_rank_major(self, hidden, bank, side):
++        torch._dynamo.mark_static(hidden, 1)
++        torch._dynamo.mark_static(bank, 0)
++        torch._dynamo.mark_static(bank, 2)
++        return _rank_major_grouped_conv(
++            hidden, bank, self.base_kernel[side], self.block_size,
++            self.num_groups, self.group_size, self.taps, side,
++        )
++
+     def prepare(self, hidden_states: torch.Tensor):
++        if self._can_use_rank_major(hidden_states):
++            bank = self.kernel_projection(hidden_states, rank_major=True)
++            return self._convolve_rank_major(hidden_states, bank, 0), (bank,)
+         coefficients = self.kernel_projection(hidden_states).reshape(
+             *hidden_states.shape[:-1], 2, self.taps, self.num_groups
+         )
+@@ -623,6 +675,8 @@ class DFlashGroupedConv(nn.Module):
+         )
+ 
+     def finish(self, hidden_states: torch.Tensor, coefficients) -> torch.Tensor:
++        if isinstance(coefficients, tuple):
++            return self._convolve_rank_major(hidden_states, coefficients[0], 1)
+         return self._convolve(hidden_states, coefficients, side=1)
+ 
+ 

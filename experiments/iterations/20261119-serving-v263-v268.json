@@ -1,0 +1,161 @@
+{
+  "objective": "3x then 4x on the official four-load serving frontier",
+  "official_incumbent": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "implementations": [
+    {
+      "candidate": "V263",
+      "parent": "V261",
+      "tree": "9d59a031b6fea9ed1df48413ddd11e7ababeec4b",
+      "bytes": 406915,
+      "patch_sha256": "c2c29a0e560ce5ef257819222b94bf4c162a0806d503e5408701e1bdad134099",
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V264",
+      "parent": "V256",
+      "tree": "aeed7cc2fce4e11874af114c396674a2aa699759",
+      "bytes": 407221,
+      "patch_sha256": "d4d8f9005cc31d1f05491b7aca2eaf436eaecc1183b5aacdf3c12fae68dda909",
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V266",
+      "parent": "V256",
+      "tree": "1294e2c494a0925d7706784dff015b187cfff8d6",
+      "bytes": 409238,
+      "patch_sha256": "d4384f0c6bfb517ecf93ae5b442700c2c86fee3ea2a39b76b82685ee236b0314",
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V267",
+      "parent": "V248",
+      "tree": "a757121cc769d271399a32f8c6b8a5f7d6aaa81a",
+      "bytes": 408643,
+      "patch_sha256": "11e05fc1e6473491df538c893740183f5bb664d4fd344ad750fd1eb74e173868",
+      "strict_apply_reverse_full_delta": true
+    },
+    {
+      "candidate": "V268",
+      "parent": "V248",
+      "tree": "597174a45ea1da1da1bf7a8bc9cea36c985c6c53",
+      "bytes": 407883,
+      "patch_sha256": "4bfde955d4f41a9ced7cf33b6de35a257aedc1b42ed68f63a371e54eff420afb",
+      "strict_apply_reverse_full_delta": true
+    }
+  ],
+  "hardware_unmeasured": [
+    263,
+    264,
+    266,
+    267,
+    268
+  ],
+  "candidate_for_future_private_comparison": "V268",
+  "known_numerical_rejection": {
+    "candidates": [
+      "V264",
+      "V267"
+    ],
+    "native_width_Gloo_cases": 12,
+    "compared_BF16_owner_values": 1074921472,
+    "differing": 25679,
+    "max_abs": 0.09375,
+    "collective_shape_comparison": {
+      "path": "serving_v0523/candidates/v267_pipelined_expert_serving/collective_shapes.json",
+      "sha256": "97a1ee0d40d9de3e20e022d358b7eaa536a950ba9c84f9b4690c7223e237268a"
+    },
+    "normal_entry": {
+      "path": "serving_v0523/candidates/v267_pipelined_expert_serving/attention_pipeline.json",
+      "sha256": "3d89eedb0ef753389ded2314f5b7d6602a349be34bca7d437a8ec644f1923768"
+    },
+    "NCCL_order_counterexample": {
+      "path": "serving_v0523/candidates/v265_native_serving_profile/nccl_ring_order.json",
+      "sha256": "c463d2a9797de61243f705209d58f3a370faff8d0e09bc2fcf708ce9a8cf800e"
+    }
+  },
+  "correction": {
+    "parent_discrepancies_reproduced": 1556,
+    "cases": 48,
+    "V268_QKV_differences": 0,
+    "V268_owner_differences": 0,
+    "V268_near_tie_decisions": 40,
+    "V268_near_tie_differences": 0,
+    "source_and_rules": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/validation.json",
+      "sha256": "d61036569a117b3e2fc1e2062663832eafc4fbcd19ee55343549a32f623ae284"
+    },
+    "paired_gloo": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/adverse_attention.json",
+      "sha256": "24a624066057dc00ca1bfef2a23b79050157a95c329a6328809f36e73c2365bb"
+    }
+  },
+  "eligible_low_load_expert_work": {
+    "rows": 8,
+    "routed_slots": 64,
+    "live": 10,
+    "per_layer_removed_staging_bytes": 163840,
+    "across_62_layers_bytes": 10158080,
+    "per_rank_removed_staging_CTAs_per_62_layers": 3968,
+    "before_after_plan_CTAs": [
+      65,
+      1
+    ],
+    "before_after_staging_launches": [
+      1,
+      1
+    ],
+    "original_inputs_bytes": 65536,
+    "routed_slot_arena_bytes": 524288,
+    "retained_W2_output_arena": true,
+    "isolated_native_Marlin_us": 129.79
+  },
+  "combined_regressions": {
+    "expert_checks.json": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/expert_checks.json",
+      "sha256": "05ff47d31788abe04943b3c0c0b2953d0de467989366e2abbdaa577815dbb2fb"
+    },
+    "expert_controls.json": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/expert_controls.json",
+      "sha256": "15c453f8083675acdf1eb10e7a61c00969b8b21179dc8714a0777a1a6958b16a"
+    },
+    "expert_transition.json": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/expert_transition.json",
+      "sha256": "bdb970e50ba27230b1eea546cd42e5af4214d1728c5d572cc5ff6642f4755536"
+    },
+    "model_regressions.json": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/model_regressions.json",
+      "sha256": "4caa3aebbc6de76d2c23d676c6f9c6d8ebb2ad92d4b8a8f51acb4a5b41f3726d"
+    },
+    "qkv_full_width.json": {
+      "path": "serving_v0523/candidates/v268_native_sum_expert_serving/qkv_full_width.json",
+      "sha256": "03678424a9a816eda82513c754e992692d76bb518325dd2f6034d89c2c70bca1"
+    }
+  },
+  "integration_tradeoff": "V268 uses V248 full-address draft KV, preserves the native full O GEMM and single reduction, and integrates QKV overlap, compact prompt routes, fused small decode staging, direct token-major W13 and the terminal residual gate. V266 retains V256 window-backed draft KV and the two route stages.",
+  "calibrated_score_model": {
+    "uniform_gpu_throughput_and_user_speed_factor_for_3x": 1.801,
+    "uniform_gpu_throughput_and_user_speed_factor_for_4x": 2.293,
+    "source": {
+      "path": "serving_v0523/candidates/v265_native_serving_profile/audit.json",
+      "sha256": "f6f9294e6b192289463b71ab4ebda740a9f9ad4b1d5357cef2a5379f9163c703"
+    },
+    "scope": "Modeled crossings relative to V64, calibrated from archived paired frontier; not candidate performance."
+  },
+  "live_judge": {
+    "path": "serving_v0523/candidates/v268_native_sum_expert_serving/judge_observation.json",
+    "sha256": "347c81db1443059fb99ac4547654050a2bdee4d0c6b55d5c7aa6cb29461eda14"
+  },
+  "private_checks_remaining": 0,
+  "external_GPU_allocations": 0,
+  "new_submissions": 0,
+  "outstanding": [
+    "H200 generated-token agreement",
+    "time to first token",
+    "peak GPU memory",
+    "official serving throughput"
+  ]
+}

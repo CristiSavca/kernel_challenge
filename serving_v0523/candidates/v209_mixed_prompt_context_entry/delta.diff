@@ -1,0 +1,58 @@
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index 246d9032d314908b35c4fbdc0b297f5b68ecdc46..e5ffe6ed3694e0da027e8e7f2e560d1752e95156 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -6,7 +6,9 @@ import json
+ from copy import copy
+ 
+ import torch
++from torch.nn.modules import module as module_hooks
+ 
++from sglang.srt.layers.dflash_context_projection import dflash_sp_prefill_scope
+ from sglang.srt.managers.utils import MixedDFlashResult
+ from sglang.srt.model_executor.forward_batch_info import CaptureHiddenMode, ForwardBatch, ForwardMode
+ from sglang.srt.model_executor.runner.decode_cuda_graph_runner import DecodeCudaGraphRunner
+@@ -148,11 +150,24 @@ def _prepare_views(worker, prompt, decode, proposal, prefix_readback=None):
+     # Draft and target use the same explicit positional inputs after replay.
+     mixed_fb.positions = torch.cat((prompt_fb.positions, tail_view.spec_info.positions))
+     mixed_fb.set_mixed_verify_rows(p)
++    processor = worker._target_logits_processor
++    # A hook or a wrapped forward may consume the complete softcapped vocabulary.
++    mixed_fb.mixed_verify_sharded_logits = (
++        processor is not None
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and all(
++            not mod._forward_hooks and not mod._forward_pre_hooks
++            and getattr(mod, "_compiled_call_impl", None) is None
++            and "forward" not in vars(mod)
++            for mod in (runner.model, processor)
++        )
++    )
+     plan = plan_mixed_dflash_target(runner, prompt_fb, verify_fb, mixed_fb, decode.reqs)
+     if plan is None:
+         return None
+-    identity = json.dumps([p, t, q, mixed_fb.rids, mix.extend_lens, mix.prefix_lens,
+-                           mix.req_pool_indices_cpu.tolist()], separators=(",", ":")).encode()
++    identity = json.dumps([p, t, q, mixed_fb.mixed_verify_sharded_logits, mixed_fb.rids, mix.extend_lens,
++                           mix.prefix_lens, mix.req_pool_indices_cpu.tolist()], separators=(",", ":")).encode()
+     # A fixed-width collective even when ranks have different request counts.
+     digest = hashlib.sha256(identity).digest()
+     signature = (p, t, q, *(int.from_bytes(digest[i:i+8], "big") >> 1 for i in range(0, 32, 8)))
+@@ -178,9 +193,13 @@ def try_forward_proposed_mixed(
+     worker._wait_for_fused_hicache_load(prompt_batch)
+     worker.target_worker.set_hicache_consumer(prompt_batch.hicache_consumer_index)
+     positions = mixed_fb.positions
+-    target_out = worker.target_worker.forward_batch_generation(
+-        batch=None, forward_batch=mixed_fb, is_verify=True, return_kv_loc_plan=True
+-    )
++    # Admission requires the eager model tail. The captured layer body returns
++    # its original taps; the tail can project them on their sequence owners.
++    # Running verification rows still need the accepted-prefix draft KV writer.
++    with dflash_sp_prefill_scope(worker._sp_prefill_context, kv_helper=None):
++        target_out = worker.target_worker.forward_batch_generation(
++            batch=None, forward_batch=mixed_fb, is_verify=True, return_kv_loc_plan=True
++        )
+     prompt_result, decode_result, next_input = worker.settle_mixed_verify(
+         target_out=target_out, prompt_forward_batch=prompt_fb, decode_sampling_info=decode_batch.sampling_info,
+         candidates=proposal.tokens, prefix_lens=proposal.prefix_lens, positions=positions,

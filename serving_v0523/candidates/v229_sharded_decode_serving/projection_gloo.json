@@ -1,0 +1,1540 @@
+{
+  "torch": "2.5.1",
+  "physical_gpu": false,
+  "counts": {
+    "paired_rank_calls": 168,
+    "checked_words": 218726400,
+    "dense_outputs": 700416,
+    "unequal_dense_outputs": 0
+  },
+  "candidate": "v229_sharded_decode_serving",
+  "patch_sha256": "d81634df5c43230867d314540c7ae9ebe5ff8ba40c8fdc59482104ee3d75adcd",
+  "parent_patch_sha256": "2de1b0195710e395b2d4c5e2666a8df7a42516c4bb3fc87ae313e0788f1e1a9a",
+  "rank_zero_per_tp": {
+    "4": [
+      {
+        "capture_epochs": [
+          "yes",
+          "rank_optout",
+          "rank_dtype",
+          "rank_topology",
+          "rank_order",
+          "rank_attn_dp",
+          "rank_invariant",
+          "rank_old_gpu",
+          "rank_hook",
+          "rank_override",
+          "rank_tail_hook",
+          "rank_training",
+          "draft",
+          "yes"
+        ],
+        "mode": "DECODE",
+        "m": 1,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              1,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 20480
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 8,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              8,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 8,
+        "guard": "native_mc",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [
+          [
+            [
+              8,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "candidate_collectives": [
+          [
+            [
+              8,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 128,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              128,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              128,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 2621440
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 256,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              256,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              256,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 5242880
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "workspace",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "workspace"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "refused_workspace",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "EXTEND",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "MIXED",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "DECODE",
+        "m": 8,
+        "guard": "hook",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "updated",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            2048,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              2048
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "eager",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 257,
+        "guard": "cost_bound",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            1024,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              257,
+              1024
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              256
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              256
+            ],
+            -1
+          ],
+          [
+            [
+              16,
+              256
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              256
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              5
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 5263360
+      }
+    ],
+    "8": [
+      {
+        "capture_epochs": [
+          "yes",
+          "rank_optout",
+          "rank_dtype",
+          "rank_topology",
+          "rank_order",
+          "rank_attn_dp",
+          "rank_invariant",
+          "rank_old_gpu",
+          "rank_hook",
+          "rank_override",
+          "rank_tail_hook",
+          "rank_training",
+          "draft",
+          "yes"
+        ],
+        "mode": "DECODE",
+        "m": 1,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              1,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 20480
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 8,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              8,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 8,
+        "guard": "native_mc",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [
+          [
+            [
+              8,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "candidate_collectives": [
+          [
+            [
+              8,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 128,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              128,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              128,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 2621440
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 256,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              256,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              256,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 5242880
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "workspace",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "workspace"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "refused_workspace",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "EXTEND",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "MIXED",
+        "m": 32,
+        "guard": null,
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "DECODE",
+        "m": 8,
+        "guard": "hook",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "full",
+        "hooks": 0,
+        "checked_words": 163840
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "updated",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            1024,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              32,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              1024
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 32,
+        "guard": "eager",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 655360
+      },
+      {
+        "capture_epochs": [],
+        "mode": "TARGET_VERIFY",
+        "m": 257,
+        "guard": "cost_bound",
+        "parent_gemms": [
+          [
+            8192,
+            4096,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "candidate_gemms": [
+          [
+            8192,
+            512,
+            0
+          ],
+          [
+            4096,
+            8192,
+            0
+          ]
+        ],
+        "parent_collectives": [],
+        "candidate_collectives": [
+          [
+            [
+              257,
+              512
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              128
+            ],
+            -1
+          ],
+          [
+            [
+              8,
+              128
+            ],
+            -1
+          ],
+          [
+            [
+              16,
+              128
+            ],
+            -1
+          ],
+          [
+            [
+              32,
+              128
+            ],
+            -1
+          ],
+          [
+            [
+              1,
+              5
+            ],
+            -1
+          ]
+        ],
+        "reductions": [
+          "normal"
+        ],
+        "router": "split2",
+        "hooks": 0,
+        "checked_words": 5263360
+      }
+    ]
+  },
+  "dense_gemm_rank_zero": {
+    "4": [
+      {
+        "m": 1,
+        "outputs": 1024,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 8,
+        "outputs": 8192,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 16,
+        "outputs": 16384,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 32,
+        "outputs": 32768,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      }
+    ],
+    "8": [
+      {
+        "m": 1,
+        "outputs": 1024,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 8,
+        "outputs": 8192,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 16,
+        "outputs": 16384,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      },
+      {
+        "m": 32,
+        "outputs": 32768,
+        "bf16_unequal": 0,
+        "max_abs": 0.0
+      }
+    ]
+  },
+  "signed_zero_nan_transport_words": 400
+}

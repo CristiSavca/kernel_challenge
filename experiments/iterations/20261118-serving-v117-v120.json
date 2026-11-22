@@ -1,0 +1,140 @@
+{
+  "at": "2026-11-18T13:03:47.345971+00:00",
+  "objective": 4,
+  "milestone": 3,
+  "best_measured": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "additional_geomean_multiplier_required": 2.8330618315744744
+  },
+  "pending_judge_checks": {
+    "v87_4": "00c134c978104d65",
+    "v88_4": "30bb36feb528416f",
+    "v93_16": "75557c21595347de"
+  },
+  "today": {
+    "remaining_checks": 0,
+    "remaining_scored_slots": 1,
+    "submissions_this_iteration": 0
+  },
+  "v117": {
+    "sha256": "b74f15d77bad7efe53a973c51c5ea3cfe8d07bf4bcfa9f8f8081a6a653182c74",
+    "parent": "V116b",
+    "eligible_high_load_only": true,
+    "modeled_route_ids_examined_at_256_rows": [
+      524288,
+      2048
+    ],
+    "extra_gpu_launches_per_eligible_layer": 1,
+    "cpu_triton": {
+      "paired_fixtures": 48,
+      "program_launches": 144,
+      "live_bf16_values": 38160027,
+      "checked_prefix_tiles": 318,
+      "source_sha256": "75d97113eacc888ec43cbb574bce96024a0fc61478ffebb15dbb4305db764b9f",
+      "triton": "3.8.0"
+    },
+    "independent_sort": {
+      "adversarial_layouts": 900,
+      "examined_slots": 693360,
+      "topk": [
+        1,
+        3,
+        7,
+        8,
+        17
+      ],
+      "local_experts": [
+        1,
+        7,
+        32,
+        63
+      ],
+      "matches": "global stable sort",
+      "control": "pure CPU equation independently reconstructed from frozen patch",
+      "peak_slot_end_buffer_bytes_tp8_top8": {
+        "16_users": 1056,
+        "32_users": 2112
+      },
+      "gpu_timing": null
+    },
+    "h200": null
+  },
+  "v118": {
+    "kind": "synthetic proposer research",
+    "calibrated_expected_commits_ratio_at_1_4_16_32": [
+      1.0,
+      1.03,
+      1.048,
+      1.051
+    ],
+    "32_user_p10_ratio": 0.827,
+    "armed": false
+  },
+  "v119": {
+    "kind": "source and numerical feasibility",
+    "32_row_ideal_send_mib_saved_per_rank_per_layer": 0.681884765625,
+    "extra_cold_weight_mib_per_rank_per_layer": 119,
+    "bf16_normalization_counterexample": [
+      0.30078125,
+      0.306640625
+    ],
+    "armed": false
+  },
+  "v120": {
+    "sha256": "06ab5d1589ea8030947eeba6c78c361c4b072a0aef9fd08219356302b0ae1c35",
+    "parent": "V111",
+    "components": [
+      "V111 prefill and target verify",
+      "phase-specific TP8 BF16 draft context",
+      "V104 direct prefix-valid draft KV writes"
+    ],
+    "decode_rows_at_32_users": 256,
+    "per_rank_projection_gflop": [
+      171.79869184,
+      21.47483648
+    ],
+    "per_rank_weight_sweep_mib": [
+      640,
+      80
+    ],
+    "resident_weight_mib": 640,
+    "rank_gather_send_receive_mib_each": 3.5,
+    "modelled_additional_peak_projection_intermediate_mib": 4.5,
+    "logical_kv_launches_saved_per_eligible_append": 5,
+    "h200": null
+  },
+  "first_private_check": {
+    "opens": "2026-11-19T00:03:00+00:00",
+    "v87_passes": "V116b/4",
+    "v87_pending_and_v64_passes": "V120/32",
+    "v87_fails_or_skip": "V80a/16",
+    "arm_submissions": 0,
+    "tests_passed": 95,
+    "runner_pid_at_freeze": 95019,
+    "all_previous_first_slot_attempts_consume_same_slot": true
+  },
+  "cleanup": {
+    "v117_tiled_route_staging/cleanup.json": 50323456,
+    "v117_tiled_route_staging/compiler_cleanup.json": 1570549760,
+    "v120_phase_parallel_draft_context/cleanup.json": 48676864
+  },
+  "receipts": {
+    "serving_v0523/candidates/v117_tiled_route_staging/validation.json": "f16dc218ac3b519def18c67d1303c53b91a790167ac5d1f0347bc653ab333781",
+    "serving_v0523/candidates/v117_tiled_route_staging/sm90.json": "4e71f40841ae9510ac61941f4500be67249170a6fb7a89836f8e64f66fa8d38e",
+    "serving_v0523/candidates/v117_tiled_route_staging/independent_order.json": "dfdc5d95f23a8d8e6260e24eb4ce0d3d1a95bc7928014d1ceb1e2923fed0ff62",
+    "serving_v0523/candidates/v118_native_tree_budget/budget.json": "836ea2e7ebf258adee3753fcf353cf1fed80c1dd3e374db34cee07bb2ce08fba",
+    "serving_v0523/candidates/v118_native_tree_budget/boundaries.json": "7285f4d0fbac44579be6d43cd39ed3c15fdeb0f8903178b7209dc5d578d81a63",
+    "serving_v0523/candidates/v119_decode_collective_feasibility/check.json": "ce95d10b0d08109d675f4d25a46efbfb71e22891f82b13aaba8ad7cba17e36a9",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/validation.json": "b4787d0409b2063b62765b24febfdbc2daf5387aa967271dfb8cc792321cb7f1",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/decode.json": "aebfa4ff43c8742f3e65653b67911f9fb11651df9dd01cc1ed6ddc52138388dd",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/prefill.json": "884bd80f4a2ba6fd0d5e5cde4b9d4f872bc9271765243e2e6703693a563f1ac5",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/independent_hooks.json": "23a6cb396073e6eaf24908cded4f5685d63b8661073506125f64a84c6e4d5f80",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/prefix_bytes.json": "4e2d86994805687ffa134b9f0916253145dede88b87169599349959547c4dba4",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/prefix_dispatch.json": "881997fc2499caee6c55592989834f3d7567173cd760e36b6c32aa58cbcce978",
+    "serving_v0523/candidates/v120_phase_parallel_draft_context/flags_traffic.json": "42a2408a74c9bfd8acd151e352102b7f8254362cf31341c14a645eb26c4ea641",
+    "serving_v0523/runs/nov19_decode_runner.launch.json": "4bc24cd8f922bfe6518beba4b0fa48b9a26b2f3442d559e309a72ac71bc00b46",
+    "serving_v0523/runs/nov19_decode_runner.cpu.json": "aca5c3f59e46620e9241b581104acdc702b05faabecd79dc248156c213499a05"
+  }
+}

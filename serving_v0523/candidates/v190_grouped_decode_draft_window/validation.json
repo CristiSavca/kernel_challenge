@@ -1,0 +1,98 @@
+{
+  "candidate": "V190",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V189",
+  "parent_tree": "2092bc5535d827fdf836172bff2f18cb4b594e3e",
+  "parent_sha256": "18cf2315fa01dc568e28b178f92dad69386191a23ba4834a6616b65fe6eac597",
+  "metadata_donor": "V188",
+  "metadata_donor_tree": "f48dce05d2a272b8da444559507070c370b7537c",
+  "metadata_donor_sha256": "cf8190f5901a87ca6f6e8effa2f6151998c86f7af47835d23a68c45aa5764471",
+  "metadata_donor_delta_sha256": "7c2123c5a327f881f3c6671f86060e3c42f0a8cd2f7a19849e3eecef22ba994f",
+  "tree": "fc4a72c0cdab582c5212c35c40d0ff76b3e98ba4",
+  "official_export": "okc serve diff .",
+  "bytes": 158066,
+  "patch_sha256": "f08f7a1f790d20b7c59e69a617131f89baf5d18114366767f31c6b8affa4ba88",
+  "delta_bytes": 7372,
+  "delta_sha256": "10f90a5f8f54ea486027353208d3d27cbf5aeca3e1e4e4087940597495820bc7",
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh",
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/direct_prompt_kv.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/dflash_context_projection.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/logits_processor.py",
+    "python/sglang/srt/layers/muse_spark/decode_mma_pair.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+    "python/sglang/srt/models/muse_spark.py",
+    "python/sglang/srt/speculative/dflash_worker_v2.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": ""
+  },
+  "denied_flag_patterns": 76,
+  "max_added_line_chars": 122,
+  "strict_full_relative_and_donor_reconstruction": true,
+  "inherited_target_backend_methods": [
+    "forward_extend",
+    "forward_decode",
+    "muse_verify_fp8_store",
+    "_capture_unified_verify_metadata"
+  ],
+  "inherited_draft_backend_methods": [
+    "_draft_graph_window",
+    "_set_decode_page_metadata",
+    "_apply_cuda_graph_metadata"
+  ],
+  "identical_kernel_source": {
+    "metadata": "65b25aabcd632cde0aa0393f003fe76ade718b7db455eda4e9cd39726e90deb2",
+    "expert": {
+      "python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh": "32533854d2f1d04ec9f2d9a2c0dd53315d48c96a8355d28112f82b8479da3716",
+      "python/sglang/srt/layers/muse_spark/decode_mma_pair.py": "c6bb4adfaf74d509bd5dd56d43562ded9aa1fb2e7719cfec3980507dcabc97e0",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "01585b711fe61d19392cb2b56ebcf34b0a7509857b07fd0b1fed9bc6b10cb55f"
+    }
+  },
+  "rerun_suites": {
+    "replay": "95269afe23a89397c6eb4dd2c6de58de4c496852b127fc377e7b06a5c8cacf10",
+    "decode": "0f764159534e6bd712bd016cb5adc4ecf811bb5c33fac8e89f97771e24a499b6",
+    "cpu": "5ffc012ecc4a38bd24466ee52c74441ffaef96eeb94dc38b755a19f409c9f325"
+  },
+  "inherited_codegen_receipts": {
+    "v188_draft_window_metadata/sm90.json": "921d4874f919f4b53a7053d7bcaaf8f963235eeca7a95f2118abc469bca6aa94",
+    "v188_draft_window_metadata/interpreter.json": "97e5bffd41bf0be1eb32d96eb60d799cfee5bc4c282add445fb7356548752a63",
+    "v189_decode_grouped_mma/sm90a.json": "dac9a54e17f0eb29e208ca5bf13087e9e09bd06f29c32be3b595c8816b873ce0"
+  },
+  "physical_H200": false,
+  "submitted": false,
+  "matched_control": {
+    "job": "04b01f958aa5487c",
+    "users": 16,
+    "tok_s_per_gpu": 17512.9
+  },
+  "rules_url": "https://openkernelchallenge.dev/api/v1/serving"
+}

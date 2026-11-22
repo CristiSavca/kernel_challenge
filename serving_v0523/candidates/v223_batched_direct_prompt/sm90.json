@@ -1,0 +1,512 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row16-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 16,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "64e87940a7bca2ed3d4fa70e5b68f6fd1fafebeab6502c63ffa3dd8c2bc670da",
+      "cubin_bytes": 18720,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row16-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 16,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "1723f630311f0adfb47e1d001080635b25328838dbc81844eb0e3c939edab308",
+      "cubin_bytes": 18592,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row32-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 32,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "f21276d7852374d055ec33985fd8bac3f49be58c1c0f56bdea3575e46187926c",
+      "cubin_bytes": 28832,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 56 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row32-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 32,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "2edd006d737df4db2b2f663627cc8505d8b38fa9977287868a21ac7ca23101fb",
+      "cubin_bytes": 28320,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 56 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row64-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 64,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "0c64118d4b9a4b36b1736d091c627a52a728521cdff36509ad6908dc4e9713e0",
+      "cubin_bytes": 46496,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 114 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row64-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 64,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "ad934d23811696637fd0d0abec600cce7433fd65546b3a7478115da462e4735f",
+      "cubin_bytes": 45856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 114 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row128-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 128,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "3a5b87ba509e70ce76feb33c2854a70cacddf9a299c4c11bd7fd1f2f21f875b9",
+      "cubin_bytes": 81568,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 200 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row128-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 128,
+        "BLOCK": 32,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "a8f35821d442e7c2b47331b7fcf9f70ae6d2625feade236e7bfd64732284c492",
+      "cubin_bytes": 80416,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 198 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row256-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 256,
+        "BLOCK": 16,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "485a865fb1c96b74c90292784969dbcf539da905deb69d5d1edb5a685512f086",
+      "cubin_bytes": 60320,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 140 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row256-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 256,
+        "BLOCK": 16,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "2ae259fc97b82b61314a05c2a5dbac2c665b5b6053cb34d3380862f3f84e7b55",
+      "cubin_bytes": 59424,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 143 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row512-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 512,
+        "BLOCK": 8,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "7d807894989df11d9b0237604139fe03080d246c2d621342c171610ab3410dcf",
+      "cubin_bytes": 48032,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 128 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row512-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 512,
+        "BLOCK": 8,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "f7c62a92677fa29618ab8deb478676cf8d7f669b7f8bc7be1bbcd9713cc4e500",
+      "cubin_bytes": 47520,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 128 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row1024-i32",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 1024,
+        "BLOCK": 4,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "10bc205b758127e995b51069d051e31c1716b82c6b615d7b36b251b5fcb17a03",
+      "cubin_bytes": 44448,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 127 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/attention/batched_prompt_kv.py",
+      "kernel": "_pack_prompt_rows",
+      "label": "row1024-i64",
+      "types": [
+        "*u8",
+        "*u8",
+        "*u8",
+        "*u8",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*u8",
+        "*u8",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "ROW": 1024,
+        "BLOCK": 4,
+        "GUARD": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "38e62929106ca0d0ffe9b7f4232a26ca7d9252956e8fa164748e03154e432463",
+      "cubin_sha256": "4f20f6f216be126bc8607ad635e6445aa7275b6e3aaa2aaabbd810218d75da56",
+      "cubin_bytes": 44320,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 127 registers, used 0 barriers"
+      ]
+    }
+  ]
+}

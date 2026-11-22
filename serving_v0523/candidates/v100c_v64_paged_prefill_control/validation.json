@@ -1,0 +1,66 @@
+{
+  "candidate": "V100c",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V64",
+  "parent_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "page_source": "V60",
+  "v60_sha256": "8c152846270bd35aa7d58d8cfb6ea46f6cc5b81aa10f03a680bb4487000be79c",
+  "sha256": "335845f55f6e584e938dcb5bba72c18f89677f83f78a1374692525306cd635ed",
+  "bytes": 49063,
+  "files": [
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/memory/allocator.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "v64_exact_patch_sections": 9,
+  "v60_exact_production_file_sha1s": {
+    "python/sglang/kernels/ops/attention/metadata.py": "debc93715c706e2dcf3a5e4ec4ca0cb2eac815b8",
+    "python/sglang/kernels/ops/memory/allocator.py": "704d845c6899a7ae784ae37ce6c74766ce39a2da"
+  },
+  "official_export_matches_git": true,
+  "reverse_check": true,
+  "python_compiled": 11,
+  "max_added_line": 98,
+  "flags": [
+    "swa-full-tokens-ratio=0.25",
+    "moe-runner-backend=humming",
+    "speculative-moe-runner-backend=marlin",
+    "enable-layernorm-sp",
+    "page-size=160",
+    "chunked-prefill-size=16320",
+    "max-prefill-tokens=16320",
+    "cuda-graph-max-bs-prefill=16384"
+  ],
+  "gpu_tested": false,
+  "v64_cpu_rerun": {
+    "state": "CPU_SP_GROUPED_PASS",
+    "integration_cases": 54,
+    "actual_pre_norm_calls": 324,
+    "details": [
+      "actual SP gather entry and replicated expert methods",
+      "actual compact grouped expert adapter and caller output bridge",
+      "TP4 and TP8, original order, padded tails, balanced and rank-empty/skew routes",
+      "each rank calls pre-expert norm exactly once",
+      "modeled BF16 GEMM and finalizer; no CUDA execution"
+    ]
+  },
+  "v60_page_functions_rerun": {
+    "passed": true,
+    "signed_page_indices": 25209,
+    "allocator_requests": 108,
+    "page160_chunk_tokens": [
+      16320,
+      16384
+    ]
+  },
+  "flags_match_scored_v64": true,
+  "forbidden_flag_glob_check": true
+}

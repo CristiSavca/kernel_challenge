@@ -1,0 +1,284 @@
+diff --git a/python/sglang/kernels/ops/speculative/dflash_tree.py b/python/sglang/kernels/ops/speculative/dflash_tree.py
+index 3a371e3..94e1628 100644
+--- a/python/sglang/kernels/ops/speculative/dflash_tree.py
++++ b/python/sglang/kernels/ops/speculative/dflash_tree.py
+@@ -120,6 +120,83 @@ def propose_dflash_tree(candidate_ids, scores, anchor_ids, out):
+     )
+ 
+ 
++@triton.jit
++def _select_chain_or_tree(
++    Original, Chain, Advantage, Selected, PLANE, WIDTH: tl.constexpr, BLOCK: tl.constexpr
++):
++    request = tl.program_id(0)
++    nodes = tl.arange(0, BLOCK)
++    offsets = request * WIDTH + nodes
++    active = nodes < WIDTH
++    chain = tl.load(Advantage + request) > 0
++    tokens = tl.load(Original + offsets, active, other=0)
++    depths = tl.load(Original + PLANE + offsets, active, other=0)
++    parents = tl.load(Original + 2 * PLANE + offsets, active, other=-1)
++    ancestors = tl.load(Original + 3 * PLANE + offsets, active, other=0)
++    native_tokens = tl.load(Chain + offsets, active, other=0)
++    tl.store(Selected + offsets, tl.where(chain, native_tokens, tokens), active)
++    tl.store(Selected + PLANE + offsets, tl.where(chain, nodes, depths), active)
++    tl.store(Selected + 2 * PLANE + offsets, tl.where(chain, nodes - 1, parents), active)
++    chain_ancestors = (1 << (nodes + 1)) - 1
++    tl.store(Selected + 3 * PLANE + offsets, tl.where(chain, chain_ancestors, ancestors), active)
++
++
++def select_dflash_tree(original, chain, advantage):
++    batch, width = chain.shape
++    selected = torch.empty_like(original.data)
++    _select_chain_or_tree[(batch,)](
++        original.data, chain, advantage, selected, batch * width, width,
++        triton.next_power_of_2(width), num_warps=1,
++    )
++    return DFlashTree(selected)
++
++
++@triton.jit
++def _update_tree_advantage(
++    TreeTokens, Parents, Chain, Committed, Lengths, Advantage, Next,
++    WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    request = tl.program_id(0)
++    nodes = tl.arange(0, BLOCK)
++    offset = request * WIDTH
++    observed = tl.load(Lengths + request)
++    targets = tl.load(Committed + offset + nodes, nodes < observed, other=0)
++    chain = tl.load(Chain + offset + nodes + 1, nodes < WIDTH - 1, other=0)
++    mismatch = (nodes < observed) & (nodes < WIDTH - 1) & (targets != chain)
++    chain_matches = tl.minimum(observed, tl.min(tl.where(mismatch, nodes, WIDTH - 1)))
++
++    tokens = tl.load(TreeTokens + offset + nodes, nodes < WIDTH, other=0)
++    parents = tl.load(Parents + offset + nodes, nodes < WIDTH, other=-2)
++    leader = tl.full((), 0, tl.int32)
++    tree_matches = tl.full((), 0, tl.int32)
++    for i in range(WIDTH - 1):
++        target = tl.load(Committed + offset + i, i < observed, other=0)
++        child = tl.min(tl.where((parents == leader) & (tokens == target), nodes, WIDTH))
++        matched = (i < observed) & (leader >= 0) & (child < WIDTH)
++        tree_matches += matched.to(tl.int32)
++        leader = tl.where(matched, child, -1)
++
++    # Include the bonus and cap both alternatives at the physical row budget.
++    # Matching every observed token certifies a win when a slot remains. The
++    # unobserved suffix can change the margin, so use only the comparison.
++    chain_reward = tl.minimum(WIDTH, chain_matches + 1)
++    tree_reward = tl.minimum(WIDTH, tree_matches + 1)
++    vote = (chain_reward > tree_reward).to(tl.int32) - (chain_reward < tree_reward).to(tl.int32)
++    prior = tl.load(Advantage + request)
++    decay = (prior > 0).to(tl.int32) - (prior < 0).to(tl.int32)
++    tl.store(Next + request, tl.maximum(-WIDTH, tl.minimum(WIDTH, prior - decay + 2 * vote)))
++
++
++def update_dflash_tree_advantage(original, chain, committed, lengths, advantage):
++    batch, width = chain.shape
++    updated = torch.empty_like(advantage)
++    _update_tree_advantage[(batch,)](
++        original.tokens, original.parents, chain, committed, lengths, advantage,
++        updated, width, triton.next_power_of_2(width), num_warps=1,
++    )
++    return updated
++
++
+ @triton.jit
+ def _accept_tree(
+     Tokens,
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 353aec1..0140ebd 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -75,6 +75,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Enable experimental fixed-budget DFLASH selector trees for compatible greedy paged attention.",
+     ] = False
++    speculative_dflash_adaptive_tree: A[
++        bool,
++        "Select between the native greedy chain and the fixed-budget DFLASH tree using request-local verification feedback.",
++    ] = False
+     speculative_dflash_reduced_target_argmax: A[
+         bool,
+         "Reduce exact softcapped DFLASH target verify maxima across compatible CUDA TP ranks.",
+diff --git a/python/sglang/srt/managers/overlap_utils.py b/python/sglang/srt/managers/overlap_utils.py
+index afbb183..ec17a9b 100644
+--- a/python/sglang/srt/managers/overlap_utils.py
++++ b/python/sglang/srt/managers/overlap_utils.py
+@@ -177,6 +177,7 @@ class RelayPayload:
+     # ngram delays the draft extend (ngram update)
+     accept_tokens: Optional[torch.Tensor] = None
+     accept_lens: Optional[torch.Tensor] = None
++    tree_policy_advantage: Optional[torch.Tensor] = None
+ 
+     @classmethod
+     def from_ngram(cls, draft_input: NgramVerifyInput) -> RelayPayload:
+@@ -197,6 +198,7 @@ class RelayPayload:
+             hidden_states=draft_input.hidden_states,
+             draft_probs=getattr(draft_input, "draft_probs", None),
+             dsa_topk_indices=draft_input.dsa_topk_indices,
++            tree_policy_advantage=getattr(draft_input, "tree_policy_advantage", None),
+         )
+ 
+ 
+@@ -339,6 +341,7 @@ class FutureMap:
+         self.hidden_states_buf = None
+         self.draft_probs_buf = None
+         self.dsa_topk_indices_buf = None
++        self.tree_policy_advantage_buf: Optional[torch.Tensor] = None
+ 
+         # ngram-only relay bufs
+         self.accept_tokens_buf: Optional[torch.Tensor] = None
+@@ -521,6 +524,8 @@ class FutureMap:
+                 draft_input.draft_probs = self.draft_probs_buf[indices]
+         else:
+             draft_input.bonus_tokens = self.output_tokens_buf[indices]
++        if self.tree_policy_advantage_buf is not None:
++            draft_input.tree_policy_advantage = self.tree_policy_advantage_buf[indices]
+         if self.need_hidden_states and not self.need_topk:
+             draft_input.hidden_states = self.hidden_states_buf[indices]
+         if draft_input.future_dsa_topk_indices_available:
+@@ -689,6 +694,14 @@ class FutureMap:
+             return
+         self._maybe_init_forward_bufs(payload)
+         self._maybe_init_dsa_topk_indices_buf(payload)
++        advantage = payload.tree_policy_advantage
++        if advantage is not None and self.tree_policy_advantage_buf is None:
++            self.tree_policy_advantage_buf = torch.zeros(
++                self.req_pool_size, dtype=torch.int32, device=self.device
++            )
++        if self.tree_policy_advantage_buf is not None:
++            # Prefill, disaggregation and ineligible steps reset even a reused slot.
++            self.tree_policy_advantage_buf[indices] = 0 if advantage is None else advantage
+         relay = self._relay
+         if relay is not None and payload.bonus_tokens is relay.published_bonus:
+             relay.published_bonus = None
+diff --git a/python/sglang/srt/speculative/dflash_info_v2.py b/python/sglang/srt/speculative/dflash_info_v2.py
+index 0a22093..76e8346 100644
+--- a/python/sglang/srt/speculative/dflash_info_v2.py
++++ b/python/sglang/srt/speculative/dflash_info_v2.py
+@@ -56,6 +56,7 @@ class DFlashDraftInputV2(SpecInput):
+     future_indices: Optional[torch.Tensor] = None
+ 
+     verify_token_budget: Optional[int] = None
++    tree_policy_advantage: Optional[torch.Tensor] = None
+ 
+     def __post_init__(self):
+         super().__init__(spec_input_type=SpecInputType.DFLASH_DRAFT)
+@@ -233,8 +234,11 @@ class DFlashDraftInputV2(SpecInput):
+ 
+         if self.future_indices is not None:
+             self.future_indices = self.future_indices[new_indices]
++            self.tree_policy_advantage = None  # Resolved in the new row order at forward entry.
+             return
+ 
++        if self.tree_policy_advantage is not None:
++            self.tree_policy_advantage = self.tree_policy_advantage[new_indices]
+         self.topk_p = self.topk_p[new_indices]
+         self.topk_index = self.topk_index[new_indices]
+         self.bonus_tokens = self.bonus_tokens[new_indices]
+@@ -257,8 +261,18 @@ class DFlashDraftInputV2(SpecInput):
+             self.future_indices = torch.cat(
+                 [self.future_indices, spec_info.future_indices]
+             )
++            self.tree_policy_advantage = None
+             return
+ 
++        if self.tree_policy_advantage is not None or spec_info.tree_policy_advantage is not None:
++            self.tree_policy_advantage = torch.cat(
++                [
++                    state.tree_policy_advantage
++                    if state.tree_policy_advantage is not None
++                    else torch.zeros_like(state.bonus_tokens, dtype=torch.int32)
++                    for state in (self, spec_info)
++                ]
++            )
+         self.topk_p = torch.cat([self.topk_p, spec_info.topk_p], dim=0)
+         self.topk_index = torch.cat([self.topk_index, spec_info.topk_index], dim=0)
+         self.bonus_tokens = torch.cat(
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 1548f67..fc23075 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -19,6 +19,8 @@ from sglang.kernels.ops.speculative.dflash_tree import (
+     make_dflash_tree_buffers,
+     propose_dflash_tree,
+     reorder_dflash_tree_slots,
++    select_dflash_tree,
++    update_dflash_tree_advantage,
+ )
+ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+     accept_sampling,
+@@ -816,9 +818,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+         tree.data.zero_()
+         tree.parents.fill_(-1)
+         prefix = torch.zeros((1,), dtype=torch.int64, device=device)
+-        _, _, _, _, order = accept_dflash_tree(
++        lengths, _, committed, _, order = accept_dflash_tree(
+             tree, tree.tokens, prefix, self._next_accept_bonus_buffers(1)
+         )
++        if get_spec().speculative_dflash_adaptive_tree and get_dp_tp_group().rank_in_group == 0:
++            advantage = torch.zeros((1,), dtype=torch.int32, device=device)
++            select_dflash_tree(tree, tree.tokens, advantage)
++            update_dflash_tree_advantage(tree, tree.tokens, committed, lengths, advantage)
+         req_table = self.model_runner.req_to_token_pool.req_to_token
+         scratch = torch.empty_strided(
+             (1, width), req_table.stride(), dtype=req_table.dtype, device=device
+@@ -2901,6 +2907,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     lm_head=lm_head,
+                 ).view(bs, int(self.block_size) - 1)
+ 
++        draft_tokens = self._draft_block_tokens_buf[:bs]
++        draft_tokens[:, 0].copy_(block_ids[:, 0])
++        draft_tokens[:, 1:].copy_(draft_next)
++
++        linear_tokens = draft_tokens
++        original_tree = None
++        policy_advantage = None
+         tree = None
+         if (
+             self._tree_verify_backend is not None
+@@ -2915,6 +2928,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+         ):
+             tree = self._draft_sampler.tree_out.first_rows(bs)
+             group = get_dp_tp_group()
++            if get_spec().speculative_dflash_adaptive_tree and group.rank_in_group == 0:
++                original_tree = tree
++                policy_advantage = draft_input.tree_policy_advantage
++                if policy_advantage is None:
++                    policy_advantage = torch.zeros(bs, dtype=torch.int32, device=linear_tokens.device)
++                else:
++                    tree = select_dflash_tree(original_tree, linear_tokens, policy_advantage)
+             if group.world_size > 1:
+                 group.broadcast(tree.data, src=0)
+         if self._tree_verify_backend is not None:
+@@ -2923,10 +2943,6 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 None if tree is None else tree.ancestors,
+             )
+ 
+-        draft_tokens = self._draft_block_tokens_buf[:bs]
+-        draft_tokens[:, 0].copy_(block_ids[:, 0])
+-        draft_tokens[:, 1:].copy_(draft_next)
+-
+         # Must stay ahead of the target verify launch below.
+         grammar_tree = (
+             GrammarTree.from_linear_chain(draft_tokens) if batch.has_grammar else None
+@@ -3054,6 +3070,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+             commit_lens, bonus, out_tokens, new_seq_lens, order = accept_dflash_tree(
+                 tree, target_predict, prefix_lens, self._next_accept_bonus_buffers(bs)
+             )
++            if original_tree is not None:
++                policy_advantage = update_dflash_tree_advantage(
++                    original_tree, linear_tokens, out_tokens, commit_lens, policy_advantage
++                )
+         else:
+             _, commit_lens, bonus, out_tokens, new_seq_lens = self._accept_block(
+                 candidates=candidates,
+@@ -3145,6 +3165,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             bonus_tokens=bonus,
+             new_seq_lens=new_seq_lens,
+         )
++        next_draft_input.tree_policy_advantage = policy_advantage
+ 
+         return GenerationBatchResult(
+             logits_output=logits_output,

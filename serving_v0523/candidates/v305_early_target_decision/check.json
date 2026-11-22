@@ -1,0 +1,83 @@
+{
+  "parent": "d3cca711aa009f6a6abdd8766f82446ecb8ff6c7",
+  "source_sha256": {
+    "srt/speculative/dflash_worker_v2.py": "edab535dc0f53b758eabcb6deb5ef79755bf24b5e54e50e5036c34ba06a56698",
+    "srt/layers/logits_processor.py": "ac35cba4f9792ced000c9fc515681950e4fd2f88a64ef524d7f16221fa3311d2",
+    "kernels/ops/speculative/dflash.py": "b4f181c9013915cd64e93348e5d0bdaef3032f8e2826963083c682c85f0e2b8b",
+    "kernels/ops/speculative/fused_kv_materialize.py": "4a5bc2fe703251a7749c503f719810dd3d71ba2ed18111d925e96dd35ac82f92",
+    "srt/model_executor/runner/decode_cuda_graph_runner.py": "4e58078afd4131c7c43672e55864dd2dd04c15259cca0c2ba2e80af5e83aba21",
+    "kernels/ops/sampling/softcap_row_argmax.py": "e76309596ed42e25388e8c65592593ab526ef6f0d96c57a1653e137a79b501db"
+  },
+  "prefix": {
+    "native_decisions": 1024,
+    "ranks": 8,
+    "patterns": 128,
+    "commits_hist": {
+      "1": 64,
+      "2": 32,
+      "3": 16,
+      "4": 8,
+      "5": 4,
+      "6": 2,
+      "7": 1,
+      "8": 1
+    },
+    "numeric_rows_short": {
+      "4": 36,
+      "16": 908,
+      "8": 44,
+      "12": 36
+    },
+    "requests_all_needed_rows_short": 4,
+    "identical_partial_pages_with_different_bonuses": true,
+    "first_nan_control": true
+  },
+  "kv": {
+    "layers": 5,
+    "rows": 1024,
+    "matched_words": 81920,
+    "changed_if_scratch_reused": 20400
+  },
+  "bands": {
+    "1": {
+      "rows": 8,
+      "ms": 19.68503937007874,
+      "model_head_ms": 0.1561728442193271,
+      "model_fc_plus_kv_ms": 0.03957500011892989,
+      "optimistic_overlap_gain": 1.002014459896374,
+      "cold_shared_roofline_ms": 0.10805247999999999,
+      "write_buffers_bytes": 20480,
+      "bytes_per_rank_per_vocabulary_sweep": 413794304
+    },
+    "4": {
+      "rows": 32,
+      "ms": 35.587188612099645,
+      "model_head_ms": 0.15893522302576457,
+      "model_fc_plus_kv_ms": 0.04027500108350068,
+      "optimistic_overlap_gain": 1.0011330097888167,
+      "cold_shared_roofline_ms": 0.10805247999999999,
+      "write_buffers_bytes": 81920,
+      "bytes_per_rank_per_vocabulary_sweep": 413794304
+    },
+    "16": {
+      "rows": 128,
+      "ms": 79.84031936127744,
+      "model_head_ms": 0.1802449687547778,
+      "model_fc_plus_kv_ms": 0.04567500000121072,
+      "optimistic_overlap_gain": 1.0005724068371609,
+      "cold_shared_roofline_ms": 0.10805247999999999,
+      "write_buffers_bytes": 327680,
+      "bytes_per_rank_per_vocabulary_sweep": 413794304
+    },
+    "32": {
+      "rows": 256,
+      "ms": 96.99769053117784,
+      "model_head_ms": 0.2148733177673421,
+      "model_fc_plus_kv_ms": 0.054450001334771514,
+      "optimistic_overlap_gain": 1.000561668880029,
+      "cold_shared_roofline_ms": 0.13418381750783226,
+      "write_buffers_bytes": 655360,
+      "bytes_per_rank_per_vocabulary_sweep": 413794304
+    }
+  }
+}

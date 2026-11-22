@@ -1,0 +1,135 @@
+{
+  "numerical": {
+    "exponent_spread": {
+      "0": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 4090
+      },
+      "8": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 4616
+      },
+      "13": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 4100
+      },
+      "14": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 4182
+      },
+      "18": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 3654
+      },
+      "28": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 2670
+      },
+      "60": {
+        "count": 10000,
+        "compared_to_fp32_tree": 0,
+        "compared_to_bf16_tree": 1268
+      }
+    },
+    "cancellation": {
+      "inputs": [
+        1073741824,
+        1.0,
+        -1073741824.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rank_fp32": 1.0,
+      "tree_fp32": 0.0,
+      "exact": 2.0
+    }
+  },
+  "traffic": {
+    "full_examples": [
+      {
+        "rows": 16384,
+        "width": 4096,
+        "full_bytes": 134217728,
+        "ring_all_reduce_send_bytes": 234881024,
+        "owner_exchange_send_bytes": 117440512,
+        "owner_exchange_receive_bytes": 117440512
+      },
+      {
+        "rows": 16384,
+        "width": 8192,
+        "full_bytes": 268435456,
+        "ring_all_reduce_send_bytes": 469762048,
+        "owner_exchange_send_bytes": 234881024,
+        "owner_exchange_receive_bytes": 234881024
+      }
+    ],
+    "traces": [
+      {
+        "users": 1,
+        "graph_full_chunks": 5,
+        "wall_s": 25.12,
+        "net_ms_per_2_reductions_for_5pct_raw": 3.8586789554531533,
+        "ring_savings_in_peak_link_seconds": 0.24271039146666668,
+        "equivalent_fraction": 0.00966203787685775
+      },
+      {
+        "users": 1,
+        "graph_full_chunks": 4,
+        "wall_s": 22.13,
+        "net_ms_per_2_reductions_for_5pct_raw": 4.249231950844858,
+        "ring_savings_in_peak_link_seconds": 0.19416831317333333,
+        "equivalent_fraction": 0.008773986135261334
+      },
+      {
+        "users": 1,
+        "graph_full_chunks": 6,
+        "wall_s": 26.74,
+        "net_ms_per_2_reductions_for_5pct_raw": 3.4229390681003626,
+        "ring_savings_in_peak_link_seconds": 0.29125246976,
+        "equivalent_fraction": 0.010892014575916232
+      },
+      {
+        "users": 4,
+        "graph_full_chunks": 14,
+        "wall_s": 45.59,
+        "net_ms_per_2_reductions_for_5pct_raw": 2.5010972130787827,
+        "ring_savings_in_peak_link_seconds": 0.6795890961066666,
+        "equivalent_fraction": 0.014906538629231554
+      },
+      {
+        "users": 4,
+        "graph_full_chunks": 20,
+        "wall_s": 55.36,
+        "net_ms_per_2_reductions_for_5pct_raw": 2.1259600614439345,
+        "ring_savings_in_peak_link_seconds": 0.9708415658666667,
+        "equivalent_fraction": 0.017536877996146435
+      },
+      {
+        "users": 16,
+        "graph_full_chunks": 75,
+        "wall_s": 164.83,
+        "net_ms_per_2_reductions_for_5pct_raw": 1.6879672299027157,
+        "ring_savings_in_peak_link_seconds": 3.640655872,
+        "equivalent_fraction": 0.022087337693381056
+      },
+      {
+        "users": 32,
+        "graph_full_chunks": 149,
+        "wall_s": 304.43,
+        "net_ms_per_2_reductions_for_5pct_raw": 1.569242981886413,
+        "ring_savings_in_peak_link_seconds": 7.232769665706667,
+        "equivalent_fraction": 0.023758399847934392
+      }
+    ],
+    "transport": "Ring allreduce only; simultaneous send/receive. NVLS incumbent and sustained bandwidth unknown."
+  }
+}

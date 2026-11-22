@@ -1,0 +1,18 @@
+{
+  "torch": "2.5.1",
+  "real_gloo_tp": [
+    4,
+    8
+  ],
+  "projection_cases_per_tp": 6,
+  "native_channel_fixture": {
+    "tokens": 13,
+    "in_channels": 8192,
+    "out_channels_per_rank": 2304,
+    "checked_bf16_values": 29952
+  },
+  "rank_local_startup_fallbacks_per_tp": 4,
+  "full_k": 8192,
+  "check": "production SP column entry and registered custom op; paired send/receive byte counts, rank-major outputs, padded/strided inputs, BF16 full-K reference, native dense/dispatched GEMM selection, warmup, and registered fake output at full geometry",
+  "h200_executed": false
+}

@@ -1,0 +1,55 @@
+{
+  "torch": "2.5.1",
+  "device": "CPU/Gloo TP8",
+  "cases": [
+    {
+      "rows": 128,
+      "width": 256,
+      "collective": "all_reduce",
+      "compared": 32768,
+      "different": 0,
+      "max_abs": 0.0
+    },
+    {
+      "rows": 128,
+      "width": 256,
+      "collective": "reduce_scatter",
+      "compared": 32768,
+      "different": 0,
+      "max_abs": 0.0
+    },
+    {
+      "rows": 4096,
+      "width": 512,
+      "collective": "all_reduce",
+      "compared": 2097152,
+      "different": 0,
+      "max_abs": 0.0
+    },
+    {
+      "rows": 4096,
+      "width": 512,
+      "collective": "reduce_scatter",
+      "compared": 2097152,
+      "different": 0,
+      "max_abs": 0.0
+    },
+    {
+      "rows": 8192,
+      "width": 1024,
+      "collective": "all_reduce",
+      "compared": 8388608,
+      "different": 0,
+      "max_abs": 0.0
+    },
+    {
+      "rows": 8192,
+      "width": 1024,
+      "collective": "reduce_scatter",
+      "compared": 8388608,
+      "different": 0,
+      "max_abs": 0.0
+    }
+  ],
+  "scope": "Native message-size accumulation sensitivity with identical per-rank partials. NCCL is untested."
+}

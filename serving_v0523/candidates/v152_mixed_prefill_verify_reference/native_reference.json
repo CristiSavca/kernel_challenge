@@ -1,0 +1,86 @@
+{
+  "torch": "2.5.1",
+  "sglang": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "v147_patch": "7a3d4dc6c0e526b60ca50bc975a6036da7796d8eb05f9e8afb70423164425437",
+  "cases": 64,
+  "native_sdpa_layer_comparisons": 320,
+  "totals": {
+    "request_rows": 320,
+    "verified_requests": 224,
+    "target_token_rows": 2400,
+    "required_logit_rows": 1888,
+    "committed_tail_rows": 1008,
+    "discarded_tail_rows": 784
+  },
+  "boundaries": {
+    "real_prompt_rows": 4,
+    "stale_tail_bases": [
+      9,
+      13
+    ],
+    "fresh_tail_bases": [
+      15,
+      14
+    ],
+    "single_slot_tail_destinations": [
+      188,
+      120
+    ],
+    "native_mixed_rows": [
+      4,
+      1,
+      1
+    ],
+    "needed_rows": [
+      4,
+      8,
+      8
+    ],
+    "legacy_logit_indices": [
+      3,
+      11,
+      19
+    ],
+    "required_logit_indices": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "prefill_shared_logit_buffer_rows": 3,
+    "native_full_and_breakable_logit_trim_rows": {
+      "FULL": 3,
+      "BREAKABLE": 17
+    },
+    "page_one_double_reserve_cases": 405
+  },
+  "native_function_hashes": {
+    "srt/model_executor/forward_batch_info.py/ForwardMode": "1ebd882a714690b36945c571a19d7b8cfd9ed323611c19e3cb47f4dc678fc619",
+    "kernels/ops/speculative/dflash.py/compute_dflash_correct_drafts_and_bonus": "9926e9fd46742edc97c020de817edb1d37e9d8a049ff5872e5ede69cd9f8b57f",
+    "srt/speculative/dflash_worker_v2.py/_commit_accept": "19e0ea0aea407a5378d723552d84c4c01ae41de8c7f6673efda0c9ac8f7f91c8",
+    "srt/models/dflash.py/project_target_hidden": "82abda76c5ee0fcc3a29fe3eef19d5acec669d6e30fea9766c1cda18877ce50f",
+    "srt/mem_cache/allocation_sizing.py/page_aligned_decode_alloc_lens": "c2b8ba46e4006265efda03d6ec7b00cfd77c7e1fcd7f1f21394e863be6c72f9f",
+    "srt/layers/logits_processor.py/_get_pruned_states": "d7f66e5f78a06a808b3523c9d3dc91ce8893c5af917c79459f21563c8c3e95ce",
+    "srt/managers/schedule_batch.py/mix_with_running": "672ffb0de721e1c4dc19c33397541f0e6c302226add8f52fb2c0d6e926f50551",
+    "srt/managers/overlap_utils.py/resolve_mixed_spec_tails": "b6a1c969660ff771ee7b4a7d26e7d5902c02c4b290372bd54ec9302a64187d54",
+    "srt/model_executor/runner/prefill_cuda_graph_runner.py/_prefill_logits_buffer_rows": "666e1f6b7da38e2e80a83951d3a55a1bedfdfa3154732af620012e053b24df8c",
+    "srt/model_executor/runner/prefill_cuda_graph_runner.py/_trim_logits_output": "7c50a61fb89ed51f250fddae678ab763de4bc5120945634fbc0d90bafa1a0a29",
+    "srt/managers/scheduler_components/batch_result_processor.py/_get_speculative_output_stride": "7e2c86f8e213ed70f448add89db7a69c5fd3194d67634b14c4b380f5ca081f71",
+    "srt/managers/scheduler_components/batch_result_processor.py/_resolve_spec_v2_tokens": "1dfaeda91db18eee59721e4c9ded38bc72c8edfd8833c8be76b771282a0201e2",
+    "srt/layers/attention/torch_native_backend.py/_run_sdpa_forward_extend": "5ce429c04fa0f38b278dc670c8af795770817a4ef32f1a3c7795cb32e8537a5b",
+    "srt/layers/attention/torch_native_backend.py/_make_sliding_window_mask": "8ec43f0e1bed2c1dcb98731d45e2e2ffb0a555228eb6e5c4ed5da27439f59301"
+  }
+}

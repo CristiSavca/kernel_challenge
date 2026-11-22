@@ -1,0 +1,328 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index 19a805f74d0b7b91989499c96dd7595392be5870..9b312ec5fbff3f02584c0edb1f351fd9a987a1cb 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -209,6 +209,18 @@ SGL_DEVICE void copy_packed_vector(void* dest, const void* src) {
+   asm volatile("cp.async.cg.shared.global [%0], [%1], 16;" :: "r"(shared), "l"(src) : "memory");
+ }
+ 
++template <bool Gate>
++SGL_DEVICE void stage_inputs(const bf16_t* input, uint32_t valid_bytes, PackedTile<Gate>& dest) {
++  const uint32_t lane = threadIdx.x % 32;
++  if (lane < 2 * kKSteps) {
++    const uint32_t step = lane / 2, half = lane % 2, route = threadIdx.x / 32;
++    const uint32_t address = static_cast<uint32_t>(__cvta_generic_to_shared(&dest.inputs[step][route][4 * half]));
++    asm volatile("cp.async.cg.shared.global [%0], [%1], 16, %2;" ::
++                 "r"(address), "l"(input + 8 * lane), "r"(valid_bytes) : "memory");
++  }
++  asm volatile("cp.async.commit_group;" ::: "memory");
++}
++
+ template <bool Gate>
+ SGL_DEVICE void stage_packed(const Projection& p, size_t start, uint32_t width, const bf16_t* input,
+                              uint32_t valid_bytes, PackedTile<Gate>& dest) {
+@@ -223,14 +235,7 @@ SGL_DEVICE void stage_packed(const Projection& p, size_t start, uint32_t width,
+     const size_t base = start + size_t(step) * width + plane * p.output_width;
+     copy_packed_vector(&dest.scales[plane][step][8 * offset], p.bank.scale + base + 16 * offset);
+   }
+-  const uint32_t lane = threadIdx.x % 32;
+-  if (lane < 2 * kKSteps) {
+-    const uint32_t step = lane / 2, half = lane % 2, route = threadIdx.x / 32;
+-    const uint32_t address = static_cast<uint32_t>(__cvta_generic_to_shared(&dest.inputs[step][route][4 * half]));
+-    asm volatile("cp.async.cg.shared.global [%0], [%1], 16, %2;" ::
+-                 "r"(address), "l"(input + 8 * lane), "r"(valid_bytes) : "memory");
+-  }
+-  asm volatile("cp.async.commit_group;" ::: "memory");
++  stage_inputs(input, valid_bytes, dest);
+ }
+ 
+ SGL_DEVICE void publish_packed() {
+@@ -249,8 +254,17 @@ SGL_DEVICE void contract_fragment(float4& sum, uint32_t word, uint32_t scales, u
+       : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(lo), "r"(hi));
+ }
+ 
+-template <bool Gate>
+-SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32_t column, PackedTile<Gate>* buffers) {
++struct VectorStage {
++  template <bool Gate>
++  SGL_DEVICE void issue(const Projection& p, size_t start, uint32_t width, uint32_t, uint32_t, uint32_t,
++                        const bf16_t* input, uint32_t valid_bytes, PackedTile<Gate>& dest) {
++    stage_packed<Gate>(p, start, width, input, valid_bytes, dest);
++  }
++  SGL_DEVICE void publish() { publish_packed(); }
++};
++
++template <bool Gate, class Stage = VectorStage>
++SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32_t column, PackedTile<Gate>* buffers, Stage stage = {}) {
+   const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+   const uint32_t band = warp / 4;
+   // Rotate only across groups of eight lanes. Every MMA output row keeps a single
+@@ -266,13 +280,13 @@ SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32
+   const bf16_t* input = p.inputs + size_t(row) * p.input_width;
+   const uint32_t valid_bytes = slot < 0 ? 0u : 16u;
+   float4 gate{}, up{};
+-  stage_packed<Gate>(p, base, width, input, valid_bytes, buffers[0]);
+-  publish_packed();
++  stage.issue(p, base, width, expert, column, 0, input, valid_bytes, buffers[0]);
++  stage.publish();
+   for (uint32_t first = 0; first < tiles; first += kKSteps) {
+     const uint32_t phase = (first / kKSteps) % 2;
+     if (first + kKSteps < tiles) {
+       const uint32_t next = first + kKSteps;
+-      stage_packed<Gate>(p, base + size_t(next) * width, width, input + 16 * next, valid_bytes, buffers[1 - phase]);
++      stage.issue(p, base + size_t(next) * width, width, expert, column, next, input + 16 * next, valid_bytes, buffers[1 - phase]);
+     }
+ #pragma unroll
+     for (uint32_t s = 0; s < kKSteps; ++s) {
+@@ -285,7 +299,7 @@ SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32
+     }
+     // Complete the next buffer's writes and every warp's reads of this buffer.
+     // The last rendezvous also protects shared storage across grid-stride jobs.
+-    publish_packed();
++    stage.publish();
+   }
+   const float scale = cast<float>(p.global[expert]);
+ #pragma unroll
+@@ -335,6 +349,16 @@ struct MuseRoutePair {
+                   tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
+                   tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
+                   tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan, int64_t groups) {
++    run_with([](const auto& up, const auto& out, uint32_t count, DLDevice dev) {
++      muse_route_pair::launch_projection<true>(up, count, dev);
++      muse_route_pair::launch_projection<false>(out, count, dev);
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan, groups);
++  }
++  template <class Launcher>
++  static void run_with(const Launcher& launcher, tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan, int64_t groups) {
+     using namespace host;
+     using namespace muse_route_pair;
+     auto m = SymbolicSize{"tokens"}, h = SymbolicSize{"hidden"}, top = SymbolicSize{"top_k"};
+@@ -373,8 +397,7 @@ struct MuseRoutePair {
+         static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
+         {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
+         static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
+-    launch_projection<true>(up, uint32_t(groups), dev.unwrap());
+-    launch_projection<false>(out, uint32_t(groups), dev.unwrap());
++    launcher(up, out, uint32_t(groups), dev.unwrap());
+   }
+ };
+ }  // namespace sglang
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+new file mode 100644
+index 0000000000000000000000000000000000000000..05d493377090aa2218a44f74956e87661c6c0d40
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+@@ -0,0 +1,148 @@
++#include "expert_route_pair.cuh"
++#include <cuda.h>
++#include <cudaTypedefs.h>
++#include <cstring>
++#include <limits>
++
++namespace sglang {
++namespace muse_tma_route {
++
++using namespace muse_route_pair;
++
++struct alignas(64) BankMaps {
++  CUtensorMap weight, scale;
++};
++static_assert(sizeof(BankMaps) == 256);
++
++SGL_DEVICE void issue_tensor(void* dest, const CUtensorMap* map, uint32_t x, uint32_t y, uint32_t bar) {
++  const auto dst = static_cast<uint32_t>(__cvta_generic_to_shared(dest));
++  asm volatile("cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes "
++               "[%0], [%1, {%2, %3}], [%4];"
++               :: "r"(dst), "l"(map), "r"(x), "r"(y), "r"(bar) : "memory");
++}
++
++struct TensorStage {
++  const BankMaps* maps;
++  uint32_t barrier;
++  uint32_t* phase;
++  bool pending = false;
++
++  template <bool Gate>
++  SGL_DEVICE void issue(const Projection& p, size_t, uint32_t, uint32_t expert, uint32_t column, uint32_t first,
++                        const bf16_t* input, uint32_t valid_bytes, PackedTile<Gate>& dest) {
++    if (threadIdx.x == 0) {
++      const uint32_t bytes = sizeof(dest.weights) + sizeof(dest.scales);
++      asm volatile("mbarrier.arrive.expect_tx.shared::cta.b64 _, [%0], %1;" :: "r"(barrier), "r"(bytes) : "memory");
++      const uint32_t y = expert * (p.input_width / 16) + first;
++#pragma unroll
++      for (uint32_t i = 0; i < (Gate ? 2u : 1u); ++i) {
++        const uint32_t x = column + i * p.output_width;
++        issue_tensor(&dest.weights[i][0][0], &maps->weight, 2 * x, y, barrier);
++        issue_tensor(&dest.scales[i][0][0], &maps->scale, x / 2, y, barrier);
++      }
++    }
++    pending = true;
++    stage_inputs(input, valid_bytes, dest);
++  }
++
++  SGL_DEVICE void publish() {
++    if (pending) {
++      if (threadIdx.x == 0) {
++        uint32_t complete;
++        do {
++          asm volatile("{ .reg .pred p; mbarrier.try_wait.parity.shared::cta.b64 p,[%1],%2; "
++                       "selp.b32 %0,1,0,p; }" : "=r"(complete) : "r"(barrier), "r"(*phase) : "memory");
++        } while (!complete);
++      }
++      *phase ^= 1;
++      pending = false;
++    }
++    publish_packed();
++  }
++};
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * kChannelWarps) void tensor_projection(
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps) {
++  __shared__ alignas(128) PackedTile<Gate> buffers[2];
++  __shared__ uint64_t barrier;
++  static_assert(sizeof(PackedTile<Gate>) % 128 == 0);
++  static_assert(offsetof(PackedTile<Gate>, scales) % 128 == 0);
++  const auto bar = static_cast<uint32_t>(__cvta_generic_to_shared(&barrier));
++  if (threadIdx.x == 0) {
++    asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;\n"
++                 "fence.proxy.async.shared::cta;" :: "r"(bar) : "memory");
++  }
++  __syncthreads();
++  uint32_t phase = 0;
++  for (uint32_t j = blockIdx.y; j < static_cast<uint32_t>(p.plan[0]); j += gridDim.y) {
++    project_channels<Gate>(p, p.plan + 1 + j * (kRows + 1), 128 * blockIdx.x, buffers,
++                           TensorStage{&maps, bar, &phase});
++  }
++}
++
++inline auto encoder() {
++  static const auto fn = [] {
++    void* ptr = nullptr;
++    cudaDriverEntryPointQueryResult status{};
++    const auto result = cudaGetDriverEntryPointByVersion("cuTensorMapEncodeTiled", &ptr, 12000, cudaEnableDefault, &status);
++    return result == cudaSuccess && status == cudaDriverEntryPointSuccess
++        ? reinterpret_cast<PFN_cuTensorMapEncodeTiled_v12000>(ptr) : nullptr;
++  }();
++  return fn;
++}
++
++inline bool encode(tvm::ffi::TensorView bank, bool weight, CUtensorMap* output) {
++  if (!encoder() || !bank.IsContiguous() || bank.ndim() != 3 || (uintptr_t(bank.data_ptr()) & 15)) return false;
++  const int64_t x = bank.size(2) / (weight ? 1 : 2), planes = bank.size(0), rows = bank.size(1);
++  constexpr int64_t maximum = std::numeric_limits<int32_t>::max();
++  if (x <= 0 || x > maximum || planes <= 0 || rows <= 0 || planes > maximum / rows
++      || (!weight && bank.size(2) % 2)) return false;
++  const cuuint64_t dims[] = {static_cast<cuuint64_t>(x), static_cast<cuuint64_t>(planes * rows)};
++  const cuuint64_t strides[] = {dims[0] * (weight ? 4u : 2u)};
++  const cuuint32_t box[] = {weight ? 256u : 64u, kKSteps}, elem[] = {1, 1};
++  return encoder()(output, weight ? CU_TENSOR_MAP_DATA_TYPE_UINT32 : CU_TENSOR_MAP_DATA_TYPE_UINT16,
++                   2, bank.data_ptr(), dims, strides, box, elem, CU_TENSOR_MAP_INTERLEAVE_NONE,
++                   CU_TENSOR_MAP_SWIZZLE_NONE, CU_TENSOR_MAP_L2_PROMOTION_NONE,
++                   CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) == CUDA_SUCCESS;
++}
++
++inline void check_map_storage(tvm::ffi::TensorView maps) {
++  host::TensorMatcher({int64_t(2 * sizeof(BankMaps))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(maps);
++}
++
++}  // namespace muse_tma_route
++
++struct MuseTmaRoutePair {
++  static bool prepare(tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView down,
++                      tvm::ffi::TensorView ds, tvm::ffi::TensorView maps) {
++    using namespace muse_tma_route;
++    check_map_storage(maps);
++    BankMaps encoded[2]{};
++    if (!encode(gate, true, &encoded[0].weight) || !encode(gs, false, &encoded[0].scale)
++        || !encode(down, true, &encoded[1].weight) || !encode(ds, false, &encoded[1].scale)) return false;
++    std::memcpy(maps.data_ptr(), encoded, sizeof(encoded));
++    return true;
++  }
++
++  static void run(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan,
++                  int64_t groups, tvm::ffi::TensorView maps) {
++    using namespace muse_tma_route;
++    check_map_storage(maps);
++    BankMaps encoded[2];
++    std::memcpy(encoded, maps.data_ptr(), sizeof(encoded));
++    MuseRoutePair::run_with([&](const auto& up, const auto& out, uint32_t count, DLDevice dev) {
++      if (aligned_packed_projection(up) && aligned_packed_projection(out)) {
++        host::LaunchKernel(dim3(up.output_width / 128, count), 256, dev)(tensor_projection<true>, up, encoded[0]);
++        host::LaunchKernel(dim3(out.output_width / 128, count), 256, dev)(tensor_projection<false>, out, encoded[1]);
++      } else {
++        launch_projection<true>(up, count, dev);
++        launch_projection<false>(out, count, dev);
++      }
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan, groups);
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 417d31cc03f37fd5d79dd9f5a0163bcd4ba122c5..196e76d50f5954a68eec3bb7a248f9c33e5798ec 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -38,6 +38,20 @@ def _route_pair_module():
+         return None
+ 
+ 
++@cache_once
++def _tma_route_pair_module():
++    try:
++        return load_jit(
++            "muse_tma_route_pair",
++            cuda_files=["muse_spark/expert_tma_route_pair.cuh"],
++            cuda_wrappers=[("prepare", "MuseTmaRoutePair::prepare"), ("run", "MuseTmaRoutePair::run")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using vector-staged expert projections after TMA JIT failure: %s", exc)
++        return None
++
++
+ @cache_once
+ def _medium_route_pair_module():
+     try:
+@@ -201,6 +215,16 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         delattr(layer, f"{name}_weight_scale")
+         delattr(layer, f"{name}_weight_scale_2")
+     layer.humming_route_pair = route_pair and _route_pair_module() is not None
++    layer.humming_route_maps = None
++    if layer.humming_route_pair:
++        module = _tma_route_pair_module()
++        if module is not None:
++            maps = torch.empty(512, dtype=torch.uint8, device="cpu")
++            banks = (layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale)
++            if module.prepare(banks[0], banks[1].view(torch.uint8), banks[2], banks[3].view(torch.uint8), maps):
++                # Check live addresses again before each captured or eager launch.
++                layer.humming_route_maps = (module, maps, tuple((b.data_ptr(), b.shape) for b in banks))
++
+     layer.humming_medium_route_pair = (
+         route_pair
+         and envs.SGLANG_ENABLE_MUSE_SPARK_MEDIUM_ROUTE_PAIR.get()
+@@ -299,10 +323,17 @@ def humming_expert_outputs(
+         plan = local_ids.new_empty(1 + 9 * max_tiles)
+         expected = (slots * experts + layer.global_num_experts - 1) // layer.global_num_experts
+         groups = max(1, min(used, expected))
+-        _route_pair_module().run(
++        route = getattr(layer, "humming_route_maps", None)
++        if route is not None and route[2] == tuple((b.data_ptr(), b.shape) for b in (
++            layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale,
++        )):
++            dispatch, extra = route[0], (route[1],)
++        else:
++            dispatch, extra = _route_pair_module(), ()
++        dispatch.run(
+             hidden_states, local_ids, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
+             layer.w13_global_scale, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
+-            layer.w2_global_scale, activations, outputs, plan, groups,
++            layer.w2_global_scale, activations, outputs, plan, groups, *extra,
+         )
+         return outputs.view(num_tokens, topk, hidden_size), local_ids
+ 

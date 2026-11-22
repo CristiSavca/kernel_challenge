@@ -1,0 +1,50 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+index 7428edb..d08c8e0 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+@@ -19,30 +19,27 @@ struct Params {
+   uint32_t intermediate;
+ };
+ 
+-SGL_DEVICE float half_scale(uint32_t byte) {
++SGL_DEVICE uint32_t broadcast_scale(uint32_t byte) {
+   // Preparation flushes subnormal E4M3 scales and rejects signed or NaN codes.
+-  return byte ? __uint_as_float((byte + (119u << 3)) << 20) : 0.0f;
++  uint32_t bits = byte ? (byte << 4) + ((127u - 7u) << 7) : 0u;
++  return bits | (bits << 16);
+ }
+ 
+-SGL_DEVICE float unpack_code(uint32_t code, float half_group_scale) {
+-  // Twice the absolute E2M1 values fit in eight four-bit table entries.
+-  uint32_t mag = (0xc8643210u >> (4 * (code & 7))) & 15;
+-  float value = float(mag) * half_group_scale;
+-  return code & 8 ? -value : value;
+-}
+-
+-SGL_DEVICE uint32_t operand_pair(uint32_t word, float half_group_scale, uint32_t fragment) {
+-  uint32_t lo = word >> (4 * fragment);
+-  float x = unpack_code(lo, half_group_scale);
+-  float y = unpack_code(lo >> 16, half_group_scale);
+-  uint32_t pair;
+-  asm("cvt.rn.bf16x2.f32 %0, %2, %1;" : "=r"(pair) : "f"(x), "f"(y));
+-  return pair;
++SGL_DEVICE uint32_t operand_pair(uint32_t word, uint32_t scale, uint32_t fragment) {
++  uint32_t codes = word >> (4 * fragment);
++  // Embed both E2M1 sign/exponent/mantissas at the low end of BF16's
++  // exponent range. Each encoded value is exactly the original times 2^-126.
++  uint32_t tiny = ((codes & 0x00070007u) << 6) | ((codes & 0x00080008u) << 12);
++  uint32_t normalized, scaled;
++  // Explicit non-FTZ arithmetic preserves the E2M1 subnormal and signed zero.
++  asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(normalized) : "r"(tiny), "r"(0x7e807e80u));
++  asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(scaled) : "r"(normalized), "r"(scale));
++  return scaled;
+ }
+ 
+ SGL_DEVICE void accumulate(float4& acc, uint32_t word, uint32_t scales, uint32_t b0, uint32_t b1) {
+-  float s0 = half_scale(scales & 255);
+-  float s1 = half_scale((scales >> 8) & 255);
++  uint32_t s0 = broadcast_scale(scales & 255);
++  uint32_t s1 = broadcast_scale((scales >> 8) & 255);
+   // A is the packed weight tile [16,K]. B supplies eight input rows.
+   uint32_t a0 = operand_pair(word, s0, 0);
+   uint32_t a1 = operand_pair(word, s1, 1);

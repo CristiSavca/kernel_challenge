@@ -1,0 +1,400 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index c176f60..bfb94b8 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2023,6 +2023,7 @@ class Envs:
+     # ===================================================================
+     # Muse Spark
+     # ===================================================================
++    SGLANG_ENABLE_MUSE_SPARK_DECODE_COLUMN_GATHER = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+diff --git a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+index be859b4..8f64512 100644
+--- a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
++++ b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+@@ -69,3 +69,73 @@ def gemm_ag(
+     if out is None:
+         out = torch.empty(x.shape[0], weight.shape[0], dtype=x.dtype, device=x.device)
+     return all_gather(comm, local, out, b, c)
++
++
++def can_capture_decode_columns(target, runner):
++    """Agree once per capture epoch on the loaded weights, hooks and replicated input layout."""
++    from torch.nn.modules import module as hooks
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import FullCudaGraphBackend
++    from sglang.srt.runtime_context import get_exec, get_parallel
++
++    parallel = get_parallel()
++    if parallel.tp_size not in (4, 8):
++        return False
++    group = parallel.tp_group
++    if group is None or not torch.distributed.is_initialized() or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return False
++    body = getattr(getattr(target, "model", None), "language_model", None)
++    layers = [layer.mlp for layer in getattr(body, "layers", ()) if getattr(layer, "is_moe_layer", False)]
++    def has_forward_override(module):
++        if "forward" not in vars(module):
++            return False
++        method = module.forward
++        return getattr(method, "__self__", None) is not module or getattr(method, "__func__", None) is not type(module).forward
++
++    eligible = (
++        envs.SGLANG_ENABLE_MUSE_SPARK_DECODE_COLUMN_GATHER.get()
++        and torch.cuda.is_available() and torch.cuda.get_device_capability()[0] == 9
++        and type(runner.backend) is FullCudaGraphBackend
++        and (runner.capture_forward_mode.is_decode() or runner.capture_forward_mode.is_target_verify())
++        and not runner.enable_pdmux and not runner.enable_two_batch_overlap and not runner.ragged_verify_mode
++        and not runner.enable_torch_compile and not runner.model_runner.is_draft_worker
++        and runner.model_runner.lora_manager is None
++        and not runner.model_runner.capture_head_hooks and not runner.model_runner.capture_tail_hooks
++        and parallel.tp_size == parallel.moe_ep_size == parallel.attn_tp_size == group.world_size
++        and parallel.moe_tp_size == parallel.attn_cp_size == parallel.attn_dcp_size == 1
++        and not parallel.attn_dp_enabled and group.ranks == parallel.attn_tp_group.ranks
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not is_batch_invariant_mode_enabled() and not torch.are_deterministic_algorithms_enabled()
++        and not torch.is_autocast_enabled("cuda") and not target.training
++        and not hooks._global_forward_hooks and not hooks._global_forward_pre_hooks
++        and not any(m._forward_hooks or m._forward_pre_hooks or has_forward_override(m)
++                    or getattr(m, "_compiled_call_impl", None) is not None for m in target.modules())
++        and bool(layers) and all(
++            layer.nvfp4_checkpoint and type(linear) is torch.nn.Linear and linear.bias is None
++            and linear.weight.is_cuda and linear.weight.dtype == torch.bfloat16
++            and linear.weight.is_contiguous() and not linear.weight.requires_grad
++            and linear.weight.shape == (linear.out_features, linear.in_features)
++            and linear.out_features % (128 * group.world_size) == 0
++            for layer in layers for linear in (layer.pre_expert_proj, layer.post_expert_proj)
++        )
++    )
++    vote = torch.tensor(int(eligible), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    return bool(vote.item())
++
++
++def try_decode_column_gather(group, x, weight):
++    """Project full K over disjoint output columns, then concatenate in TP rank order."""
++    from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++    rows, features = x.shape
++    # The saved weight reads trade K elements for M replicated output elements.
++    # Leave bandwidth margin for NVLink and the rank-major to row-major copy.
++    if rows == 0 or 16 * rows > features:
++        return None
++    columns = weight.shape[0] // group.world_size
++    local_weight = weight.narrow(0, group.rank_in_group * columns, columns)
++    local = bf16_gemm_dispatch(x, local_weight, None)
++    return group.all_gather(local.contiguous(), dim=-1)
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 9b60eb6..3e681f3 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -836,6 +836,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # Shared raw tap matrix for serialized target verification graphs.
+     dflash_verify_raw_buffer: Optional[torch.Tensor] = None
+     dflash_prefill_raw_buffer: Optional[torch.Tensor] = None
++    muse_decode_column_gather: bool = False
+ 
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+diff --git a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+index a9ab8a2..638d40e 100644
+--- a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+@@ -1260,6 +1260,8 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         # Warm up + autotune kernels once before capture (run-once across the
+         # decode + prefill runners; see BaseRunner.warmup).
+         self.warmup()
++        prepare_columns = getattr(self.model_runner.model, "can_capture_decode_columns", None)
++        self._capture_muse_columns = prepare_columns(self) if prepare_columns is not None else False
+         verify_fc = getattr(self.model_runner, "dflash_verify_fc_graph", None)
+         self._verify_fc_capture = verify_fc.prepare_capture(self) if verify_fc is not None else None
+         # warmup() may disable torch.compile for a model whose _can_torch_compile
+@@ -1394,6 +1396,7 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+             bs, stream_idx=stream_idx, num_tokens=num_tokens
+         )
+ 
++        forward_batch.muse_decode_column_gather = getattr(self, "_capture_muse_columns", False)
+         verify_fc = getattr(self, "_verify_fc_capture", None)
+         if verify_fc is not None:
+             forward_batch.dflash_verify_raw_buffer = verify_fc.raw[:num_tokens]
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index 331965e..75e6f74 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -104,12 +104,49 @@ def _project_candidate_logits(
+     return logits
+ 
+ 
++@torch.compile(dynamic=True, backend=get_compiler_backend(), disable=_is_npu)
++def _pack_candidate_bits(bits, ids):
++    return (bits.to(torch.int32) << 16) | ids.to(torch.int32)
++
++
++def _pack_candidate_words(vals, ids):
++    # Reinterpret before compilation to keep signed zeros and all NaN payloads.
++    return _pack_candidate_bits(vals.contiguous().view(torch.int16), ids)
++
++
++@torch.compile(dynamic=True, backend=get_compiler_backend(), disable=_is_npu)
++def _rank_ordered_candidate_bits(words):
++    # Match the native contiguous [row, rank * k + local_slot] score matrix.
++    bits = (words >> 16).to(torch.int16)
++    return bits.transpose(0, 1).reshape(words.shape[1], -1).contiguous()
++
++
++def _candidate_word_scores(words, dtype):
++    return _rank_ordered_candidate_bits(words).view(dtype).float()
++
++
++@torch.compile(dynamic=True, backend=get_compiler_backend(), disable=_is_npu)
++def _candidate_word_ids(words, slots, starts):
++    k = words.shape[2]
++    owners = slots // k
++    rows = torch.arange(words.shape[1], device=words.device)[:, None]
++    return (words[owners, rows, slots % k] & 65535).long() + starts[owners]
++
++
++def _merge_candidate_words(vals, ids, k, starts):
++    words = tensor_model_parallel_all_gather(_pack_candidate_words(vals, ids), dim=0)
++    words = words.view(-1, vals.shape[0], k)
++    top_vals, slots = torch.topk(_candidate_word_scores(words, vals.dtype), k, dim=-1)
++    return _candidate_word_ids(words, slots, starts), top_vals, None
++
++
+ def candidate_topk(
+     hidden: torch.Tensor,
+     lm_head: nn.Module,
+     k: int,
+     *,
+     with_partition: bool = False,
++    candidate_shard_starts: Optional[torch.Tensor] = None,
+ ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+     """Global top-k candidates from the target head: hidden [N, H] -> ids / vals [N, K].
+ 
+@@ -143,6 +180,11 @@ def candidate_topk(
+         vals, ids = _radix_topk(logits, k)
+     if tp:
+         return ids.long(), vals, lse
++    if (
++        candidate_shard_starts is not None and not with_partition
++        and vals.dtype in (torch.bfloat16, torch.float16)
++    ):
++        return _merge_candidate_words(vals, ids, k, candidate_shard_starts)
+     global_ids = ids.long() + int(lm_head.shard_indices.org_vocab_start_index)
+     gathered_vals = tensor_model_parallel_all_gather(vals.float(), dim=-1)
+     gathered_ids = tensor_model_parallel_all_gather(global_ids, dim=-1)
+@@ -1291,13 +1333,16 @@ class DFlash2DraftModel(DFlashDraftModel):
+         return logits
+ 
+     def compute_candidates(
+-        self, hidden: torch.Tensor
++        self, hidden: torch.Tensor, *, candidate_shard_starts=None
+     ) -> Tuple[torch.Tensor, torch.Tensor]:
+         """Top-k base candidates via the target lm_head: hidden [N, H] -> global
+         candidate_ids / unary_logits [N, K]."""
+         assert self.lm_head is not None, "draft_model.lm_head unset before capture"
+         ids, vals, _ = candidate_topk(
+-            hidden, self.lm_head, self.candidate_selector.top_k
++            hidden,
++            self.lm_head,
++            self.candidate_selector.top_k,
++            candidate_shard_starts=candidate_shard_starts,
+         )
+         return ids, self._transform_unary_logits(vals)
+ 
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index b094462..ca4dade 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -58,6 +58,7 @@ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+     reserve_projection_workspace,
++    try_decode_column_gather,
+ )
+ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.moe import get_moe_runner_backend
+@@ -714,16 +715,23 @@ class MuseSpark1xMoE(nn.Module):
+                 )
+                 ar_workspace.fallback_logged = True
+             ar_workspace = None
++        column_group = (
++            get_parallel().tp_group
++            if decode_or_verify and getattr(forward_batch, "muse_decode_column_gather", False)
++            and not getattr(get_forward(), "sp_active", False) else None
++        )
+         output = self._forward_experts(
+             hidden_states,
+             router_input,
+             ar_workspace=ar_workspace,
+-            grouped_decode=decode_or_verify,
++            grouped_decode=decode_or_verify, column_group=column_group,
++        )
++        return self._reduce_and_unpool(
++            output, already_reduced=ar_workspace is not None, column_group=column_group,
+         )
+-        return self._reduce_and_unpool(output, already_reduced=ar_workspace is not None)
+ 
+     def _reduce_and_unpool(
+-        self, output: torch.Tensor, *, already_reduced: bool = False
++        self, output: torch.Tensor, *, already_reduced: bool = False, column_group=None
+     ) -> torch.Tensor:
+         # Expert TP already reduced across ranks, before its post-expert norm.
+         if (
+@@ -745,6 +753,10 @@ class MuseSpark1xMoE(nn.Module):
+                 if self._defers_unpool_gather(comm, output.shape[0]):
+                     return gemm_local(comm, output, self.post_expert_proj.weight)
+                 return gemm_ag(comm, output, self.post_expert_proj.weight)
++            if column_group is not None:
++                projected = try_decode_column_gather(column_group, output, self.post_expert_proj.weight)
++                if projected is not None:
++                    return projected
+             output = bf16_gemm_dispatch(output, self.post_expert_proj.weight, None)
+         return output
+ 
+@@ -785,6 +797,7 @@ class MuseSpark1xMoE(nn.Module):
+         *,
+         ar_workspace=None,
+         grouped_decode: bool = False,
++        column_group=None,
+     ) -> torch.Tensor:
+         if hidden_states.shape[0] == 0:
+             return hidden_states.new_zeros((0, self.expert_hidden_size))
+@@ -832,9 +845,15 @@ class MuseSpark1xMoE(nn.Module):
+             ):
+                 expert_input = gemm_ag(comm, hidden_states, self.pre_expert_proj.weight)
+             else:
+-                expert_input = bf16_gemm_dispatch(
+-                    hidden_states, self.pre_expert_proj.weight, None
+-                )
++                expert_input = None
++                if column_group is not None:
++                    expert_input = try_decode_column_gather(
++                        column_group, hidden_states, self.pre_expert_proj.weight,
++                    )
++                if expert_input is None:
++                    expert_input = bf16_gemm_dispatch(
++                        hidden_states, self.pre_expert_proj.weight, None
++                    )
+         if prepare_early:
+             prepared_input = self.experts.prepare_input(
+                 expert_input, self.pre_expert_norm
+@@ -1444,6 +1463,11 @@ class MuseSparkTextForCausalLM(nn.Module):
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
+ 
++    def can_capture_decode_columns(self, runner):
++        from sglang.srt.layers.communication.muse_spark_gemm_ag import can_capture_decode_columns
++
++        return can_capture_decode_columns(self, runner)
++
+     def set_dflash_layers_to_capture(self, layer_ids: List[int]) -> None:
+         """Capture the residual stream after each listed decoder layer.
+ 
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index d673fa7..cbff5eb 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -241,12 +241,52 @@ def _is_all_greedy(sampling_info) -> bool:
+     return sampling_info is None or sampling_info.is_all_greedy
+ 
+ 
+-def _selector_lattice(draft_model, pred_hidden, anchor_token_ids):
++def _selector_shard_starts(draft, lm_head):
++    """Agree once before graph capture on the rank-ordered local vocabulary bases."""
++    from sglang.srt.models.dflash import DFlash2DraftModel
++
++    group = get_parallel().tp_group
++    if (
++        group.world_size <= 1 or not is_cuda()
++        or torch.distributed.get_backend(group.cpu_group) != "gloo"
++    ):
++        return None
++    weight = getattr(lm_head, "weight", None)
++    shard = getattr(lm_head, "shard_indices", None)
++    k = getattr(getattr(draft, "candidate_selector", None), "top_k", 0)
++    size = getattr(shard, "num_org_elements", 0)
++    start = getattr(shard, "org_vocab_start_index", -1)
++    eligible = (
++        getattr(getattr(draft, "compute_candidates", None), "__func__", None)
++        is DFlash2DraftModel.compute_candidates
++        and isinstance(weight, torch.Tensor)
++        and weight.device.type == "cuda"
++        and weight.dtype == torch.bfloat16
++        and not torch.is_autocast_enabled("cuda")
++        and isinstance(k, int) and isinstance(size, int) and isinstance(start, int)
++        and is_dense_head_weight(weight) and 0 < k <= size <= 65536
++        and weight.shape[0] >= size and 0 <= start <= (1 << 63) - 65536
++        and not should_apply_lm_head_quant_method(
++            lm_head, getattr(lm_head, "quant_method", None)
++        )
++    )
++    # A single unsupported shard keeps every peer on the two native gathers.
++    specs = group.all_gather_object((k, int(start)) if eligible else None)
++    if any(spec is None or spec[0] != k for spec in specs):
++        return None
++    return torch.tensor([spec[1] for spec in specs], dtype=torch.long, device=weight.device)
++
++
++def _selector_lattice(draft_model, pred_hidden, anchor_token_ids, shard_starts=None):
+     # Flattened to [N, H] and viewed back because the radix top-k kernel is 2D.
+     bs, num_pred = pred_hidden.shape[0], pred_hidden.shape[1]
+-    candidate_ids, unary_logits = draft_model.compute_candidates(
+-        pred_hidden.reshape(-1, pred_hidden.shape[-1])
+-    )
++    hidden = pred_hidden.reshape(-1, pred_hidden.shape[-1])
++    if shard_starts is None:
++        candidate_ids, unary_logits = draft_model.compute_candidates(hidden)
++    else:
++        candidate_ids, unary_logits = draft_model.compute_candidates(
++            hidden, candidate_shard_starts=shard_starts
++        )
+     candidate_ids = candidate_ids.view(bs, num_pred, -1)
+     return candidate_ids, draft_model.candidate_selector.build_lattice(
+         candidate_ids=candidate_ids,
+@@ -264,8 +304,10 @@ class _SelectorDraftSampler:
+     """
+ 
+     def __init__(
+-        self, *, draft_model, block_size, max_bs, device, sampling_enabled: bool
++        self, *, draft_model, block_size, max_bs, device, sampling_enabled: bool,
++        shard_starts=None,
+     ):
++        self.shard_starts = shard_starts
+         self.draft_model = draft_model
+         self.selector = draft_model.candidate_selector
+         self.block_size = int(block_size)
+@@ -306,7 +348,9 @@ class _SelectorDraftSampler:
+         bs = hidden_states.shape[0] // self.block_size
+         block_ids = input_ids.view(bs, self.block_size)
+         hs = hidden_states.view(bs, self.block_size, -1)[:, 1:, :]  # pos 0 = anchor
+-        candidate_ids, scores = _selector_lattice(self.draft_model, hs, block_ids[:, 0])
++        candidate_ids, scores = _selector_lattice(
++            self.draft_model, hs, block_ids[:, 0], self.shard_starts
++        )
+         # In-graph philox draw: each replay advances the generator and redraws.
+         tokens, q_rows = self.selector.sample_path(
+             candidate_ids=candidate_ids,
+@@ -964,6 +1008,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+             return _eager("block_size<=1")
+         target_model = self._target_worker.model_runner.model
+         lm_head = unwrap_lora_layer(getattr(target_model, "lm_head", None))
++        shard_starts = (
++            _selector_shard_starts(self.draft_model, lm_head)
++            if self.selector is not None else None
++        )
+         if lm_head is None:
+             return _eager("no target lm_head")
+ 
+@@ -992,6 +1040,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 max_bs=max(get_exec().graph.cuda_graph_config.decode.bs),
+                 device=self.device,
+                 sampling_enabled=self._selector_sampling_enabled,
++                shard_starts=shard_starts,
+             )
+         if self.lilicorr is not None:
+             if not head_supported:

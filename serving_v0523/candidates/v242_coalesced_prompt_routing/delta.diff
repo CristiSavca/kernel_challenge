@@ -1,0 +1,88 @@
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index bc3443b..75fc742 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -140,6 +140,34 @@ def _local_grouped_eligible(experts, shard):
+ 
+ 
+ 
++def _gather_prompt_routes(group, scores, ids, eligible):
++    # Preserve both native dtypes, including every FP32 routing-score bit. Route
++    # shards always have the same padded row count as the sequence-parallel input.
++    score_bytes = scores.contiguous().view(torch.uint8).reshape(-1)
++    id_bytes = ids.contiguous().view(torch.uint8).reshape(-1)
++    flag = score_bytes.new_full((16,), int(eligible))
++    packet = torch.cat((score_bytes, id_bytes, flag))
++    received = packet.new_empty((group.world_size, packet.numel()))
++    group.all_gather_into_tensor(received.view(-1), packet)
++    offset = score_bytes.numel()
++    # FP32 scores and int32 IDs have equal byte widths. One transpose restores
++    # both contiguous token-major tensors before the expert kernels or hooks run.
++    if score_bytes.numel() == id_bytes.numel():
++        fields = received[:, :2 * offset].view(group.world_size, 2, offset).transpose(0, 1).contiguous()
++        full_scores = fields[0].view(scores.dtype).reshape(-1, scores.shape[1])
++        full_ids = fields[1].view(ids.dtype).reshape(-1, ids.shape[1])
++        return full_scores, full_ids, received[:, -1]
++
++    def unpack(source, like):
++        full = like.new_empty((group.world_size, *like.shape))
++        full.view(torch.uint8).view(group.world_size, -1).copy_(source)
++        return full.flatten(0, 1)
++
++    return (unpack(received[:, :offset], scores),
++            unpack(received[:, offset:offset + id_bytes.numel()], ids),
++            received[:, -1])
++
++
+ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+     from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+         local_humming_expert_ids, prompt_route_order,
+@@ -148,21 +176,25 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+     eligible = workspace.supports(shard, group) and _local_grouped_eligible(experts, shard)
+     # Use the parent's scalar synchronization for both the live count and the
+     # collective decision. A rank with a newly installed hook vetoes all peers.
+-    vote = torch.full((1,), int(eligible), dtype=torch.int32, device=shard.device)
+-    votes = vote.new_empty(group.world_size)
+-    group.all_gather_into_tensor(votes, vote)
++    tokens = output.shape[0]
++    scores, ids, votes = _gather_prompt_routes(group, scores, ids, eligible)
+     if eligible:
+-        local_ids = local_humming_expert_ids(experts, ids)
++        local_ids = local_humming_expert_ids(experts, ids[:tokens])
+         sorted_experts, slots, offsets = prompt_route_order(local_ids, experts.num_local_experts)
+         first_local = offsets[:1]
+     else:
+-        first_local = vote
++        first_local = votes[:1]
+     decision = torch.cat((votes, first_local)).tolist()
++    del votes, first_local
+     if all(decision[:-1]):
+         plan = workspace, sorted_experts, slots, offsets, decision[-1]
+-        experts._grouped_humming_and_combine_impl(shard, local_ids, scores, output, peer_plan=plan)
++        experts._grouped_humming_and_combine_impl(shard, local_ids, scores[:tokens], output, peer_plan=plan)
+     else:
+-        inputs = layernorm_sp.sp_exit_gather(shard, ids.shape[0])
++        # Hooks can inspect, resize or retain their arguments. Preserve the original
++        # separate backing allocations, including all rank padding, before handing them off.
++        scores = scores.clone()[:tokens]
++        ids = ids.clone()[:tokens]
++        inputs = layernorm_sp.sp_exit_gather(shard, tokens)
+         output.copy_(experts(inputs, scores, ids, experts.post_expert_norm))
+ 
+ 
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 078b90e..b3091c9 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -993,10 +993,8 @@ class MuseSpark1xMoE(nn.Module):
+                     and (not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph())):
+                 from sglang.srt.layers.muse_spark.peer_prompt_pack import peer_experts_into
+ 
+-                scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+-                ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
+                 output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
+-                peer_experts_into(workspace, self.experts, expert_input, scores, ids, tp_group, output)
++                peer_experts_into(workspace, self.experts, expert_input, topk_scores, topk_ids, tp_group, output)
+                 return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
+         inputs = layernorm_sp.sp_exit_gather(expert_input, num_tokens)
+         scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)

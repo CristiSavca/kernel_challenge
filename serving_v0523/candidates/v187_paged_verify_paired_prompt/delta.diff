@@ -1,0 +1,730 @@
+diff --git a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+index 0b8f528..5fd4034 100644
+--- a/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
++++ b/python/sglang/kernels/ops/speculative/fused_kv_materialize.py
+@@ -391,6 +391,7 @@ class FusedKVMaterializeHelper:
+         ctx_hidden: torch.Tensor,
+         positions: torch.Tensor,
+         write_layer_kv: Callable[[int, torch.Tensor, torch.Tensor], None],
++        *, projection_ready: bool = False,
+     ) -> None:
+         """Materialize KV cache for all layers using batched projection."""
+         total_ctx = ctx_hidden.shape[0]
+@@ -423,24 +424,34 @@ class FusedKVMaterializeHelper:
+         )
+         cos_sin_cache = self._ensure_rope_cache(max_position)
+ 
+-        self._ensure_workspace(total_ctx, ctx_hidden.dtype)
+-        assert self._proj_workspace is not None
+-        assert self._k_workspace is not None
+-        assert self._v_workspace is not None
+-
+-        proj_out_2d = self._proj_workspace[:total_ctx]
+-        if self._mm_out_supported:
+-            try:
+-                torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
+-            except Exception:
+-                self._mm_out_supported = False
+-                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++        if projection_ready:
++            if ctx_hidden.shape != (total_ctx, self.n_layers * self.layer_out_dim):
++                raise ValueError("Projected prompt K/V has the wrong shape")
++            proj_out_2d = ctx_hidden
++            # The gather already produced the projection. Reuse existing K/V
++            # views when possible; the fused kernel otherwise allocates only its outputs.
++            tmp_k = tmp_v = None
++            if self._workspace_capacity >= total_ctx and self._workspace_dtype == ctx_hidden.dtype:
++                tmp_k = self._k_workspace[:, :total_ctx]
++                tmp_v = self._v_workspace[:, :total_ctx]
+         else:
+-            proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++            self._ensure_workspace(total_ctx, ctx_hidden.dtype)
++            assert self._proj_workspace is not None
++            assert self._k_workspace is not None
++            assert self._v_workspace is not None
++            proj_out_2d = self._proj_workspace[:total_ctx]
++            if self._mm_out_supported:
++                try:
++                    torch.mm(ctx_hidden, self.flat_kv_weight_t, out=proj_out_2d)
++                except Exception:
++                    self._mm_out_supported = False
++                    proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++            else:
++                proj_out_2d = torch.mm(ctx_hidden, self.flat_kv_weight_t)
++            tmp_k = self._k_workspace[:, :total_ctx]
++            tmp_v = self._v_workspace[:, :total_ctx]
+ 
+         proj_out = proj_out_2d.view(total_ctx, self.n_layers, self.layer_out_dim)
+-        tmp_k = self._k_workspace[:, :total_ctx]
+-        tmp_v = self._v_workspace[:, :total_ctx]
+         cache_k, cache_v = _fused_norm_rope_stacked(
+             proj_out,
+             self.k_norm_weights,
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..228a41f 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -552,5 +552,6 @@ POSITIONAL_FIELD_ORDER = (
+     "enable_return_aux_hidden_states",
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
++    "speculative_dflash_sp_prefill_context",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..8e238bf 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -71,6 +71,10 @@ class Spec(msgspec.Struct):
+         Optional[int],
+         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
+     ] = None
++    speculative_dflash_sp_prefill_context: A[
++        bool,
++        "Project and normalize DFLASH features on sequence-parallel prefill shards and gather sampled LM-head rows.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+new file mode 100644
+index 0000000..5d5ab21
+--- /dev/null
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -0,0 +1,234 @@
++"""DFLASH context projection on sequence-parallel token rows."""
++
++from contextlib import contextmanager
++from contextvars import ContextVar
++from typing import NamedTuple
++
++import torch
++from torch import nn
++from torch.nn.modules import module as module_hooks
++
++
++class _PrefillContext(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    norm: nn.Module
++    project_target_hidden: object
++    group: object
++    target: nn.Module
++    logits_processor: nn.Module
++
++
++_draft_kv_helper = ContextVar("dflash_prefill_kv_helper", default=None)
++_prefill_context = ContextVar("dflash_sp_prefill_context", default=None)
++
++
++def _agree(ready, group):
++    # Keep device collective shapes uniform even for rank-local instrumentation.
++    status = torch.tensor(int(ready), device="cpu", dtype=torch.int32)
++    torch.distributed.all_reduce(
++        status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++    )
++    return bool(status.item())
++
++
++def _supports_shard_norm(norm, fc):
++    # RMSNorm resolves its platform dispatch lazily on the first input.
++    from sglang.srt.layers.layernorm import RMSNorm
++
++    if type(norm) is not RMSNorm:
++        return False
++    if any(name in vars(norm) for name in ("forward_cuda", "forward_native", "_resolve_forward_method")):
++        return False
++    method = norm._forward_method
++    if method is None:
++        method = norm._resolve_forward_method()
++    return (
++        getattr(method, "__self__", None) is norm
++        and getattr(method, "__func__", None) in (RMSNorm.forward_cuda, RMSNorm.forward_native)
++        and norm._quant_linear is None
++        and norm.override_orig_dtype in (None, torch.bfloat16)
++        and norm.weight.device == fc.weight.device
++        and norm.weight.shape == (fc.out_features,)
++    )
++
++
++def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
++    from sglang.srt.layers.logits_processor import LogitsProcessor
++    from sglang.srt.models.muse_spark import MuseSpark1xLogitsProcessor
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    norm = getattr(draft, "hidden_norm", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.in_features > fc.out_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++        and type(logits_processor) in (LogitsProcessor, MuseSpark1xLogitsProcessor)
++        and _supports_shard_norm(norm, fc)
++    )
++    if _agree(compatible, group):
++        return _PrefillContext(
++            draft, fc, norm, draft.project_target_hidden, group, target, logits_processor
++        )
++    return None
++
++
++@contextmanager
++def dflash_sp_prefill_scope(context, kv_helper=None):
++    token = _prefill_context.set(context)
++    kv_token = _draft_kv_helper.set(kv_helper)
++    try:
++        yield
++    finally:
++        _draft_kv_helper.reset(kv_token)
++        _prefill_context.reset(token)
++
++
++def project_dflash_prefill_shard(inputs, num_tokens, group, logits_processor, full_capture):
++    """Assign each replicated full-K projection row to its SP owner."""
++    context = _prefill_context.get()
++    # Small shards do not amortize the GEMM and host capability agreement.
++    if context is None or num_tokens < 128 * group.world_size:
++        return None
++    if inputs.is_cuda and torch.cuda.is_current_stream_capturing():
++        return None
++    draft, fc, norm, projector, expected_group, target, expected_logits = context
++    compatible = (
++        group is expected_group
++        and full_capture
++        and logits_processor is expected_logits
++        and not logits_processor.keep_last_hidden_states
++        and logits_processor.expected_aux_hidden_states is None
++        and not draft.quantizable
++        and draft.hidden_norm is norm
++        and not any(name in vars(logits_processor) for name in (
++            "_get_pruned_states", "_get_hidden_states_to_store", "_get_last_hidden_states_to_store",
++        ))
++        and _supports_shard_norm(norm, fc)
++        and draft.fc is fc
++        and draft.project_target_hidden == projector
++        and fc.bias is None
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and all(
++            not mod._forward_hooks
++            and not mod._forward_pre_hooks
++            and getattr(mod, "_compiled_call_impl", None) is None
++            and "forward" not in vars(mod)
++            for mod in (fc, norm, target, logits_processor)
++        )
++        and inputs.ndim == 2
++        and inputs.shape[0] * group.world_size >= num_tokens
++        and inputs.shape[1] == fc.in_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_contiguous()
++        and inputs.device == fc.weight.device
++        and inputs.dtype == fc.weight.dtype == torch.bfloat16
++    )
++    if _agree(compatible, group):
++        return norm(fc(inputs))
++    return None
++
++
++def project_paired_draft_kv(shard, num_tokens, group):
++    """Gather token cohorts and exchange each rank's projected draft K/V rows."""
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++
++    size = group.world_size
++    if size not in (4, 8):
++        return None
++    helper = _draft_kv_helper.get()
++    comm = getattr(group, "pynccl_comm", None)
++    rows, hidden = shard.shape
++    weight = getattr(helper, "flat_kv_weight_t", None)
++    channels = 0 if weight is None or weight.ndim != 2 else weight.shape[1]
++    # Minimize the per-rank wire volume. A token cohort shares its inputs.
++    # Every other cohort exchanges one weight bank and one projected block.
++    def volume(width):
++        peers = size // width - 1
++        return (width - 1) * rows * hidden + peers * (hidden * channels + width * rows * channels)
++
++    width = min((n for n in (2, 4) if n < size), key=volume)
++    full = (size - 1) * rows * hidden
++    ready = (
++        comm is not None and comm.available and weight is not None
++        and rows > 0 and (rows - 1) * size < num_tokens <= rows * size
++        and shard.is_contiguous() and shard.dtype == torch.bfloat16
++        and weight.is_contiguous() and weight.shape == (hidden, channels) and channels > 0
++        and weight.device == shard.device == comm.device and weight.dtype == shard.dtype
++        and channels == helper.n_layers * helper.layer_out_dim
++        and not shard.requires_grad and not weight.requires_grad and not is_batch_invariant_mode_enabled()
++        and 8 * volume(width) <= 7 * full
++    )
++    cohort, lane = divmod(group.rank_in_group, width)
++    cohorts = size // width
++    base = cohort * width
++    peers = [c for c in range(cohorts) if c != cohort]
++    if ready:
++        try:
++            gathered = shard.new_empty((width, rows, hidden))
++            remote_weights = weight.new_empty((len(peers), hidden, channels))
++            projected = shard.new_empty((cohorts, width * rows, channels))
++            outgoing = shard.new_empty((len(peers), width * rows, channels))
++        except torch.OutOfMemoryError:
++            ready = False
++
++    # The signatures cover both capability and preallocation. A rank may have
++    # retired its fused helper or failed to reserve staging storage.
++    # Gloo may finish CPU tensor copies on a thread outside inference mode.
++    with torch.inference_mode(False):
++        signature = torch.tensor([int(ready), rows, hidden, channels, num_tokens], dtype=torch.int64, device="cpu")
++        signatures = [torch.empty_like(signature) for _ in range(size)]
++        torch.distributed.all_gather(signatures, signature, group=group.cpu_group)
++    if not ready or any(not torch.equal(s, signature) for s in signatures):
++        return None
++
++    gathered[lane].copy_(shard)
++    with comm.change_state(enable=True):
++        comm.group_start()
++        try:
++            for other in range(width):
++                if other != lane:
++                    comm.send(shard, base + other)
++                    comm.recv(gathered[other], base + other)
++            for idx, other in enumerate(peers):
++                peer = other * width + lane
++                comm.send(weight, peer)
++                comm.recv(remote_weights[idx], peer)
++        finally:
++            comm.group_end()
++
++        x = gathered.view(-1, hidden)
++        try:
++            torch.mm(x, weight, out=projected[cohort])
++            for idx in range(len(peers)):
++                torch.mm(x, remote_weights[idx], out=outgoing[idx])
++        except torch.OutOfMemoryError:
++            computed = False
++        else:
++            computed = True
++        # No cache has been written. If one GEMM could not obtain workspace,
++        # the existing feature gather is still valid on every rank.
++        if not _agree(computed, group):
++            return None
++        comm.group_start()
++        try:
++            for idx, other in enumerate(peers):
++                peer = other * width + lane
++                comm.send(outgoing[idx], peer)
++                comm.recv(projected[other], peer)
++        finally:
++            comm.group_end()
++    return projected.view(-1, channels)[:num_tokens]
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index ea02720..8af97f1 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -167,6 +167,23 @@ def reduce_scatter_token_rows(full: torch.Tensor, group) -> torch.Tensor:
+     return group.reduce_scatter_along_dim(full, dim=0)
+ 
+ 
++def sp_gather_selected_rows(shard: torch.Tensor, positions: torch.Tensor, num_tokens: int) -> torch.Tensor:
++    """Gather replicated selections from row-sharded states, preserving order and bits."""
++    group = get_parallel().tp_group
++    span = shard.shape[0]
++    # Match indexing on the original unpadded global tensor, including -1.
++    valid = (positions >= -num_tokens) & (positions < num_tokens)
++    absolute = torch.where(positions < 0, positions + num_tokens, positions)
++    owner = torch.div(absolute, span, rounding_mode="floor")
++    owner = torch.where(valid, owner, group.world_size)
++    local = shard.index_select(0, absolute.remainder(span))
++    count = positions.numel()
++    gathered = shard.new_empty((group.world_size * count, shard.shape[1]))
++    group.all_gather_into_tensor(gathered, local)
++    request = torch.arange(count, device=shard.device)
++    return gathered.index_select(0, owner * count + request)
++
++
+ def maybe_exit_gather(
+     *,
+     hidden_states: torch.Tensor,
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index 8178ba3..0dba2b7 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -292,6 +292,10 @@ class LogitsProcessorOutput:
+     # Scheduler-local output copied alongside the ordinary generation result.
+     auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None
+ 
++    # For the DFLASH worker consuming the native prefill capture on this rank.
++    dflash_prefill_context_done: bool = False
++    dflash_prefill_kv_projected: bool = False
++
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+             return
+@@ -544,6 +548,8 @@ class LogitsProcessor(nn.Module):
+         logits_metadata: Union[LogitsMetadata, ForwardBatch],
+         aux_hidden_states: Optional[AuxHiddenStates] = None,
+         hidden_states_before_norm: Optional[torch.Tensor] = None,
++        *,
++        sp_prompt_tokens: Optional[int] = None,
+     ) -> LogitsProcessorOutput:
+         # Extract MIS / setwise indices before ForwardBatch → LogitsMetadata conversion
+         multi_item_delimiter_indices = None
+@@ -561,12 +567,37 @@ class LogitsProcessor(nn.Module):
+ 
+         # Under LayerNorm SP the decoder loop leaves these sequence-sharded; undo
+         # that before the LM head, which must not participate.
+-        hidden_states, hidden_states_before_norm = layernorm_sp.maybe_exit_gather(
+-            hidden_states=hidden_states,
+-            hidden_states_before_norm=hidden_states_before_norm,
+-            input_ids=input_ids,
+-            forward_mode=logits_metadata.forward_mode,
+-        )
++        sampled_sp_states = None
++        if (
++            sp_prompt_tokens is not None
++            and hidden_states_before_norm is None
++            and self.expected_aux_hidden_states is None
++            and not self.keep_last_hidden_states
++            and isinstance(aux_hidden_states, torch.Tensor)
++            and logits_metadata.capture_hidden_mode.is_full()
++            and layernorm_sp.runs_sp(logits_metadata.forward_mode)
++            and not logits_metadata.extend_return_logprob
++            and multi_item_delimiter_indices is None
++            and token_indices_to_pool is None
++            and logits_metadata.extend_seq_lens is not None
++            and logits_metadata.extend_seq_lens.ndim == 1
++            and logits_metadata.extend_seq_lens.device == hidden_states.device
++            and logits_metadata.extend_seq_lens.dtype in (torch.int32, torch.int64)
++            and 0 < logits_metadata.extend_seq_lens.numel() < hidden_states.shape[0]
++        ):
++            positions = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
++            sampled_sp_states = layernorm_sp.sp_gather_selected_rows(hidden_states, positions, sp_prompt_tokens)
++            get_forward().set("sp_active", False)
++        elif sp_prompt_tokens is not None and input_ids is None:
++            hidden_states = layernorm_sp.sp_exit_gather(hidden_states, sp_prompt_tokens)
++            get_forward().set("sp_active", False)
++        else:
++            hidden_states, hidden_states_before_norm = layernorm_sp.maybe_exit_gather(
++                hidden_states=hidden_states,
++                hidden_states_before_norm=hidden_states_before_norm,
++                input_ids=input_ids,
++                forward_mode=logits_metadata.forward_mode,
++            )
+ 
+         if self.expected_aux_hidden_states is not None:
+             self._check_aux_hidden_states(
+@@ -600,19 +631,25 @@ class LogitsProcessor(nn.Module):
+             return self._get_dllm_logits(hidden_states, lm_head, logits_metadata)
+ 
+         # Get the last hidden states and last logits for the next token prediction
+-        (
+-            pruned_states,
+-            pruned_states_before_norm,
+-            aux_pruned_states,
+-            sample_indices,
+-            input_logprob_indices,
+-            token_to_seq_idx,
+-        ) = self._get_pruned_states(
+-            hidden_states,
+-            hidden_states_before_norm,
+-            aux_hidden_states,
+-            logits_metadata,
+-        )
++        if sampled_sp_states is not None:
++            # FULL capture retains the separately gathered draft features.
++            pruned_states = sampled_sp_states
++            pruned_states_before_norm = aux_pruned_states = None
++            sample_indices = input_logprob_indices = token_to_seq_idx = None
++        else:
++            (
++                pruned_states,
++                pruned_states_before_norm,
++                aux_pruned_states,
++                sample_indices,
++                input_logprob_indices,
++                token_to_seq_idx,
++            ) = self._get_pruned_states(
++                hidden_states,
++                hidden_states_before_norm,
++                aux_hidden_states,
++                logits_metadata,
++            )
+ 
+         hidden_states_to_store = self._get_hidden_states_to_store(
+             hidden_states,
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..e1b560f 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2314,6 +2314,8 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # Bounded SWA replay returns the late layers' tail rows plus the
+             # extend indices they came from; the DSpark injector needs both.
+             hidden_states_token_indices=output.hidden_states_token_indices,
++            dflash_prefill_context_done=output.dflash_prefill_context_done,
++            dflash_prefill_kv_projected=output.dflash_prefill_kv_projected,
+         )
+ 
+     def _finalize_execute_output(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 0c33195..ae7af01 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -50,6 +50,10 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.layers.attention.trtllm_mha_backend import TRTLLMHAAttnBackend
+ from sglang.srt.layers.aux_hidden_states import pack_aux_hidden_states
++from sglang.srt.layers.dflash_context_projection import (
++    project_dflash_prefill_shard,
++    project_paired_draft_kv,
++)
+ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+@@ -1338,6 +1342,8 @@ class MuseSparkTextForCausalLM(nn.Module):
+             input_ids, positions, forward_batch, input_embeds=input_embeds
+         )
+         aux_hidden_states = None
++        prefill_context_done = False
++        prefill_kv_projected = False
+         if self.capture_aux_hidden_states:
+             hidden_states, aux_hidden_states = hidden_states
+         if aux_hidden_states is not None and layernorm_sp.runs_sp(
+@@ -1353,9 +1359,26 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+             aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
+-            aux_hidden_states = layernorm_sp.sp_exit_gather(
+-                aux_hidden_states, num_tokens=num_tokens
++            projected = project_dflash_prefill_shard(
++                aux_hidden_states,
++                num_tokens,
++                get_parallel().tp_group,
++                self.logits_processor,
++                forward_batch.capture_hidden_mode.is_full()
++                and forward_batch.multi_item_delimiter_indices is None
++                and forward_batch.token_indices_to_pool is None,
+             )
++            if projected is not None:
++                aux_hidden_states = projected
++                prefill_context_done = True
++                raw_kv = project_paired_draft_kv(projected, num_tokens, get_parallel().tp_group)
++                if raw_kv is not None:
++                    aux_hidden_states = raw_kv
++                    prefill_kv_projected = True
++            if not prefill_kv_projected:
++                aux_hidden_states = layernorm_sp.sp_exit_gather(
++                    aux_hidden_states, num_tokens=num_tokens
++                )
+         # Omni prefill calls the language model with materialized embeddings and
+         # ``input_ids=None``. The generic logits processor cannot infer the full
+         # token count in that form, so close the SP region here using the
+@@ -1363,12 +1386,21 @@ class MuseSparkTextForCausalLM(nn.Module):
+         if (
+             input_ids is None
+             and input_embeds is not None
++            and not prefill_context_done
+             and layernorm_sp.runs_sp(forward_batch.forward_mode)
+         ):
+             hidden_states = layernorm_sp.sp_exit_gather(
+                 hidden_states, num_tokens=input_embeds.shape[0]
+             )
+             get_forward().set("sp_active", False)
++        if prefill_context_done:
++            output = self.logits_processor(
++                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states,
++                sp_prompt_tokens=num_tokens,
++            )
++            output.dflash_prefill_context_done = True
++            output.dflash_prefill_kv_projected = prefill_kv_projected
++            return output
+         return self.logits_processor(
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..424add9 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from contextlib import nullcontext
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -19,6 +20,10 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ )
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
++from sglang.srt.layers.dflash_context_projection import (
++    dflash_sp_prefill_scope,
++    prepare_dflash_sp_prefill,
++)
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+     LogitsProcessor,
+@@ -614,6 +619,25 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._out_tokens_bufs: List[torch.Tensor] = []
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
++        self._sp_prefill_context = None
++        parallel = get_parallel()
++        if (
++            get_spec().speculative_dflash_sp_prefill_context
++            and is_cuda()
++            and parallel.tp_group.world_size > 1
++            and parallel.pp_size == 1
++            and parallel.attn_cp_size == 1
++            and not parallel.attn_dp_enabled
++            and not get_exec().deterministic.enable_deterministic_inference
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and torch.distributed.get_backend(parallel.tp_group.cpu_group) == "gloo"
++        ):
++            self._sp_prefill_context = prepare_dflash_sp_prefill(
++                self.draft_model,
++                self.target_worker.model_runner.model,
++                self._target_logits_processor,
++                parallel.tp_group,
++            )
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1827,6 +1851,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        prefill_context_done: bool = False,
++        prefill_kv_projected: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1926,7 +1952,15 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
++            if prefill_kv_projected:
++                if not prefill_context_done or cache_loc_2d is not None or self.lilicorr is not None:
++                    raise ValueError("Preprojected draft K/V requires ordinary full-prompt materialization.")
++                self._append_paired_prompt_kv(target_hidden, positions, cache_loc)
++                return
++            if prefill_context_done:
++                ctx_hidden = target_hidden
++            else:
++                ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+                 self._lilicorr_anchor = publish_anchor(
+                     draft_sampler=self._draft_sampler,
+@@ -2006,6 +2040,38 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 ctx_cache_loc=cache_loc,
+             )
+ 
++    def _append_paired_prompt_kv(self, projected, positions, cache_loc):
++        layers = self.draft_model.layers
++        kv_width = layers[0].self_attn.kv_size
++        if projected.shape != (positions.numel(), len(layers) * 2 * kv_width):
++            raise ValueError("Invalid stacked prompt K/V shape")
++        if self._use_fused_kv_materialize and self._fused_kv_helper is not None:
++            try:
++                self._append_target_hidden_fused(projected, positions, cache_loc, projection_ready=True)
++                return
++            except Exception as exc:
++                logger.warning("DFLASH fused projected KV append failed, using per-layer writes: %s", exc)
++                self._use_fused_kv_materialize = False
++                self._fused_kv_helper = None
++
++        # The rows already hold every layer's full-K projection in native
++        # [layer, K/V, channel] order. Replay the normal physical writes if the
++        # fused materializer stopped partway through the layers.
++        rows = projected.view(-1, len(layers), 2, kv_width)
++        for index, layer in enumerate(layers):
++            attn = layer.self_attn
++            k = attn.apply_k_norm(rows[:, index, 0].contiguous())
++            k = attn.apply_k_rope(positions, k)
++            v = rows[:, index, 1].contiguous()
++            if attn.v_scale is not None:
++                v = v * attn.v_scale
++            self.draft_model_runner.token_to_kv_pool.set_kv_buffer(
++                attn.attn, KVWriteLoc(cache_loc, physical=True),
++                k.view(-1, attn.num_kv_heads, attn.head_dim),
++                v.view(-1, attn.num_kv_heads, attn.head_dim),
++                attn.attn.k_scale, attn.attn.v_scale,
++            )
++
+     def _append_target_hidden_sequential(
+         self,
+         ctx_hidden: torch.Tensor,
+@@ -2044,6 +2110,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         ctx_cache_loc: torch.Tensor,
+         ctx_cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
++        *, projection_ready: bool = False,
+     ) -> None:
+         """Fused KV materialization using batched projection + Triton kernel."""
+         token_to_kv_pool = self.draft_model_runner.token_to_kv_pool
+@@ -2080,6 +2147,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             ctx_hidden=ctx_hidden,
+             positions=ctx_positions,
+             write_layer_kv=_write_layer_kv,
++            **({"projection_ready": True} if projection_ready else {}),
+         )
+ 
+     def _update_target_mamba_state_after_verify(
+@@ -2345,12 +2413,33 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if batch.forward_mode.is_extend() or batch.is_extend_in_batch:
+             self._wait_for_fused_hicache_load(batch)
+             # Target prefill: capture DFlash aux hidden states for prompt tokens.
+-            batch_output = self.target_worker.forward_batch_generation(
+-                batch,
+-                pp_proxy_tensors=pp_proxy_tensors,
+-                capture_hidden_mode=CaptureHiddenMode.FULL,
+-                return_kv_loc_plan=True,
+-            )
++            scope = nullcontext()
++            if (
++                self._sp_prefill_context is not None
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.return_logprob
++                and not batch.return_hidden_states_mode.need_capture()
++                and not torch.cuda.is_current_stream_capturing()
++            ):
++                kv_helper = None
++                if self._use_fused_kv_materialize and self.lilicorr is None:
++                    # The stacked bank contains raw V. Its fused and per-layer
++                    # consumers must agree if a partially completed write retries.
++                    unit_values = all(
++                        layer.self_attn.v_scale is None
++                        or (type(layer.self_attn.v_scale) in (int, float) and layer.self_attn.v_scale == 1)
++                        for layer in self.draft_model.layers
++                    )
++                    if unit_values:
++                        kv_helper = self._fused_kv_helper
++                scope = dflash_sp_prefill_scope(self._sp_prefill_context, kv_helper)
++            with scope:
++                batch_output = self.target_worker.forward_batch_generation(
++                    batch,
++                    pp_proxy_tensors=pp_proxy_tensors,
++                    capture_hidden_mode=CaptureHiddenMode.FULL,
++                    return_kv_loc_plan=True,
++                )
+             kv_loc_plan, batch_output.kv_loc_plan = batch_output.kv_loc_plan, None
+ 
+             logits_output, next_token_ids = (
+@@ -2410,6 +2499,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc=self._draft_write_ids(kv_loc_plan),
+                 positions=positions,
+                 extend_lens=ctx_lens,
++                prefill_context_done=logits_output.dflash_prefill_context_done,
++                prefill_kv_projected=logits_output.dflash_prefill_kv_projected,
+             )
+ 
+             # Avoid copying large hidden-state buffers to CPU in overlap scheduling.

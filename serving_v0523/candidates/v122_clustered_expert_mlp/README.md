@@ -1,0 +1,28 @@
+# V122 full expert MLP in one Hopper cluster
+
+V122 replaces the W13 projection, scaled SiLU, and W2 projection with a single launch per eligible routed layer during decode and target verification. Each eight-block cluster owns disjoint route rows and all their output channels. It computes both matrix products with the existing packed FP4 weights, BF16 operands and FP32 accumulators. At 16 and 32 users the eligible path also removes a 16 or 32 MiB BF16 scratch arena per rank. These are source-level changes. H200 latency, agreement and peak memory remain unmeasured. [Official patch](patch.diff) · [Delta from V117](delta.diff) · [Work and traffic model](work_model.json)
+
+A warp scan of the rank-local offsets assigns each nonempty expert consecutive tiles of up to 16 rows. The eight blocks take disjoint intermediate-channel stripes and compute gate and up through the full input width. Each block rounds the two results to BF16, applies the incumbent global scale and BF16 round, runs the established SiLU multiplication and stores its BF16 activation stripe in shared memory. One cluster barrier publishes the eight stripes. Each block then computes distinct W2 output columns, reading complete K in ascending order from the eight shared-memory banks. It writes the rounded result directly over its own staged input rows. A second barrier protects the peer reads before any block reuses shared memory or exits. The existing W2 global scale, expert RMS, slot-order weighting and cross-rank sum follow. [Kernel and adapter](delta.diff) · [Independent lifecycle review](independent_review.md)
+
+At initialization both Humming banks must match the expected WGMMA interleaved FP4 and E4M3 layouts. The optional build runs only on SM90, and its actual kernel must have positive occupancy for eight blocks per cluster. The implementation checks dimension alignment, dynamic shared memory and enough rank-local experts to cover the device's SM count. At runtime, four or more route slots per global expert select the complete-MLP path. With eight verification rows per user and eight routes per row this selects 16 and 32 users. Other eligible decode geometries use the V117 choices. Work is grid-strided over exact device route counts, including concentration on one expert, without a host readback. [Adapter tests](dispatch.json) · [Occupancy checks](occupancy.json)
+
+## Performance bounds
+
+| Per rank per sparse layer, uniform independent top-eight choices | 16 users | 32 users |
+|---|---:|---:|
+| Mean local 16-row jobs | 31.45 | 32.09 |
+| Unique packed expert banks | 849.15 MiB | 863.74 MiB |
+| Packed requests if successive jobs miss cache | 849.15 MiB | 866.49 MiB |
+| Eliminated logical gate/up and activation writes plus reads | 6 MiB | 12 MiB |
+| Logical remote shared-memory reads by W2 warps | 56 MiB | 112 MiB |
+| Avoided global scratch arena allocation | 16 MiB | 32 MiB |
+
+The native 32-expert grid contains 32 eight-block clusters. At 256 threads per block it can present at most 2,048 warps across 132 H200 SMs, before cluster placement, skew or the final wave. The 126 registers per thread also cap residency at two blocks per SM by register count. The fused schedule trades the vendor's larger independent output-tile grid and staged TMA pipeline for shared activation ownership and two fewer launches. At 256 rows the cold packed-weight bandwidth floor is 188.7 µs per rank and sparse layer using the published 4.8 TB/s peak. That floor excludes math, traffic from other tensors and synchronization. [Model assumptions and score sensitivity](work_model.py) · [NVIDIA H200 specifications](https://www.nvidia.com/en-us/data-center/h200/)
+
+## Verification and comparison
+
+- CUDA 12.9.86 compiled the exposed TVM-FFI wrapper for both SM90 and SM90a, with zero spills or stack. At intermediate width 4,096 the kernel uses 16,640 bytes of shared memory per block. The 8-row W13 and W2 K loops have 328 and 175 static instructions respectively, including 8 and 4 tensor-core instructions. At 16 rows the counts are 349 and 188, including 16 and 8 tensor-core instructions. [Compiler results](sm90.json) · [SM90a disassembly](cluster.sass.gz) · [Build log](nvcc.txt)
+- A CPU warp/cluster emulator ran both production arithmetic bodies and compared 69,632 live BF16 values against an independent dense reference. It checked 31,744 guard values, 11 route tiles and 37,632 peer mappings across physical-width, empty, concentrated and partial cases. The parent and this kernel may accumulate differently on an H200. [Numerical receipt](independent_cpu.json) · [Reproducer](independent_cpu.py)
+- PyTorch meta tensors exercised the production adapter in 320 cases including all three staging methods, identity and nonuniform ownership, and 48 eligible clustered calls. In each eligible case the staged input and returned output were the same tensor. The actual C++ startup probe passed 10,752 simulated device/API configurations including recoverable and unexpected errors. [Dispatch fixture](dispatch_check.py) · [Occupancy fixture](occupancy_check.py)
+- The 208,142-byte patch covers 33 permitted source files. Its full SHA-256 is `32cb771ba043e37ab566a4f11c6bfb4c012c33998b3875c3efdefb926cc4a071`. All nine V117 flags apply. The official export passed strict apply, reversal, exact reconstruction from V117 and the fixed-flag audit. [Export receipt](validation.json)
+- V125 puts the same 3,200 Hopper instructions on V68's four flags, routing and verification path. V68 passed its private 16-user check. V125 provides the cleaner first hardware comparison of the expert kernel after the V87 branch crashed. [V125 review](../v125_v68_clustered_expert_mlp/independent_review.md)

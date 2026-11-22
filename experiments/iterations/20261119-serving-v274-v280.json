@@ -1,0 +1,115 @@
+{
+  "objective": "Official four-load 4\u00d7 serving score",
+  "official_incumbent": {
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "passed": true,
+    "candidate": "V64"
+  },
+  "implementations": [
+    {
+      "candidate": "V274",
+      "parent": "V270",
+      "tree": "020fdda136d6f7c4eaf3e83de785915eed49f69e",
+      "patch_sha256": "7b4fd6336d4892e8b048576f7ae0edaef244d314f515b89862f111ce545d7c6e",
+      "bytes": 408704
+    },
+    {
+      "candidate": "V275",
+      "parent": "V68",
+      "tree": "ebf8538bcd49cf8fa38cf18f96d68e6e119d94e9",
+      "patch_sha256": "ab90939602c3f275914cf76e4c232cabe93ec7b2c496c9e5355aadb910676284",
+      "bytes": 75927
+    },
+    {
+      "candidate": "V277",
+      "parent": "V248",
+      "tree": "59fdf2c10d45b8e4537a5720abb8be1e348a62a3",
+      "patch_sha256": "e9dac279372e054bdfa2d31b4456d5d80e99241f463457b48f67348afce72639",
+      "bytes": 393332
+    },
+    {
+      "candidate": "V278",
+      "parent": "V275",
+      "tree": "cbe81725c7f03210676ed949f7b6e0d4ac94effa",
+      "patch_sha256": "384c343938ed59d74937fa1402c86da6ff4f14373fd7403362f64f04b3622817",
+      "bytes": 81106
+    },
+    {
+      "candidate": "V279",
+      "parent": "V248",
+      "tree": "f8c2c4055b660f859f7d075dede43293130d9c85",
+      "patch_sha256": "35ff012ae39ebe213d67c309e8324affa446460fffe9e419721e9d64b8fc06a2",
+      "bytes": 407230
+    },
+    {
+      "candidate": "V280",
+      "parent": "V248 + V270 and V274 W2 deltas",
+      "tree": "05a6cfc2a8eed4a29f05c3730ed5d050ae58f609",
+      "patch_sha256": "dc451cf6a9a042fc92cc140d837435bf2ca82db78d794ec22f191136c54b9f69",
+      "bytes": 401000
+    }
+  ],
+  "public_contract": "https://openkernelchallenge.dev/api/v1/serving",
+  "selected_decode_comparison": {
+    "candidate": "V278",
+    "control": "V68",
+    "users": 16,
+    "control_tokens_per_s_per_GPU": 17512.9,
+    "control_median_tokens_per_s_per_user": 48.0,
+    "matched_device_check": false,
+    "host_forwards": 24,
+    "isolated_projection_jobs": [
+      1056,
+      528
+    ],
+    "avoided_request_MiB": 198.0,
+    "simulated_50MiB_L2_avoided_activation_misses_MiB": [
+      -0.46875,
+      0.0703125
+    ]
+  },
+  "prompt_integration": {
+    "candidate": "V279",
+    "W13_rank3_local_routes": 16224,
+    "W13_request_MiB": [
+      4356.0,
+      1089.0
+    ],
+    "simulated_50MiB_L2_avoided_activation_misses_MiB": [
+      0.0,
+      0.0
+    ],
+    "compiled_prompt_images": 6,
+    "entry_replays": 11,
+    "checked_component_orders": 60,
+    "H200_run": false
+  },
+  "withdrawn": [
+    "V270",
+    "V273"
+  ],
+  "withdrawn_reason": "Peer could overwrite another CTA shared epilogue storage on a subsequent persistent job.",
+  "held_from_promotion": {
+    "candidate": "V280",
+    "reason": "Width-based expert reordering can improve the longest compute sequence but loses weight and activation locality in the modeled 50 MiB cache.",
+    "original_alignment_error_repaired": true
+  },
+  "cold_pipeline_conclusion": "V276 ideal independent-cohort trace replay 1.4460\u00d7 from 1.4119\u00d7; no qualifying hardware result.",
+  "frontier_coupled_multiplier_for_4x": 2.293083555679885,
+  "deadline_worker": "existing Nov20 V229/V198 plan",
+  "new_private_jobs": 0,
+  "new_scored_jobs": 0,
+  "paid_allocations": 0,
+  "queue_observation": "serving_v0523/candidates/v279_multicast_expert_serving/judge_observation.json",
+  "official_score_4x": false,
+  "receipts_sha256": {
+    "serving_v0523/candidates/v278_overlapped_wide_decode/replay.json": "de6a8c444c9952cbc6621de4f53c815925da144e02966669f958cb365d1d681c",
+    "serving_v0523/candidates/v278_overlapped_wide_decode/cache_sensitivity.json": "f419ae32b867de9afc13c8f89ddce9bb0e7c6226f08742cf68ce5328bc27fa4d",
+    "serving_v0523/candidates/v279_multicast_expert_serving/shared_base.json": "6aba49aadea5e12f361ebdc5022a729b7fa7312c7c1334fe10ccd13cc47d669d",
+    "serving_v0523/candidates/v279_multicast_expert_serving/validation.json": "bfb3d955ed01aeeb8b0c32656510af6e6a46aa33e7b13e0be0d6418fe3687cd9",
+    "serving_v0523/candidates/v279_multicast_expert_serving/gate_cache.json": "4644963c0e185d4823437b2d7460fcf230a115d3f73ad325d7914c193be1c26e",
+    "serving_v0523/candidates/v280_expert_width_order/alignment.json": "6a51c7ae7981e197c4bda6d675a609994bfb51fad60947fff1d5bd77ccbdf788",
+    "serving_v0523/candidates/v280_expert_width_order/shared_cache.json": "23dbaaa01c704cbbcbb329ae5fdf0fb577c155dcf68f262b71fc0b811981ac04"
+  }
+}

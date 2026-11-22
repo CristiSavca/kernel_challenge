@@ -1,0 +1,83 @@
+{
+  "model": "Independent token rows; each chooses 8 distinct experts uniformly from 256. This computes exact subset counts and probabilities to floating-point precision. No benchmark or training routes used.",
+  "cases": [
+    {
+      "tokens": 8,
+      "groups": 10,
+      "mean_local_active": 7.177603848249419,
+      "sd_local_active": 2.227973042753889,
+      "probability_rank_spills": 0.07161732363823929,
+      "probability_any_of_eight_ranks_spills": 0.4956026255093885,
+      "expected_excess_experts_per_rank": 0.11782861373401962,
+      "additional_experts_given_a_rank_spills": 1.6452529604318573,
+      "expected_additional_experts_per_launched_group": 0.011782861373401963,
+      "rank_spill_count_distribution": [
+        0.5043973744906115,
+        0.4208460141414596,
+        0.07218873159671314,
+        0.0025564086130030685,
+        1.1469859043956193e-05,
+        1.2991686867159241e-09,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "tokens": 16,
+      "groups": 16,
+      "mean_local_active": 12.745270290173686,
+      "sd_local_active": 2.6349002874655985,
+      "probability_rank_spills": 0.07782072111502594,
+      "probability_any_of_eight_ranks_spills": 0.5186731914809262,
+      "expected_excess_experts_per_rank": 0.13738318346288095,
+      "additional_experts_given_a_rank_spills": 1.765380498849611,
+      "expected_additional_experts_per_launched_group": 0.00858644896643006,
+      "rank_spill_count_distribution": [
+        0.48132680851907383,
+        0.42069806992155917,
+        0.09214507308128919,
+        0.005742843412717385,
+        8.700275189565298e-05,
+        2.022904526383632e-07,
+        2.3011989834395535e-11,
+        3.137803811418196e-18,
+        0.0
+      ]
+    },
+    {
+      "tokens": 32,
+      "groups": 24,
+      "mean_local_active": 20.41423074379787,
+      "sd_local_active": 2.620251649028556,
+      "probability_rank_spills": 0.0558345569110918,
+      "probability_any_of_eight_ranks_spills": 0.3869922802687854,
+      "expected_excess_experts_per_rank": 0.08832623508674874,
+      "additional_experts_given_a_rank_spills": 1.581927751793483,
+      "expected_additional_experts_per_launched_group": 0.003680259795281197,
+      "rank_spill_count_distribution": [
+        0.6130077197312146,
+        0.33055889500800745,
+        0.05324902647621432,
+        0.0031183634011321343,
+        6.556048325187889e-05,
+        4.34209339847453e-07,
+        6.906826993265794e-10,
+        1.5698597400764256e-13,
+        1.6900314219494128e-18
+      ]
+    }
+  ],
+  "adversarial_four_request_cases": {
+    "one_expert_per_rank_rotating_across_32_tokens": {
+      "active_on_every_rank": 32,
+      "groups": 24,
+      "extra_iterations_per_rank": 8
+    },
+    "identical_eight_experts_for_all_tokens": {
+      "at_most_active_on_any_rank": 8,
+      "groups": 24,
+      "extra_iterations_per_rank": 0
+    }
+  }
+}

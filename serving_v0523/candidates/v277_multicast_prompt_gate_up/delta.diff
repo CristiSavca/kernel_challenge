@@ -1,0 +1,174 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+index 1278068..6b917d1 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+@@ -14,3 +14,8 @@ using MuseGateCtx = KernelContext<
+ static_assert(MuseGateCtx::kNumWriteSplits == 1 && !MuseGateCtx::kUseStreamK && !MuseGateCtx::kUseTmaC);
+-static_assert(MuseGateCtx::kMultiCastSize == 1 && MuseGateCtx::kWeightScaleGroupSize == 16);
++static_assert(MuseGateCtx::kWeightScaleGroupSize == 16 && MuseGateCtx::kMultiCastSizeB == 1);
++#ifdef MUSE_GATE_PROMPT
++static_assert(MuseGateCtx::kMultiCastSizeA == 1 || (MuseGateCtx::kMultiCastSizeA == 4 && HUMMING_SHAPE_N % 1024 == 0));
++#else
++static_assert(MuseGateCtx::kMultiCastSizeA == 1);
++#endif
+ static_assert(MuseGateCtx::kIsGroupedContiguousGemm && MuseGateCtx::kUseTmaB && MuseGateCtx::kUseTmaBS);
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+index 8e2929b..f8a66c4 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -3,2 +3,3 @@
+ #include <cuda.h>
++#include <algorithm>
+ #include <cstring>
+@@ -48,3 +49,27 @@ struct MuseDecodeGateUp {
+ 
+-  template <bool Prompt>
++  static CUlaunchConfig cluster_config(unsigned grid, unsigned shared, CUstream stream, CUlaunchAttribute& attr) {
++    attr.id = CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
++    attr.value.clusterDim = {4, 1, 1};
++    CUlaunchConfig config{};
++    config.gridDimX = grid;
++    config.gridDimY = config.gridDimZ = 1;
++    config.blockDimX = 384;
++    config.blockDimY = config.blockDimZ = 1;
++    config.sharedMemBytes = shared;
++    config.hStream = stream;
++    config.attrs = &attr;
++    config.numAttrs = 1;
++    return config;
++  }
++
++  static int64_t prompt_cluster_grid(int64_t function, int64_t shared, int64_t sms) {
++    if (!function || shared <= 0 || shared > INT32_MAX || sms < 4 || sms > INT32_MAX) return 0;
++    CUlaunchAttribute attr{};
++    auto config = cluster_config(static_cast<unsigned>(sms / 4 * 4), shared, nullptr, attr);
++    int clusters = 0;
++    if (cuOccupancyMaxActiveClusters(&clusters, reinterpret_cast<CUfunction>(function), &config) != CUDA_SUCCESS) return 0;
++    return 4 * std::min(static_cast<int>(sms / 4), clusters);
++  }
++
++  template <bool Prompt, bool Multicast = false>
+   static bool run(Tensor input, Tensor output, Tensor ids, Tensor offsets, Tensor scales, Tensor storage,
+@@ -65,2 +90,6 @@ struct MuseDecodeGateUp {
+ 
++    if constexpr (Multicast) {
++      static_assert(Prompt);
++      if (i.unwrap() % 512 || sms % 4 || tile != 176) return false;
++    }
+     CUtensorMap a{};
+@@ -82,3 +111,10 @@ struct MuseDecodeGateUp {
+     auto stream = static_cast<CUstream>(::TVMFFIEnvGetStream(kDLCUDA, dev.unwrap().device_id));
+-    const auto status = cuLaunchKernel(reinterpret_cast<CUfunction>(function), sms, 1, 1, Prompt ? 384 : 640, 1, 1, shared, stream, args, nullptr);
++    CUresult status;
++    if constexpr (Multicast) {
++      CUlaunchAttribute attr{};
++      auto config = cluster_config(sms, shared, stream, attr);
++      status = cuLaunchKernelEx(&config, reinterpret_cast<CUfunction>(function), args, nullptr);
++    } else {
++      status = cuLaunchKernel(reinterpret_cast<CUfunction>(function), sms, 1, 1, Prompt ? 384 : 640, 1, 1, shared, stream, args, nullptr);
++    }
+     RuntimeCheck(status == CUDA_SUCCESS, "grouped gate/up launch failed: ", static_cast<int>(status));
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 23e2a0b..8f6a861 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -22,2 +22,4 @@ def _launcher():
+                 ("prepare_prompt", "MuseDecodeGateUp::prepare<true>"), ("run_prompt", "MuseDecodeGateUp::run<true>"),
++                ("prompt_cluster_grid", "MuseDecodeGateUp::prompt_cluster_grid"),
++                ("run_prompt_multicast", "MuseDecodeGateUp::run<true, true>"),
+                 ("configure", "MuseDecodeGateUp::configure"),
+@@ -32,3 +34,3 @@ def _launcher():
+ @lru_cache(maxsize=128)
+-def _compile(context, meta, compute, tuning, prompt=False):
++def _compile(context, meta, compute, tuning, prompt=False, multicast=False):
+     from humming.jit.compiler import NVCCCompiler
+@@ -68,2 +70,4 @@ def _compile(context, meta, compute, tuning, prompt=False):
+                 valid = has_residual_isa(assembly, drains)
++            if multicast:
++                valid = valid and any("UTMALDG.2D" in line and "MULTICAST" in line for line in assembly.splitlines())
+             if not valid or "UTMALDG.4D" not in assembly:
+@@ -102,2 +106,6 @@ def _compile(context, meta, compute, tuning, prompt=False):
+                 adapt_residual_tiles(self, paired=False)
++            if multicast:
++                from sglang.srt.layers.muse_spark.prompt_multicast import protect_cluster_epilogue
++
++                protect_cluster_epilogue(self)
+             KernelRuntime.prepare(self)
+@@ -107,2 +115,5 @@ def _compile(context, meta, compute, tuning, prompt=False):
+ 
++    class GroupedMulticastPromptGateUpKernel(GroupedResidualPromptGateUpKernel):
++        pass
++
+     class GroupedDecodeFullPairGateUpKernel(GroupedDecodeGateUpKernel):
+@@ -129,3 +140,10 @@ def _compile(context, meta, compute, tuning, prompt=False):
+         return None
+-    if prompt and config["block_shape"][0] == 176:
++    if multicast:
++        if (not prompt or config["block_shape"][0] != 176 or config["shape_n"] % 1024
++                or config.get("multi_cast_size_a", 1) != 1 or config.get("multi_cast_size_b", 1) != 1
++                or config.get("reduce_overlap_last_stage_only", False)):
++            return None
++        config["multi_cast_size_a"] = 4
++        variants = (GroupedMulticastPromptGateUpKernel,)
++    elif prompt and config["block_shape"][0] == 176:
+         variants = (GroupedResidualPromptGateUpKernel, GroupedDecodeGateUpKernel)
+@@ -141,3 +159,9 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             if _launcher().configure(handle, shared):
+-                return kernel, handle, shared, int(kernel.block_shape[0])
++                binding = kernel, handle, shared, int(kernel.block_shape[0])
++                if multicast:
++                    sms = torch.cuda.get_device_properties(torch.cuda.current_device()).multi_processor_count
++                    grid = _launcher().prompt_cluster_grid(handle, shared, sms)
++                    # Avoid trading a large fraction of concurrent output tiles for source reuse.
++                    return (*binding, grid) if grid * 8 >= sms * 7 else None
++                return binding
+         except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+@@ -179,2 +203,6 @@ def prepare_gate_up(layer, meta, compute, tunings, *, prompt=False):
+         kernels = {t: _compile(ctx, meta, compute, t, prompt) for t in sorted(widths)}
++        if prompt:
++            for t in sorted(widths):
++                if kernels[t] is not None:
++                    kernels[t, "multicast"] = _compile(ctx, meta, compute, t, True, True)
+     except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+@@ -205,2 +233,8 @@ def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+         keys = keys.int()
++        cluster = kernels.get((tuning, "multicast"))
++        # Use a full wave of output tiles as the lower bound for sharing a source tile.
++        tiles = ((inputs.shape[0] + width - 1) // width) * (layer.intermediate_size_per_partition // 128)
++        if cluster is not None and tiles >= sms:
++            _, handle, shared, width, sms = cluster
++            launch = launcher.run_prompt_multicast
+     if launch(inputs, active, keys, offsets, layer.w13_global_scale, maps, handle, shared, width, sms):
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_multicast.py b/python/sglang/srt/layers/muse_spark/prompt_multicast.py
+new file mode 100644
+index 0000000..ac5772c
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/prompt_multicast.py
+@@ -0,0 +1,27 @@
++"""Protect the shared reduction buffer between persistent grouped multicast jobs."""
++import hashlib
++from pathlib import Path
++
++
++def protect_cluster_epilogue(kernel):
++    import humming
++
++    source = Path(humming.__path__[0]) / "include/humming/memory/g2s_pipeline.cuh"
++    header = source.read_text()
++    if hashlib.sha256(header.encode()).hexdigest() != "479ff827ecf40b82d4685b3a104d796ef41bb643a1d9cc398feabcc77ccbd43b":
++        raise ValueError("unsupported Humming multicast pipeline")
++    # Root waits for one ACK from each peer after that peer has fenced its
++    # final epilogue reads. The first job uses the same barrier protocol.
++    header = header.replace("kNumMathThreads * factor);",
++        "kNumMathThreads * factor + (cluster_rank == 0 && thread_id == kNumStages ? kMultiCastSize - 1 : 0));")
++    end = header.index("    phases[kNumStages] ^= 1;", header.index("void wait_math_epilogue()"))
++    header = header[:end] + """
++    if (ctx.cluster_rank() && ctx.load_thread_id() == 0) {
++      void *ready = __cluster_map_shared_rank(&ctx.smem.math_mbar[kNumStages], 0);
++      mbarrier_arrive<true>(ready);
++    }
++""" + header[end:]
++    include = "#include <humming/memory/g2s_pipeline.cuh>"
++    if kernel.code.count(include) != 1:
++        raise ValueError("missing persistent multicast pipeline")
++    kernel.code = kernel.code.replace(include, header.replace("#pragma once", "", 1))

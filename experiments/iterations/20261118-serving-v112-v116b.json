@@ -1,0 +1,146 @@
+{
+  "at": "2026-11-18T12:35:47.154585+00:00",
+  "objective": 4,
+  "milestone": 3,
+  "measured_best": {
+    "candidate": "V64",
+    "id": "abd217baf0ed49fd",
+    "full_score": 1.4119,
+    "four_load_points": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ]
+  },
+  "rules": {
+    "published": "https://openkernelchallenge.dev/rules#serving-restrictions",
+    "check_date": "2026-11-18",
+    "source_and_flags_verified": true,
+    "runtime_confirmation": [
+      "lossless model output and requested lengths",
+      "peak memory within 2 GB/GPU of stock",
+      "TTFT per load at most twice stock",
+      "throughput at stock user speed"
+    ]
+  },
+  "candidates": {
+    "v113_paired_qkv_prefill": {
+      "patch_bytes": 50430,
+      "sha256": "98570d4ddffa091c72089b3abd3dc5b832b9c2dda7c3814617a6e82802f0da4a",
+      "permitted_sources": 10,
+      "fixed_flags_checked": 76,
+      "hardware_timing": false
+    },
+    "v114_active_expert_schedule": {
+      "patch_bytes": 188340,
+      "sha256": "7f5c4c743b3356b3b2f41050d4228e05c50c53f345bd3f86377e7aba7a02b9e2",
+      "permitted_sources": 32,
+      "fixed_flags_checked": 76,
+      "hardware_timing": false
+    },
+    "v115_conditional_expert_waves": {
+      "patch_bytes": 67945,
+      "sha256": "322abf6de7bf07daceb8f7f7737a90626448b9c80791132ae6412334845dc85d",
+      "permitted_sources": 13,
+      "fixed_flags_checked": 76,
+      "hardware_timing": false
+    },
+    "v116_staged_active_experts": {
+      "patch_bytes": 190243,
+      "sha256": "341ad47ffba45fb7521fa0a4d1795140f65509a9591dfc363772ac434e19beeb",
+      "permitted_sources": 32,
+      "fixed_flags_checked": 76,
+      "hardware_timing": false
+    },
+    "v116b_staged_active_experts_regcap": {
+      "patch_bytes": 190392,
+      "sha256": "8d20646d565613a685baea176e49a91ae5c395ec0bb477600a8f3180f07517b8",
+      "permitted_sources": 32,
+      "fixed_flags_checked": 76,
+      "hardware_timing": false
+    }
+  },
+  "retired": [
+    "v112_exact_prefill_expert_feasibility",
+    "v114_draft_mask_feasibility"
+  ],
+  "jobs": {
+    "V87": {
+      "id": "00c134c978104d65",
+      "status": "queued"
+    },
+    "V88": {
+      "id": "30bb36feb528416f",
+      "status": "queued"
+    },
+    "V93": {
+      "id": "75557c21595347de",
+      "status": "queued"
+    }
+  },
+  "quota": {
+    "resets_at": "2026-11-19T00:00:00Z",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    }
+  },
+  "next_check": {
+    "start_utc": "2026-11-19T00:03:00+00:00",
+    "passing_v87": "V116b/4 versus V87/4",
+    "pending_v87": "V111/32 with scored V64 receipt",
+    "failed_v87": "V80a/16",
+    "pid": 65979,
+    "guard_pid": 65980,
+    "submissions_this_iteration": 0,
+    "scored_actions_this_iteration": 0
+  },
+  "notes": [
+    "V116b combines the V89 dequantizer and a device-built list of all active W13 experts. A check against V87 tests their combined effect.",
+    "V113 and V115 are independent long-prompt experiments without a private slot."
+  ],
+  "runner_cleanup": {
+    "path": "/private/tmp/okc-nov19-rearm-52t3bdk6",
+    "kib": 168,
+    "before_bytes": 46220189696,
+    "after_bytes": 46220341248,
+    "observed_free_delta_bytes": 151552,
+    "old_runner_versions": [
+      "nov19_decode_runner.restore_v11.diff",
+      "nov19_decode_runner.restore_v12.diff"
+    ]
+  }
+}

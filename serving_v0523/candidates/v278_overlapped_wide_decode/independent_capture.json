@@ -1,0 +1,64 @@
+{
+  "torch": "2.5.1",
+  "eligible_after_native_warmup": true,
+  "ordinary_shapes": {
+    "1": {
+      "verification_rows": 8,
+      "plan_bytes_per_rank_layer": 900
+    },
+    "4": {
+      "verification_rows": 32,
+      "plan_bytes_per_rank_layer": 3204
+    },
+    "16": {
+      "verification_rows": 128,
+      "plan_bytes_per_rank_layer": 12420
+    },
+    "32": {
+      "verification_rows": 256,
+      "plan_bytes_per_rank_layer": 24708
+    }
+  },
+  "verified_fallbacks": [
+    "global_forward_pre",
+    "function_mode",
+    "dispatch_mode",
+    "grad_enabled",
+    "router_capture",
+    "experts",
+    "gate",
+    "pre_expert_norm",
+    "_fused_routing_op",
+    "forward_jit",
+    "backend_eligible",
+    "forward_split2",
+    "sol_topk_out",
+    "is_torch_compile",
+    "get_fused_op_backend"
+  ],
+  "registered_router_parallel_plan_accepted": false,
+  "possible_norm_values_in_custom_router_order": [
+    1.0,
+    2.0
+  ],
+  "old_and_new_per_layer_time": "max(P,R)+N+Q versus max(P+N,R+Q) for pool P, routing R, norm N and plan Q; 625 nonnegative cases checked",
+  "v68_16_user_conditional_decode_period_ms": 83.33333333333333,
+  "v68_16_user_saving_per_layer_us_to_scale_decode_period_by_uniform_model": {
+    "3": 597.7788226317106,
+    "4": 757.9381603966417
+  },
+  "scope": "True extracted model constructors, native bound methods, real PyTorch modes and hooks, native in-tree candidate enumeration and dispatch resolution under modeled in-tree platform identity. Sizing uses meta tensors. No CUDA capture or latency measurement.",
+  "source_sha256": {
+    "kernels/fused_op.py": "2042fb5fb0fca33a93dd32fd05c8adc658bf44323840bd0391ef177e161163a9",
+    "kernels/ops/moe/muse_spark_routing.py": "8ef4dfcf1f2d3f8ec1b188edeed54cc0797a42f38ee6aeae8f32b96575f21b84",
+    "srt/layers/muse_spark/muse_spark_layers.py": "930e66da715bae576ae681f2dfd8353a36a9ca469a229d88fa3f77bc1e74cef0",
+    "srt/models/muse_spark.py": "582996c0abe00f893fd35bbbbccd20cfb7277e7d8355f517cf47ec7aa738248c",
+    "srt/layers/muse_spark/muse_spark_fp4_moe.py": "c39848d5577e12be805c20e6b1617dec350dec23d609e1ab01c18bddeb631ded",
+    "srt/layers/muse_spark/muse_spark_humming_moe.py": "5760e322ea02b32100a9fd2360f679ffcbeafaf8a05a97bf6b32f6f75ea52922",
+    "srt/model_executor/runner_backend/full_cuda_graph_backend.py": "4cdf861b6dbf61d2875598602c77855df06910784fcec43c89fc132cc99bf217",
+    "srt/layers/layernorm_sp.py": "58452b3fb33aca00f1720b4f90a1cfddf01bb31e7d6d801c21dda6ce2861e359",
+    "srt/managers/scheduler.py": "cb8f6de62ad1e200df34114cbcffec747e16d667eddbc719ccb9052723e8b4e5",
+    "srt/model_executor/runner/decode_cuda_graph_runner.py": "3cd9da4d67263b2cbb1541a80768988b82428768a9e91cec942f14e3e2880e4a",
+    "srt/state_capturer/routed_experts.py": "6cfa30f29ce607f0c584b5fab586b3b29a4b7d3f04798ebf7189eac8fa89f320"
+  }
+}

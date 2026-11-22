@@ -1,0 +1,190 @@
+diff --git a/python/sglang/srt/arg_groups/fields/parallel.py b/python/sglang/srt/arg_groups/fields/parallel.py
+index 9bd0b1c..912331f 100644
+--- a/python/sglang/srt/arg_groups/fields/parallel.py
++++ b/python/sglang/srt/arg_groups/fields/parallel.py
+@@ -239,6 +239,10 @@ class Parallel(msgspec.Struct):
+         bool,
+         "Shard dense MLP weights across the attention TP group under DP attention.",
+     ] = False
++    muse_shard_expert_projections: A[
++        bool,
++        "Shard the dense Muse expert input and output projection weights across tensor-parallel ranks.",
++    ] = False
+     enable_layernorm_sp: A[
+         bool,
+         "Enable Megatron-style sequence parallelism (arXiv:2205.05198) for the "
+diff --git a/python/sglang/srt/layers/muse_spark/projection.py b/python/sglang/srt/layers/muse_spark/projection.py
+new file mode 100644
+index 0000000..fadbddb
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/projection.py
+@@ -0,0 +1,74 @@
++"""Dense Muse expert projections with tensor-parallel checkpoint ownership."""
++
++import torch
++
++from sglang.srt.layers.linear import ColumnParallelLinear
++from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++from sglang.srt.runtime_context import get_exec, get_forward, get_model, get_parallel
++
++
++def use_sharded_expert_projections(in_features, out_features):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++
++    parallel = get_parallel()
++    if not parallel.muse_shard_expert_projections or parallel.tp_size == 1:
++        return False
++    group = parallel.tp_group
++    if group is None or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return False
++    ready = (
++        parallel.tp_size == parallel.moe_ep_size == parallel.attn_tp_size
++        and parallel.attn_tp_group.ranks == parallel.tp_group.ranks
++        and in_features % parallel.tp_size == 0
++        and out_features % parallel.tp_size == 0
++        and get_model().load_format in ("auto", "safetensors", "pt")
++        and torch.get_default_dtype() == torch.bfloat16
++        and torch.cuda.is_available()
++        and torch.cuda.get_device_capability()[0] == 9
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not is_batch_invariant_mode_enabled()
++    )
++    # Vote once, before any rank commits to a different checkpoint layout.
++    status = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    return bool(status.item())
++
++
++class MuseShardedExpertProjection(ColumnParallelLinear):
++    """Each rank owns output rows and computes every dot over the full K dimension."""
++
++    def __init__(self, in_features, out_features, prefix):
++        super().__init__(
++            in_features, out_features, bias=False, quant_config=None, prefix=prefix,
++            parallel_group="tp",
++        )
++
++    def forward(self, x):
++        group = self.tp_group
++        ranks = group.world_size
++        rows, features = x.shape
++        width = self.weight.shape[0]
++        if rows == 0:
++            return x.new_empty((0, width * ranks))
++        if not get_forward().sp_active:
++            # The input is replicated. Send only the finished output columns,
++            # unless copying the frozen weights moves fewer elements per rank.
++            if rows < features:
++                local = bf16_gemm_dispatch(x, self.weight, None)
++                return group.all_gather(local, dim=1)
++        elif rows * (features + width) < width * features:
++            # Each source owns different tokens. Project all gathered token shards
++            # against our columns, then return each completed block to its owner.
++            whole = group.all_gather(x.contiguous(), dim=0)
++            projected = bf16_gemm_dispatch(whole, self.weight, None).contiguous()
++            received = torch.empty_like(projected)
++            # The graph-safe PyNccl wrapper splits dimension zero in flat elements.
++            group.all_to_all_single(received.view(-1), projected.view(-1))
++            return received.view(ranks, rows, width).transpose(0, 1).reshape(rows, ranks * width)
++        # Long sequence-parallel shards can move fewer bytes by gathering the
++        # weights and leaving every activation on its original token owner.
++        weight = group.all_gather(self.weight, dim=0)
++        return bf16_gemm_dispatch(x, weight, None)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 46a283f..f260679 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -72,6 +72,10 @@ from sglang.srt.layers.linear import (
+ )
+ from sglang.srt.layers.logits_processor import LogitsProcessor as OSSLogitsProcessor
+ from sglang.srt.layers.moe.topk import StandardTopKOutput
++from sglang.srt.layers.muse_spark.projection import (
++    MuseShardedExpertProjection,
++    use_sharded_expert_projections,
++)
+ from sglang.srt.layers.muse_spark.muse_spark_bf16_moe import MuseSpark1xBf16Experts
+ from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
+ from sglang.srt.layers.muse_spark.muse_spark_layers import (
+@@ -481,6 +485,7 @@ class MuseSpark1xMoE(nn.Module):
+         nvfp4_checkpoint: bool,
+         prefix: str,
+         quant_config: Optional[QuantizationConfig] = None,
++        shard_expert_projections: bool = False,
+     ):
+         super().__init__()
+         if config.num_shared_experts:
+@@ -541,6 +546,13 @@ class MuseSpark1xMoE(nn.Module):
+                     quant_config=quant_config,
+                     prefix=add_prefix("post_expert_proj", prefix),
+                 )
++            elif nvfp4_checkpoint and shard_expert_projections:
++                self.pre_expert_proj = MuseShardedExpertProjection(
++                    self.hidden_size, self.expert_hidden_size, add_prefix("pre_expert_proj", prefix)
++                )
++                self.post_expert_proj = MuseShardedExpertProjection(
++                    self.expert_hidden_size, self.hidden_size, add_prefix("post_expert_proj", prefix)
++                )
+             else:
+                 self.pre_expert_proj = nn.Linear(
+                     self.hidden_size, self.expert_hidden_size, bias=False
+@@ -736,6 +748,16 @@ class MuseSpark1xMoE(nn.Module):
+         ):
+             output = tensor_model_parallel_all_reduce(output)
+         if self.post_expert_proj is not None:
++            if isinstance(self.post_expert_proj, MuseShardedExpertProjection):
++                proj = self.post_expert_proj
++                if (
++                    not get_forward().sp_active
++                    and output.dtype == torch.bfloat16
++                    and self._defers_unpool_gather(proj.tp_group.ca_comm, output.shape[0])
++                ):
++                    # The next FFN boundary gathers exactly these local output columns.
++                    return bf16_gemm_dispatch(output, proj.weight, None)
++                return proj(output)
+             if _is_cpu:
+                 output, _ = self.post_expert_proj(output)
+                 return output
+@@ -821,6 +843,8 @@ class MuseSpark1xMoE(nn.Module):
+         # nn.Linear bypasses the bf16 GEMM dispatcher.
+         if self.pre_expert_proj is None:
+             expert_input = hidden_states
++        elif isinstance(self.pre_expert_proj, MuseShardedExpertProjection):
++            expert_input = self.pre_expert_proj(hidden_states)
+         elif _is_cpu:
+             expert_input, _ = self.pre_expert_proj(hidden_states)
+         else:
+@@ -962,6 +986,7 @@ class MuseSpark1xDecoderLayer(nn.Module):
+         nvfp4_checkpoint: bool,
+         prefix: str,
+         quant_config: Optional[QuantizationConfig] = None,
++        shard_expert_projections: bool = False,
+     ):
+         super().__init__()
+         self.layer_idx = layer_idx
+@@ -1004,6 +1029,7 @@ class MuseSpark1xDecoderLayer(nn.Module):
+                 nvfp4_checkpoint,
+                 add_prefix("mlp", prefix),
+                 quant_config,
++                shard_expert_projections=shard_expert_projections,
+             )
+             if self.is_moe_layer
+             else MuseSpark1xMLP(config, add_prefix("mlp", prefix))
+@@ -1125,6 +1151,7 @@ class MuseSpark1xModel(nn.Module):
+         # torch.cuda.Stream() raises outright in a CPU-only build, so the CPU
+         # path never builds one; _forward_experts skips the overlap there.
+         side_stream = None if _is_cpu else torch.cuda.Stream()
++        shard_expert_projections = use_sharded_expert_projections(config.hidden_size, config.moe_hidden_size)
+         for layer_idx in range(config.num_hidden_layers):
+             layer_prefix = add_prefix(f"layers.{layer_idx}", prefix)
+             layer = MuseSpark1xDecoderLayer(
+@@ -1133,6 +1160,7 @@ class MuseSpark1xModel(nn.Module):
+                 _uses_nvfp4_experts(quant_config, layer_prefix),
+                 layer_prefix,
+                 quant_config,
++                shard_expert_projections=shard_expert_projections,
+             )
+             if layer.is_moe_layer:
+                 layer.mlp.side_stream = side_stream

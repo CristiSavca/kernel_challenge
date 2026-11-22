@@ -1,0 +1,173 @@
+{
+  "candidate": "V290",
+  "parent": "V289",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_tree": "bd28b7bbeabf0fe250a481e3a96753c2088089b0",
+  "tree": "a024fdaa7a134625083a6557fd5a6e05a0894e44",
+  "patch_sha256": "7447546233cc23eff964102d160c184e0e9831c97a2ba0f019a31c3ac93b55e8",
+  "delta_sha256": "e08f3007d824c6f0508e3ec0ffc142891e39ebb0a73e878f25d649225574613b",
+  "bytes": 391998,
+  "delta_bytes": 36881,
+  "max_added_line": 147,
+  "parent_sha256": "a0c4736a58123f20ff81edcfef81b4ffc4645efea59f02b2343f74e72627fce3",
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/residual_prompt_mma.cuh",
+    "python/sglang/kernels/ops/attention/batched_prompt_kv.py",
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py",
+    "python/sglang/kernels/ops/moe/muse_spark_peer_pack.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/sampling/softcap_row_argmax.py",
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/arg_groups/overrides.py",
+    "python/sglang/srt/arg_groups/prefill_buffer_ceiling.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/direct_prompt_kv.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py",
+    "python/sglang/srt/layers/dflash_context_projection.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/logits_processor.py",
+    "python/sglang/srt/layers/muse_spark/decode_gate_up.py",
+    "python/sglang/srt/layers/muse_spark/decode_mma_pair.py",
+    "python/sglang/srt/layers/muse_spark/live_decode_reduce.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py",
+    "python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py",
+    "python/sglang/srt/layers/muse_spark/residual_prompt_mma.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/managers/schedule_batch.py",
+    "python/sglang/srt/managers/scheduler.py",
+    "python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py",
+    "python/sglang/srt/managers/scheduler_components/weight_updater.py",
+    "python/sglang/srt/managers/tp_worker.py",
+    "python/sglang/srt/managers/utils.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/model_executor/forward_batch_info.py",
+    "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py",
+    "python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+    "python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py",
+    "python/sglang/srt/models/dflash.py",
+    "python/sglang/srt/models/muse_spark.py",
+    "python/sglang/srt/runtime_context.py",
+    "python/sglang/srt/speculative/dflash_info.py",
+    "python/sglang/srt/speculative/dflash_mixed_forward.py",
+    "python/sglang/srt/speculative/dflash_mixed_graph_admission.py",
+    "python/sglang/srt/speculative/dflash_worker_v2.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_peer_pack.py",
+    "python/sglang/srt/arg_groups/overrides.py",
+    "python/sglang/srt/arg_groups/prefill_buffer_ceiling.py",
+    "python/sglang/srt/layers/attention/direct_prompt_kv.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py",
+    "python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py",
+    "python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+    "python/sglang/srt/models/muse_spark.py",
+    "python/sglang/srt/runtime_context.py",
+    "python/sglang/srt/speculative/dflash_mixed_forward.py",
+    "python/sglang/srt/speculative/dflash_mixed_graph_admission.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": "",
+    "--speculative-dflash-mixed-prefill": "",
+    "--max-prefill-tokens": "16640",
+    "--cuda-graph-max-bs-prefill": "16640"
+  },
+  "component_trees": {
+    "229": "fab843fba01f208bed745d72b99c718f137f5785",
+    "230": "f8c67318466a1aa4181cfcf7a847414f7990b256",
+    "231": "10397200f6d4a7b3e76aac00a0ee22ed7a8d05ff",
+    "232": "3a2b183921c0d7e716a24252c50f10af659618f3",
+    "233": "0c431e0b7b0c3871770fb7b13300d0ed4f4d6719",
+    "279": "f8c2c4055b660f859f7d075dede43293130d9c85",
+    "284": "f03597033db52d3fe58c559b430b5a79c53e101a",
+    "286": "46d6cff688e08f538f30126f84f4bef2421e87c2",
+    "289": "bd28b7bbeabf0fe250a481e3a96753c2088089b0"
+  },
+  "component_orderings": 60,
+  "unique_prefix_trees": 24,
+  "combined_dispatch_sources": {
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "8ada233a3605b2376b016fe4288a7a150f4f382f9628b1e4b028c96ddf203a1c",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da",
+    "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b"
+  },
+  "identical_component_sources": {
+    "233": {
+      "python/sglang/kernels/ops/moe/muse_spark_peer_pack.py": "795b4fef26067656d3a682541778d64474a04c72291098e470107fcc42ecad22",
+      "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py": "f516b3b301cd961d5e532bcacac9896490cea4e40c7935ace11ccda4bbf29e9d",
+      "python/sglang/srt/speculative/dflash_mixed_graph_admission.py": "811770eb7dddaacdb5389feb3654733c4ca3ccc4284ee4515a0a1ea90c159839",
+      "python/sglang/srt/speculative/dflash_mixed_forward.py": "de6ae7d9c9fb51b54943d12046caff8e93a7b7511761a4391fa1e331b62d512d",
+      "python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py": "3b0a6ed9ac45fe75addb5f9fbdf8538b8c42a0f2b8c86df9ac472fb7c9f8b93c",
+      "python/sglang/srt/layers/attention/direct_prompt_kv.py": "dfacb995b02b76c53911bac24b4583472c1935e6878ddcd647d4de39b1716ee5"
+    },
+    "289": {
+      "python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh": "9a1dc3db3505a03ec2f44ef1042cdf690d1af1c3d9b0ba98c77f6f7571d6459e",
+      "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9",
+      "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py": "4e58078afd4131c7c43672e55864dd2dd04c15259cca0c2ba2e80af5e83aba21",
+      "python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py": "62c2761407787f1d2d06ecb83769b9623f3d29cff843c1a463ab419934fcc496",
+      "python/sglang/srt/model_executor/forward_batch_info.py": "196ca656ee017f3cff66262e2aad9d93e454005f2ca7c9020bd4b2c257bac80f"
+    }
+  },
+  "V286_matching_transport_methods": [
+    "PeerPromptInputs",
+    "peer_storage_rows",
+    "prepare_peer_prompt_inputs"
+  ],
+  "bound_runtime_replays": {
+    "peer_grouped": {
+      "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py": "3e5dcfe170e6eb3b8bf47504bdefe70dc14d89535af4258edc2d689dd45446a7",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da",
+      "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b"
+    },
+    "peer_ordering": {
+      "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py": "3e5dcfe170e6eb3b8bf47504bdefe70dc14d89535af4258edc2d689dd45446a7",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da",
+      "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b",
+      "python/sglang/srt/layers/layernorm_sp.py": "24bb5a0581b366c1da0326b3f9f0a034ef3213653b88157d79f31b8956bb1993",
+      "python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py": "1e46fabc0b61c4e2ee5d0293a89fcb5d800f7cba3bb92f57627b4e1f16f0695a"
+    },
+    "ranked_vote": {
+      "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b",
+      "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9"
+    },
+    "ranked_model": {
+      "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da",
+      "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "8ada233a3605b2376b016fe4288a7a150f4f382f9628b1e4b028c96ddf203a1c",
+      "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9"
+    },
+    "independent_transitions": {
+      "python/sglang/srt/models/muse_spark.py": "569ad37187165d564745e64df7c2a4ee973f98aca15101eaa33beca347e8bb0b",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "abfccb2d1ca741509ddbe002a3e9cc1e42e86c335256a9dd44ae6dde6feee3da",
+      "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py": "3e5dcfe170e6eb3b8bf47504bdefe70dc14d89535af4258edc2d689dd45446a7"
+    }
+  },
+  "physical_h200": false
+}

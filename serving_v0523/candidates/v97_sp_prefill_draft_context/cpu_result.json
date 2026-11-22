@@ -1,0 +1,18 @@
+{
+  "torch": "2.5.1",
+  "collective": "actual Gloo all_gather_into_tensor, all_gather, all_reduce(MIN)",
+  "tp_sizes": [
+    2,
+    4,
+    8
+  ],
+  "cases_per_size": 10,
+  "checks": [
+    "source MuseSpark forward and SP exit gather",
+    "source LogitsProcessor FULL capture",
+    "source normalized worker FC/KV boundary",
+    "BF16 logits/FC/normalized KV inputs/positions/slots bit-identical GE integer fixtures",
+    "short/tail/bucket/trim/external/hook/deterministic/dtype/nested exception"
+  ],
+  "h200_executed": false
+}

@@ -1,0 +1,65 @@
+{
+  "decision": "Retain V278 M8 W2. Reject cross-warp packed-weight sharing and retained dual-layout/per-pass materialization as the next check.",
+  "M8_kernel": {
+    "source_sha256": "44ca026d8bec8a20f925f3c628cd4c5468bf7029d45d0b8f0922af6e0bf0cf34",
+    "matched_cubin_sha256": "ccf6b7556df5bcae7a4d341167c3d4e1e1a521c63c82e6d72cd52d0b6fba34de",
+    "regs": 96,
+    "stack_store_load": [
+      0,
+      0,
+      0
+    ],
+    "inner_loop_instruction_sites": 1146
+  },
+  "hashes": {
+    "serving_v0523/candidates/v275_wide_decode_output_tiles/assembly.json": "3c51115ab27f10c021d106af3b8a1c8495f8d9b3bc5c410918362215159c4dde",
+    "serving_v0523/candidates/v278_overlapped_wide_decode/selected_codegen.json": "23ee72b4e170babcdee42a86888aaa4f779696b12c93697dfde072fbe22693fb",
+    "experiments/modal_serving/20261112T191039Z/result.json": "5d49c6c7a47c8597057d7a75cb9c18c46ea85c673cae92afb5c740aad8bbf555",
+    "experiments/iterations/20261104-moe-hardware-profile-recovered.json": "0921485edb8a6494302288956fe1ef3614e7980f5fbf84fd831f27977a4c36b7"
+  },
+  "wheel": "cd3ef712a93f3a9075ea99de2c72bcd3ec89dab3759b3a248d869f5507b60331",
+  "header_sha256": {
+    "memory/s2r_loader/loader_b.cuh": "7b7cd6560ebb3fa8a15565e39890a578e4ec4b12735b5e6977670976e62149ef",
+    "memory/s2r_loader/loader_bs.cuh": "21cc0742c22101d9b62dd5276d735e57147dfad3c1031bb4079eaf7cbf26f37f",
+    "datatype/dequant.cuh": "0533cd1ce425a3c071babeed20bc69814057cc3a8bab7c6baf1f03f7436fe3f4"
+  },
+  "per_CTA_K256": {
+    "unique_packed_words": 4096,
+    "unique_FP4_values": 32768,
+    "owners_per_weight_word": 1,
+    "distinct_scale_bytes": 2048,
+    "lane_uses_per_scale_byte": 4,
+    "same_word_reuse_removed": 0,
+    "negative_control_halfgroup_parity_deleted": {
+      "unique_words": 2048,
+      "owners_per_word": 2
+    }
+  },
+  "uniform_M8": {
+    "expected_local_experts": 7.177603848249419,
+    "expected_W2_weight_scale_MiB": 64.59843463424477,
+    "expected_requested_W2_A_MiB": 14.355207696498837,
+    "expected_one_read_per_M_tile_A_MiB": 0.44860024051558867,
+    "batch_repack_extra_logical_read_write_MiB": 129.19686926848954,
+    "perfect_50_MiB_L2_excess_MiB": 17.240377118085394,
+    "prob_second_bank_larger_than_50_MiB": 0.7700268479271393,
+    "toy_route_sequences_checked": 3375
+  },
+  "retained_all_layers_and_experts": {
+    "local_experts": 32,
+    "layers": 62,
+    "W2_bank_GiB": 17.4375,
+    "W2_bank_bytes": 18723373056
+  },
+  "H200": {
+    "M8_whole_stock_Marlin_expert_us": 129.79,
+    "M8_whole_V40_Marlin_expert_us": 123.62,
+    "M8_local_routes": 10,
+    "observed_M8_unique_experts_min": 2,
+    "observed_M8_unique_experts_max": 10,
+    "M32_separate_standalone_DRAM_MiB": 435.795166015625,
+    "M32_unique_all_weight_MiB": 432.0,
+    "M32_other_DRAM_MiB": 3.795166015625
+  },
+  "scope": "FP4 word ownership is exact for every M8 histogram: each expert fits in one row tile. Route probabilities assume independent uniform distinct top-eight choices per token. A and repack volumes count requests, not DRAM traffic. The capacities use a generous entire 50 MiB L2 for one bank."
+}

@@ -1,0 +1,43 @@
+{
+  "tree": "9d41012616c54041562eb86e3292ca769d8dbc8c",
+  "patch_sha256": "fc6a445d70bcbabe89031c1e1063785d2e9953f93792301de7810e43c3323e89",
+  "per_size": {
+    "1": {
+      "buffer_count": 0,
+      "bytes": 0
+    },
+    "3": {
+      "buffer_count": 2,
+      "bytes": 856
+    },
+    "15": {
+      "buffer_count": 2,
+      "bytes": 1048
+    },
+    "32": {
+      "buffer_count": 2,
+      "bytes": 1320
+    }
+  },
+  "dispatches": {
+    "False": 135,
+    "native": 9,
+    "True": 375
+  },
+  "regressions": [
+    "same-pointer lengths and two replay steps per bucket",
+    "independent concurrent metadata owners",
+    "eager metadata creation and replacement",
+    "same-bucket recapture and ragged padded q offsets",
+    "different length/cu tensors and changed head geometry",
+    "historical captured addresses remain current when current policy changes",
+    "injected second-raster launch error followed by same-address retry"
+  ],
+  "source_sha256": {
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py": "585e2f3c0dbccdf9d3059971cbb2382ea02868bb4a2f4590161c7e9df65fc745",
+    "python/sglang/kernels/ops/attention/metadata.py": "e2b26b6c66f78fdca72353d54b4f3501a2c9203fbeceaac2fb1df40a5b2a68f6",
+    "python/sglang/srt/layers/attention/flashattention_backend.py": "fbaa24ecd99733865dd7078a657e7bc561742b69844de2c80f3819efef2c9209"
+  },
+  "scope": "Production backend graph/capture update, real pager and per-layer dispatch. Native metadata, raster and attention CUDA launches use checked host probes.",
+  "physical_H200": false
+}

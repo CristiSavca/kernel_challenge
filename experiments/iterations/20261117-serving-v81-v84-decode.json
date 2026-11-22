@@ -1,0 +1,82 @@
+{
+  "checked_at_utc": "2026-11-17T23:22:08.794265+00:00",
+  "goal": "3x full serving score",
+  "incumbent": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "peak_over_stock_gb": 1.9,
+    "stock_point_ratio_by_users": {
+      "1": 1.17,
+      "4": 1.316,
+      "16": 1.5919,
+      "32": 1.6213
+    },
+    "receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+  },
+  "v68": {
+    "job": "04b01f958aa5487c",
+    "status": "queued"
+  },
+  "candidates": {
+    "v81": {
+      "change": "Normalize and stage each participating input once in grouped target MoE decode.",
+      "patch": "serving_v0523/candidates/v81_token_owned_expert_inputs/patch.diff",
+      "sha256": "b3662cea54b86f0f4b463adcf430473184be50f82e2ff2b9467b28e717671966",
+      "bytes": 154159,
+      "files": 28,
+      "h200": "pending"
+    },
+    "v82": {
+      "change": "Project compacted committed target tree rows into draft context.",
+      "patch": "serving_v0523/candidates/v82_committed_draft_context/patch.diff",
+      "sha256": "669689a36ae624158cf3706a061d0605eaa982cfcf62e4d16c1de6ac21e1b9d7",
+      "bytes": 155741,
+      "files": 29,
+      "h200": "pending"
+    },
+    "v83": {
+      "change": "Shard target router output and co-gather FP32 logits with the BF16 pooler output.",
+      "patch": "serving_v0523/candidates/v83_sharded_router_pooler/patch.diff",
+      "sha256": "bae9bc7a0a26ea3aadbbef8c80cd5049e8dd078673a3986d4407e110050a9dc4",
+      "bytes": 157318,
+      "files": 29,
+      "h200": "pending"
+    },
+    "v84": {
+      "change": "Combine V81, V82 and V83 on V80 at width eight.",
+      "patch": "serving_v0523/candidates/v84_routed_decode_committed_context/patch.diff",
+      "sha256": "8dafee38e53c17a484217016c9f0858b9f2b9bee1969af0818552e97818d298e",
+      "bytes": 168614,
+      "files": 30,
+      "h200": "pending"
+    }
+  },
+  "nov18_utc": {
+    "candidates": [
+      "V79",
+      "V72",
+      "V76"
+    ],
+    "runner": "serving_v0523/runs/nov18_decode_runner.launch.json",
+    "requires_v68_pass": [
+      "V72",
+      "V76"
+    ]
+  },
+  "nov19_utc": {
+    "plan": "armed matched private checks",
+    "users": 16,
+    "tree_width": 8,
+    "candidates": [
+      "V80",
+      "V84"
+    ],
+    "prerequisites": [
+      "identified pending or passing V68; no known failed common parent or ambiguous submission",
+      "available private quota"
+    ],
+    "v84_flag_added": "speculative-dflash-compact-context",
+    "arm_receipt": "serving_v0523/runs/nov19_decode_runner.launch.json"
+  }
+}

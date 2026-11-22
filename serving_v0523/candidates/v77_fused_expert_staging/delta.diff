@@ -1,0 +1,154 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index e02da27..b829764 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2026,6 +2026,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_A_MULTICAST = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 572b58e..19cceed 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -304,6 +304,59 @@ def _gather_grouped_decode(
+         tl.store(output + row * HIDDEN + width, values, mask=width < HIDDEN)
+ 
+ 
++@triton.jit
++def _stage_grouped_decode(
++    global_ids, expert_map, hidden_states, local_ids, offsets, row_keys, row_map, output,
++    slots, GLOBAL_EXPERTS: tl.constexpr, EXPERTS: tl.constexpr, HAS_MAP: tl.constexpr,
++    TOPK: tl.constexpr, HIDDEN: tl.constexpr, SLOT_SPAN: tl.constexpr,
++    TILE: tl.constexpr, ROWS: tl.constexpr, WIDTH: tl.constexpr,
++):
++    expert = tl.program_id(0)
++    tile_start = tl.program_id(1) * TILE
++    all_slots = tl.arange(0, SLOT_SPAN)
++    ids = tl.load(global_ids + all_slots, mask=all_slots < slots, other=-1)
++    valid = (ids >= 0) & (ids < GLOBAL_EXPERTS)
++    if HAS_MAP:
++        ids = tl.load(expert_map + ids, mask=valid, other=-1)
++    else:
++        ids = tl.where(valid, ids, -1)
++    ids = ids.to(tl.int32)
++    # Local routes occupy a suffix in expert order, then original slot order.
++    # Count all later experts and this expert's remaining slots to obtain
++    # this tile's absolute row. Each CTA works independently during replay.
++    later = (ids < EXPERTS) & ((ids > expert) | ((ids == expert) & (all_slots >= tile_start)))
++    first = slots - tl.sum(later.to(tl.int32), 0)
++    if tile_start == 0:
++        tl.store(offsets + expert, first)
++        if expert == 0:
++            tl.store(offsets + EXPERTS, slots)
++
++    lanes = tl.arange(0, TILE)
++    slot = tile_start + lanes
++    tile_ids = tl.gather(ids, tl.minimum(slot, SLOT_SPAN - 1), 0)
++    live = (slot < slots) & (tile_ids == expert)
++    rank = tl.cumsum(live.to(tl.int32), 0) - 1
++    row = first + rank
++    tl.store(row_map + slot, row, mask=live)
++    tl.store(row_keys + row, (expert + 1) * SLOT_SPAN + slot, mask=live)
++    if expert == 0:
++        tl.store(local_ids + slot, tile_ids, mask=slot < slots)
++        remote = (tile_ids < 0) | (tile_ids >= EXPERTS)
++        tl.store(row_map + slot, -1, mask=(slot < slots) & remote)
++
++    count = tl.sum(live.to(tl.int32), 0)
++    width = tl.arange(0, WIDTH)
++    for base in range(0, count, ROWS):
++        rows = base + tl.arange(0, ROWS)
++        # Recover the original slot for each of these consecutive live rows.
++        source = tl.max(tl.where(live[None, :] & (rank[None, :] == rows[:, None]),
++                                 slot[None, :], 0), 1)
++        mask = (rows[:, None] < count) & (width[None, :] < HIDDEN)
++        x = tl.load(hidden_states + (source // TOPK)[:, None] * HIDDEN + width[None, :],
++                    mask=mask, other=0)
++        tl.store(output + (first + rows)[:, None] * HIDDEN + width[None, :], x, mask=mask)
++
++
+ def humming_decode_eligible(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+@@ -340,39 +393,50 @@ def humming_grouped_decode_outputs(
+     row_keys = local_ids.new_empty(slots)
+     row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+-    _plan_grouped_decode[(1,)](
+-        topk_ids,
+-        expert_map if expert_map is not None else topk_ids,
+-        local_ids,
+-        offsets,
+-        row_keys,
+-        row_map,
+-        slots,
+-        EXPERTS=experts,
+-        GLOBAL_EXPERTS=layer.global_num_experts,
+-        HAS_EXPERT_MAP=expert_map is not None,
+-        SLOT_SPAN=span,
+-        EXPERT_SPAN=triton.next_power_of_2(experts + 1),
+-        num_warps=4 if span <= 256 else 8,
+-    )
+     staging = hidden_states.new_empty(slots * intermediate)
+     arena = hidden_states.new_empty(slots * max(2 * intermediate, hidden_size))
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+     gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
+     activations = staging[: slots * intermediate].view(slots, intermediate)
+     outputs = arena[: slots * hidden_size].view(slots, hidden_size)
+-    _gather_grouped_decode[(min(slots, 128),)](
+-        hidden_states,
+-        row_keys,
+-        offsets,
+-        inputs,
+-        slots,
+-        TOPK=topk,
+-        HIDDEN=hidden_size,
+-        SLOT_SPAN=span,
+-        BLOCK=triton.next_power_of_2(hidden_size),
+-        num_warps=8 if hidden_size >= 4096 else 4,
+-    )
++    if hidden_size <= 8192 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get():
++        tile = min(span, 128)
++        _stage_grouped_decode[(experts, triton.cdiv(slots, tile))](
++            topk_ids, expert_map if expert_map is not None else topk_ids,
++            hidden_states, local_ids, offsets, row_keys, row_map, inputs, slots,
++            GLOBAL_EXPERTS=layer.global_num_experts, EXPERTS=experts,
++            HAS_MAP=expert_map is not None, TOPK=topk, HIDDEN=hidden_size,
++            SLOT_SPAN=span, TILE=tile, ROWS=4, WIDTH=triton.next_power_of_2(hidden_size),
++            num_warps=8,
++        )
++    else:
++        _plan_grouped_decode[(1,)](
++            topk_ids,
++            expert_map if expert_map is not None else topk_ids,
++            local_ids,
++            offsets,
++            row_keys,
++            row_map,
++            slots,
++            EXPERTS=experts,
++            GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None,
++            SLOT_SPAN=span,
++            EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            num_warps=4 if span <= 256 else 8,
++        )
++        _gather_grouped_decode[(min(slots, 128),)](
++            hidden_states,
++            row_keys,
++            offsets,
++            inputs,
++            slots,
++            TOPK=topk,
++            HIDDEN=hidden_size,
++            SLOT_SPAN=span,
++            BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if hidden_size >= 4096 else 4,
++        )
+ 
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+     for name, source, destination in (

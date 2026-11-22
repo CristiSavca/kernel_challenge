@@ -1,0 +1,260 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+new file mode 100644
+index 0000000..cfad8f1
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+@@ -0,0 +1,174 @@
++#include "expert_route_pair.cuh"
++
++namespace sglang {
++namespace muse_medium_route_pair {
++
++using namespace muse_route_pair;
++
++// An entire warp owns one compact list. Negative IDs and other experts do
++// not contribute. The published count bounds all accesses on graph replay.
++__global__ void plan_rows(const int32_t* ids, int32_t* plan, uint32_t slots) {
++  const uint32_t lane = threadIdx.x, expert = blockIdx.x;
++  int32_t* list = plan + size_t(expert) * (slots + 1);
++  uint32_t count = 0;
++  for (uint32_t first = 0; first < slots; first += 32) {
++    const uint32_t index = first + lane;
++    const bool live = index < slots && ids[index] == static_cast<int32_t>(expert);
++    const uint32_t mask = __ballot_sync(0xffffffffu, live);
++    if (live) list[1 + count + __popc(mask & ((1u << lane) - 1))] = index;
++    count += __popc(mask);
++  }
++  if (lane == 0) list[0] = count;
++}
++
++struct Inputs {
++  uint32_t lo, hi;
++};
++
++template <unsigned Groups>
++SGL_DEVICE void contract_rows(
++    float4 (&out)[Groups][4], const Bank bank, size_t base, const Inputs (&x)[Groups]) {
++  const uint32_t lane = threadIdx.x % 32;
++  using Words = AlignedVector<uint32_t, 4>;
++  using Scales = AlignedVector<uint16_t, 4>;
++  const auto w = *reinterpret_cast<const Words*>(bank.weight + 2 * base + lane * 4);
++  const auto s = *reinterpret_cast<const Scales*>(bank.scale + base + (lane / 4) * 8);
++#pragma unroll
++  for (uint32_t part = 0; part < 4; ++part) {
++    const uint32_t low = broadcast_scale(s[part] & 255), high = broadcast_scale(s[part] >> 8);
++    const uint32_t a0 = operand_pair(w[part], low, 0), a1 = operand_pair(w[part], high, 1);
++    const uint32_t a2 = operand_pair(w[part], low, 2), a3 = operand_pair(w[part], high, 3);
++#pragma unroll
++    for (uint32_t g = 0; g < Groups; ++g) {
++      auto& d = out[g][part];
++      asm volatile(
++          "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 "
++          "{%0,%1,%2,%3},{%4,%5,%6,%7},{%8,%9},{%0,%1,%2,%3};"
++          : "+f"(d.x), "+f"(d.y), "+f"(d.z), "+f"(d.w)
++          : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(x[g].lo), "r"(x[g].hi));
++    }
++  }
++}
++
++template <bool Gate, unsigned Groups>
++SGL_DEVICE void project_rows(const Projection& p, uint32_t expert, const int32_t* slots,
++                             uint32_t live, uint32_t column) {
++  const uint32_t lane = threadIdx.x % 32;
++  const bf16_t* inputs[Groups];
++#pragma unroll
++  for (uint32_t g = 0; g < Groups; ++g) {
++    const uint32_t row = 8 * g + lane / 4;
++    inputs[g] = nullptr;
++    if (row < live) inputs[g] = p.inputs + size_t(slots[row] / p.top_k) * p.input_width + 2 * (lane % 4);
++  }
++  const uint32_t width = Gate ? 2 * p.output_width : p.output_width;
++  float4 first[Groups][4] = {}, second[Groups][4] = {};
++  for (uint32_t k = 0; k < p.input_width; k += 16) {
++    Inputs x[Groups] = {};
++#pragma unroll
++    for (uint32_t g = 0; g < Groups; ++g) {
++      if (inputs[g]) {
++        x[g].lo = *reinterpret_cast<const uint32_t*>(inputs[g] + k);
++        x[g].hi = *reinterpret_cast<const uint32_t*>(inputs[g] + k + 8);
++      }
++    }
++    const size_t base = (size_t(expert) * (p.input_width / 16) + k / 16) * width + column;
++    contract_rows(first, p.bank, base, x);
++    if constexpr (Gate) contract_rows(second, p.bank, base + p.output_width, x);
++  }
++  const float scale = cast<float>(p.global[expert]);
++#pragma unroll
++  for (uint32_t g = 0; g < Groups; ++g) {
++#pragma unroll
++    for (uint32_t part = 0; part < 4; ++part) {
++      const auto& f = first[g][part];
++      const auto& s = second[g][part];
++      const float a[] = {f.x, f.y, f.z, f.w}, b[] = {s.x, s.y, s.z, s.w};
++#pragma unroll
++      for (uint32_t i = 0; i < 4; ++i) {
++        const uint32_t row = 8 * g + 2 * (lane % 4) + i % 2;
++        if (row < live) {
++          float value = scaled_bf16(a[i], scale);
++          if constexpr (Gate) value = apply_activation_f32<ActivationKind::kSiLU>(value) * scaled_bf16(b[i], scale);
++          const uint32_t n = column + part * 16 + lane / 4 + (i / 2) * 8;
++          p.outputs[size_t(slots[row]) * p.output_width + n] = cast<bf16_t>(value);
++        }
++      }
++    }
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * kWarps) void projection(const __grid_constant__ Projection p, uint32_t stride) {
++  const uint32_t expert = blockIdx.y;
++  const int32_t* list = p.plan + size_t(expert) * stride;
++  const uint32_t rows = list[0];
++  const uint32_t column = (blockIdx.x * kWarps + threadIdx.x / 32) * 64;
++  // W13 owns both gate and up accumulators. A 16-row cap keeps its register
++  // footprint close to W2's 32-row case even when few expert rows are live.
++  constexpr uint32_t tile_rows = Gate ? 16 : 32;
++  for (uint32_t first = 0; first < rows; first += tile_rows) {
++    const int32_t* slots = list + 1 + first;
++    const uint32_t live = min(tile_rows, rows - first);
++    if (live <= 8) {
++      project_rows<Gate, 1>(p, expert, slots, live, column);
++    } else if constexpr (Gate) {
++      project_rows<true, 2>(p, expert, slots, live, column);
++    } else if (live <= 16) {
++      project_rows<false, 2>(p, expert, slots, live, column);
++    } else {
++      project_rows<false, 4>(p, expert, slots, live, column);
++    }
++  }
++}
++}  // namespace muse_medium_route_pair
++
++struct MuseMediumRoutePair {
++  static void run(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan) {
++    using namespace host;
++    using namespace muse_medium_route_pair;
++    auto m = SymbolicSize{"tokens"}, h = SymbolicSize{"hidden"}, top = SymbolicSize{"top_k"};
++    auto e = SymbolicSize{"experts"}, n = SymbolicSize{"inner"}, s = SymbolicSize{"slots"};
++    auto kg = SymbolicSize{"gate groups"}, wg = SymbolicSize{"gate words"}, ng = SymbolicSize{"gate channels"};
++    auto kd = SymbolicSize{"down groups"}, wd = SymbolicSize{"down words"};
++    auto stride = SymbolicSize{"plan stride"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({m, h}).with_dtype<bf16_t>().with_device(dev).verify(inputs);
++    TensorMatcher({m, top}).with_dtype<int32_t>().with_device(dev).verify(local_ids);
++    TensorMatcher({e, kg, wg}).with_dtype<int32_t>().with_device(dev).verify(gate);
++    TensorMatcher({e, kg, ng}).with_dtype<uint8_t>().with_device(dev).verify(gs);
++    TensorMatcher({e, kd, wd}).with_dtype<int32_t>().with_device(dev).verify(down);
++    TensorMatcher({e, kd, h}).with_dtype<uint8_t>().with_device(dev).verify(ds);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(gscale);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(dscale);
++    TensorMatcher({s, n}).with_dtype<bf16_t>().with_device(dev).verify(active);
++    TensorMatcher({s, h}).with_dtype<bf16_t>().with_device(dev).verify(outputs);
++    TensorMatcher({e, stride}).with_dtype<int32_t>().with_device(dev).verify(plan);
++    const auto slots = s.unwrap(), experts = e.unwrap(), inner = n.unwrap(), hidden = h.unwrap();
++    RuntimeCheck(slots > 0 && slots <= 2048 && experts > 0 && experts <= 64
++                 && slots == m.unwrap() * top.unwrap() && stride.unwrap() == slots + 1, "invalid rank-local routing layout");
++    RuntimeCheck(hidden > 0 && inner > 0 && hidden % (64 * kWarps) == 0 && inner % (64 * kWarps) == 0
++                 && kg.unwrap() * 16 == hidden && kd.unwrap() * 16 == inner && ng.unwrap() == 2 * inner
++                 && wg.unwrap() == 4 * inner && wd.unwrap() == 2 * hidden, "incompatible expert banks");
++    auto* work = static_cast<int32_t*>(plan.data_ptr());
++    LaunchKernel(uint32_t(experts), 32, dev.unwrap())(
++        plan_rows, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots));
++    const Projection up{
++        static_cast<const bf16_t*>(inputs.data_ptr()), static_cast<bf16_t*>(active.data_ptr()),
++        {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
++        static_cast<const bf16_t*>(gscale.data_ptr()), work, uint32_t(hidden), uint32_t(inner), uint32_t(top.unwrap())};
++    const Projection out{
++        static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
++        {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
++        static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
++    LaunchKernel(dim3(inner / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
++        projection<true>, up, uint32_t(slots + 1));
++    LaunchKernel(dim3(hidden / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
++        projection<false>, out, uint32_t(slots + 1));
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 6e99968..8218f72 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2025,6 +2025,7 @@ class Envs:
+     # ===================================================================
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_MEDIUM_ROUTE_PAIR = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_COMPACT_PREFILL = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+     SGLANG_ENABLE_MUSE_SPARK_AG_NORM_FUSION = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index d311b92..417d31c 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -38,6 +38,20 @@ def _route_pair_module():
+         return None
+ 
+ 
++@cache_once
++def _medium_route_pair_module():
++    try:
++        return load_jit(
++            "muse_medium_route_pair",
++            cuda_files=["muse_spark/expert_medium_route_pair.cuh"],
++            cuda_wrappers=[("run", "MuseMediumRoutePair::run")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using indexed Humming for medium route batches after JIT failure: %s", exc)
++        return None
++
++
+ @cache_once
+ def _prefill_scaled_silu_module():
+     try:
+@@ -187,6 +201,11 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         delattr(layer, f"{name}_weight_scale")
+         delattr(layer, f"{name}_weight_scale_2")
+     layer.humming_route_pair = route_pair and _route_pair_module() is not None
++    layer.humming_medium_route_pair = (
++        route_pair
++        and envs.SGLANG_ENABLE_MUSE_SPARK_MEDIUM_ROUTE_PAIR.get()
++        and _medium_route_pair_module() is not None
++    )
+     layer.humming_indexed_tunings = tunings
+     layer.humming_grouped_tunings = grouped_tunings
+ 
+@@ -246,9 +265,13 @@ def humming_expert_outputs(
+     if hidden_states.dtype != torch.bfloat16:
+         raise ValueError("Muse Humming NVFP4 expects BF16 activations")
+     slots = local_ids.numel()
++    small = getattr(layer, "humming_route_pair", False) and 0 < slots <= min(layer.global_num_experts, 1024)
++    medium = (
++        getattr(layer, "humming_medium_route_pair", False)
++        and layer.global_num_experts < slots <= min(8 * layer.global_num_experts, 2048)
++    )
+     if (
+-        getattr(layer, "humming_route_pair", False)
+-        and 0 < slots <= min(layer.global_num_experts, 1024)
++        (small or medium)
+         and hidden_states.shape[1] == layer.w2_weight_scale.shape[-1]
+         and local_ids.shape[0] == num_tokens
+         and hidden_states.is_contiguous()
+@@ -261,6 +284,14 @@ def humming_expert_outputs(
+         activations = hidden_states.new_empty((slots, inner))
+         outputs = hidden_states.new_empty((slots, hidden_size))
+         experts = layer.num_local_experts
++        if medium:
++            layout = local_ids.new_empty((experts, slots + 1))
++            _medium_route_pair_module().run(
++                hidden_states, local_ids, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
++                layer.w13_global_scale, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
++                layer.w2_global_scale, activations, outputs, layout,
++            )
++            return outputs.view(num_tokens, topk, hidden_size), local_ids
+         used = min(experts, slots)
+         # Give each nonempty expert one tile. Each additional tile needs at
+         # least eight routes beyond the first route of one of those experts.

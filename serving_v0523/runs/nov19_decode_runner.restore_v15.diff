@@ -1,0 +1,73 @@
+--- a/submit_nov19_decode_checks.py
++++ b/submit_nov19_decode_checks.py
+@@ -127,8 +127,7 @@
+     if not isinstance(meta, dict) or (meta.get("candidate"), meta.get("sha256"), meta.get("flags"),
+                                      meta.get("users")) != (V87.name, V87.sha256, V87.flags, 4):
+         return None, "V87 submission metadata mismatch"
+-    return parent_choice(V87, V87_JOB, 4, V116b, V80a, okc, execute, pending=V120b,
+-                         crashed=V120b)
++    return parent_choice(V87, V87_JOB, 4, V116b, V80a, okc, execute, pending=V120b)
+ 
+ 
+ def v64_gate(runs):
+@@ -148,7 +147,7 @@
+     return "passed", "V64 passed its scored four-load run"
+ 
+ 
+-def parent_choice(parent, job, users, healthy, failed, okc, execute, *, pending=None, crashed=None):
++def parent_choice(parent, job, users, healthy, failed, okc, execute, *, pending=None):
+     response = execute([okc, "serve", "status", job, "--json"],
+                        capture_output=True, text=True, timeout=60)
+     if response.returncode:
+@@ -176,13 +175,6 @@
+         return failed, f"{parent.name.upper()} is {state}"
+     if state != "done" or not result:
+         return None, f"{parent.name.upper()} has no conclusive state"
+-    if crashed is not None and result.get("status") == "crashed":
+-        # A runtime crash with no measured rung leaves the shared decode branch unresolved.
+-        if (result.get("passed") is False and result.get("concurrency") == [users]
+-                and result.get("serving_flags") == parent.flags
+-                and isinstance(result.get("patch"), dict) and result["patch"].get("sha256") == parent.sha256):
+-            return crashed, f"{parent.name.upper()} crashed on the confirmed payload"
+-        return None, f"{parent.name.upper()} crash evidence is incomplete"
+     if result.get("passed") is False or result.get("status") in ("failed", "error", "timeout"):
+         return failed, f"{parent.name.upper()} failed"
+     if (result.get("passed") is True and result.get("status") == "ok"
+@@ -379,8 +371,7 @@
+     first = {"alternatives": [checks[c.name] for c in ALTERNATIVES], "decision_receipt": prefix(V87),
+              "when_passed": V116b.name, "when_queued_or_running_and_v64_passed": V120b.name,
+              "legacy_attempt_receipts": [prefix(c) for c in LEGACY_EXPERT_ALTERNATIVES],
+-             "v64_scored_receipt": f"{V64_JOB}.json", "when_crashed_and_v64_passed": V120b.name,
+-             "when_other_failure_or_skipped": V80a.name,
++             "v64_scored_receipt": f"{V64_JOB}.json", "when_failed_or_skipped": V80a.name,
+              "when_unknown": "defer this slot"}
+     second = {"alternatives": [checks[c.name] for c in PREFILL_ALTERNATIVES], "decision_receipt": prefix(V93), "v93_job": V93_JOB,
+               "when_v93_passed_and_shared_parents_eligible": V98.name,
+--- a/test_nov19_decode_checks.py
++++ b/test_nov19_decode_checks.py
+@@ -494,25 +494,6 @@
+         self.assertEqual(command, ["mock", "serve", "check", str(root/r.V120b.directory/"patch.diff"), "--users", "32",
+                                    *(item for flag in expected_flags for item in ("--flag", flag)), "--no-wait"])
+ 
+-    def test_exact_v87_crash_selects_v120b(self):
+-        self.job(r.V87, status="crashed", passed=False)
+-        self.assertEqual(r.plan()["checks"][0]["when_crashed_and_v64_passed"], "v120b")
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
+-        self.assertTrue(self.offer(r.V80a).startswith("waiting"))
+-        self.assertTrue(self.offer(r.V120b).startswith("submitted"))
+-        self.assertEqual(self.left, 2)
+-
+-    def test_v87_crash_requires_provenance_and_valid_v64(self):
+-        job = self.job(r.V87, status="crashed", passed=False)
+-        result = self.jobs[job]["result"].copy()
+-        for key in ("patch", "serving_flags", "concurrency", "passed"):
+-            self.jobs[job]["result"] = {k: v for k, v in result.items() if k != key}
+-            self.assertTrue(self.offer(r.V120b).startswith("waiting"))
+-        self.jobs[job]["result"] = result
+-        self.v64_path.unlink()
+-        self.assertTrue(self.offer(r.V120b).startswith("waiting"))
+-        self.assertEqual(self.left, 3)
+-
+     def test_v80a_for_exact_failure_or_skip_and_no_v116b(self):
+         self.job(r.V87, passed=False)
+         self.assertTrue(self.offer(r.V116b).startswith("waiting"))

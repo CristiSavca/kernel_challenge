@@ -1,0 +1,59 @@
+--- paged_verify_attention.py
++++ fixed4.py
+@@ -115,39 +115,6 @@
+         row_sum = row_sum * old_weight + tl.sum(probabilities, axis=1)
+         row_max = next_max
+     return row_max, row_sum, acc
+-
+-
+-@triton.jit
+-def _tile_origin_mask(Origins, start, end, limit):
+-    offset = tl.arange(0, 32)
+-    live = start + offset < end
+-    origin = tl.load(Origins + start + offset, live, other=-1)
+-    good = live & (origin > 0) & (origin <= limit)
+-    return tl.sum(tl.where(good, tl.full((32,), 1, tl.uint32) << offset.to(tl.uint32), 0), 0)
+-
+-
+-@triton.jit
+-def _next_tile_run(Origins, start, end, limit):
+-    # A four-tile run feeds multiple stages of the dedicated tensor-map load pipeline.
+-    offset = tl.arange(0, 32)
+-    cursor = start
+-    mask = _tile_origin_mask(Origins, cursor, end, limit)
+-    direct = (mask & 15) == 15
+-    if direct:
+-        while (mask == 0xFFFFFFFF) & (cursor + 32 < end):
+-            cursor += 32
+-            mask = _tile_origin_mask(Origins, cursor, end, limit)
+-        marks = mask ^ tl.full((), 0xFFFFFFFF, tl.uint32)
+-    else:
+-        marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
+-        while (marks == 0) & (cursor + 32 < end):
+-            # Revisit the trailing three bits so a run crossing this mask edge is found.
+-            cursor += 29
+-            mask = _tile_origin_mask(Origins, cursor, end, limit)
+-            marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
+-    offset_is_marked = ((marks >> offset.to(tl.uint32)) & 1) != 0
+-    count = tl.min(tl.where(offset_is_marked, offset, 32), 0)
+-    return tl.minimum(cursor + count, end), direct
+ 
+ 
+ @triton.jit
+@@ -242,9 +209,13 @@
+                         direct = tl.min((~live_lanes | fits).to(tl.int32), 0) != 0
+                         stop = tile_end
+                     else:
+-                        stop, direct = _next_tile_run(
+-                            Origins + request * ORIGIN_STRIDE, cursor, tile_end, CAPACITY - TILE_N,
+-                        )
++                        offsets = tl.arange(0, 4)
++                        ids = cursor + offsets
++                        valid = ids < tile_end
++                        origin = tl.load(Origins + request * ORIGIN_STRIDE + ids, valid, other=1)
++                        group_fits = (origin > 0) & (origin <= CAPACITY - TILE_N)
++                        direct = tl.min((~valid | group_fits).to(tl.int32), 0) != 0
++                        stop = tl.minimum(cursor + 4, tile_end)
+                     if direct:
+                         row_max, row_sum, acc = _accumulate_tiles(
+                             K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,

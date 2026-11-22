@@ -1,0 +1,356 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+new file mode 100644
+index 0000000000000000000000000000000000000000..aecdc40a4b9863bda1413332dc7d3c774c0ed375
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -0,0 +1,204 @@
++#include "../elementwise/activation.cuh"
++#include <algorithm>
++
++namespace sglang {
++namespace muse_route_pair {
++
++using namespace device;
++constexpr uint32_t kRows = 8;
++constexpr uint32_t kWarps = 2;
++constexpr uint32_t kPlannerWarps = 8;
++
++SGL_DEVICE uint32_t broadcast_scale(uint32_t byte) {
++  // Preparation flushes subnormal E4M3 scales and rejects signed or NaN codes.
++  uint32_t bits = byte ? (byte << 4) + ((127u - 7u) << 7) : 0u;
++  return bits | (bits << 16);
++}
++
++SGL_DEVICE uint32_t operand_pair(uint32_t word, uint32_t scale, uint32_t fragment) {
++  uint32_t codes = word >> (4 * fragment);
++  // Embed both E2M1 sign/exponent/mantissas at the low end of BF16's
++  // exponent range. Each encoded value is exactly the original times 2^-126.
++  uint32_t tiny = ((codes & 0x00070007u) << 6) | ((codes & 0x00080008u) << 12);
++  uint32_t normalized, scaled;
++  // Explicit non-FTZ arithmetic preserves the E2M1 subnormal and signed zero.
++  asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(normalized) : "r"(tiny), "r"(0x7e807e80u));
++  asm("mul.rn.bf16x2 %0, %1, %2;" : "=r"(scaled) : "r"(normalized), "r"(scale));
++  return scaled;
++}
++
++struct Bank {
++  const uint32_t* weight;
++  const uint8_t* scale;
++};
++
++SGL_DEVICE void contract(
++    float4 (&out)[4], const Bank bank, size_t base, uint32_t low_values, uint32_t high_values) {
++  const uint32_t lane = threadIdx.x % 32;
++  using Words = AlignedVector<uint32_t, 4>;
++  using Scales = AlignedVector<uint16_t, 4>;
++  const auto w = *reinterpret_cast<const Words*>(bank.weight + 2 * base + lane * 4);
++  const auto s = *reinterpret_cast<const Scales*>(bank.scale + base + (lane / 4) * 8);
++#pragma unroll
++  for (uint32_t part = 0; part < 4; ++part) {
++    uint32_t low = broadcast_scale(s[part] & 255);
++    uint32_t high = broadcast_scale(s[part] >> 8);
++    uint32_t a0 = operand_pair(w[part], low, 0), a1 = operand_pair(w[part], high, 1);
++    uint32_t a2 = operand_pair(w[part], low, 2), a3 = operand_pair(w[part], high, 3);
++    auto& d = out[part];
++    asm volatile(
++        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 "
++        "{%0,%1,%2,%3},{%4,%5,%6,%7},{%8,%9},{%0,%1,%2,%3};"
++        : "+f"(d.x), "+f"(d.y), "+f"(d.z), "+f"(d.w)
++        : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(low_values), "r"(high_values));
++  }
++}
++
++// Each record contains the local expert followed by eight original route
++// slots. Negative slots pad the last tile. Only the count in plan[0] is live.
++__global__ void plan_routes(const int32_t* ids, int32_t* plan, uint32_t slots, uint32_t experts) {
++  extern __shared__ int32_t matches[];
++  __shared__ uint32_t next_job;
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  if (threadIdx.x == 0) next_job = 0;
++  __syncthreads();
++  int32_t* local = matches + warp * slots;
++  for (uint32_t expert = warp; expert < experts; expert += kPlannerWarps) {
++    uint32_t count = 0;
++    for (uint32_t first = 0; first < slots; first += 32) {
++      const uint32_t slot = first + lane;
++      const bool live = slot < slots && ids[slot] == static_cast<int32_t>(expert);
++      const uint32_t mask = __ballot_sync(0xffffffffu, live);
++      if (live) local[count + __popc(mask & ((1u << lane) - 1))] = slot;
++      count += __popc(mask);
++    }
++    __syncwarp();
++    if (count) {
++      const uint32_t jobs = (count + kRows - 1) / kRows;
++      uint32_t first_job = lane == 0 ? atomicAdd(&next_job, jobs) : 0;
++      first_job = __shfl_sync(0xffffffffu, first_job, 0);
++      for (uint32_t i = lane; i < jobs * (kRows + 1); i += 32) {
++        const uint32_t tile = i / (kRows + 1), field = i % (kRows + 1);
++        int32_t value = expert;
++        if (field) {
++          const uint32_t row = tile * kRows + field - 1;
++          value = row < count ? local[row] : -1;
++        }
++        plan[1 + first_job * (kRows + 1) + i] = value;
++      }
++    }
++    __syncwarp();
++  }
++  __syncthreads();
++  if (threadIdx.x == 0) plan[0] = next_job;
++}
++
++SGL_DEVICE float scaled_bf16(float sum, float scale) {
++  return cast<float>(cast<bf16_t>(cast<float>(cast<bf16_t>(sum)) * scale));
++}
++
++struct Projection {
++  const bf16_t* inputs;
++  bf16_t* outputs;
++  Bank bank;
++  const bf16_t* global;
++  const int32_t* plan;
++  uint32_t input_width;
++  uint32_t output_width;
++  uint32_t top_k;
++};
++
++template <bool Gate>
++SGL_DEVICE void project(const Projection& p, const int32_t* job, uint32_t column) {
++  const uint32_t lane = threadIdx.x % 32;
++  const uint32_t expert = job[0];
++  const int32_t input_slot = job[1 + lane / 4];
++  const uint32_t input_row = input_slot < 0 ? 0u : static_cast<uint32_t>(input_slot) / p.top_k;
++  const bf16_t* input = p.inputs + size_t(input_row) * p.input_width + (lane % 4) * 2;
++  const uint32_t stored_width = Gate ? 2 * p.output_width : p.output_width;
++  float4 first[4] = {}, second[4] = {};
++  for (uint32_t k = 0; k < p.input_width; k += 16) {
++    uint32_t lo = 0, hi = 0;
++    if (input_slot >= 0) {
++      lo = *reinterpret_cast<const uint32_t*>(input + k);
++      hi = *reinterpret_cast<const uint32_t*>(input + k + 8);
++    }
++    const size_t base = (size_t(expert) * (p.input_width / 16) + k / 16) * stored_width + column;
++    contract(first, p.bank, base, lo, hi);
++    if constexpr (Gate) contract(second, p.bank, base + p.output_width, lo, hi);
++  }
++  const float scale = cast<float>(p.global[expert]);
++#pragma unroll
++  for (uint32_t part = 0; part < 4; ++part) {
++    const float a[] = {first[part].x, first[part].y, first[part].z, first[part].w};
++    const float b[] = {second[part].x, second[part].y, second[part].z, second[part].w};
++#pragma unroll
++    for (uint32_t i = 0; i < 4; ++i) {
++      const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
++      if (out >= 0) {
++        float value = scaled_bf16(a[i], scale);
++        if constexpr (Gate) value = apply_activation_f32<ActivationKind::kSiLU>(value) * scaled_bf16(b[i], scale);
++        const uint32_t n = column + part * 16 + lane / 4 + (i / 2) * 8;
++        p.outputs[size_t(out) * p.output_width + n] = cast<bf16_t>(value);
++      }
++    }
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * kWarps) void projection_kernel(const __grid_constant__ Projection p) {
++  const uint32_t column = (blockIdx.x * kWarps + threadIdx.x / 32) * 64;
++  for (uint32_t j = blockIdx.y; j < static_cast<uint32_t>(p.plan[0]); j += gridDim.y)
++    project<Gate>(p, p.plan + 1 + j * (kRows + 1), column);
++}
++
++}  // namespace muse_route_pair
++
++struct MuseRoutePair {
++  static void run(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan, int64_t groups) {
++    using namespace host;
++    using namespace muse_route_pair;
++    auto m = SymbolicSize{"tokens"}, h = SymbolicSize{"hidden"}, top = SymbolicSize{"top_k"};
++    auto e = SymbolicSize{"experts"}, n = SymbolicSize{"inner"}, s = SymbolicSize{"slots"};
++    auto kg = SymbolicSize{"gate groups"}, wg = SymbolicSize{"gate words"}, ng = SymbolicSize{"gate channels"};
++    auto kd = SymbolicSize{"down groups"}, wd = SymbolicSize{"down words"}, cells = SymbolicSize{"plan"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({m, h}).with_dtype<bf16_t>().with_device(dev).verify(inputs);
++    TensorMatcher({m, top}).with_dtype<int32_t>().with_device(dev).verify(local_ids);
++    TensorMatcher({e, kg, wg}).with_dtype<int32_t>().with_device(dev).verify(gate);
++    TensorMatcher({e, kg, ng}).with_dtype<uint8_t>().with_device(dev).verify(gs);
++    TensorMatcher({e, kd, wd}).with_dtype<int32_t>().with_device(dev).verify(down);
++    TensorMatcher({e, kd, h}).with_dtype<uint8_t>().with_device(dev).verify(ds);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(gscale);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(dscale);
++    TensorMatcher({s, n}).with_dtype<bf16_t>().with_device(dev).verify(active);
++    TensorMatcher({s, h}).with_dtype<bf16_t>().with_device(dev).verify(outputs);
++    TensorMatcher({cells}).with_dtype<int32_t>().with_device(dev).verify(plan);
++    const auto slots = s.unwrap(), experts = e.unwrap(), inner = n.unwrap(), hidden = h.unwrap();
++    const auto used = std::min(slots, experts), bound = used + (slots - used) / kRows;
++    RuntimeCheck(slots > 0 && slots <= 1024 && experts > 0 && experts <= 64 && slots == m.unwrap() * top.unwrap()
++                 && groups > 0 && groups <= used && cells.unwrap() == 1 + (kRows + 1) * bound, "invalid route plan dimensions");
++    RuntimeCheck(hidden > 0 && inner > 0 && hidden % (64 * kWarps) == 0 && inner % (64 * kWarps) == 0
++                 && kg.unwrap() * 16 == hidden && kd.unwrap() * 16 == inner && ng.unwrap() == 2 * inner
++                 && wg.unwrap() == 4 * inner && wd.unwrap() == 2 * hidden, "incompatible expert banks");
++    auto* work = static_cast<int32_t*>(plan.data_ptr());
++    const auto smem = kPlannerWarps * slots * sizeof(int32_t);
++    LaunchKernel(1, 32 * kPlannerWarps, dev.unwrap(), smem)(
++        plan_routes, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots), uint32_t(experts));
++    const Projection up{
++        static_cast<const bf16_t*>(inputs.data_ptr()), static_cast<bf16_t*>(active.data_ptr()),
++        {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
++        static_cast<const bf16_t*>(gscale.data_ptr()), work, uint32_t(hidden), uint32_t(inner), uint32_t(top.unwrap())};
++    const Projection out{
++        static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
++        {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
++        static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
++    LaunchKernel(dim3(inner / (64 * kWarps), groups), 32 * kWarps, dev.unwrap())(projection_kernel<true>, up);
++    LaunchKernel(dim3(hidden / (64 * kWarps), groups), 32 * kWarps, dev.unwrap())(projection_kernel<false>, out);
++  }
++};
++}  // namespace sglang
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 10eee809c188062702bf4000c94521313e8b54a5..cee4a4fe0cbdecc13196a16abde5824b123a4279 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2024,6 +2024,7 @@ class Envs:
+     # Muse Spark
+     # ===================================================================
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+     SGLANG_ENABLE_MUSE_SPARK_AG_NORM_FUSION = EnvBool(True)
+     SGLANG_USE_CUSTOM_ROUTER_SUM = EnvBoolWithAlias(
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 77abcafbb83a8c28630bf5766323d9d78d1493a4..7163c0181a8037c4666ba6805c5a41a80676591a 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -3,12 +3,18 @@
+ from __future__ import annotations
+ 
+ import json
++import logging
++import subprocess
+ from typing import TYPE_CHECKING
+ 
+ import torch
+ import triton
+ import triton.language as tl
+ 
++from sglang.kernels.jit.utils import cache_once, get_activation_cuda_cflags, load_jit
++from sglang.srt.environ import envs
++from sglang.srt.runtime_context import get_exec
++
+ if TYPE_CHECKING:
+     from sglang.srt.layers.muse_spark.muse_spark_fp4_moe import MuseSpark1xFp4Experts
+ 
+@@ -18,10 +24,24 @@ _GROUPED_COMPUTE = json.dumps(
+ )
+ 
+ 
++@cache_once
++def _route_pair_module():
++    try:
++        return load_jit(
++            "muse_route_pair",
++            cuda_files=["muse_spark/expert_route_pair.cuh"],
++            cuda_wrappers=[("run", "MuseRoutePair::run")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Using indexed Humming expert kernels after JIT failure: %s", exc)
++        return None
++
++
+ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     """Replace the local checkpoint bank with packed Humming weights."""
+     from humming import dtypes
+-    from humming.config import GemmType
++    from humming.config import GemmType, MmaType
+     from humming.kernel.humming import HummingKernel
+     from humming.layer import HummingMethod
+     from humming.schema.humming import HummingInputSchema, HummingWeightSchema
+@@ -39,6 +59,14 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     params = {}
+     tunings = {}
+     grouped_tunings = {}
++    route_pair = (
++        envs.SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR.get()
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and 0 < layer.num_local_experts <= 64
++        and layer.gate_up_proj.is_cuda
++        and torch.cuda.get_device_capability(layer.gate_up_proj.device) == (9, 0)
++    )
+     for name, checkpoint_name in (("w13", "gate_up_proj"), ("w2", "down_proj")):
+         packed = getattr(layer, checkpoint_name)
+         scales = getattr(layer, f"{checkpoint_name}_weight_scale")
+@@ -77,6 +105,24 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             },
+             already_padded=True,
+         )
++        if route_pair:
++            route_pair = (
++                meta.mma_type == MmaType.WGMMA
++                and not meta.use_packed_k_layout
++                and not meta.use_fused_e8m0_scale
++                and not meta.should_apply_bs_on_c
++                and tensors["weight"].shape == (experts, k // 16, n * 2)
++                and tensors["weight"].dtype == torch.int32
++                and tensors["weight"].is_contiguous()
++                and tensors["weight_scale"].shape == (experts, k // 16, n)
++                and tensors["weight_scale"].dtype == torch.float8_e4m3fn
++                and tensors["weight_scale"].is_contiguous()
++            )
++            if name == "w13":
++                hidden, inner = k, n // 2
++                route_pair = route_pair and hidden % 128 == 0 and inner % 128 == 0
++            else:
++                route_pair = route_pair and (k, n) == (inner, hidden)
+         params[meta.weight_name] = tensors["weight"]
+         params[meta.weight_scale_name] = tensors["weight_scale"]
+         # Stock Marlin collapses the gate/up global scales to the gate value
+@@ -114,6 +160,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         delattr(layer, name)
+         delattr(layer, f"{name}_weight_scale")
+         delattr(layer, f"{name}_weight_scale_2")
++    layer.humming_route_pair = route_pair and _route_pair_module() is not None
+     layer.humming_indexed_tunings = tunings
+     layer.humming_grouped_tunings = grouped_tunings
+ 
+@@ -172,6 +219,36 @@ def humming_expert_outputs(
+         return hidden_states.new_empty((0, topk, hidden_size)), local_ids
+     if hidden_states.dtype != torch.bfloat16:
+         raise ValueError("Muse Humming NVFP4 expects BF16 activations")
++    slots = local_ids.numel()
++    if (
++        getattr(layer, "humming_route_pair", False)
++        and 0 < slots <= min(layer.global_num_experts, 1024)
++        and hidden_states.shape[1] == layer.w2_weight_scale.shape[-1]
++        and local_ids.shape[0] == num_tokens
++        and hidden_states.is_contiguous()
++        and local_ids.dtype == torch.int32
++        and local_ids.is_contiguous()
++        and not torch.compiler.is_compiling()
++        and hidden_states.data_ptr() % 4 == 0
++    ):
++        inner = layer.w2_weight.shape[1] * 16
++        activations = hidden_states.new_empty((slots, inner))
++        outputs = hidden_states.new_empty((slots, hidden_size))
++        experts = layer.num_local_experts
++        used = min(experts, slots)
++        # Give each nonempty expert one tile. Each additional tile needs at
++        # least eight routes beyond the first route of one of those experts.
++        max_tiles = used + (slots - used) // 8
++        plan = local_ids.new_empty(1 + 9 * max_tiles)
++        expected = (slots * experts + layer.global_num_experts - 1) // layer.global_num_experts
++        groups = max(1, min(used, expected))
++        _route_pair_module().run(
++            hidden_states, local_ids, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
++            layer.w13_global_scale, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
++            layer.w2_global_scale, activations, outputs, plan, groups,
++        )
++        return outputs.view(num_tokens, topk, hidden_size), local_ids
++
+     flat_ids = local_ids.flatten()
+     num_slots = flat_ids.numel()
+     estimated_local_routes = max(

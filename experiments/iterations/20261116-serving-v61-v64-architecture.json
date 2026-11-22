@@ -1,0 +1,117 @@
+{
+  "objective": "Find and implement larger serving architecture changes toward2x, then3x without paid compute",
+  "observed_at_utc": "2026-11-16T13:43:12.655138+00:00",
+  "new_measured_incumbent": {
+    "observed_at_utc": "2026-11-16T13:24:55.679659+00:00",
+    "job": "c3b7bd142c264853",
+    "exact_patch_sha256": "0822e1279e1710bbb30f2e0e541dcf0055a105e7bc1032ae5b081638c1d27b4c",
+    "flags": {
+      "--swa-full-tokens-ratio": "0.25"
+    },
+    "score": 1.1847,
+    "previous_best_score": 1.1037,
+    "relative_score_gain": 0.07338950801848343,
+    "rungs": [
+      {
+        "concurrency": 1,
+        "ratio": 1.1156,
+        "stock_tok_s_per_gpu": 6440.1,
+        "tok_s_per_gpu": 7184.6,
+        "tok_s_per_user": 140.2,
+        "relative_gain_vs_previous": 0.04948259642521169
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.13,
+        "stock_tok_s_per_gpu": 10019.7,
+        "tok_s_per_gpu": 11322,
+        "tok_s_per_user": 56.2,
+        "relative_gain_vs_previous": 0.05390785301249745
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.2151,
+        "stock_tok_s_per_gpu": 12301.6,
+        "tok_s_per_gpu": 14947.6,
+        "tok_s_per_user": 17.4,
+        "relative_gain_vs_previous": 0.0962648863226272
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.286,
+        "stock_tok_s_per_gpu": 12627,
+        "tok_s_per_gpu": 16237.7,
+        "tok_s_per_user": 8.9,
+        "relative_gain_vs_previous": 0.0948407968670184
+      }
+    ],
+    "correctness_passed": true,
+    "later_turns_passed": true,
+    "memory_over_stock_gb": 1.8,
+    "short_outputs": 0,
+    "target_requirements": [
+      {
+        "score": 2,
+        "additional_speed_factor": 1.6881911032328858,
+        "time_reduction_fraction": 0.40764999999999996
+      },
+      {
+        "score": 3,
+        "additional_speed_factor": 2.5322866548493286,
+        "time_reduction_fraction": 0.6051
+      }
+    ],
+    "limits": [
+      "The frontier score is measured; hypothetical phase models are not GPU profiles.",
+      "One and four users have three repetitions; 32 users has one.",
+      "New V61-V64 changes have no serving measurements."
+    ]
+  },
+  "candidates": {
+    "v61_hopper_decode_projection_gather": {
+      "sha256": "eab9720a002103d2deef924be266d474ebefd9a1e899cbfe171ef909e80f4800",
+      "bytes": 30716
+    },
+    "v62_paged_verify_attention": {
+      "sha256": "f0595f55c6c13380f67ed033bb4174780276188c44d779dfd9fee00bf517541f",
+      "bytes": 39041
+    },
+    "v63_humming_grouped_compact": {
+      "sha256": "f5c5a2d1c18c522d584ec5b19dc39e607bbc47f4d10225f9fa4213407002c5f5",
+      "bytes": 33248
+    },
+    "v64_humming_grouped_sequence_parallel": {
+      "sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+      "bytes": 43799
+    }
+  },
+  "decision": "Arm private V64/V62/V60; preserve V61/V63 as reserves. No automatic scored promotion.",
+  "independent_reviewers": [
+    "perf_scan",
+    "dense_critic"
+  ],
+  "root_validation": "54 SP/grouped integration cases,17 runner mock scenarios, exact source composition and frozen hashes",
+  "processes": {
+    "started_at": "2026-11-16T13:39:59.850052+00:00",
+    "pid": 23738,
+    "caffeinate_pid": 23739,
+    "script_sha256": "d316ede39df785c8e8311e53412685f37d197a447159e86b157aa8ce1143a49a",
+    "starts_utc": "2026-11-17T00:03:00Z",
+    "ends_utc": "2026-11-17T23:30:00Z",
+    "scope": "three private checks only: V64, V62, V60",
+    "superseded": {
+      "pid": 42924,
+      "caffeinate_pid": 42925,
+      "script_sha256": "c5296224b7eac85754b0b0b101d1ef5ee27a88bf82665ab9dbe5dfe5c8dd61c2",
+      "reason": "User requests larger architectural gains; V44 now scored 1.1847. New reviewed candidates replace the conditional V59 and best32 checks."
+    }
+  },
+  "limitations": [
+    "No CUDA compilation or GPU measurement of new source",
+    "Earlier component speedups are not serving speedups",
+    "2x and3x unachieved"
+  ],
+  "paid_compute_started": false,
+  "committed": false,
+  "pushed": false
+}

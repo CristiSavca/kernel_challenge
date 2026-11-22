@@ -1,0 +1,14 @@
+# V216 grouped expert weight multicast
+
+**Keep V215’s decode kernels.** Two Hopper CTAs can share a packed expert weight tile only when the same expert occupies two or more row tiles. Adjacent output channels read disjoint weights. One request supplies at most eight rows per expert and V215 already handles eight rows per tile, so there is no second weight fetch to eliminate at one user. [V215 export](../v215_decode_reduction_paired_context/validation.json) · [Executable model](check.py)
+
+The proposed schedule pairs CTAs across row tiles of the same expert to share weights and scales. For an unpaired row tile, both CTAs can compute different output channels and share its input as in V69. A CPU oracle verified unique output-tile ownership for 391,808 coordinates over 156 empty, skewed and randomized route sets. For the two recorded H200 routing distributions, both projections together give the following per-rank, per-layer estimates. [Model and results](analysis.json) · [V69 activation multicast](../v69_humming_decode_a_multicast/README.md)
+
+| H200 input rows / native tile | Nonempty experts | Total row tiles | Paired sets | V215 packed weights requested | Weight requests saved | Additional operand requests saved vs V69 |
+|---|---:|---:|---:|---:|---:|---:|
+| 32 / 8 | 16 | 16 | 0 | 432 MiB | 0 | 0 |
+| 256 / 24 | 26 | 33 | 5 | 891 MiB | 135 MiB | 75 MiB |
+
+The 256-row stress input includes experts with 73 and 61 routes. Even there the ideal ratio of weight request counts is 1.179×. At 16 and 32 users, independent uniform top-eight routing instead gives less than 0.0006 MiB of weight savings per layer/rank. The actual serving distribution remains unknown. NVIDIA counters for a **different**, cache-flushed standalone implementation on the same 256-row input recorded 734.03 MiB of DRAM reads, just 32.03 MiB above 702 MiB of compulsory unique weights. That difference includes every activation and metadata read. V215 has no equivalent physical counter. [Original counter policy and data](../../../experiments/iterations/20261104-moe-hardware-profile-recovered.json)
+
+The pinned Humming cluster protocol also requires a new cross-CTA epilogue fence. The producer leader counts both CTAs’ releases for each K stage, but its epilogue wait counts only its own math threads. V213 overlays FP32 epilogue scratch on the retired stages. At eight rows a leader’s next stage-zero weight transfer could overwrite 2,048 bytes of the peer’s W13 scratch or 4,096 bytes for W2. Its paired 4D W13 writer also uses a single-CTA launch. A candidate would need a cluster-aware launch and an epilogue handoff while retaining the current reduction order. These costs and the absence of duplicate weight traffic at one user ended this experiment before a production patch or hardware run. [Pinned Humming package](https://pypi.org/project/humming-kernels/0.1.12/) · [V213 reducer](../v213_live_decode_expert_reduction/delta.diff)

@@ -1,0 +1,75 @@
+{
+  "patch_sha256": "fa68814ee9dfc885f14cb4c1112939169b182b7fc638b4648463bb91ad8da8b4",
+  "header_sha256": "471ec8582a59fbd1779809e13d663a75323c06c9de92a835c31ca8a7ff57e9b3",
+  "draft_source_sha256": {
+    "mem_cache/swa_memory_pool.py": "14f2b1daebdc9d872b5786cfc0beed26a413bb41717b70a737a4cb4c31951dfc",
+    "speculative/dflash_worker_v2.py": "eb32733fac6b9c40934397e9c0359d408722bcc03774d6d0a8a2f9a7d9eb4019",
+    "mem_cache/kv_cache_configurator.py": "745925b1d301c629137a0dfc526d747b1ff88bd9e1ed00dd4a19986db1b31f23",
+    "mem_cache/kv_index_translator.py": "9656087011e90f4a166f69725ce1b9d9f4bab80aba2e44969aa48ebacf4b784a",
+    "mem_cache/kv_loc_plan.py": "2afcf4d67e2265f3726c3ce4c26f7ed4c1188272712e1872cf9cf14d97aa876a",
+    "mem_cache/unified_cache/components/swa.py": "186b327dae0118b149c7126547570c0be3fd94898bc5e7aed25de252d861343a",
+    "mem_cache/hybrid_cache/hybrid_pool_assembler.py": "95e811d544a124ebf930309060096b8c2201d263726ed7dbfba2d49076853df2",
+    "mem_cache/unified_radix_cache.py": "9c1a1116081c266301ecfeef4faf4178d18114a8996010765d9aa238cd83deb3",
+    "mem_cache/pool_host/group.py": "c49d96707a4c5595bb9b40d326034b7c27885701a393bfdd0c5d0df79b11089c",
+    "mem_cache/hybrid_cache/hybrid_cache_controller.py": "5c29d2865810b8d16a2758662ab6a1e532ac0c31076a5fa56525ed546ea02cd1"
+  },
+  "owner_replay_words": 20480,
+  "cases": [
+    {
+      "geometry": "fixture",
+      "order": "consecutive",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 80,
+      "parent_copies": 128,
+      "candidate_copies": 2,
+      "roundtrip_bf16_words": 5120
+    },
+    {
+      "geometry": "fixture",
+      "order": "runs",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 80,
+      "parent_copies": 128,
+      "candidate_copies": 20,
+      "roundtrip_bf16_words": 5120
+    },
+    {
+      "geometry": "fixture",
+      "order": "fragmented",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 80,
+      "parent_copies": 128,
+      "candidate_copies": 128,
+      "roundtrip_bf16_words": 5120
+    },
+    {
+      "geometry": "native_width",
+      "order": "consecutive",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 1280,
+      "parent_copies": 128,
+      "candidate_copies": 2,
+      "roundtrip_bf16_words": 81920
+    },
+    {
+      "geometry": "native_width",
+      "order": "runs",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 1280,
+      "parent_copies": 128,
+      "candidate_copies": 20,
+      "roundtrip_bf16_words": 81920
+    },
+    {
+      "geometry": "native_width",
+      "order": "fragmented",
+      "pages": 64,
+      "bytes_per_K_or_V_page": 1280,
+      "parent_copies": 128,
+      "candidate_copies": 128,
+      "roundtrip_bf16_words": 81920
+    }
+  ],
+  "physical_H200": false,
+  "scope": "Executed the native private-pool and host sidecar builder, then actual page-first C++ copy selectors with a queued CPU memcpy ABI. The restore and transport hardware are modeled. Descriptor counts assume the indicated host-page permutations."
+}

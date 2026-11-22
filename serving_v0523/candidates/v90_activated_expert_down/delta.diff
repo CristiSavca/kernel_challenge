@@ -1,0 +1,295 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh
+new file mode 100644
+index 0000000..fd6ee06
+--- /dev/null
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_activated_down.cuh
+@@ -0,0 +1,184 @@
++#include "expert_skinny_gate_up.cuh"
++
++namespace sglang {
++namespace muse_activated_down {
++
++using namespace device;
++constexpr uint32_t kWarps = 8;
++constexpr uint32_t kColumns = kWarps * 64;
++constexpr uint32_t kRows = 32;
++constexpr uint32_t kSlab = 128;
++// Eight BF16 elements shift consecutive rows by four shared-memory banks.
++constexpr uint32_t kStride = kSlab + 8;
++
++struct Params {
++  const bf16_t* gate_up;
++  bf16_t* output;
++  const uint32_t* weights;
++  const uint8_t* scales;
++  const bf16_t* gate_scales;
++  const int32_t* offsets;
++  uint32_t intermediate;
++  uint32_t hidden;
++  uint32_t experts;
++};
++
++struct Tile {
++  uint32_t expert;
++  uint32_t first;
++  uint32_t rows;
++};
++
++SGL_DEVICE Tile locate(const Params& p, uint32_t job) {
++  // One warp maps the packed work ordinal to an expert and an exact row
++  // interval. All warps independently obtain the same tile from device offsets.
++  uint32_t lane = threadIdx.x % 32;
++  for (uint32_t base = 0; base < p.experts; base += 32) {
++    uint32_t e = base + lane;
++    uint32_t begin = e < p.experts ? p.offsets[e] : 0;
++    uint32_t end = e < p.experts ? p.offsets[e + 1] : 0;
++    uint32_t jobs = (end - begin + kRows - 1) / kRows;
++    uint32_t prefix = jobs;
++#pragma unroll
++    for (uint32_t delta = 1; delta < 32; delta *= 2) {
++      uint32_t previous = __shfl_up_sync(0xffffffffu, prefix, delta);
++      if (lane >= delta) prefix += previous;
++    }
++    uint32_t owners = __ballot_sync(0xffffffffu, prefix > job);
++    if (owners) {
++      int owner = __ffs(owners) - 1;
++      uint32_t count_before = __shfl_sync(0xffffffffu, prefix - jobs, owner);
++      uint32_t first = __shfl_sync(0xffffffffu, begin, owner) + (job - count_before) * kRows;
++      uint32_t last = __shfl_sync(0xffffffffu, end, owner);
++      return {base + uint32_t(owner), first, min(kRows, last - first)};
++    }
++    job -= __shfl_sync(0xffffffffu, prefix, 31);
++  }
++  return {0, 0, 0};
++}
++
++template <uint32_t Fragments>
++SGL_DEVICE void run_tile(const Params& p, const Tile tile, bf16_t* active) {
++  const uint32_t lane = threadIdx.x % 32;
++  const uint32_t column = blockIdx.x * kColumns + (threadIdx.x / 32) * 64;
++  const float global = cast<float>(p.gate_scales[tile.expert]);
++  const uint32_t groups = p.intermediate / 16;
++  float4 sums[4][Fragments] = {};
++  for (uint32_t slab = 0; slab < p.intermediate; slab += kSlab) {
++    for (uint32_t i = threadIdx.x; i < 8 * Fragments * kSlab; i += 32 * kWarps) {
++      const uint32_t row = i / kSlab, k = i % kSlab;
++      bf16_t value = cast<bf16_t>(0.0f);
++      if (row < tile.rows) {
++        const bf16_t* src = p.gate_up + size_t(tile.first + row) * (2 * p.intermediate) + slab + k;
++        float gate = muse_expert_scaled_silu::scale_and_round(src[0], global);
++        float up = muse_expert_scaled_silu::scale_and_round(src[p.intermediate], global);
++        value = cast<bf16_t>(apply_activation_f32<ActivationKind::kSiLU>(gate) * up);
++      }
++      active[row * kStride + k] = value;
++    }
++    __syncthreads();
++    for (uint32_t k = 0; k < kSlab; k += 16) {
++      const size_t base = (size_t(tile.expert) * groups + (slab + k) / 16) * p.hidden + column;
++      using Words = AlignedVector<uint32_t, 4>;
++      using ScalePairs = AlignedVector<uint16_t, 4>;
++      const auto words = *reinterpret_cast<const Words*>(p.weights + base * 2 + lane * 4);
++      const auto scales = *reinterpret_cast<const ScalePairs*>(p.scales + base + (lane / 4) * 8);
++#pragma unroll
++      for (uint32_t part = 0; part < 4; ++part) {
++        using muse_skinny_gate_up::broadcast_scale;
++        using muse_skinny_gate_up::operand_pair;
++        uint32_t s0 = broadcast_scale(scales[part] & 255);
++        uint32_t s1 = broadcast_scale(scales[part] >> 8);
++        uint32_t a0 = operand_pair(words[part], s0, 0);
++        uint32_t a1 = operand_pair(words[part], s1, 1);
++        uint32_t a2 = operand_pair(words[part], s0, 2);
++        uint32_t a3 = operand_pair(words[part], s1, 3);
++#pragma unroll
++        for (uint32_t frag = 0; frag < Fragments; ++frag) {
++          const bf16_t* x = active + (frag * 8 + lane / 4) * kStride + k + (lane % 4) * 2;
++          const uint32_t b0 = *reinterpret_cast<const uint32_t*>(x);
++          const uint32_t b1 = *reinterpret_cast<const uint32_t*>(x + 8);
++          auto& d = sums[part][frag];
++          asm volatile(
++              "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 "
++              "{%0,%1,%2,%3},{%4,%5,%6,%7},{%8,%9},{%0,%1,%2,%3};"
++              : "+f"(d.x), "+f"(d.y), "+f"(d.z), "+f"(d.w)
++              : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1));
++        }
++      }
++    }
++    __syncthreads();
++  }
++#pragma unroll
++  for (uint32_t part = 0; part < 4; ++part) {
++#pragma unroll
++    for (uint32_t frag = 0; frag < Fragments; ++frag) {
++      const auto d = sums[part][frag];
++      const float vals[] = {d.x, d.y, d.z, d.w};
++#pragma unroll
++      for (uint32_t i = 0; i < 4; ++i) {
++        uint32_t row = frag * 8 + (lane % 4) * 2 + i % 2;
++        uint32_t n = column + part * 16 + lane / 4 + (i / 2) * 8;
++        if (row < tile.rows) p.output[size_t(tile.first + row) * p.hidden + n] = cast<bf16_t>(vals[i]);
++      }
++    }
++  }
++}
++
++__global__ __launch_bounds__(32 * kWarps) void run_kernel(const __grid_constant__ Params p) {
++  __shared__ __align__(16) bf16_t active[kRows * kStride];
++  const Tile tile = locate(p, blockIdx.y);
++  if (tile.rows > 16) {
++    run_tile<4>(p, tile, active);
++  } else if (tile.rows > 8) {
++    run_tile<2>(p, tile, active);
++  } else if (tile.rows > 0) {
++    run_tile<1>(p, tile, active);
++  }
++}
++
++}  // namespace muse_activated_down
++
++struct MuseActivatedDown {
++  static void run(
++      tvm::ffi::TensorView gate_up,
++      tvm::ffi::TensorView output,
++      tvm::ffi::TensorView weights,
++      tvm::ffi::TensorView scales,
++      tvm::ffi::TensorView gate_scales,
++      tvm::ffi::TensorView offsets) {
++    using namespace host;
++    using namespace muse_activated_down;
++    auto rows = SymbolicSize{"routes"}, n = SymbolicSize{"hidden"}, gates = SymbolicSize{"gate_up"};
++    auto e = SymbolicSize{"experts"}, g = SymbolicSize{"groups"}, words = SymbolicSize{"words"};
++    auto boundaries = SymbolicSize{"boundaries"};
++    auto dev = SymbolicDevice{};
++    dev.set_options<kDLCUDA>();
++    TensorMatcher({rows, gates}).with_dtype<bf16_t>().with_device(dev).verify(gate_up);
++    TensorMatcher({rows, n}).with_dtype<bf16_t>().with_device(dev).verify(output);
++    TensorMatcher({e, g, words}).with_dtype<int32_t>().with_device(dev).verify(weights);
++    TensorMatcher({e, g, n}).with_dtype<uint8_t>().with_device(dev).verify(scales);
++    TensorMatcher({e}).with_dtype<bf16_t>().with_device(dev).verify(gate_scales);
++    TensorMatcher({boundaries}).with_dtype<int32_t>().with_device(dev).verify(offsets);
++    RuntimeCheck(g.unwrap() * 32 == gates.unwrap() && words.unwrap() == 2 * n.unwrap(), "incompatible W2 geometry");
++    RuntimeCheck(n.unwrap() % kColumns == 0 && (gates.unwrap() / 2) % kSlab == 0, "unaligned W2 geometry");
++    RuntimeCheck(boundaries.unwrap() == e.unwrap() + 1 && rows.unwrap() > 0 && e.unwrap() > 0, "invalid routes");
++    const Params p{
++        .gate_up = static_cast<const bf16_t*>(gate_up.data_ptr()),
++        .output = static_cast<bf16_t*>(output.data_ptr()),
++        .weights = static_cast<const uint32_t*>(weights.data_ptr()),
++        .scales = static_cast<const uint8_t*>(scales.data_ptr()),
++        .gate_scales = static_cast<const bf16_t*>(gate_scales.data_ptr()),
++        .offsets = static_cast<const int32_t*>(offsets.data_ptr()),
++        .intermediate = static_cast<uint32_t>(gates.unwrap() / 2),
++        .hidden = static_cast<uint32_t>(n.unwrap()),
++        .experts = static_cast<uint32_t>(e.unwrap()),
++    };
++    const auto slots = static_cast<uint32_t>(rows.unwrap());
++    const auto first_tiles = std::min(slots, p.experts);
++    const dim3 grid(p.hidden / kColumns, first_tiles + (slots - first_tiles) / kRows);
++    LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_kernel, p);
++  }
++};
++
++}  // namespace sglang
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index c21db4d..5d8b327 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2029,6 +2029,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_ROUTED_NORM = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_SKINNY_GATE_UP = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_ACTIVATED_DOWN = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 3370d23..d4898d7 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -49,6 +49,20 @@ def _skinny_gate_up_module():
+         return None
+ 
+ 
++@cache_once
++def _activated_down_module():
++    try:
++        return load_jit(
++            "muse_activated_down",
++            cuda_files=["muse_spark/expert_activated_down.cuh"],
++            cuda_wrappers=[("run", "MuseActivatedDown::run")],
++            extra_cuda_cflags=get_activation_cuda_cflags(),
++        )
++    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Falling back to separate Humming SiLU and W2: %s", exc)
++        return None
++
++
+ def _decode_tuning_config(
+     config: dict,
+     shape_n: int,
+@@ -211,6 +225,24 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+                 # Build once during preparation, outside CUDA graph capture.
+                 and _skinny_gate_up_module() is not None
+             )
++        elif name == "w2":
++            layer.humming_activated_down = (
++                prepare_grouped_decode
++                and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_ACTIVATED_DOWN.get()
++                and meta.mma_type == MmaType.WGMMA
++                and not meta.use_packed_k_layout
++                and not meta.use_fused_e8m0_scale
++                and not meta.should_apply_bs_on_c
++                and n % 512 == 0
++                and k % 128 == 0
++                and tensors["weight"].shape == (experts, k // 16, n * 2)
++                and tensors["weight"].dtype == torch.int32
++                and tensors["weight_scale"].shape == (experts, k // 16, n)
++                and tensors["weight_scale"].dtype == torch.float8_e4m3fn
++                and tensors["weight"].is_contiguous()
++                and tensors["weight_scale"].is_contiguous()
++                and _activated_down_module() is not None
++            )
+         params[meta.weight_name] = tensors["weight"]
+         params[meta.weight_scale_name] = tensors["weight_scale"]
+         # Stock Marlin collapses the gate/up global scales to the gate value
+@@ -510,6 +542,7 @@ def humming_grouped_decode_outputs(
+     # At sparse occupancy the warp kernel loads one packed weight tile for up
+     # to eight live routes and writes the activation directly into a second bank.
+     skinny_gate_up = layer.humming_skinny_gate_up and slots <= layer.global_num_experts
++    activated_down = layer.humming_activated_down and slots > layer.global_num_experts
+     arena_width = intermediate if skinny_gate_up else 2 * intermediate
+     arena = hidden_states.new_empty(slots * max(arena_width, hidden_size))
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+@@ -519,7 +552,10 @@ def humming_grouped_decode_outputs(
+     else:
+         gate_up = arena[: slots * 2 * intermediate].view(slots, 2 * intermediate)
+         activations = staging[: slots * intermediate].view(slots, intermediate)
+-        outputs = arena[: slots * hidden_size].view(slots, hidden_size)
++        # W2 can reclaim the staged W13 input once W13 completes. Its gate/up
++        # operand stays in the independent arena throughout the fused call.
++        output_bank = staging if activated_down else arena
++        outputs = output_bank[: slots * hidden_size].view(slots, hidden_size)
+     if norm_weight is not None:
+         _stage_token_routes[(hidden_states.shape[0],)](
+             topk_ids, expert_map if expert_map is not None else topk_ids,
+@@ -575,6 +611,8 @@ def humming_grouped_decode_outputs(
+             layer.w13_global_scale, offsets,
+         )
+         projections = (("w2", activations, outputs),)
++    elif activated_down:
++        projections = (("w13", inputs, gate_up),)
+     else:
+         projections = (("w13", inputs, gate_up), ("w2", activations, outputs))
+     for name, source, destination in projections:
+@@ -592,7 +630,12 @@ def humming_grouped_decode_outputs(
+             tuning_config=tuning,
+             sublayer_name=name,
+         )
+-        if name == "w13":
++        if name == "w13" and activated_down:
++            _activated_down_module().run(
++                gate_up, outputs, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
++                layer.w13_global_scale, offsets,
++            )
++        elif name == "w13":
+             _expert_scaled_silu_module().run(
+                 gate_up, activations, row_keys, offsets, layer.w13_global_scale, span
+             )

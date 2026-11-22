@@ -1,0 +1,67 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+index 1e8b269..a6cf159 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+@@ -78 +78,49 @@ struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
+ };
++
++// The first warp builds one shared prefix of expert tile starts per CTA.
++template<class Ctx> struct MuseWarpSchedule {
++  using Block = typename Ctx::BlockShape;
++  using Shape = typename Ctx::ProblemShape;
++  static_assert(Ctx::kIsGroupedContiguousGemm && Ctx::kNumExperts == 32 && Ctx::kMultiCastSize == 1);
++  static_assert(!Ctx::kUseTmaC && !Ctx::kUseStreamK && Ctx::kUseWarpSpec);
++  static constexpr uint32_t cols = Shape::N / Block::N, k_block_id = 0, slice_count = 1, slice_id = 0, locks_offset = 0;
++  Ctx &ctx;
++  uint32_t job = blockIdx.x;
++  uint32_t expert_id, m_block_id, n_block_id, m_offset, current_shape_m, slice_iters;
++
++  CUDA_INLINE MuseWarpSchedule(Ctx &ctx) : ctx(ctx) {
++    unsigned lane = threadIdx.x;
++    if (lane < 32) {
++      unsigned start = ctx.params.expert_layout_ptr[lane << ctx.params.use_int64_expert_layout];
++      unsigned end = __shfl_down_sync(~0u, start, 1);
++      if (lane == 31) end = ctx.params.shape_m;
++      unsigned tiles = CEIL_DIV(end - start, Block::M);
++      unsigned prefix = tiles;
++      #pragma unroll
++      for (int d = 1; d < 32; d *= 2) {
++        unsigned prev = __shfl_up_sync(~0u, prefix, d);
++        if (lane >= d) prefix += prev;
++      }
++      ctx.smem.expert_offset[lane] = start;
++      ctx.smem.expert_tokens[lane] = prefix - tiles;
++      if (lane == 31) {
++        ctx.smem.expert_offset[32] = end;
++        ctx.smem.total_m_blocks[0] = prefix;
++      }
++    }
++    __syncthreads();
++  }
++
++  CUDA_INLINE bool get_next_block() {
++    if (job >= ctx.smem.total_m_blocks[0] * cols) return false;
++    m_block_id = job / cols;
++    n_block_id = job % cols;
++    job += gridDim.x;
++    unsigned start = ctx.smem.expert_tokens[threadIdx.x % 32];
++    expert_id = 31 - __clz(__ballot_sync(~0u, start <= m_block_id));
++    m_offset = ctx.smem.expert_offset[expert_id] + (m_block_id - __shfl_sync(~0u, start, expert_id)) * Block::M;
++    current_shape_m = ctx.smem.expert_offset[expert_id + 1];
++    slice_iters = Shape::K / Block::K;
++    return true;
++  }
++};
+diff --git a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+index 61b45bd..9c8a44f 100644
+--- a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
++++ b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+@@ -23,2 +23,8 @@ def bind_live_decode_reduce(kernel):
+ 
++    scheduler = "using Scheduler = Scheduler<Ctx>;"
++    if kernel.code.count(scheduler) != 1:
++        raise ValueError("unsupported grouped decode scheduler")
++    kernel.code = kernel.code.replace(scheduler,
++        "using Scheduler = std::conditional_t<Ctx::kNumExperts == 32, MuseWarpSchedule<Ctx>, ::Scheduler<Ctx>>;")
++
+     if kernel.block_shape[0] > 8:

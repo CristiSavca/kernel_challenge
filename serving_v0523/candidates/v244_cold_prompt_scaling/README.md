@@ -1,0 +1,23 @@
+# V244 measures how cold prefill scales with context
+
+On two archived eight-H200 runs, adding 16,384 past keys to a 16,384-query single-user chunk increased its elapsed scheduler interval by **24.6 ms on V41 and 27.1 ms on V44**. A typical interior interval was 1.37 s and 1.23 s, respectively. The public V64 one-user result had first-turn TTFT p90 of 5.419 s, later-turn p90 of 0.175 s and a 1.17× frontier ratio. The older runs expose individual requests and service intervals. The V64 receipt exposes aggregate performance. [Measurements and input hashes](check.json) · [Official V64](../../runs/abd217baf0ed49fd.json)
+
+| Observed or modeled quantity | V41 | V44 |
+| --- | ---: | ---: |
+| Isolated cold prompts | 3 | 3 |
+| Interior fixed-size intervals | 9 | 9 |
+| Marginal seconds per extra 16,384 × 16,384 query/key pairs | 0.0246 | 0.0271 |
+| Leave-one-prompt-out range, ms | 19.3–37.3 | 26.7–27.6 |
+| Implied time at 74,160 cold tokens, seconds | 0.252 | 0.277 |
+| Estimated fraction of actual first-token time across three prompts | 3.54–5.73% | 4.38–7.05% |
+| Modeled raw one-user throughput gain from halving this term | 0.45–1.05% | 0.51–1.14% |
+
+The measurements isolate the cost that grows with stored history while holding the new-query count constant. Sixteen full-attention layers have 16 query heads of width 64 per rank. One additional 16,384-token history block adds 17.59 trillion useful FP8 multiply/add operations per rank across QK and AV. Attributing the entire observed slope to that work gives 650–716 TFLOP/s. The sliding window has already reached its full 2,048 tokens in every retained interval. The slopes also absorb other history-sensitive work, including page handling, queue effects and progress-dependent changes in the workload. The model does not time individual kernels. [Source, formulas and per-request estimates](check.py) · [Earlier native FA3 dispatch measurement](../v170_long_prefill_attention_feasibility/README.md)
+
+Each interior sample required three consecutive 16,384-token reports with one new request, an empty queue, no running decode, zero cache hits and the exact remaining prompt count. The scheduler reports live inputs divided by elapsed wall time since its previous prefill report. The first report includes time before the request. Reports next to a short final chunk can include pipeline overlap. Moving all nine estimates by one fixed-size chunk in either direction leaves the within-request slope identical. V41 and V44 ran the same three prompt texts, so the six turns are not six independent workload draws. The V41 leave-one-out range also reflects the limited sample size. [Scheduler timing code](../../sglang/python/sglang/srt/managers/scheduler_components/metrics_reporter.py) · [Interval selection and sensitivity](check.json)
+
+**Cold-kernel decision.** A new long-context kernel that doubled the modeled history-sensitive work rate would save roughly 126–139 ms on the 74,160-token shape. Even eliminating this entire term in each of the six measured turns still requires the remaining work to run 1.86–1.93× faster to halve first-token time, or 2.79–2.89× faster to cut it to one third. This makes the fixed-query-cost model body and its long-prompt communication higher-priority measurements. Per-layer timings would be needed to assign that cost among dense projections, expert compute, routing, context projection, attention's per-query work and host synchronization. [Per-turn calculation](check.json)
+
+**Larger-chunk decision.** Increasing the chunk from 16,384 to 32,768 or 65,536 cuts the public illustrative prompt from five model sweeps to three or two. All 2.75 billion causal query/key pairs and all per-token model work remain. If each removed sweep had read the full 69.945 GB of resident weights once per rank, that one-pass volume is equivalent to 29–31 ms or 44–47 ms at 4.8 TB/s. This is a bandwidth conversion, not a bound on achieved throughput. Repeated HBM reads and slower kernels could make the gain larger, and weight/compute overlap can make it smaller. One additional unsharded BF16 hidden-state buffer at those sizes would use 256 MiB or 768 MiB per rank. V64's reported peak was 1.9 GB over stock against a 2 GB limit. V241's peak has not been measured. On the three real prompts, the current prefill keys added just 399, 4 and 432 padded rows across each complete cold request. There is little measured waste to recover by adding more graph keys. [Sweep and buffer sensitivities](check.json) · [Actual graph keys](../v232_mixed_prompt_overflow/geometry.json)
+
+V244 is a local feasibility result. It creates no serving patch or queue entry. Reproduce it with `python3 -B check.py` from any directory.

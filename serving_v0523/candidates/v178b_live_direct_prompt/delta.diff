@@ -1,0 +1,31 @@
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index cd642d3..9ad903b 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -5,6 +5,11 @@ from sglang.srt.layers.radix_attention import AttentionType
+ from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
+ from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardMode
++from sglang.srt.model_executor.runner_utils.prefill_graph import (
++    get_prefill_raw_num_tokens,
++    is_in_full_prefill_graph,
++    is_in_prefill_graph_scope,
++)
+ 
+ 
+ def supports_direct_prompt_pool(pool, dtype):
+@@ -32,6 +37,14 @@ def prepare_direct_prompt_kv(backend, q, k, v, layer, batch, write, k_scale, v_s
+             or type(rows[0]) is not int or type(prefixes[0]) is not int):
+         return None
+     n, prefix = rows[0], prefixes[0]
++    if is_in_prefill_graph_scope():
++        # Warmup and capture construct synthetic rows at slot zero. Live Breakable replay
++        # supplies the current request's raw row count before narrowing the captured operands.
++        if is_in_full_prefill_graph() or get_prefill_raw_num_tokens() != n:
++            return None
++    elif batch.req_pool_indices_cpu is None:
++        # Ordinary scheduling publishes this CPU mirror when allocating and mapping request slots.
++        return None
+     width = layer.sliding_window_size
+     halo = min(prefix, width) if width is not None and width >= 0 else prefix
+     pool = backend.token_to_kv_pool

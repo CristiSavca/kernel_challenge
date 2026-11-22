@@ -1,0 +1,252 @@
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index 8178ba3..da58eec 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -356,6 +356,7 @@ class LogitsMetadata:
+     # DRAFT_EXTEND_V2: when set, lm_head and LAST hidden capture use only these
+     # rows (see EagleDraftExtendInput.select_index).
+     draft_extend_select_index: Optional[torch.Tensor] = None
++    mixed_verify_logits_indices: Optional[torch.Tensor] = None
+ 
+     @classmethod
+     def from_forward_batch(cls, forward_batch: ForwardBatch):
+@@ -419,6 +420,7 @@ class LogitsMetadata:
+             dp_padding_mode=DpPaddingMode.SUM_LEN,
+             mm_input_embeds=forward_batch.mm_input_embeds,
+             draft_extend_select_index=draft_extend_select_index,
++            mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
+         )
+ 
+     def compute_dp_attention_metadata(self):
+@@ -719,7 +721,13 @@ class LogitsProcessor(nn.Module):
+             and not logits_metadata.extend_return_logprob
+         ):
+             # Prefill without input logprobs.
+-            last_index = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
++            last_index = logits_metadata.mixed_verify_logits_indices
++            if last_index is None:
++                last_index = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
++            else:
++                # FULL capture below retains every real tap; take only the LM-head
++                # rows here, avoiding a second wide slice of the packed draft taps.
++                return hidden_states[last_index], None, None, None, None, token_to_seq_idx
+             pruned_states = hidden_states[last_index]
+             if hidden_states_before_norm is not None:
+                 pruned_states_before_norm = hidden_states_before_norm[last_index]
+diff --git a/python/sglang/srt/managers/tp_worker.py b/python/sglang/srt/managers/tp_worker.py
+index 5058c3f..65b7bb4 100644
+--- a/python/sglang/srt/managers/tp_worker.py
++++ b/python/sglang/srt/managers/tp_worker.py
+@@ -43,6 +43,7 @@ from sglang.srt.mem_cache.memory_pool import ReqToTokenPool
+ from sglang.srt.model_executor.forward_batch_info import (
+     CaptureHiddenMode,
+     ForwardBatch,
++    ForwardMode,
+     PPProxyTensors,
+ )
+ from sglang.srt.model_executor.graph_memory_usage import (
+@@ -629,7 +630,54 @@ class TpModelWorker(BaseTpWorker):
+         *,
+         capture_hidden_mode: Optional[CaptureHiddenMode] = None,
+         return_kv_loc_plan: bool = False,
++        mixed_verify_prompt_count: Optional[int] = None,
+     ) -> GenerationBatchResult:
++        # This explicit entry accepts real prompt rows followed by fully reserved
++        # DFLASH linear chains. Their caller owns prompt sampling and tail settlement.
++        if mixed_verify_prompt_count is not None:
++            parallel = get_parallel()
++            if (
++                batch is None
++                or not is_verify
++                or capture_hidden_mode != CaptureHiddenMode.FULL
++                or not return_kv_loc_plan
++                or not batch.spec_algorithm.is_dflash()
++                or self.model_runner.is_draft_worker
++                or self.is_dllm()
++                or (parallel.dp_size, parallel.pp_size, parallel.attn_cp_size, parallel.attn_dcp_size)
++                != (1, 1, 1, 1)
++                or get_exec().features.enable_encoder_swa_bounded_replay
++                or batch.beam_tail is not None
++                or any(req.beam_group is not None for req in batch.reqs)
++            ):
++                raise ValueError("mixed DFLASH target forward requires a TP-only causal verification batch")
++            # Check the host-owned layout before init_new launches position and KV
++            # preparation. The scheduler must supply its resolved CPU mirror and slots.
++            lengths = batch.extend_lens
++            prefixes = batch.prefix_lens
++            seq_cpu = batch.seq_lens_cpu
++            rows = len(batch.reqs)
++            width = get_spec().speculative_num_draft_tokens
++            if (
++                batch.forward_mode != ForwardMode.EXTEND
++                or batch.input_embeds is not None
++                or batch.replace_embeds is not None
++                or type(mixed_verify_prompt_count) is not int
++                or not 0 < mixed_verify_prompt_count < rows
++                or type(width) is not int or width < 2
++                or not isinstance(lengths, list) or len(lengths) != rows
++                or not isinstance(prefixes, list) or len(prefixes) != rows
++                or any(type(n) is not int or n <= 0 for n in lengths)
++                or any(type(p) is not int or p < 0 for p in prefixes)
++                or any(n != width for n in lengths[mixed_verify_prompt_count:])
++                or seq_cpu is None or seq_cpu.device.type != "cpu"
++                or seq_cpu.tolist() != [p + n for p, n in zip(prefixes, lengths)]
++                or batch.seq_lens.shape != (rows,) or batch.req_pool_indices.shape != (rows,)
++                or batch.input_ids is None or batch.input_ids.shape != (sum(lengths),)
++                or batch.extend_num_tokens != batch.input_ids.numel()
++                or batch.out_cache_loc is None or batch.out_cache_loc.shape != batch.input_ids.shape
++            ):
++                raise ValueError("inconsistent resolved lengths or slots for mixed target verification")
+         # Get forward batch from schedule batch
+         folded = None
+         if batch is not None:
+@@ -656,6 +704,8 @@ class TpModelWorker(BaseTpWorker):
+                 capture_hidden_mode=capture_hidden_mode,
+                 return_hidden_states_before_norm=False,
+             )
++            if mixed_verify_prompt_count is not None:
++                forward_batch.set_mixed_verify_rows(mixed_verify_prompt_count)
+             if folded is not None:
+                 apply_folded_extend(folded, forward_batch)
+         else:
+@@ -709,6 +759,18 @@ class TpModelWorker(BaseTpWorker):
+                 ),
+             )
+ 
++            if mixed_verify_prompt_count is not None:
++                indices = forward_batch.mixed_verify_logits_indices
++                if (
++                    logits_output is None
++                    or logits_output.next_token_logits is None
++                    or logits_output.next_token_logits.shape
++                    != (indices.numel(), self.model_runner.model_config.vocab_size)
++                    or logits_output.hidden_states is None
++                    or logits_output.hidden_states.ndim != 2
++                    or logits_output.hidden_states.shape[0] != batch.extend_num_tokens
++                ):
++                    raise RuntimeError("mixed target returned an incomplete logits or hidden-state layout")
+             capture_pre_sample_logits(batch, forward_batch, logits_output)
+ 
+             if is_verify:
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index a8280c2..6422e15 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -730,6 +730,8 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+ 
+     # For logits and logprobs post processing
+     next_token_logits_buffer: torch.Tensor = None
++    # Live raw-token indices for the eager LM-head tail of a combined prompt/verify body.
++    mixed_verify_logits_indices: Optional[torch.Tensor] = None
+     temperature: torch.Tensor = None
+     top_p: torch.Tensor = None
+ 
+@@ -1495,6 +1497,35 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+             for mm_input in self.mm_inputs
+         )
+ 
++    def set_mixed_verify_rows(self, prompt_count: int) -> None:
++        """Bind the verifier-only output layout to this fully prepared causal EXTEND."""
++        lengths = self.extend_seq_lens_cpu
++        if (
++            self.forward_mode != ForwardMode.EXTEND
++            or self.capture_hidden_mode != CaptureHiddenMode.FULL
++            or self.return_logprob
++            or self.is_prefill_only
++            or self.spec_info is not None
++            or self.tbo_split_seq_index is not None
++            or self.token_indices_to_pool is not None
++            or self.multi_item_delimiter_indices is not None
++            or self.contains_mm_inputs()
++            or self.extend_seq_lens is None
++            or self.extend_seq_lens.shape != (self.batch_size,)
++            or self.extend_seq_lens.device != self.input_ids.device
++            or self.positions is None
++            or self.positions.shape != self.input_ids.shape
++            or self.out_cache_loc is None
++            or self.out_cache_loc.shape != self.input_ids.shape
++        ):
++            raise ValueError("invalid causal prompt/verification batch layout")
++        # CPU planning supplies only lengths. Actual token IDs, logits and KV stay on device.
++        prompt_ends = self.extend_seq_lens[:prompt_count].cumsum(0, dtype=torch.int64) - 1
++        tail_rows = torch.arange(
++            sum(lengths[:prompt_count]), self.input_ids.numel(), device=self.input_ids.device
++        )
++        self.mixed_verify_logits_indices = torch.cat((prompt_ends, tail_rows))
++
+     def contains_mm_inputs(self) -> bool:
+         return (
+             self.contains_audio_inputs()
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..cddb9d3 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -744,6 +744,8 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         return self.prefill_backend_name in (Backend.BREAKABLE, Backend.FULL)
+ 
+     def _prefill_logits_buffer_rows(self, forward_batch: ForwardBatch) -> int:
++        if forward_batch.mixed_verify_logits_indices is not None:
++            return forward_batch.mixed_verify_logits_indices.numel()
+         if not forward_batch.return_logprob:
+             return forward_batch.batch_size
+         assert self._uses_eager_prefill_tail(), (
+@@ -1421,6 +1423,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         return True
+ 
+     def can_run_graph(self, forward_batch: ForwardBatch) -> bool:
++        # Only body-capture backends run the LM head eagerly with per-call row selection.
++        if forward_batch.mixed_verify_logits_indices is not None and not self._uses_eager_prefill_tail():
++            return False
+         # DP check: group verdict from the schedule-time all-gather
+         # (min-reduced votes; also requires every rank to hold tokens).
+         if (
+@@ -2005,6 +2010,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             extend_seq_lens=forward_batch.extend_seq_lens,
+             extend_prefix_lens=forward_batch.extend_prefix_lens,
+             extend_start_loc=forward_batch.extend_start_loc,
++            mixed_verify_logits_indices=forward_batch.mixed_verify_logits_indices,
+             extend_prefix_lens_cpu=forward_batch.extend_prefix_lens_cpu,
+             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,
+@@ -2277,7 +2283,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             )
+ 
+     def _trim_logits_output(
+-        self, output: LogitsProcessorOutput
++        self, output: LogitsProcessorOutput, mixed_verify_rows: Optional[int] = None
+     ) -> LogitsProcessorOutput:
+         # Preserve mm_input_embeds for speculative decoding.
+         mm_input_embeds = None
+@@ -2287,6 +2293,8 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         ):
+             mm_input_embeds = output.mm_input_embeds[: self.raw_num_tokens]
+         logits_rows = self.raw_bs if self._is_full_backend else self.raw_num_tokens
++        if mixed_verify_rows is not None:
++            logits_rows = mixed_verify_rows
+         return LogitsProcessorOutput(
+             next_token_logits=(
+                 output.next_token_logits[:logits_rows]
+@@ -2317,12 +2325,12 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         )
+ 
+     def _finalize_execute_output(
+-        self, output
++        self, output, mixed_verify_rows: Optional[int] = None
+     ) -> Optional[Union[LogitsProcessorOutput, PPProxyTensors, EmbeddingPoolerOutput]]:
+         if output is None:
+             return None
+         if isinstance(output, LogitsProcessorOutput):
+-            return self._trim_logits_output(output)
++            return self._trim_logits_output(output, mixed_verify_rows)
+         if isinstance(output, EmbeddingPoolerOutput):
+             return output
+         assert isinstance(output, PPProxyTensors)
+@@ -2393,4 +2401,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                     raw_num_tokens,
+                     **kwargs,
+                 )
+-            return self._finalize_execute_output(output)
++            indices = forward_batch.mixed_verify_logits_indices
++            return self._finalize_execute_output(
++                output, indices.numel() if indices is not None else None
++            )

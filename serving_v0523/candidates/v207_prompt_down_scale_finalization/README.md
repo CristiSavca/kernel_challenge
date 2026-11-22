@@ -1,0 +1,7 @@
+# V207 folds the grouped prompt expert scale into finalization
+
+V207 removes the per-route scale lookup and full BF16 multiply pass between the grouped down-projection and the existing expert finalizer. The finalizer uses the original expert ID and global scale. It rounds each scaled result to BF16 before the original RMSNorm and routing-weight reduction. Direct callers of the expert-output helper still receive scaled results. The indexed fallback retains its original contract. [Two-file change](delta.diff) · [Full patch](patch.diff)
+
+At 16,384 live local routes of width 4,096, the removed materialization reads and writes 128 MiB each per eligible layer and GPU. Actual route counts depend on the router. Host dispatch recorded one fewer scale gather and one fewer matrix-wide elementwise pass in all eight compact scenarios. Across compact, indexed and empty-expert scenarios, all 25,165,824 output BF16 words matched V206, including their bit patterns. The test runs the host dispatch and models GPU launches. The separate interpreter exercised the actual Triton finalizer body on 1,874,600 values, including remote routes, poisoned padding and both norm orders. [Dispatch replay](callback.json) · [Finalizer arithmetic](finalizer.json) · [Decode fallback](decode.json)
+
+The official export is 294,141 bytes. Forward and reverse reconstruction and the published static checks passed. H200 token agreement, memory, TTFT and speed are unmeasured. [Manifest](validation.json)

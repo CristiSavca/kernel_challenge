@@ -1,0 +1,123 @@
+diff --git a/python/sglang/srt/layers/communication/sp_attention_return.py b/python/sglang/srt/layers/communication/sp_attention_return.py
+new file mode 100644
+index 0000000..10291ab
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_attention_return.py
+@@ -0,0 +1,77 @@
++"""Pipeline the SP attention output GEMM with its native tensor-parallel reduction."""
++
++import torch
++
++
++def enable_striped_return(linears, group):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
++    from sglang.srt.runtime_context import get_exec, get_lora
++
++    if group.world_size < 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return
++    comm = group.pynccl_comm
++    ready = (
++        comm is not None and comm.available and torch.cuda.get_device_capability(comm.device)[0] == 9
++        and not group.is_symmetric_memory_enabled() and not get_lora().enable_lora
++        and not is_batch_invariant_mode_enabled() and not torch.is_autocast_enabled()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not torch.are_deterministic_algorithms_enabled() and bool(linears)
++        and all(
++            layer.tp_group is not None and layer.tp_group.ranks == group.ranks and layer.bias is None
++            and type(layer.quant_method) is UnquantizedLinearMethod and "apply" not in vars(layer.quant_method)
++            and layer.weight.device == comm.device and layer.weight.dtype == torch.bfloat16
++            and layer.weight.ndim == 2 and layer.weight.is_contiguous() and not layer.weight.requires_grad
++            for layer in linears
++        )
++    )
++    vote = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if vote.item():
++        stream = torch.cuda.Stream(device=comm.device)
++        for layer in linears:
++            layer._sp_return_stream = stream
++            layer._sp_return_method = layer.quant_method
++
++
++def striped_return_eligible(rows, width):
++    # Two large, aligned output GEMMs amortize the extra launch and local copy.
++    return width % 256 == 0 and rows >= 2048 and rows * width >= 64 * 1024 * 1024
++
++
++def striped_attention_return(x, weight, group, stream):
++    from sglang.srt.layers.layernorm_sp import reduce_scatter_token_rows
++    from sglang.srt.layers.quantization.unquant import get_bf16_gemm_backend
++
++    backend = get_bf16_gemm_backend()
++    if (backend.is_cutedsl() or backend.is_gemv() or weight.requires_grad or weight.device != x.device
++            or weight.dtype != x.dtype or not weight.is_contiguous()):
++        return None
++    width = weight.shape[0] // 2
++    partials = x.new_empty((2, x.shape[0], width))
++    full_shape = partials.view(x.shape[0], width * 2)
++    # Compare the native dispatcher on the actual device and allocation. A stripe
++    # must not cross into a smaller-message accelerator or use another SUM path.
++    method = group._resolve_outplace_all_reduce_method(full_shape)
++    if method not in (None, "pynccl") or any(
++        group._can_use_flashinfer_allreduce(t) or group._resolve_outplace_all_reduce_method(t) != method
++        for t in (full_shape, partials[0], partials[1])
++    ):
++        return None
++    rows = (x.shape[0] + group.world_size - 1) // group.world_size
++    result = x.new_empty((rows, width * 2))
++    compute = torch.cuda.current_stream(x.device)
++    # Same dense BF16 out-parameter operation as UnquantizedLinearMethod.apply_into.
++    torch.mm(x, weight[:width].t(), out=partials[0])
++    stream.wait_stream(compute)
++    try:
++        with torch.cuda.stream(stream):
++            result[:, :width].copy_(reduce_scatter_token_rows(partials[0], group))
++        torch.mm(x, weight[width:].t(), out=partials[1])
++    finally:
++        # Both allocations belong to compute. Join even on a failed GEMM.
++        compute.wait_stream(stream)
++    result[:, width:].copy_(reduce_scatter_token_rows(partials[1], group))
++    return result
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 8af97f1..03913fd 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -296,6 +296,20 @@ def row_parallel_gbar_matmul(linear, input_: torch.Tensor, bias) -> torch.Tensor
+     x = input_.contiguous()
+     if getattr(linear, "_sp_unfused_collective", False):
+         group = linear.tp_group
++        stream = getattr(linear, "_sp_return_stream", None)
++        if (
++            stream is not None and bias is None and not torch.compiler.is_compiling()
++            and linear.quant_method is linear._sp_return_method and "apply" not in vars(linear.quant_method)
++            and x.ndim == 2 and x.dtype == torch.bfloat16 and not x.requires_grad
++            and not torch.is_autocast_enabled() and not torch.are_deterministic_algorithms_enabled()
++            and not group.is_symmetric_memory_enabled()
++        ):
++            from sglang.srt.layers.communication.sp_attention_return import striped_attention_return, striped_return_eligible
++
++            if striped_return_eligible(x.shape[0], linear.weight.shape[0]):
++                shard = striped_attention_return(x, linear.weight, group, stream)
++                if shard is not None:
++                    return shard
+         with group.use_symmetric_memory(group):
+             full = linear.quant_method.apply(linear, x, bias)
+         return reduce_scatter_token_rows(full, group)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index b3091c9..aa16960 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1248,6 +1248,10 @@ class MuseSpark1xModel(nn.Module):
+             # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
+             backend = get_moe_runner_backend()
+             replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            if replicate_expert_input:
++                from sglang.srt.layers.communication.sp_attention_return import enable_striped_return
++
++                enable_striped_return([layer.self_attn.o_proj for layer in self.layers], get_parallel().tp_group)
+             moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]

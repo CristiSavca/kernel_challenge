@@ -1,0 +1,107 @@
+{
+  "scored_v64_startup": "serving_v0523/runs/abd217baf0ed49fd.json",
+  "page_size": 1,
+  "staging_capacity_pages": 64,
+  "assumptions": "One backup of this many pages from one named pool; host slots contiguous within each staging chunk or all fragmented. One K and one V copy per run. Host-hit and backup volumes are unmeasured.",
+  "cases": [
+    {
+      "pool": "target_full",
+      "layers": 16,
+      "tokens": 64,
+      "K_page_bytes": 2048,
+      "copy_bytes": 262144,
+      "relayouts": 1,
+      "stock_async_copy_calls": 128,
+      "candidate_contiguous_async_copy_calls": 2,
+      "candidate_fully_fragmented_async_copy_calls": 128
+    },
+    {
+      "pool": "target_full",
+      "layers": 16,
+      "tokens": 1024,
+      "K_page_bytes": 2048,
+      "copy_bytes": 4194304,
+      "relayouts": 16,
+      "stock_async_copy_calls": 2048,
+      "candidate_contiguous_async_copy_calls": 32,
+      "candidate_fully_fragmented_async_copy_calls": 2048
+    },
+    {
+      "pool": "target_full",
+      "layers": 16,
+      "tokens": 16384,
+      "K_page_bytes": 2048,
+      "copy_bytes": 67108864,
+      "relayouts": 256,
+      "stock_async_copy_calls": 32768,
+      "candidate_contiguous_async_copy_calls": 512,
+      "candidate_fully_fragmented_async_copy_calls": 32768
+    },
+    {
+      "pool": "target_sliding",
+      "layers": 46,
+      "tokens": 64,
+      "K_page_bytes": 5888,
+      "copy_bytes": 753664,
+      "relayouts": 1,
+      "stock_async_copy_calls": 128,
+      "candidate_contiguous_async_copy_calls": 2,
+      "candidate_fully_fragmented_async_copy_calls": 128
+    },
+    {
+      "pool": "target_sliding",
+      "layers": 46,
+      "tokens": 1024,
+      "K_page_bytes": 5888,
+      "copy_bytes": 12058624,
+      "relayouts": 16,
+      "stock_async_copy_calls": 2048,
+      "candidate_contiguous_async_copy_calls": 32,
+      "candidate_fully_fragmented_async_copy_calls": 2048
+    },
+    {
+      "pool": "target_sliding",
+      "layers": 46,
+      "tokens": 16384,
+      "K_page_bytes": 5888,
+      "copy_bytes": 192937984,
+      "relayouts": 256,
+      "stock_async_copy_calls": 32768,
+      "candidate_contiguous_async_copy_calls": 512,
+      "candidate_fully_fragmented_async_copy_calls": 32768
+    },
+    {
+      "pool": "draft",
+      "layers": 5,
+      "tokens": 64,
+      "K_page_bytes": 1280,
+      "copy_bytes": 163840,
+      "relayouts": 1,
+      "stock_async_copy_calls": 128,
+      "candidate_contiguous_async_copy_calls": 2,
+      "candidate_fully_fragmented_async_copy_calls": 128
+    },
+    {
+      "pool": "draft",
+      "layers": 5,
+      "tokens": 1024,
+      "K_page_bytes": 1280,
+      "copy_bytes": 2621440,
+      "relayouts": 16,
+      "stock_async_copy_calls": 2048,
+      "candidate_contiguous_async_copy_calls": 32,
+      "candidate_fully_fragmented_async_copy_calls": 2048
+    },
+    {
+      "pool": "draft",
+      "layers": 5,
+      "tokens": 16384,
+      "K_page_bytes": 1280,
+      "copy_bytes": 41943040,
+      "relayouts": 256,
+      "stock_async_copy_calls": 32768,
+      "candidate_contiguous_async_copy_calls": 512,
+      "candidate_fully_fragmented_async_copy_calls": 32768
+    }
+  ]
+}

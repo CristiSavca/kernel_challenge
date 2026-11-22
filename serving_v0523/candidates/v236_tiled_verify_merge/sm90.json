@@ -1,0 +1,763 @@
+{
+  "triton": "3.8.0",
+  "physical_h200": false,
+  "source_sha256": [
+    "4e80e7f56cfc0de735316e72b3e6eee14785f9480276996728efb66b45bde268",
+    "3f2bc3fac01d96b37ae43e5b5730ec84b3917d20add4e2c8943847699ffb85c5"
+  ],
+  "compiles": [
+    {
+      "variant": "parent",
+      "batch": 1,
+      "window": -1,
+      "rows": 1,
+      "registers": 47,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 7,
+        "sub.s32": 2,
+        "add.s32": 33,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "a8a42a4d48e65617db65b31b6e89f3c233c6508c23359294122acb19ac3f2a7f",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 1,
+      "window": -1,
+      "rows": 1,
+      "registers": 48,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 7,
+        "sub.s32": 2,
+        "add.s32": 33,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "5e412c792335243446001e28112335fd633bdf1dc98de7cba01aa90285623088",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 1,
+      "window": 2047,
+      "rows": 1,
+      "registers": 47,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 7,
+        "sub.s32": 4,
+        "add.s32": 34,
+        "max.s32": 2,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "0c34eaeed8e104efc41468835136bb411be2f6102911575a64f80ced03eabafe",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 1,
+      "window": 2047,
+      "rows": 1,
+      "registers": 48,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 7,
+        "sub.s32": 4,
+        "add.s32": 34,
+        "max.s32": 2,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "baf095db5c0e1c05f8a45ddda1f07f2c44bb28ba801feefca4dcae9e0c770c96",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 4,
+      "window": -1,
+      "rows": 1,
+      "registers": 45,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 44,
+        "shfl.sync.up.b32": 2,
+        "shfl.sync.bfly.b32": 26,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "7043a010f1accee1b924cb4c6dd1a666470a37369f756db7342d6ab912bf72eb",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 4,
+      "window": -1,
+      "rows": 2,
+      "registers": 54,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 5,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 45,
+        "shfl.sync.up.b32": 2,
+        "shfl.sync.bfly.b32": 26,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "bf260924cf5d120eacbc89a31096517f5159c0ed8c563eae4d7088c5fa6bfdf0",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 4,
+      "window": 2047,
+      "rows": 1,
+      "registers": 45,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 45,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 2,
+        "shfl.sync.bfly.b32": 26,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "ca59cc6fe09dac09e5b7e3aebbd9d0dfe97765f599caa46bfb9723a5eee74302",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 4,
+      "window": 2047,
+      "rows": 2,
+      "registers": 54,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 5,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 46,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 2,
+        "shfl.sync.bfly.b32": 26,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "d3a6c9e064366f9a47d5ae70fe9f370369229f6b95ff156f9b20e3f40df847b2",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 16,
+      "window": -1,
+      "rows": 1,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 52,
+        "shfl.sync.up.b32": 4,
+        "shfl.sync.bfly.b32": 32,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "9bc094364e01db26309566466f614d74424bfa87bf87c580c6745996424b317b",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 16,
+      "window": -1,
+      "rows": 4,
+      "registers": 53,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 54,
+        "shfl.sync.up.b32": 4,
+        "shfl.sync.bfly.b32": 32,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "30e1a90b4822a8df0ac87621fe7195f5375c7cca81429e1fecc150018e8db13d",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 16,
+      "window": 2047,
+      "rows": 1,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 53,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 4,
+        "shfl.sync.bfly.b32": 32,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "b5a447164ffd7790f2f48d3e922b986dab2408472bc14c67fd27d17007c196e7",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 16,
+      "window": 2047,
+      "rows": 4,
+      "registers": 53,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 55,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 4,
+        "shfl.sync.bfly.b32": 32,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "20815b0eb65c731d3da85376ae2184ba63bee4b7e2fc4796c3e7164faada85d2",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 32,
+      "window": -1,
+      "rows": 1,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 44,
+        "shfl.sync.up.b32": 5,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "a9e78e7e9dd5432ed6f08573912f94efa2a39b15ed7ba7a0ef4b3554b47b36c1",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 32,
+      "window": -1,
+      "rows": 4,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 2,
+        "mul.wide.u32": 1,
+        "add.s32": 46,
+        "shfl.sync.up.b32": 5,
+        "mul.hi.s32": 1,
+        "max.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "96c1d4b44dcc77287ee4f0446617252eb55b23f1f9e8a6ae4c15c4ee49d6ad24",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "parent",
+      "batch": 32,
+      "window": 2047,
+      "rows": 1,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 45,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 5,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "mul.f32": 8,
+        "fma.rn.f32": 9,
+        "add.f32": 16,
+        "div.full.f32": 4
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "9bb518d031a7cb0a97969381d9c69b6ffa0c076e3cd59746de58761b54f4a204",
+      "vectorized_ld_global": 2
+    },
+    {
+      "variant": "tiled",
+      "batch": 32,
+      "window": 2047,
+      "rows": 4,
+      "registers": 40,
+      "spills": [
+        0,
+        0
+      ],
+      "reductions": [
+        {
+          "combiner": "arith.maxnumf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16x64xf32, #ttg.blocked<{sizePerThread = [1, 4], threadsPerWarp = [2, 16], warpsPerCTA = [4, 1], order = [1, 0]}>"
+        },
+        {
+          "combiner": "arith.addf",
+          "operand": "16xf32, #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [4], order = [0]}>"
+        }
+      ],
+      "math_ops": {
+        "add.s64": 6,
+        "sub.s32": 4,
+        "mul.wide.u32": 1,
+        "add.s32": 47,
+        "max.s32": 2,
+        "shfl.sync.up.b32": 5,
+        "mul.hi.s32": 1,
+        "div.s32": 2,
+        "div.full.f32": 1,
+        "mul.f32": 5,
+        "shfl.sync.bfly.b32": 20,
+        "max.f32": 5,
+        "sub.f32": 4,
+        "ex2.approx.ftz.f32": 4,
+        "fma.rn.f32": 9,
+        "add.f32": 16
+      },
+      "shared": 1024,
+      "local_ld_st": false,
+      "cubin_sha256": "2e5ffa773a2bfaf31e8f292267cd0fea385fb277c2fab249aceabac4f4706249",
+      "vectorized_ld_global": 2
+    }
+  ],
+  "matched_reductions": [
+    "max(LSE)",
+    "sum(weight * partial)",
+    "sum(weight)"
+  ],
+  "matched_math": [
+    "instructions per loop body for FP32 additions, fma, exp2 and butterfly shuffle",
+    "all three SM90 reduction operand layouts after resolving compiler aliases"
+  ]
+}

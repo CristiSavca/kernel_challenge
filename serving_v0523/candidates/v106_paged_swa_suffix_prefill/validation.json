@@ -1,0 +1,82 @@
+{
+  "candidate": "V106",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V100c",
+  "parent_sha256": "335845f55f6e584e938dcb5bba72c18f89677f83f78a1374692525306cd635ed",
+  "parent_tree": "087ddfedfee4d349b473fcab5ea9f2bc55138d76",
+  "v105_sha256": "5ac11e0d6a95e44441bcb39920b4f4951f713208385516ce7c703f3cc461288c",
+  "sha256": "376d808919cba9ba365fca58147802d03d836ab26f96a521d0bf6b1cee5bf14c",
+  "patch_sha256": "376d808919cba9ba365fca58147802d03d836ab26f96a521d0bf6b1cee5bf14c",
+  "bytes": 59212,
+  "files": [
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/attention/swa_prefill_kv.py",
+    "python/sglang/kernels/ops/memory/allocator.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "tree": "2e6837a9b7924abfb1492bfbe1b39c5374eff949",
+  "delta_sha256": "623ef55d3043db654af0e2f05f1398550055d9c07e41b694efc505f634697b36",
+  "delta_paths": [
+    "python/sglang/kernels/ops/attention/swa_prefill_kv.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py"
+  ],
+  "identical_parent_patch_sections": 11,
+  "python_compiled": 13,
+  "flags": {
+    "--swa-full-tokens-ratio": "0.25",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--enable-layernorm-sp": "",
+    "--page-size": "160",
+    "--chunked-prefill-size": "16320",
+    "--max-prefill-tokens": "16320",
+    "--cuda-graph-max-bs-prefill": "16384"
+  },
+  "forbidden_flag_patterns_checked": 76,
+  "max_added_line_bytes": 99,
+  "official_export_matches_git": true,
+  "forward_reverse_verified": true,
+  "exact_parent_plus_delta_verified": true,
+  "kernel_sha256": "e1f8d4b9872c1e0cf96807fc9215e80f56b4a1428877433df7b03c9df5d6d52c",
+  "backend_sha256": "0868a91c93cdb565cb9ac97c587b930bd23500d5ebc2eecb0994eac777d3f9ec",
+  "sm90_compiled": 40,
+  "sm90_spill_specializations": [
+    "row32_tablei64_copy8_page160"
+  ],
+  "cpu_interpreter": 48,
+  "cpu_interpreter_checked_bytes": 89743360,
+  "forward_extend_dispatch": {
+    "dense": 14,
+    "paged": 76
+  },
+  "independent_paged_oracle_counts": {
+    "eager_and_graph_page_tables": 80,
+    "aligned_word_copy_batches": 7,
+    "suffix_begins_inside_page": 29,
+    "last_visible_row_precedes_page_end": 34,
+    "copied_fp8_bytes": 19229952,
+    "reference_attention_scalars": 77312,
+    "packed_batches": 21,
+    "byte_copy_batches": 14,
+    "native_page160_batches": 6,
+    "overlapping_or_wrong_head_stride_fallbacks": 4
+  },
+  "inherited_expert_integration_rerun": {
+    "cases": 54,
+    "pre_norm_calls": 324
+  },
+  "inherited_allocator_rerun": {
+    "signed_indices": 25209,
+    "allocation_requests": 108
+  },
+  "hardware_result": null
+}

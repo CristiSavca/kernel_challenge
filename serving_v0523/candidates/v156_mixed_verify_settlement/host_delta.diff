@@ -1,0 +1,191 @@
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index a50c085..b6e20f4 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -289,6 +289,7 @@ from sglang.srt.managers.scheduler_pp_mixin import SchedulerPPMixin
+ from sglang.srt.managers.utils import (
+     EmbeddingBatchResult,
+     GenerationBatchResult,
++    MixedDFlashResult,
+     allocate_distinct_stream,
+     is_health_check_generate_req,
+     validate_input_length,
+@@ -2179,7 +2180,10 @@ class Scheduler(
+         verify forward. Idempotent; no-op when the queue is empty or has no grammar.
+         """
+         for prev_batch, prev_result in self.result_queue:
+-            self.batch_result_processor.advance_grammar_fsm(prev_result, prev_batch)
++            if isinstance(prev_result, MixedDFlashResult):
++                prev_result.advance_role_grammar(prev_batch, self.batch_result_processor)
++            else:
++                self.batch_result_processor.advance_grammar_fsm(prev_result, prev_batch)
+ 
+     def ingest_requests(self, stop_at_pause: bool = False) -> List:
+         """Receive and broadcast input, then dispatch queued requests in order.
+@@ -5088,7 +5092,9 @@ class Scheduler(
+             snapshot=snapshot,
+         )
+ 
+-        if batch.forward_mode.is_decode():
++        if isinstance(result, MixedDFlashResult):
++            result.process_roles(batch, self.batch_result_processor)
++        elif batch.forward_mode.is_decode():
+             self.batch_result_processor.process_batch_result_decode(batch, result)
+         elif batch.forward_mode.is_extend():
+             if batch.is_dllm():
+diff --git a/python/sglang/srt/managers/utils.py b/python/sglang/srt/managers/utils.py
+index 3438ac0..f04849f 100644
+--- a/python/sglang/srt/managers/utils.py
++++ b/python/sglang/srt/managers/utils.py
+@@ -17,7 +17,7 @@ from sglang.srt.layers.logits_processor import (
+ )
+ from sglang.srt.managers import io_struct
+ from sglang.srt.managers.schedule_batch import Req
+-from sglang.srt.model_executor.forward_batch_info import PPProxyTensors
++from sglang.srt.model_executor.forward_batch_info import ForwardMode, PPProxyTensors
+ from sglang.srt.runtime_context import get_spec, max_speculative_num_draft_tokens
+ from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
+ from sglang.srt.state_capturer.base import TopkCaptureOutput
+@@ -26,6 +26,7 @@ from sglang.srt.utils.common import async_d2h as _async_d2h
+ if TYPE_CHECKING:
+     from sglang.srt.managers.async_d2h_copy_worker import HostCopyDone
+     from sglang.srt.managers.auxiliary_output import HostAuxiliaryOutput
++    from sglang.srt.managers.schedule_batch import ScheduleBatch
+     from sglang.srt.managers.scheduler import GenerationBatchResult
+     from sglang.srt.mem_cache.kv_loc_plan import KVLocPlan
+     from sglang.srt.observability.forward_pass_metrics import (
+@@ -170,6 +171,10 @@ class GenerationBatchResult:
+         Only the tensors which are needed for processing results are copied,
+         e.g., next_token_ids, logits outputs
+         """
++        self._copy_outputs_to_cpu(return_logprob, return_hidden_states)
++        self.copy_done.record()
++
++    def _copy_outputs_to_cpu(self, return_logprob: bool, return_hidden_states: bool):
+         if return_logprob:
+             if self.logits_output.next_token_logprobs is not None:
+                 self.logits_output.next_token_logprobs = _async_d2h(
+@@ -228,8 +233,6 @@ class GenerationBatchResult:
+ 
+         self.copy_auxiliary_output_to_cpu()
+ 
+-        self.copy_done.record()
+-
+     def copy_auxiliary_output_to_cpu(self) -> None:
+         if self.logits_output is None or self.auxiliary_host_output is not None:
+             return
+@@ -256,6 +259,114 @@ class GenerationBatchResult:
+         )
+ 
+ 
++@dataclass(kw_only=True)
++class MixedDFlashResult(GenerationBatchResult):
++    """One target invocation with separate prefill and speculative result layouts."""
++
++    prompt_batch: ScheduleBatch
++    decode_batch: ScheduleBatch
++    prompt_result: GenerationBatchResult
++    decode_result: GenerationBatchResult
++
++    @classmethod
++    def from_role_results(
++        cls, prompt_batch, decode_batch, prompt_result, decode_result, next_draft_input
++    ):
++        # The next scheduling iteration can rebind both batches before the
++        # result drains. Preserve their row order but keep request state live.
++        prompts = prompt_batch.copy()
++        tails = decode_batch.copy()
++        prompt_count = len(prompts.reqs)
++        tail_count = len(tails.reqs)
++        all_reqs = prompts.reqs + tails.reqs
++        if (
++            not prompt_count
++            or not tail_count
++            or prompts.forward_mode != ForwardMode.EXTEND
++            or tails.forward_mode != ForwardMode.DECODE
++            or prompts.decoding_reqs
++            or not prompts.spec_algorithm.is_dflash()
++            or not tails.spec_algorithm.is_dflash()
++            or len({id(req) for req in all_reqs}) != len(all_reqs)
++        ):
++            raise ValueError("mixed DFLASH requires disjoint prompt and decode cohorts")
++
++        stride = decode_result.speculative_output_stride
++        if stride is None:
++            stride = decode_result.speculative_num_draft_tokens
++        if (
++            type(stride) is not int
++            or stride < 1
++            or not prompt_result.has_sampled_token_ids
++            or not decode_result.has_sampled_token_ids
++            or decode_result.accept_lens is None
++            or prompt_result.next_token_ids.shape != (prompt_count,)
++            or decode_result.next_token_ids.shape != (tail_count * stride,)
++            or decode_result.accept_lens.shape != (tail_count,)
++            or next_draft_input.new_seq_lens.shape != (len(all_reqs),)
++            or next_draft_input.bonus_tokens.shape != (len(all_reqs),)
++            or prompt_result.copy_done is not None
++            or decode_result.copy_done is not None
++            or prompt_result.can_run_cuda_graph != decode_result.can_run_cuda_graph
++        ):
++            raise ValueError("inconsistent mixed DFLASH results or relay")
++        return cls(
++            prompt_batch=prompts,
++            decode_batch=tails,
++            prompt_result=prompt_result,
++            decode_result=decode_result,
++            next_draft_input=next_draft_input,
++            new_seq_lens=next_draft_input.new_seq_lens,
++            can_run_cuda_graph=prompt_result.can_run_cuda_graph,
++            extra_keep_alive_refs=(prompt_result.extra_keep_alive_refs or [])
++            + (decode_result.extra_keep_alive_refs or []),
++        )
++
++    @property
++    def has_sampled_token_ids(self) -> bool:
++        # The synchronous scheduler checks this before starting D2H.
++        return (
++            self.prompt_result.has_sampled_token_ids
++            and self.decode_result.has_sampled_token_ids
++        )
++
++    def _copy_outputs_to_cpu(self, return_logprob: bool, return_hidden_states: bool):
++        # The inherited wrapper records one event after all role-specific copies.
++        self.prompt_result._copy_outputs_to_cpu(
++            self.prompt_batch.return_logprob, self.prompt_batch.return_hidden_states
++        )
++        self.decode_result._copy_outputs_to_cpu(
++            self.decode_batch.return_logprob, self.decode_batch.return_hidden_states
++        )
++
++    def wait_for_role_results(self, batch):
++        expected = self.prompt_batch.reqs + self.decode_batch.reqs
++        if len(batch.reqs) != len(expected) or any(
++            actual is not req for actual, req in zip(batch.reqs, expected)
++        ):
++            raise RuntimeError("mixed DFLASH result does not match scheduled requests")
++        if self.copy_done is not None:
++            self.copy_done.synchronize()
++        if not (
++            self.prompt_result.next_token_ids.is_cpu
++            and self.decode_result.next_token_ids.is_cpu
++            and self.decode_result.accept_lens.is_cpu
++        ):
++            raise RuntimeError("mixed DFLASH result readback is incomplete")
++
++    def process_roles(self, batch, processor):
++        self.wait_for_role_results(batch)
++        processor.process_batch_result_prefill(self.prompt_batch, self.prompt_result)
++        processor.process_batch_result_decode(self.decode_batch, self.decode_result)
++        self.num_correct_drafts = self.decode_result.num_correct_drafts
++
++    def advance_role_grammar(self, batch, processor):
++        if self.prompt_batch.has_grammar or self.decode_batch.has_grammar:
++            self.wait_for_role_results(batch)
++            processor.advance_grammar_fsm(self.prompt_result, self.prompt_batch)
++            processor.advance_grammar_fsm(self.decode_result, self.decode_batch)
++
++
+ def validate_input_length(
+     req: Req, max_req_input_len: int, allow_auto_truncate: bool
+ ) -> Optional[str]:

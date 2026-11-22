@@ -1,0 +1,79 @@
+{
+  "state": "CPU_PASS",
+  "script_sha256": "d316ede39df785c8e8311e53412685f37d197a447159e86b157aa8ce1143a49a",
+  "cases": [
+    "three exact frozen patch hashes",
+    "ordered three private checks",
+    "all flags exact including boolean SP",
+    "duplicate receipt refuses resubmit",
+    "completed decisions empty",
+    "reject before time window",
+    "reject after time window",
+    "reject quota zero",
+    "reject quota negative",
+    "reject quota bool",
+    "reject quota string",
+    "reject quota date",
+    "reject quota failure",
+    "source mismatch rejected before CLI",
+    "ambiguous timeout preserves output and prevents retry",
+    "nonzero with job ID requires reconciliation",
+    "no scored endpoint"
+  ],
+  "commands": [
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v64_humming_grouped_sequence_parallel/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "enable-layernorm-sp",
+      "--flag",
+      "moe-runner-backend=humming",
+      "--flag",
+      "speculative-moe-runner-backend=marlin",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ],
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v62_paged_verify_attention/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ],
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v60_fa3_paged_tma/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "chunked-prefill-size=16320",
+      "--flag",
+      "cuda-graph-max-bs-prefill=16384",
+      "--flag",
+      "max-prefill-tokens=16320",
+      "--flag",
+      "page-size=160",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ]
+  ],
+  "cleanup": {
+    "path": "/var/folders/5k/_z9k5ddd6w1d8z97dkgyqmyr0000gn/T/okc-arch-runner-test-n15osuhk",
+    "bytes": 1826,
+    "free_before_bytes": 36744556544,
+    "free_after_bytes": 36744581120
+  },
+  "gpu_actions": false
+}

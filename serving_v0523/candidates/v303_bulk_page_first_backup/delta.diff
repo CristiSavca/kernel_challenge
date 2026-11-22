@@ -1,0 +1,215 @@
+diff --git a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+index 6cb8b16..253596c 100644
+--- a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
++++ b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+@@ -186,7 +186,7 @@ inline bool try_copy_page_first_pages_batch(
+ template <int64_t kElementSize, uint32_t kUnroll, uint32_t kBlockQuota, uint32_t kBlockSize>
+ struct HiCacheStagedWriteBackKernel {
+  private:
+-  template <bool kIsMLA>
++  template <bool kIsMLA, bool kContiguous = false>
+   static void run_staged_impl(
+       const tvm::ffi::TensorView k_cache_dst,
+       const tvm::ffi::TensorView v_cache_dst,
+@@ -254,6 +254,12 @@ struct HiCacheStagedWriteBackKernel {
+         "HiCache staged relayout: element size mismatch");
+     RuntimeCheck(kElementSize % 16 == 0, "HiCache staged relayout: element size must be 16-byte aligned");
+ 
++    if constexpr (kContiguous) {
++      static_assert(!kIsMLA);
++      RuntimeCheck(page_size == 1 && k_cache_dst.size(0) == T.unwrap() && v_cache_dst.size(0) == T.unwrap(),
++                   "Contiguous HiCache backup requires equal page-one host and staging extents");
++    }
++
+     const auto params = HicacheRelayoutParams{
+         .k_cache_dst = staging_k.data_ptr(),
+         .v_cache_dst = kIsMLA ? nullptr : staging_v.data_ptr(),
+@@ -269,6 +275,12 @@ struct HiCacheStagedWriteBackKernel {
+     launch_hicache_relayout_kernel<kElementSize, kIsMLA>(params, P.unwrap(), N.unwrap(), page_size, use_int32, device);
+ 
+     auto stream = LaunchKernel::resolve_device(device);
++    if constexpr (kContiguous) {
++      const size_t bytes = static_cast<size_t>(T.unwrap()) * N.unwrap() * kElementSize;
++      RuntimeDeviceCheck(cudaMemcpyAsync(k_cache_dst.data_ptr(), staging_k.data_ptr(), bytes, cudaMemcpyDeviceToHost, stream));
++      RuntimeDeviceCheck(cudaMemcpyAsync(v_cache_dst.data_ptr(), staging_v.data_ptr(), bytes, cudaMemcpyDeviceToHost, stream));
++      return;
++    }
+     const int64_t* dst_indices_ptr = static_cast<const int64_t*>(dst_indices_cpu.data_ptr());
+     if constexpr (kIsMLA) {
+       if (!try_copy_page_first_pages_batch(
+@@ -313,6 +325,15 @@ struct HiCacheStagedWriteBackKernel {
+         page_size);
+   }
+ 
++  static void run_all_lf_pf_bulk(
++      const tvm::ffi::TensorView k_cache_dst, const tvm::ffi::TensorView v_cache_dst,
++      const tvm::ffi::TensorView dst_indices_cpu, const tvm::ffi::TensorView staging_k,
++      const tvm::ffi::TensorView staging_v, const tvm::ffi::TensorView page_indices_src,
++      const tvm::ffi::TensorView k_ptr_src, const tvm::ffi::TensorView v_ptr_src) {
++    run_staged_impl<false, true>(
++        k_cache_dst, v_cache_dst, dst_indices_cpu, staging_k, staging_v, page_indices_src, k_ptr_src, v_ptr_src, 1);
++  }
++
+   static void run_all_mla_lf_pf_staged(
+       const tvm::ffi::TensorView cache_dst,
+       const tvm::ffi::TensorView dst_indices_cpu,
+diff --git a/python/sglang/kernels/ops/kvcache/hicache.py b/python/sglang/kernels/ops/kvcache/hicache.py
+index ff2f474..4c0a121 100644
+--- a/python/sglang/kernels/ops/kvcache/hicache.py
++++ b/python/sglang/kernels/ops/kvcache/hicache.py
+@@ -75,6 +75,7 @@ def _jit_hicache_staged_module(
+                 "launch_all_lf_pf_staged",
+                 f"&HiCacheStagedWriteBackKernel<{args}>::run_all_lf_pf_staged",
+             ),
++            ("launch_all_lf_pf_bulk", f"&HiCacheStagedWriteBackKernel<{args}>::run_all_lf_pf_bulk"),
+             (
+                 "launch_all_mla_lf_pf_staged",
+                 f"&HiCacheStagedWriteBackKernel<{args}>::run_all_mla_lf_pf_staged",
+@@ -418,6 +419,7 @@ def transfer_hicache_all_layer_staged_lf_pf(
+     dst_v: torch.Tensor,
+     *,
+     page_size: int,
++    bulk_runs: list[tuple[int, int, int]] | None = None,
+     element_size: int | None = None,
+     unroll: int | None = None,
+     block_quota: int | None = None,
+@@ -437,6 +439,14 @@ def transfer_hicache_all_layer_staged_lf_pf(
+     staging_v = staging_v.view(staging_v.shape[0], staging_v.shape[1], -1)
+     dst_k = dst_k.view(dst_k.shape[0], dst_k.shape[1], -1)
+     dst_v = dst_v.view(dst_v.shape[0], dst_v.shape[1], -1)
++    if bulk_runs is not None:
++        for begin, dst, count in bulk_runs:
++            module.launch_all_lf_pf_bulk(
++                dst_k[dst : dst + count], dst_v[dst : dst + count],
++                dst_indices[begin : begin + count], staging_k[:count], staging_v[:count],
++                src_page_indices[begin : begin + count], k_ptr_src, v_ptr_src,
++            )
++        return
+     for page_begin in range(0, src_page_indices.numel(), staging_page_capacity):
+         chunk_pages = min(staging_page_capacity, src_page_indices.numel() - page_begin)
+         chunk_tokens = chunk_pages * page_size
+diff --git a/python/sglang/srt/mem_cache/pool_host/common.py b/python/sglang/srt/mem_cache/pool_host/common.py
+index e8e05fb..af12287 100644
+--- a/python/sglang/srt/mem_cache/pool_host/common.py
++++ b/python/sglang/srt/mem_cache/pool_host/common.py
+@@ -421,6 +421,27 @@ def _resolve_device_accessible_ptr_fn():
+     return get_device_accessible_ptr
+ 
+ 
++def registered_kv_row_ends(buffer: torch.Tensor, rows: int, row_bytes: int) -> tuple[int, ...]:
++    """Cut page-first K and V copies at the union of both planes' host registrations."""
++    ranges = getattr(buffer, _CUDA_HOST_REGISTERED_RANGES_ATTR, ())
++    if not ranges or not buffer.is_contiguous() or buffer.device.type != "cpu" or rows <= 0 or row_bytes <= 0:
++        return ()
++    plane = rows * row_bytes
++    if buffer.nbytes != 2 * plane:
++        return ()
++    base = buffer.data_ptr()
++    covered = 0
++    ends = {rows}
++    for ptr, size in ranges:
++        if ptr != base + covered or size <= 0 or size % row_bytes:
++            return ()
++        covered += size
++        row = (covered % plane) // row_bytes
++        if row:
++            ends.add(row)
++    return tuple(sorted(ends)) if covered == buffer.nbytes else ()
++
++
+ def has_linear_host_mapping(buffer: torch.Tensor, device: torch.device) -> bool:
+     """Can one device address and a byte stride cover every host registration?"""
+     ranges = getattr(buffer, _CUDA_HOST_REGISTERED_RANGES_ATTR, ())
+diff --git a/python/sglang/srt/mem_cache/pool_host/mha.py b/python/sglang/srt/mem_cache/pool_host/mha.py
+index 6921625..4e489a5 100644
+--- a/python/sglang/srt/mem_cache/pool_host/mha.py
++++ b/python/sglang/srt/mem_cache/pool_host/mha.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ import logging
+ import threading
++from bisect import bisect_right
+ from typing import Sequence
+ 
+ import torch
+@@ -47,6 +48,7 @@ from sglang.srt.mem_cache.pool_host.common import (
+     get_allocator_from_storage,
+     has_linear_host_mapping,
+     make_kernel_ptr_table,
++    registered_kv_row_ends,
+ )
+ from sglang.srt.mem_cache.pool_host.hisparse import HiSparseHostPoolMixin
+ from sglang.srt.mem_cache.pool_host.page_unified import PageUnifiedLayout
+@@ -287,6 +289,11 @@ class MHATokenToKVPoolHost(HostKVCache):
+         )
+         self.host_kv_data_refs = self.k_data_refs + self.v_data_refs
+         self._init_write_back_staging_buffers(buffer_info, write_back_staging)
++        self.bulk_backup_row_ends = (
++            registered_kv_row_ends(self.kv_buffer, self.size, self.layout_dim)
++            if _is_cuda and self.can_use_write_back_jit and self.pin_memory and self.page_size == 1
++            else ()
++        )
+         self.can_use_mapped_backup = (
+             _is_cuda
+             and self.can_use_jit
+@@ -585,6 +592,51 @@ class MHATokenToKVPoolHost(HostKVCache):
+             )
+             layer_start = layer_end
+ 
++    def _try_bulk_page_first_backup(self, host_indices, device_indices):
++        ends = self.bulk_backup_row_ends
++        count = host_indices.numel()
++        if (
++            not ends or host_indices.device.type != "cpu" or host_indices.dtype != torch.int64
++            or host_indices.ndim != 1 or device_indices.ndim != 1 or device_indices.numel() != count
++            or device_indices.device != self._transfer_device or device_indices.dtype not in (torch.int32, torch.int64)
++            or not host_indices.is_contiguous() or count < 2 * self.staging_page_capacity
++        ):
++            return False
++        # One scratch tensor holds both planes. Bound the extra allocation independently of the pool size.
++        capacity = min(count, (8 << 20) // (2 * self.layout_dim))
++        if capacity <= self.staging_page_capacity:
++            return False
++        breaks = torch.nonzero(host_indices[1:] != host_indices[:-1] + 1).flatten()
++        old_calls = (count + self.staging_page_capacity - 1) // self.staging_page_capacity
++        if breaks.numel() + 1 >= old_calls:
++            return False
++        plan = []
++        begin = 0
++        run_ends = (breaks + 1).tolist()
++        run_ends.append(count)
++        for end in run_ends:
++            dst = int(host_indices[begin])
++            if dst < 0 or dst + end - begin > self.size:
++                return False
++            while begin < end:
++                stop = ends[bisect_right(ends, dst)]
++                length = min(capacity, end - begin, stop - dst)
++                plan.append((begin, dst, length))
++                begin += length
++                dst += length
++            if len(plan) >= old_calls:
++                return False
++        try:
++            scratch = self.staging_k_buffer.new_empty((2, capacity, *self.staging_k_buffer.shape[1:]))
++        except torch.OutOfMemoryError:
++            return False
++        jit_transfer_hicache_all_layer_staged_lf_pf(
++            k_ptr_src=self.device_k_data_ptrs, v_ptr_src=self.device_v_data_ptrs, src_indices=device_indices,
++            dst_indices=host_indices, staging_k=scratch[0], staging_v=scratch[1], dst_k=self.k_buffer,
++            dst_v=self.v_buffer, page_size=1, bulk_runs=plan,
++        )
++        return True
++
+     def backup_from_device_all_layer(
+         self, device_pool, host_indices, device_indices, io_backend
+     ):
+@@ -624,6 +676,8 @@ class MHATokenToKVPoolHost(HostKVCache):
+                         num_layers=self.layer_num,
+                     )
+             elif self.layout == "page_first":
++                if self._try_bulk_page_first_backup(host_indices, device_indices):
++                    return
+                 if (
+                     self.can_use_mapped_backup
+                     and device_indices.device == self._transfer_device

@@ -1,0 +1,65 @@
+{
+  "TP": 8,
+  "hidden": 8192,
+  "expert_hidden": 4096,
+  "rows": [
+    {
+      "rows": 8,
+      "per_rank_layer_ring_send_B": {
+        "parent": 229376,
+        "V142_output_sharded": 229376,
+        "input_sharded_with_bf16_partial": 286720,
+        "input_sharded_with_fp32_output_reduce_scatter_then_bf16_gather": 401408,
+        "input_sharded_with_fp32_output_all_reduce": 516096
+      },
+      "parent_unpool_cold_MiB": 8,
+      "input_sharded_unpool_cold_MiB": 8
+    },
+    {
+      "rows": 32,
+      "per_rank_layer_ring_send_B": {
+        "parent": 458752,
+        "V142_output_sharded": 917504,
+        "input_sharded_with_bf16_partial": 1146880,
+        "input_sharded_with_fp32_output_reduce_scatter_then_bf16_gather": 1605632,
+        "input_sharded_with_fp32_output_all_reduce": 2064384
+      },
+      "parent_unpool_cold_MiB": 64,
+      "input_sharded_unpool_cold_MiB": 8
+    },
+    {
+      "rows": 128,
+      "per_rank_layer_ring_send_B": {
+        "parent": 1835008,
+        "V142_output_sharded": 3670016,
+        "input_sharded_with_bf16_partial": 4587520,
+        "input_sharded_with_fp32_output_reduce_scatter_then_bf16_gather": 6422528,
+        "input_sharded_with_fp32_output_all_reduce": 8257536
+      },
+      "parent_unpool_cold_MiB": 64,
+      "input_sharded_unpool_cold_MiB": 8
+    },
+    {
+      "rows": 256,
+      "per_rank_layer_ring_send_B": {
+        "parent": 3670016,
+        "V142_output_sharded": 7340032,
+        "input_sharded_with_bf16_partial": 9175040,
+        "input_sharded_with_fp32_output_reduce_scatter_then_bf16_gather": 12845056,
+        "input_sharded_with_fp32_output_all_reduce": 16515072
+      },
+      "parent_unpool_cold_MiB": 64,
+      "input_sharded_unpool_cold_MiB": 8
+    }
+  ],
+  "bfloat16_partial_rounding_example": {
+    "full": 1.0,
+    "partial": 0.0
+  },
+  "float32_partition_order_example": {
+    "full": 1.0,
+    "partial": 0.0
+  },
+  "ring": "ideal balanced unidirectional sends per rank, excluding metadata and local transpose",
+  "timings": false
+}

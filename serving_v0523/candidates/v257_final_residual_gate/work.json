@@ -1,0 +1,107 @@
+{
+  "patch_sha256": "d79351da3fc899b1d4c63dd9aff8c618fc73cfd4152be0f7295d56a0bef3bdf4",
+  "published_draft_config": "https://huggingface.co/RadixArk/Muse-Spark-Open-DFlash2/resolve/46c90f412549c472941a68382d91a99e5e6372a0/config.json",
+  "checkpoint_config_sha256": "2f88d111418b4018678b8a80ed0bdf83c14b0e395cd6cc163153bce4dd8ba0ae",
+  "configured_residual_taps": [
+    1,
+    16,
+    30,
+    44,
+    59
+  ],
+  "last_layer": 61,
+  "scope": "Linear work models 62 identical sparse layers at the pinned target dimensions. Attention-score work, softmax, normalization, activation, and uneven expert loads are omitted.",
+  "source_sha256": {
+    "python/sglang/srt/configs/muse_spark.py": "2a07f2b7fd19c89125d3b718d17ea21dcd7bb347b51aeb278504efb853f118df",
+    "python/sglang/srt/models/muse_spark.py": "4a90efa8b9394ff3454bb2c055e92c2abb0449f59f8d8d08d8612ea8a7b6dbd7",
+    "python/sglang/srt/speculative/dflash_utils.py": "72270b7d4e01012e4b0d04b283db0f57120be37ea0c94c820056ad9a5a9a0d5a",
+    "python/sglang/srt/layers/logits_processor.py": "3e4edd7904765005eac61e269c37c8acc7cc0a67e87ee394cc772e70c199d7d0",
+    "python/sglang/srt/layers/muse_spark/muse_spark_layers.py": "a0f6b9c1dbb8fcd212d09f315e88911792bdfd2b6a0e2820440219ef2a1cfd7f"
+  },
+  "api": [
+    "a unified diff (git diff) against the base commit, changing only files under python/sglang/",
+    "not weight loading (python/sglang/srt/model_loader/)",
+    "only source files (.py, .cu, .cuh, .h, .hpp, .c, .cc, .cpp, .json); no renames, mode changes, symlinks, binary patches or empty new files",
+    "no added line over 400 characters; at most 400 KB",
+    "lossless: no lower precision, approximations or skipped work beyond what stock SGLang does",
+    "launch flags: change them in the flags file okc serve init writes, except the ones it lists as fixed",
+    "at most 2 GB more GPU memory per GPU than stock SGLang",
+    "time to first token at most 2x stock SGLang's at each load",
+    "readable source: no compressed, encoded or obfuscated code",
+    "written like an SGLang pull request: nothing special-cased to the challenge's workload or load levels, and nothing that breaks other models or GPUs"
+  ],
+  "nominal_FLOPs_per_token_per_layer": {
+    "qkv_gate": 301989888,
+    "output": 134217728,
+    "router_two_factors": 8388608,
+    "pool_and_unpool": 134217728,
+    "expert_gate_up_down": 805306368
+  },
+  "necessary_last_KV_projection_FLOPs": 33554432,
+  "hypothetical_linear_fraction_if_last_layer_kept_only_KV": 0.01573802541544477,
+  "hypothetical_linear_fraction_if_last_FFN_skipped": 0.01104594330400782,
+  "hypothetical_16k_single_endpoint_expert_routes_omitted": 131064,
+  "retained_rows_in_V257": "all",
+  "parent_Torch_logical_stream_bytes_per_element": 34,
+  "candidate_logical_stream_bytes_per_element": 10,
+  "cold16k_owner_rows": 2048,
+  "rank_16k_logical_bytes_saved": 402653184,
+  "estimated_weighted_traffic": [
+    {
+      "users": 1,
+      "rep": 0,
+      "historical_grouped_rows": 92785,
+      "logical_stream_bytes_saved_per_rank": 2280284160,
+      "seconds_at_peak_HBM": 0.0004750592,
+      "equivalent_fraction_of_repetition_at_peak": 1.8914107963165008e-05
+    },
+    {
+      "users": 1,
+      "rep": 1,
+      "historical_grouped_rows": 65536,
+      "logical_stream_bytes_saved_per_rank": 1610612736,
+      "seconds_at_peak_HBM": 0.00033554432,
+      "equivalent_fraction_of_repetition_at_peak": 1.5161347619235025e-05
+    },
+    {
+      "users": 1,
+      "rep": 2,
+      "historical_grouped_rows": 110160,
+      "logical_stream_bytes_saved_per_rank": 2707292160,
+      "seconds_at_peak_HBM": 0.0005640192,
+      "equivalent_fraction_of_repetition_at_peak": 2.109032758333602e-05
+    },
+    {
+      "users": 4,
+      "rep": 0,
+      "historical_grouped_rows": 243692,
+      "logical_stream_bytes_saved_per_rank": 5988974592,
+      "seconds_at_peak_HBM": 0.00124770304,
+      "equivalent_fraction_of_repetition_at_peak": 2.7368907049478e-05
+    },
+    {
+      "users": 4,
+      "rep": 1,
+      "historical_grouped_rows": 327680,
+      "logical_stream_bytes_saved_per_rank": 8053063680,
+      "seconds_at_peak_HBM": 0.0016777216,
+      "equivalent_fraction_of_repetition_at_peak": 3.030344945700953e-05
+    },
+    {
+      "users": 16,
+      "rep": 0,
+      "historical_grouped_rows": 1228800,
+      "logical_stream_bytes_saved_per_rank": 30198988800,
+      "seconds_at_peak_HBM": 0.006291456,
+      "equivalent_fraction_of_repetition_at_peak": 3.816878438824345e-05
+    },
+    {
+      "users": 32,
+      "rep": 0,
+      "historical_grouped_rows": 2455793,
+      "logical_stream_bytes_saved_per_rank": 60353568768,
+      "seconds_at_peak_HBM": 0.01257366016,
+      "equivalent_fraction_of_repetition_at_peak": 4.1302406164064904e-05
+    }
+  ]
+}

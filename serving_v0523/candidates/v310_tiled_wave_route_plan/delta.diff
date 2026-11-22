@@ -1,0 +1,159 @@
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+index 835cc5a..6827cf6 100644
+--- a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
++++ b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+@@ -48,2 +48,12 @@ def plan_waves(local_ids, experts, capacity):
+     starts = torch.cumsum(counts, 0, dtype=torch.int32) - counts
++    wave_starts = torch.arange(waves, device=local_ids.device, dtype=torch.int32) * capacity
++    token_bounds = torch.searchsorted(starts, wave_starts, out_int32=True)
++    token_bounds = torch.cat((token_bounds, token_bounds.new_full((1,), tokens)))
++    if local_ids.is_cuda:
++        from sglang.srt.layers.muse_spark.humming_prompt_route_tiles import tiled_wave_order
++
++        tiled = tiled_wave_order(local_ids, starts, token_bounds, experts, capacity)
++        if tiled is not None:
++            keys, edges = tiled
++            return None, keys, edges, token_bounds
+     wave = torch.div(starts, capacity, rounding_mode="floor").clamp_max(waves - 1)
+@@ -53,5 +63,2 @@ def plan_waves(local_ids, experts, capacity):
+     edges = torch.searchsorted(sorted_bins, cutoffs, out_int32=True)
+-    wave_starts = torch.arange(waves, device=local_ids.device, dtype=torch.int32) * capacity
+-    token_bounds = torch.searchsorted(starts, wave_starts, out_int32=True)
+-    token_bounds = torch.cat((token_bounds, token_bounds.new_full((1,), tokens)))
+     return sorted_bins, sorted_slots, edges, token_bounds
+@@ -64,2 +71,3 @@ def _pack_wave(
+     HIDDEN: tl.constexpr, WIDTH: tl.constexpr, SPAN: tl.constexpr, PLAIN_IDS: tl.constexpr = False,
++    PACKED_ORDER: tl.constexpr = False,
+ ):
+@@ -69,4 +77,9 @@ def _pack_wave(
+     for pos in range(first + tl.program_id(0), end, tl.num_programs(0)):
+-        slot = tl.load(SortedSlots + pos).to(tl.int32)
+-        expert = tl.load(SortedBins + pos) % EXPERTS
++        key = tl.load(SortedSlots + pos).to(tl.int32)
++        if PACKED_ORDER:
++            slot = key % SPAN
++            expert = key // SPAN
++        else:
++            slot = key
++            expert = tl.load(SortedBins + pos) % EXPERTS
+         row = ROWS - (end - pos)
+@@ -156,2 +169,5 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+     sorted_bins, sorted_slots, edges, token_bounds = plan_waves(local_ids, experts, capacity)
++    packed_order = sorted_bins is None
++    if packed_order:
++        sorted_bins = sorted_slots
+     row_keys = local_ids.new_empty(rows)
+@@ -164,3 +180,3 @@ def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
+             ROWS=rows, EXPERTS=experts, TOPK=topk, HIDDEN=hidden,
+-            WIDTH=triton.next_power_of_2(hidden), SPAN=span, PLAIN_IDS=project is not None, num_warps=8,
++            WIDTH=triton.next_power_of_2(hidden), SPAN=span, PLAIN_IDS=project is not None, PACKED_ORDER=packed_order, num_warps=8,
+         )
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prompt_route_tiles.py b/python/sglang/srt/layers/muse_spark/humming_prompt_route_tiles.py
+new file mode 100644
+index 0000000..37f563f
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/humming_prompt_route_tiles.py
+@@ -0,0 +1,103 @@
++"""Build the wave-major stable expert order with bounded, per-tile GPU sorts."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _count_tiles(Ids, Prefix, slots, tiles, EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    tile = tl.program_id(0)
++    slot = tile * TILE + tl.arange(0, TILE)
++    expert = tl.load(Ids + slot, slot < slots, other=-1)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    counts = tl.histogram(bucket, BINS)
++    e = tl.arange(0, BINS)
++    tl.store(Prefix + e * (tiles + 1) + tile, counts, e < EXPERTS)
++
++
++@triton.jit
++def _prefix_tiles(Prefix, tiles, WIDTH: tl.constexpr):
++    base = tl.program_id(0) * (tiles + 1)
++    lane = tl.arange(0, WIDTH)
++    count = tl.load(Prefix + base + lane, lane < tiles, other=0)
++    tl.store(Prefix + base + lane, tl.cumsum(count, 0) - count, lane < tiles)
++    tl.store(Prefix + base + tiles, tl.sum(count, 0))
++
++
++@triton.jit
++def _counts_before(Ids, Prefix, cut, tiles, EXPERTS: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    # Full tiles precede this cut. Only its partial tile needs to be revisited.
++    tile = cut // TILE
++    slot = tile * TILE + tl.arange(0, TILE)
++    e = tl.arange(0, BINS)
++    expert = tl.load(Ids + slot, slot < cut, other=-1)
++    bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert, EXPERTS)
++    tail = tl.histogram(bucket, BINS)
++    prefix = tl.load(Prefix + e * (tiles + 1) + tile, e < EXPERTS, other=0)
++    return tl.where(e < EXPERTS, prefix + tail, 0)
++
++
++@triton.jit
++def _wave_edges(Ids, Prefix, TokenBounds, Before, Edges, tiles, EXPERTS: tl.constexpr,
++                TOPK: tl.constexpr, WAVES: tl.constexpr, BINS: tl.constexpr, TILE: tl.constexpr):
++    wave = tl.program_id(0)
++    first = tl.load(TokenBounds + wave) * TOPK
++    end = tl.load(TokenBounds + wave + 1) * TOPK
++    begin_counts = _counts_before(Ids, Prefix, first, tiles, EXPERTS, BINS, TILE)
++    end_counts = _counts_before(Ids, Prefix, end, tiles, EXPERTS, BINS, TILE)
++    count = end_counts - begin_counts
++    e = tl.arange(0, BINS)
++    start = tl.sum(begin_counts, 0) + tl.cumsum(count, 0) - count
++    tl.store(Before + wave * EXPERTS + e, begin_counts, e < EXPERTS)
++    tl.store(Edges + wave * EXPERTS + e, start, e < EXPERTS)
++    if wave == WAVES - 1:
++        tl.store(Edges + WAVES * EXPERTS, tl.sum(end_counts, 0))
++
++
++@triton.jit
++def _place_tiles(Ids, Starts, Prefix, Before, Edges, Keys, slots, tiles, capacity,
++                 TOPK: tl.constexpr, EXPERTS: tl.constexpr, WAVES: tl.constexpr,
++                 BINS: tl.constexpr, TILE: tl.constexpr, SPAN: tl.constexpr):
++    tile = tl.program_id(0)
++    lane = tl.arange(0, TILE)
++    slot = tile * TILE + lane
++    ids = tl.load(Ids + slot, slot < slots, other=-1)
++    bucket = tl.where((ids >= 0) & (ids < EXPERTS), ids, EXPERTS)
++    # The lane breaks ties, preserving the original slot order within each expert.
++    key = tl.sort(bucket * TILE + lane, descending=False)
++    expert = key // TILE
++    original = tile * TILE + key % TILE
++    local_counts = tl.histogram(expert, BINS)
++    first_lane = tl.cumsum(local_counts, 0) - local_counts
++    tile_start = tl.load(Prefix + expert * (tiles + 1) + tile, expert < EXPERTS, other=0)
++    rank = tile_start + lane - tl.gather(first_lane, expert, 0)
++    token_start = tl.load(Starts + original // TOPK, expert < EXPERTS, other=0)
++    wave = tl.minimum(token_start // capacity, WAVES - 1)
++    group = wave * EXPERTS + expert
++    before = tl.load(Before + group, expert < EXPERTS, other=0)
++    edge = tl.load(Edges + group, expert < EXPERTS, other=0)
++    tl.store(Keys + edge + rank - before, expert * SPAN + original, expert < EXPERTS)
++
++
++def tiled_wave_order(ids, starts, bounds, experts, capacity):
++    slots = ids.numel()
++    topk = ids.shape[1]
++    waves = bounds.numel() - 1
++    tile = 256
++    tiles = triton.cdiv(slots, tile)
++    if (ids.dtype != torch.int32 or not ids.is_contiguous() or not 1 <= experts <= 64
++            or not 32 <= tiles <= 2048):
++        return None
++    bins = triton.next_power_of_2(experts + 1)
++    span = triton.next_power_of_2(slots)
++    prefix = ids.new_empty((experts, tiles + 1))
++    before = ids.new_empty((waves, experts))
++    edges = ids.new_empty(waves * experts + 1)
++    keys = ids.new_empty(slots)
++    _count_tiles[(tiles,)](ids, prefix, slots, tiles, experts, bins, tile)
++    _prefix_tiles[(experts,)](prefix, tiles, triton.next_power_of_2(tiles))
++    _wave_edges[(waves,)](ids, prefix, bounds, before, edges, tiles, experts, topk, waves, bins, tile)
++    _place_tiles[(tiles,)](ids, starts, prefix, before, edges, keys, slots, tiles, capacity,
++                          topk, experts, waves, bins, tile, span)
++    return keys, edges

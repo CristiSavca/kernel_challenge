@@ -1,0 +1,111 @@
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index b50cd6f..303ec67 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -19,4 +19,4 @@ logger = logging.getLogger(__name__)
+ class PeerPromptInputs:
+-    def __init__(self, storage, handle, group):
+-        self.storage = storage
++    def __init__(self, storage, handle, group, banks=1):
++        self.storage = storage[:storage.shape[0] // banks]
+         self.handle = handle
+@@ -27,3 +27,10 @@ class PeerPromptInputs:
+             raise ValueError("Sparse prompt publication requires its own symmetric allocation")
+-        self.addresses = torch.tensor([p.data_ptr() for p in self.peers], device=storage.device, dtype=torch.int64)
++        rows = self.storage.shape[0]
++        self.banks = [
++            (storage.narrow(0, i * rows, rows), torch.tensor(
++                [p.narrow(0, i * rows, rows).data_ptr() for p in self.peers], device=storage.device, dtype=torch.int64
++            ))
++            for i in range(banks)
++        ]
++        self.next_bank = 0
+         self.stream = torch.cuda.Stream(device=storage.device)
+@@ -43,10 +50,15 @@ class PeerPromptInputs:
+             with torch.cuda.stream(self.stream):
+-                self.storage[:shard.shape[0]].copy_(shard)
++                storage, addresses = self.banks[self.next_bank]
++                storage[:shard.shape[0]].copy_(shard)
+                 self.handle.barrier(channel=0)
+                 if result is not None:
+-                    pack_peer_rows(self.addresses, row_map, result, shard.shape[0])
++                    pack_peer_rows(addresses, row_map, result, shard.shape[0])
+                     result.record_stream(self.stream)
+                     row_map.record_stream(self.stream)
+-                # Every rank retires the previous rows, including a rank with no reads.
+-                self.handle.barrier(channel=0)
++                if len(self.banks) == 1:
++                    self.handle.barrier(channel=0)
++                else:
++                    # Each rank reaches the next publication after all its prior reads.
++                    # That barrier retires this bank before the following call reuses it.
++                    self.next_bank ^= 1
+                 shard.record_stream(self.stream)
+@@ -90,33 +102,37 @@ def prepare_peer_prompt_inputs(group, hidden, topk, chunk_rows, capture_rows, gr
+     # A local allocation failure must be visible to all ranks before entering rendezvous.
+-    storage = None
+-    try:
+-        from torch._C._distributed_c10d import _SymmetricMemory
+-
+-        # A separate raw allocation owns its signal pad. Pooled public views may share a pad.
+-        with torch.inference_mode(False), torch.no_grad():
+-            storage = _SymmetricMemory.empty_strided_p2p(
+-                (rows, hidden), (hidden, 1), torch.bfloat16, comm.device, group.device_group.group_name
+-            )
+-    except (AttributeError, ImportError, OSError, RuntimeError, TypeError) as exc:
+-        logger.warning("Sparse prompt peer allocation unavailable: %s", exc)
+-    if not all(agree(storage is not None)):
+-        return None
+-    workspace = None
+-    try:
+-        handle = _SymmetricMemory.rendezvous(storage)
+-        if handle is not None and handle.rank == group.rank_in_group and handle.world_size == group.world_size:
+-            workspace = PeerPromptInputs(storage, handle, group)
+-            # Compile before accepting collective work. Read only this rank's own row.
+-            probe_shard_rows = 2
+-            row_map = torch.full((handle.rank * probe_shard_rows + 1, topk), -1,
+-                                 dtype=torch.int32, device=comm.device)
+-            row_map[-1, 0] = 0
+-            storage[:1].zero_()
+-            output = torch.empty_like(storage[:1])
+-            pack_peer_rows(workspace.addresses, row_map, output, probe_shard_rows)
+-            torch.cuda.current_stream(comm.device).synchronize()
+-    except (AttributeError, ImportError, OSError, RuntimeError, TypeError, ValueError, TritonError) as exc:
+-        logger.warning("Sparse prompt peer reads unavailable: %s", exc)
++    def setup(banks):
++        storage = None
++        try:
++            from torch._C._distributed_c10d import _SymmetricMemory
++
++            with torch.inference_mode(False), torch.no_grad():
++                storage = _SymmetricMemory.empty_strided_p2p(
++                    (banks * rows, hidden), (hidden, 1), torch.bfloat16, comm.device, group.device_group.group_name
++                )
++        except (AttributeError, ImportError, OSError, RuntimeError, TypeError) as exc:
++            logger.warning("Sparse prompt peer allocation unavailable: %s", exc)
++        if not all(agree(storage is not None)):
++            return None
+         workspace = None
+-    return workspace if all(agree(workspace is not None)) else None
++        try:
++            handle = _SymmetricMemory.rendezvous(storage)
++            if handle is not None and handle.rank == group.rank_in_group and handle.world_size == group.world_size:
++                workspace = PeerPromptInputs(storage, handle, group, banks)
++                # Compile before accepting collective work. Read only this rank's own row.
++                probe_shard_rows = 2
++                row_map = torch.full((handle.rank * probe_shard_rows + 1, topk), -1,
++                                     dtype=torch.int32, device=comm.device)
++                row_map[-1, 0] = 0
++                output = torch.empty_like(storage[:1])
++                for bank, addresses in workspace.banks:
++                    bank[:1].zero_()
++                    pack_peer_rows(addresses, row_map, output, probe_shard_rows)
++                torch.cuda.current_stream(comm.device).synchronize()
++        except (AttributeError, ImportError, OSError, RuntimeError, TypeError, ValueError, TritonError) as exc:
++            logger.warning("Sparse prompt peer reads unavailable: %s", exc)
++            workspace = None
++        return workspace if all(agree(workspace is not None)) else None
++
++    return setup(2) or setup(1)
++
+ 

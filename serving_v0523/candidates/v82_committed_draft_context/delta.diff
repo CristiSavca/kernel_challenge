@@ -1,0 +1,189 @@
+diff --git a/python/sglang/kernels/ops/speculative/dflash_committed_projection.py b/python/sglang/kernels/ops/speculative/dflash_committed_projection.py
+new file mode 100644
+index 0000000..a95c6da
+--- /dev/null
++++ b/python/sglang/kernels/ops/speculative/dflash_committed_projection.py
+@@ -0,0 +1,82 @@
++"""BF16 target-context projection over the rows retained by tree verification."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _plan_rows(Order, Lengths, Plan, n_rows, WIDTH: tl.constexpr, BLOCK: tl.constexpr):
++    rows = tl.arange(0, BLOCK)
++    request = rows // WIDTH
++    live = (rows < n_rows) & (rows % WIDTH < tl.load(Lengths + request, rows < n_rows, other=0))
++    source = request * WIDTH + tl.load(Order + rows, live, other=0).to(tl.int32)
++    compact = tl.cumsum(live.to(tl.int32)) - 1
++    tl.store(Plan + compact, source, live)
++    tl.store(Plan + n_rows + compact, rows, live)
++    tl.store(Plan + 2 * n_rows, tl.sum(live.to(tl.int32)))
++
++
++@triton.jit
++def _project(
++    Hidden, Weight, Plan, Output,
++    n_rows, N: tl.constexpr, K: tl.constexpr,
++    BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr,
++):
++    first = tl.program_id(0) * BM
++    count = tl.load(Plan + 2 * n_rows)
++    if first >= count:
++        return
++    row = first + tl.arange(0, BM)
++    source = tl.load(Plan + row, row < count, other=0).to(tl.int64)
++    dest = tl.load(Plan + n_rows + row, row < count, other=0).to(tl.int64)
++    col = tl.program_id(1) * BN + tl.arange(0, BN)
++    inner = tl.arange(0, BK)
++    x = Hidden + source[:, None] * K + inner[None, :]
++    w = Weight + col[:, None].to(tl.int64) * K + inner[None, :]
++    acc = tl.full((BM, BN), 0, tl.float32)
++    for _ in range(K // BK):
++        a = tl.load(x, row[:, None] < count, other=0)
++        b = tl.load(w)
++        acc = tl.dot(a, tl.trans(b), acc)
++        x += BK
++        w += BK
++    tl.store(Output + dest[:, None] * N + col[None, :], acc, row[:, None] < count)
++
++
++def project_committed_rows(hidden, weight, order, lengths):
++    rows, k = hidden.shape
++    n, weight_k = weight.shape
++    batch, width = order.shape
++    # Below four row tiles there is little work to eliminate. Bound the
++    # single-CTA prefix scan by its own capacity, independently of batch size.
++    if (
++        not hidden.is_cuda
++        or hidden.dtype != torch.bfloat16
++        or weight.dtype != hidden.dtype
++        or weight.device != hidden.device
++        or order.device != hidden.device
++        or lengths.device != hidden.device
++        or order.dtype != torch.int64
++        or lengths.dtype != torch.int32
++        or lengths.shape != (batch,)
++        or rows != batch * width
++        or not 64 <= rows <= 2048
++        or width < 2
++        or k != weight_k
++        or k % 64 or n % 32
++        or not all(t.is_contiguous() for t in (hidden, weight, order, lengths))
++        or torch.cuda.get_device_capability(hidden.device) != (9, 0)
++        or torch.are_deterministic_algorithms_enabled()
++    ):
++        return None
++    plan = torch.empty(2 * rows + 1, dtype=torch.int32, device=hidden.device)
++    # Inactive rows have defined zero values. The prefix-valid KV writer
++    # only publishes live rows from each request.
++    local = hidden.new_zeros((rows, n))
++    scan_block = max(256, triton.next_power_of_2(rows))
++    _plan_rows[(1,)](order, lengths, plan, rows, width, scan_block)
++    _project[(triton.cdiv(rows, 16), n // 32)](
++        hidden, weight, plan, local, rows, n, k, 16, 32, 64,
++    )
++    return local
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 2763fdd..9b7f5f1 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -79,6 +79,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Shard the unquantized DFLASH target-context projection across the draft TP group.",
+     ] = False
++    speculative_dflash_compact_context: A[
++        bool,
++        "Project committed tree features directly into draft-context order on supported GPUs.",
++    ] = False
+     speculative_dflash_tp_conv_projection: A[
+         bool,
+         "Shard dynamic DFLASH convolution filter projections across the draft TP group.",
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index 92034b9..5f42d41 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -17,6 +17,7 @@ from sglang.kernels.ops.speculative.lilicorr import lilicorr_topk_lse
+ from sglang.srt.configs.draft_parallel import DraftParallelSpec, DraftTPExecution
+ from sglang.srt.configs.laguna import normalize_gating
+ from sglang.srt.distributed.communication_op import tensor_model_parallel_all_gather
++from sglang.srt.environ import envs
+ from sglang.srt.layers.activation import SiluAndMul
+ from sglang.srt.layers.dflash_context_projection import DFlashGatheredLinear
+ from sglang.srt.layers.layernorm import GemmaRMSNorm, RMSNorm
+@@ -1290,6 +1291,21 @@ class CandidateSelector(nn.Module):
+ class DFlash2DraftModel(DFlashDraftModel):
+     """DFlash backbone + candidate selector. Reuses the DFLASH speculative worker."""
+ 
++    def project_committed_tree(self, hidden, order, commit_lens):
++        if (
++            not isinstance(self.fc, DFlashGatheredLinear)
++            or envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        ):
++            return None
++        from sglang.kernels.ops.speculative.dflash_committed_projection import (
++            project_committed_rows,
++        )
++
++        local = project_committed_rows(hidden, self.fc.weight, order, commit_lens)
++        if local is None:
++            return None
++        return self.hidden_norm(self.fc.tp_group.all_gather(local, -1))
++
+     def __init__(self, config, quant_config=None, prefix: str = "") -> None:
+         super().__init__(config=config, quant_config=quant_config, prefix=prefix)
+         draft_config = self.draft_config
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 006db40..5f241b5 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1892,6 +1892,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        tree_order: Optional[torch.Tensor] = None,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1991,7 +1992,23 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
++            ctx_hidden = None
++            if tree_order is not None:
++                compact = getattr(self.draft_model, "project_committed_tree", None)
++                if (
++                    get_spec().speculative_dflash_compact_context
++                    and compact is not None
++                    and self.lilicorr is None
++                    and cache_loc_2d is not None
++                ):
++                    ctx_hidden = compact(target_hidden, tree_order, commit_lens)
++                if ctx_hidden is None:
++                    rows = target_hidden.view(*tree_order.shape, -1)
++                    target_hidden = rows.gather(
++                        1, tree_order[:, :, None].expand_as(rows)
++                    ).reshape_as(target_hidden)
++            if ctx_hidden is None:
++                ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+                 self._lilicorr_anchor = publish_anchor(
+                     draft_sampler=self._draft_sampler,
+@@ -3082,13 +3099,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc.view(bs, block_size),
+                 order,
+             ).reshape(-1)
+-            hidden = hidden.gather(1, order[:, :, None].expand(-1, -1, hidden.shape[-1]))
+         self._append_target_hidden_to_draft_kv_by_loc(
+             target_hidden=hidden.reshape(-1, hidden.shape[-1]),
+             cache_loc=cache_loc,
+             cache_loc_2d=cache_loc.view(verify_out_cache_loc_2d.shape),
+             positions=positions,
+             commit_lens=commit_lens,
++            tree_order=order,
+         )
+         if order is not None:
+             # The scheduler's WAR barrier must follow the table/KV writes,

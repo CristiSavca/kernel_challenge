@@ -1,0 +1,243 @@
+diff --git a/python/sglang/srt/arg_groups/overrides.py b/python/sglang/srt/arg_groups/overrides.py
+index d29583d12411fc3c5de54831add65b8ff1b95688..4e275ae34bba5da0ee40550b71b0e9292f5fb8c3 100644
+--- a/python/sglang/srt/arg_groups/overrides.py
++++ b/python/sglang/srt/arg_groups/overrides.py
+@@ -56,7 +56,7 @@ from sglang.srt.arg_groups.model_override_base import (  # noqa: F401
+     resolving_view,
+     use_mla_backend,
+ )
+-from sglang.srt.arg_groups.prefill_buffer_ceiling import prefill_buffer_ceiling_of
++from sglang.srt.arg_groups.prefill_buffer_ceiling import mixed_prefill_ceiling, prefill_buffer_ceiling_of
+ 
+ logger = logging.getLogger(__name__)
+ from sglang.srt.environ import envs
+@@ -1875,6 +1875,8 @@ def max_prefill_buffer_tokens(server_args: Any) -> int:
+         else 0
+     )
+     tokens = chunked
++    if cfg.speculative_dflash_mixed_prefill and cfg.cuda_graph_config is not None:
++        tokens = mixed_prefill_ceiling(chunked, cfg.max_prefill_tokens, cfg.cuda_graph_config.prefill.max_bs)
+     if cfg.enable_dynamic_chunking and cfg.pp_size > 1 and chunked:
+         tokens = max(tokens, cfg.max_prefill_tokens or 0, math.ceil(chunked * 1.25))
+     record = server_args
+diff --git a/python/sglang/srt/arg_groups/prefill_buffer_ceiling.py b/python/sglang/srt/arg_groups/prefill_buffer_ceiling.py
+index aab022d9a791964d0c185b4c03336e46362d0489..a27a7d1e61cebaa69cb731e5a7c0477fa9616789 100644
+--- a/python/sglang/srt/arg_groups/prefill_buffer_ceiling.py
++++ b/python/sglang/srt/arg_groups/prefill_buffer_ceiling.py
+@@ -33,3 +33,34 @@ def prefill_buffer_ceiling_of(record: Any, default_ceiling: int) -> int:
+     if _prefill_buffer_ceiling_fn is None:
+         return default_ceiling
+     return _prefill_buffer_ceiling_fn(record, default_ceiling)
++
++
++def mixed_prefill_ceiling(chunk_rows, max_prefill_rows, graph_rows):
++    """Physical row limit for a prompt and an already reserved verify cohort."""
++    if not chunk_rows or chunk_rows <= 0:
++        return 0
++    return max(chunk_rows, min(max_prefill_rows or 0, graph_rows or 0))
++
++
++def mixed_prefill_graph_fits(prompt_rows, verify_rows, mixed_rows, live_rows, chunk_rows, buffer_rows):
++    """Bound extra padding of a combined graph with an intact prompt."""
++    separate_rows = prompt_rows + verify_rows
++    if chunk_rows and chunk_rows > 0 and live_rows > chunk_rows:
++        if mixed_rows > buffer_rows:
++            return False
++        # Overflow graphs double in size *above* the chunk. Their extra work
++        # may cost at most one verification body, independent of prompt length.
++        separate_rows += verify_rows
++    return mixed_rows <= separate_rows
++
++
++def mixed_prefill_graph_sizes(chunk, ceiling, width, verify_batches):
++    """Geometrically spaced tail capacities, all backed by native verify shapes."""
++    eligible = sorted({n for n in verify_batches if n > 0 and chunk + n * width <= ceiling})
++    if not eligible:
++        return set()
++    selected = [eligible[0]]
++    for count in eligible[1:]:
++        if count >= 2 * selected[-1]:
++            selected.append(count)
++    return {chunk + width * n for n in (*selected, eligible[-1])}
+diff --git a/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+index 9afecfeeeb39fdf13e6ba62439b61b226f861c1a..8daf905bea00d9cb4c529d642614cac479ed2bdc 100644
+--- a/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
++++ b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+@@ -7,6 +7,7 @@ from copy import copy
+ import torch
+ import torch.distributed as dist
+ 
++from sglang.srt.arg_groups.prefill_buffer_ceiling import mixed_prefill_graph_fits
+ from sglang.srt.disaggregation.utils import DisaggregationMode
+ from sglang.srt.mem_cache.allocator.base import BaseTokenToKVPoolAllocator
+ from sglang.srt.model_executor.forward_batch_info import ForwardMode
+@@ -77,13 +78,18 @@ def _candidate_geometry(scheduler, prompt, decode, chunk_budget):
+     if (
+         total > prefill.max_num_tokens
+         or total > scheduler.max_prefill_tokens
+-        or (chunk_budget is not None and chunk_budget > 0 and total > chunk_budget)
++        or (chunk_budget is not None and chunk_budget > 0 and (
++            prompt_tokens > chunk_budget
++            or (total > chunk_budget and chunk_budget != scheduler.chunked_prefill_size)
++        ))
+     ):
+         return None
+     prompt_rows = prefill._pad_to_bucket(prompt_tokens, prefill.capture_num_tokens)
+     verify_bs = verify._pad_to_bucket(tails, verify.capture_bs)
+     mixed_rows = prefill._pad_to_bucket(total, prefill.capture_num_tokens)
+-    if (verify.disable_padding and verify_bs != tails) or mixed_rows > prompt_rows + verify_bs * width:
++    if (verify.disable_padding and verify_bs != tails) or not mixed_prefill_graph_fits(
++        prompt_rows, verify_bs * width, mixed_rows, total, chunk_budget, prefill.mixed_dflash_token_capacity
++    ):
+         return None
+ 
+     allocator = decode.token_to_kv_pool_allocator
+@@ -157,6 +163,14 @@ def _continuation_budget(scheduler, decode, req, adder):
+         or cap not in prefill.capture_num_tokens or (verify.disable_padding and count not in verify.capture_bs)
+     ):
+         return None
++    # Prefer unchanged prompt boundaries when the combined body already fits.
++    total = cap + reserved
++    if (total <= min(prefill.max_num_tokens, scheduler.max_prefill_tokens)
++            and mixed_prefill_graph_fits(
++                cap, width * verify._pad_to_bucket(count, verify.capture_bs),
++                prefill._pad_to_bucket(total, prefill.capture_num_tokens), total, cap, prefill.mixed_dflash_token_capacity,
++            )):
++        return None
+     # Moving rows to the final partial chunk must preserve both its capture bucket
+     # and the number of forwards under the configured chunk size.
+     last = (remaining - 1) % cap + 1
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 6a0175536e417de9604370e2952997ccd2f7315a..68c3d65682896c1c2c8250fa6fe2dfd42b2d6462 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -78,7 +78,7 @@ from sglang.srt.model_executor.cuda_graph_buffer_registry import (
+     CudaGraphBufferRegistry,
+     build_prefill_registry,
+ )
+-from sglang.srt.model_executor.cuda_graph_config import Backend
++from sglang.srt.model_executor.cuda_graph_config import Backend, Phase
+ from sglang.srt.model_executor.forward_batch_info import (
+     CaptureHiddenMode,
+     ForwardBatch,
+@@ -133,6 +133,9 @@ from sglang.srt.runtime_context import (
+     get_memory,
+     get_parallel,
+     get_schedule,
++    get_server_args,
++    get_spec,
++    max_prefill_buffer_tokens,
+ )
+ from sglang.srt.speculative.eagle_utils import get_draft_input_from_target_hidden_dim
+ from sglang.srt.utils import (
+@@ -170,6 +173,31 @@ def get_prefill_num_tokens_to_capture(capture_tokens: Sequence[int]) -> list[int
+     return sorted({get_cuda_graph_max_batch_size(n) for n in capture_tokens})
+ 
+ 
++def _mixed_dflash_capture_sizes(model_runner, sizes):
++    from sglang.srt.arg_groups.prefill_buffer_ceiling import mixed_prefill_graph_sizes
++
++    spec = get_spec()
++    if not spec.speculative_dflash_mixed_prefill or model_runner.is_draft_worker or not model_runner.spec_algorithm.is_dflash():
++        return sizes, 0
++    graph = get_exec().graph.cuda_graph_config
++    schedule = get_schedule()
++    chunk = schedule.chunked_prefill_size
++    ceiling = min(max_prefill_buffer_tokens(), schedule.max_prefill_tokens or 0, graph.prefill.max_bs or 0)
++    if (graph.prefill.backend != Backend.BREAKABLE or graph.decode.backend != Backend.FULL
++            or not chunk or chunk not in sizes or ceiling <= chunk
++            or (Phase.PREFILL, "bs") in get_server_args()._cuda_graph_config_locked):
++        return sizes, min(max(sizes), ceiling)
++    width = spec.speculative_num_draft_tokens
++    if width is None or width < 2:
++        return sizes, min(max(sizes), ceiling)
++    extra = mixed_prefill_graph_sizes(chunk, ceiling, width, graph.decode.bs or ())
++    # Captured bodies run padded rows. A custom buffer provider may be tighter
++    # than the public token budget, even when the unpadded graph key fits.
++    aligned = get_prefill_num_tokens_to_capture(extra)
++    sizes = sorted(set(sizes).union(n for n in aligned if n <= ceiling))
++    return sizes, min(max(sizes), ceiling)
++
++
+ def _chunked_prefix_variant(num_chunks: int) -> str:
+     return f"chunked_prefix:{num_chunks}"
+ 
+@@ -368,6 +396,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         assert self.capture_num_tokens, "cuda_graph_config[prefill].bs is empty"
+ 
+         # --- runner bounds --------------------------------------------
++        self.capture_num_tokens, self.mixed_dflash_token_capacity = _mixed_dflash_capture_sizes(model_runner, self.capture_num_tokens)
+         self.max_num_tokens = max(self.capture_num_tokens)
+         self.max_bs = model_runner.req_to_token_pool.size
+         self.max_context_size = prefill_config.max_context_size
+diff --git a/python/sglang/srt/runtime_context.py b/python/sglang/srt/runtime_context.py
+index 054e46f33899d93e89f6d2998b116ea0e4d5850c..092651fd5216155076c397908c87e5c745e229bc 100644
+--- a/python/sglang/srt/runtime_context.py
++++ b/python/sglang/srt/runtime_context.py
+@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
+ 
+ import msgspec
+ 
+-from sglang.srt.arg_groups.prefill_buffer_ceiling import prefill_buffer_ceiling_of
++from sglang.srt.arg_groups.prefill_buffer_ceiling import mixed_prefill_ceiling, prefill_buffer_ceiling_of
+ 
+ if TYPE_CHECKING:
+     from sglang.srt.model_executor.runner_utils.pool import GraphPoolBorrowState
+@@ -1787,6 +1787,10 @@ def max_prefill_buffer_tokens() -> int:
+         else 0
+     )
+     tokens = chunked
++    if get_spec().speculative_dflash_mixed_prefill:
++        graph = get_exec().graph.cuda_graph_config
++        if graph is not None:
++            tokens = mixed_prefill_ceiling(chunked, schedule.max_prefill_tokens, graph.prefill.max_bs)
+     if schedule.enable_dynamic_chunking and get_parallel().pp_size > 1 and chunked:
+         tokens = max(
+             tokens, schedule.max_prefill_tokens or 0, math.ceil(chunked * 1.25)
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index f71604cd817bfa7bacd70a05a3fbc2a353b1bf49..f3044dab428c8b1f0e9b9e95019adbecae7fc982 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -67,7 +67,8 @@ def _prepare_views(worker, prompt, decode, proposal, prefix_readback=None):
+     total = q + tail_rows
+     policy = get_schedule()
+     if ((policy.max_prefill_tokens and total > policy.max_prefill_tokens)
+-            or (policy.chunked_prefill_size > 0 and total > policy.chunked_prefill_size)
++            or (policy.chunked_prefill_size > 0 and q > policy.chunked_prefill_size)
++            or total > runner.prefill_cuda_graph_runner.max_num_tokens
+             or not runner.prefill_cuda_graph_runner._uses_eager_prefill_tail()
+             or p + t > runner.prefill_cuda_graph_runner.max_bs
+             or prompt.extend_num_tokens != q
+diff --git a/python/sglang/srt/speculative/dflash_mixed_graph_admission.py b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+index 69837e06652193f33dcdf05665bfd6d9eae0a50b..8fba52ed821a5936787149b9f5c7bdd5b3814850 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
++++ b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+@@ -6,6 +6,7 @@ from dataclasses import dataclass
+ import torch
+ import torch.distributed as dist
+ 
++from sglang.srt.arg_groups.prefill_buffer_ceiling import mixed_prefill_graph_fits
+ from sglang.srt.model_executor.forward_batch_info import CaptureHiddenMode, ForwardMode
+ from sglang.srt.model_executor.runner.decode_cuda_graph_runner import DecodeCudaGraphRunner
+ from sglang.srt.model_executor.runner.prefill_cuda_graph_runner import PrefillCudaGraphRunner
+@@ -96,7 +97,8 @@ def plan_mixed_dflash_target(model_runner, prompt, verify, mixed, tail_reqs):
+     mixed_tokens = q + b * width
+     if (
+         (schedule.max_prefill_tokens and mixed_tokens > schedule.max_prefill_tokens)
+-        or (schedule.chunked_prefill_size > 0 and mixed_tokens > schedule.chunked_prefill_size)
++        or (schedule.chunked_prefill_size > 0 and q > schedule.chunked_prefill_size)
++        or mixed_tokens > prefill.max_num_tokens
+         or not _has_live_extent(prompt, q, device)
+         or not _has_live_extent(verify, b * width, device)
+         or not _has_live_extent(mixed, q + b * width, device)
+@@ -137,7 +139,9 @@ def plan_mixed_dflash_target(model_runner, prompt, verify, mixed, tail_reqs):
+     mixed_rows = prefill._pad_to_bucket(q + b * width, prefill.capture_num_tokens)
+     verify_bs = decode._pad_to_bucket(b, decode.capture_bs)
+     verify_rows = verify_bs * width
+-    if mixed_rows > prompt_rows + verify_rows:
++    if not mixed_prefill_graph_fits(
++        prompt_rows, verify_rows, mixed_rows, mixed_tokens, schedule.chunked_prefill_size, prefill.mixed_dflash_token_capacity
++    ):
+         return None
+     # The native eligibility checks can admit a padded size before consulting the
+     # backend. Check the installed graph keys, including its real attention variant.

@@ -1,0 +1,202 @@
+{
+  "pinned_runtime": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "source_sha256": {
+    "configs/muse_spark.py": "2a07f2b7fd19c89125d3b718d17ea21dcd7bb347b51aeb278504efb853f118df",
+    "models/muse_spark.py": "a8edc5a90db6da6a4be2120ae13a47ebd19bf4ba2ed604a3f204b22707c74d99",
+    "speculative/dflash_worker_v2.py": "83abc451fb3e753d4bf5f1320a0453190186d18af9b65b262ca8318cd63d2d47",
+    "speculative/dflash_utils.py": "72270b7d4e01012e4b0d04b283db0f57120be37ea0c94c820056ad9a5a9a0d5a",
+    "mem_cache/common.py": "59e2b5ce9902f7633bdcad54bd57e2e98d546b0c97cfc2e9de560c511e13ad81",
+    "mem_cache/unified_radix_cache.py": "9c1a1116081c266301ecfeef4faf4178d18114a8996010765d9aa238cd83deb3",
+    "managers/scheduler.py": "d2b95436a7a9af2ac002558c2a81c39d557c9a2d46559c7885efdc9b455aa048",
+    "mem_cache/unified_cache/components/swa.py": "186b327dae0118b149c7126547570c0be3fd94898bc5e7aed25de252d861343a",
+    "mem_cache/unified_cache/unified_tree_core.py": "4948b7861488a51fce728a4ada6c40c875519b8cecc07aae4d9d6bec8b6a7e47"
+  },
+  "raw_sha256": {
+    "serving_v0523/candidates/v241_split_serving_decode/patch.diff": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__load.json": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__server_info.json": "32a0e923ff7d06e92684a8624af2fbc3e3597f78748bb3ddca5ea3dd6bb7fb62",
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__server.log": "b7212de67ee2c9fe42b113054891cb4f56cdb3eaa5d9daf5cca2602c1af29bc4",
+    "serving_v0523/runs/04b01f958aa5487c.log": "420bcc93feec5db58eed7a366e4b7f60a63e4c4c1d05582dc9fded7f3377a379",
+    "serving_v0523/candidates/v185_paired_prompt_draft_kv/geometry.py": "cd5d21a7b3bdcfb5eb66df322f391baa03c2fea8b9c05ad72bd2811a956c0f53",
+    "serving_v0523/candidates/v219_verify_graph_sliding_tiles/full_width.json": "8ca5600895f916dacf8b02124e4bdc8880153487c711e4a564fb3c05eff1c918"
+  },
+  "trace": {
+    "observations": "Archived eight-H200 V41 request lengths and match offsets. Prior prompt +1 held for all observed later turns. No physical slots, accepted draft coverage or kernel timings appear in the client trace.",
+    "model": "Consecutive 16,384-row chunks per individual cold miss. The scheduler may pack or split them differently. A 2,048-row tail in each chunk is an optimistic row count, not a safe write policy.",
+    "per_concurrency": {
+      "1": {
+        "cold_requests": 3,
+        "later_requests": 36,
+        "cold_uncached": 268797,
+        "cold_prompt": 268797,
+        "cold_modeled_full_middle_chunks": 15,
+        "cold_omitted_keep_2048_per_chunk": 233665,
+        "cold_omitted_keep_2049_middle_only": 215025,
+        "later_prompt": 3431081,
+        "later_cached": 3396342,
+        "later_uncached": 34739,
+        "later_min_new": 414,
+        "later_max_new": 1494,
+        "later_cached_minus_previous_prompt_equals_one": 36,
+        "deficit_rewind_target_rows": 38989,
+        "full_rewind_target_rows": 73728
+      },
+      "4": {
+        "cold_requests": 8,
+        "later_requests": 96,
+        "cold_uncached": 578151,
+        "cold_prompt": 578751,
+        "cold_modeled_full_middle_chunks": 31,
+        "cold_omitted_keep_2048_per_chunk": 498893,
+        "cold_omitted_keep_2049_middle_only": 444385,
+        "later_prompt": 7536796,
+        "later_cached": 7445150,
+        "later_uncached": 91646,
+        "later_min_new": 396,
+        "later_max_new": 1555,
+        "later_cached_minus_previous_prompt_equals_one": 96,
+        "deficit_rewind_target_rows": 104962,
+        "full_rewind_target_rows": 196608
+      },
+      "16": {
+        "cold_requests": 16,
+        "later_requests": 192,
+        "cold_uncached": 1229575,
+        "cold_prompt": 1231675,
+        "cold_modeled_full_middle_chunks": 66,
+        "cold_omitted_keep_2048_per_chunk": 1061639,
+        "cold_omitted_keep_2049_middle_only": 946110,
+        "later_prompt": 16004399,
+        "later_cached": 15818410,
+        "later_uncached": 185989,
+        "later_min_new": 366,
+        "later_max_new": 1539,
+        "later_cached_minus_previous_prompt_equals_one": 192,
+        "deficit_rewind_target_rows": 207227,
+        "full_rewind_target_rows": 393216
+      },
+      "32": {
+        "cold_requests": 32,
+        "later_requests": 384,
+        "cold_uncached": 2455793,
+        "cold_prompt": 2460293,
+        "cold_modeled_full_middle_chunks": 138,
+        "cold_omitted_keep_2048_per_chunk": 2112353,
+        "cold_omitted_keep_2049_middle_only": 1978230,
+        "later_prompt": 31900283,
+        "later_cached": 31530996,
+        "later_uncached": 369287,
+        "later_min_new": 348,
+        "later_max_new": 1526,
+        "later_cached_minus_previous_prompt_equals_one": 384,
+        "deficit_rewind_target_rows": 417145,
+        "full_rewind_target_rows": 786432
+      }
+    },
+    "totals": {
+      "cold_requests": 59,
+      "later_requests": 708,
+      "cold_uncached": 4532316,
+      "cold_prompt": 4539516,
+      "cold_modeled_full_middle_chunks": 250,
+      "cold_omitted_keep_2048_per_chunk": 3906550,
+      "cold_omitted_keep_2049_middle_only": 3583750,
+      "later_prompt": 58872559,
+      "later_cached": 58190898,
+      "later_uncached": 681661,
+      "later_cached_minus_previous_prompt_equals_one": 708,
+      "deficit_rewind_target_rows": 768323,
+      "full_rewind_target_rows": 1449984
+    }
+  },
+  "global_dense_flops": {
+    "draft_fc_and_five_kv_per_row": 838860800,
+    "draft_geometry": {
+      "fc_out": 8192,
+      "fc_in": 40960,
+      "kv_out_per_rank": 1280,
+      "tp": 8
+    },
+    "target_qkvo_per_row_lower_bound": 18723373056,
+    "target_geometry": {
+      "layers": 62,
+      "hidden": 8192,
+      "q_heads": 128,
+      "kv_heads": 16,
+      "head_dim": 64
+    },
+    "target_expression": "2 * layers * hidden * (Q_heads + K_heads + V_heads + O_heads) * head_dim",
+    "optimistic_saved_cold_draft": 3277051658240000,
+    "added_target_qkvo_deficit_rewind": 14385598156505088,
+    "added_target_qkvo_full_rewind": 27148591357231104,
+    "added_target_qkvo_vs_saved_draft": 4.389799019595295,
+    "fa4_exact_deficit_target_rows": 767615,
+    "fa4_exact_deficit_target_qkvo": 14372342008381440,
+    "fa4_exact_target_qkvo_vs_saved_draft": 4.385753874902408,
+    "rewind_convention": "The blanket deficit retains 2048 previous rows. Released FA4 needs 2047 previous rows including all newly appended rows, so its exact deficit is one smaller for each of the 708 positive deficits.",
+    "scope": "Logical multiply-adds across all ranks. Target counts omit attention, extra gates, experts and all other costs. These counts do not measure latency or score."
+  },
+  "counterexample": {
+    "native_full_checkpoint_control": {
+      "initial_reusable_boundary": 0,
+      "initial_full_kv_hit": 0,
+      "native_swa_branching_seqlen": null,
+      "effective_checkpoint": 16384,
+      "native_live_swa_span": [
+        14335,
+        16384
+      ],
+      "later_divergence_endpoint": 8192,
+      "later_uncached_append": 256,
+      "old_rows_needed_at_next_draft": 1791,
+      "old_rows_present_in_naive_draft_tail": 0,
+      "later_acceptance_by_tier": {
+        "value": {
+          "hierarchy_accepts": false,
+          "device_only_accepts": false
+        },
+        "host_value": {
+          "hierarchy_accepts": false,
+          "device_only_accepts": false
+        }
+      }
+    },
+    "native_branch_checkpoint": {
+      "initial_reusable_boundary": 0,
+      "initial_full_kv_hit": 8192,
+      "native_swa_branching_seqlen": 8192,
+      "effective_checkpoint": 8192,
+      "native_live_swa_span": [
+        6143,
+        8192
+      ],
+      "later_divergence_endpoint": 8191,
+      "later_uncached_append": 256,
+      "old_rows_needed_at_next_draft": 1791,
+      "old_rows_present_in_naive_draft_tail": 0,
+      "later_acceptance_by_tier": {
+        "value": {
+          "hierarchy_accepts": true,
+          "device_only_accepts": true
+        },
+        "host_value": {
+          "hierarchy_accepts": true,
+          "device_only_accepts": false
+        }
+      }
+    },
+    "source_anchors": {
+      "managers/scheduler.py:3923": "self.stash_chunked_request(self.chunked_req)",
+      "mem_cache/common.py:278": "tree_cache.checkpoint(req, up_to=req.extend_end)",
+      "mem_cache/unified_radix_cache.py:1221": "comp.free_out_of_window_slots(req, len(radix_key) - 1, insert_params)",
+      "mem_cache/unified_radix_cache.py:1238": "result = self.insert(insert_params)",
+      "mem_cache/unified_cache/components/swa.py:1028": "return effective_cache_len",
+      "mem_cache/unified_cache/components/swa.py:434": "def _clip_to_window(",
+      "mem_cache/unified_cache/components/swa.py:536": "self._publish_window(node=fragment",
+      "mem_cache/unified_cache/unified_tree_core.py:960": "node, action = self._split_node(child.key, child, prefix_len)",
+      "mem_cache/unified_cache/unified_tree_core.py:1501": "component.redistribute_on_node_split(new_parent=new_node, child=child)",
+      "managers/scheduler.py:3823": "release_kv_cache(req, self.tree_cache, checkpoint=False)"
+    },
+    "scope": "Original pinned CPU methods for branch mint, preparation, physical eviction, live clipping, split and match. Synthetic inputs, node shells, host mirror and allocator. The branch is possible; archived client lengths do not identify such an event."
+  }
+}

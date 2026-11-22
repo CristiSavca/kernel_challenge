@@ -1,0 +1,75 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+index 861900b..4f12a6f 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/prompt_weight_pipeline.cuh
+@@ -21,3 +21,4 @@ CUDA_INLINE void muse_load_scales(Ctx& ctx, Loader& loader, uint32_t stage) {
+   static_assert(Ctx::kNumMathThreads == 256 && Ctx::kNumLoadThreads == 128 && Ctx::kWarpIters == 4);
+-  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && (Ctx::kMultiCastSize == 1 || (Ctx::kMultiCastSizeA == 2 && Ctx::kMultiCastSizeB == 1)));
++  static_assert(Ctx::N_WARPS == 8 && Ctx::M_WARPS == 1 && Ctx::K_WARPS == 1 && Ctx::kMultiCastSizeB == 1);
++  static_assert(Ctx::kMultiCastSizeA == 1 || Ctx::kMultiCastSizeA == 2 || Ctx::kMultiCastSizeA == 4);
+   static_assert(!Ctx::kUseTmaBS && !Ctx::kUseCpAsync && Ctx::kUseTmaA && Ctx::kUseTmaB);
+diff --git a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+index 582bf79..2d7755d 100644
+--- a/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
++++ b/python/sglang/srt/layers/muse_spark/prompt_weight_pipeline.py
+@@ -26,2 +26,13 @@ def adapt_prompt_weights(kernel):
+     transfers = transfers.replace("#pragma once", "", 1)
++    if kernel.multi_cast_size_a > 1:
++        # A multicast may reuse a peer's shared epilogue buffer only after that peer's proxy fence.
++        transfers = transfers.replace("kNumMathThreads * factor);",
++            "kNumMathThreads * factor + (cluster_rank == 0 && thread_id == kNumStages ? kMultiCastSize - 1 : 0));")
++        end = transfers.index("    phases[kNumStages] ^= 1;", transfers.index("void wait_math_epilogue()"))
++        transfers = transfers[:end] + """
++    if (ctx.cluster_rank() && ctx.load_thread_id() == 0) {
++      void *ready = __cluster_map_shared_rank(&ctx.smem.math_mbar[kNumStages], 0);
++      mbarrier_arrive<true>(ready);
++    }
++""" + transfers[end:]
+     transfer = "loader_bs.template load<kShouldAdvance>(smem.stages[stage_id].bs, mbar_ptr);"
+@@ -54,3 +65,3 @@ def adapt_prompt_weights(kernel):
+ def _cluster_grid(kernel, sms):
+-    """Query the current context for this image's maximum resident two-CTA clusters."""
++    """Query the current context for this image's maximum resident clusters."""
+     from cuda.bindings import driver
+@@ -63,2 +74,3 @@ def _cluster_grid(kernel, sms):
+ 
++    size = kernel.multi_cast_size_a
+     shared = ops.get_kernel_smem_size(kernel.kernel_id)
+@@ -71,5 +83,5 @@ def _cluster_grid(kernel, sms):
+         cluster.id = driver.CUlaunchAttributeID.CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION
+-        cluster.value.clusterDim.x, cluster.value.clusterDim.y, cluster.value.clusterDim.z = 2, 1, 1
++        cluster.value.clusterDim.x, cluster.value.clusterDim.y, cluster.value.clusterDim.z = size, 1, 1
+         config = driver.CUlaunchConfig()
+-        config.gridDimX, config.gridDimY, config.gridDimZ = sms, 1, 1
++        config.gridDimX, config.gridDimY, config.gridDimZ = sms - sms % size, 1, 1
+         config.blockDimX, config.blockDimY, config.blockDimZ = kernel.num_threads, 1, 1
+@@ -80,3 +92,3 @@ def _cluster_grid(kernel, sms):
+             raise ValueError("no resident cluster for the prompt down projection")
+-        return min(active, sms // 2) * 2
++        return min(active, sms // size) * size
+     finally:
+@@ -158,3 +170,4 @@ def _prepare(context, meta, compute, tuning):
+             if (self.sm_version != 90 or tuple(self.block_shape) != (256, 128, 64)
+-                    or tuple(self.warp_shape) != (256, 16, 64) or self.shape_n < 256 or self.shape_n % 256
++                    or tuple(self.warp_shape) != (256, 16, 64) or self.shape_n < 256
++                    or self.shape_n % (128 * self.multi_cast_size_a)
+                     or self.shape_k < 64 or self.shape_k % 64):
+@@ -182,4 +195,9 @@ def _prepare(context, meta, compute, tuning):
+         choices.insert(0, (WidePromptWeightPipeline, wide))
++        if sms >= 4 and cfg["shape_n"] % 512 == 0:
++            choices.insert(1, (WidePromptWeightPipeline, wide | {"multi_cast_size_a": 4}))
+     wide_grid = None
+     for variant, config in choices:
++        # Combine adjacent pair jobs only when the original CTA grid can be matched.
++        if config.get("multi_cast_size_a") == 4 and (wide_grid is None or wide_grid[1] % 4):
++            continue
+         try:
+@@ -188,3 +206,7 @@ def _prepare(context, meta, compute, tuning):
+             if variant is WidePromptWeightPipeline:
+-                wide_grid = [kernel.kernel_id, _cluster_grid(kernel, sms)]
++                capacity = _cluster_grid(kernel, sms)
++                if wide_grid is None:
++                    wide_grid = [kernel.kernel_id, capacity]
++                elif capacity >= wide_grid[1]:
++                    wide_grid[0] = kernel.kernel_id
+                 continue

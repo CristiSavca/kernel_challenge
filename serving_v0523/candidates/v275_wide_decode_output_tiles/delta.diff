@@ -1,0 +1,50 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 22eb1ba..7b5f7f9 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -5,2 +5,4 @@ from __future__ import annotations
+ import json
++import logging
++import subprocess
+ from typing import TYPE_CHECKING
+@@ -25,2 +27,24 @@ _MAX_DECODE_EXPERTS = 64
+ 
++def _prepare_decode_tuning(prepare, meta, config, name, allow_wide):
++    native = config | {"use_stream_k": False, "use_tma_c": False}
++    m, n, k = native["block_shape"]
++    expected = (256, 128) if name == "w13" else (128, 256)
++    if (allow_wide and m in (16, 24) and (n, k) == expected
++            and tuple(native["warp_shape"]) == (m, 32, 64)
++            and native.get("num_stages") == 4 and native.get("use_warp_spec")
++            and native.get("multi_cast_size_a", 1) == native.get("multi_cast_size_b", 1) == 1
++            and native.get("num_ctas_per_sm", 1) == 1):
++        wide = native | {"block_shape": (m, 2 * n, k), "warp_shape": (m, 64, 64),
++                         "num_stages": 4 if name == "w13" else 3}
++        tuning = json.dumps(wide)
++        try:
++            prepare(meta, _GROUPED_COMPUTE, tuning)
++            return tuning
++        except (AssertionError, ValueError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++            logging.getLogger(__name__).warning("Using native grouped decode tile after wide tile failed: %s", exc)
++    tuning = json.dumps(native)
++    prepare(meta, _GROUPED_COMPUTE, tuning)
++    return tuning
++
++
+ @cache_once
+@@ -133,7 +157,6 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             )
++            allow_wide = (experts == 32 and k == 4096 and n == (8192 if name == "w13" else 4096)
++                          and torch.cuda.get_device_capability(packed.device) == (9, 0))
+             decode_tunings[name] = tuple(
+-                (
+-                    maximum,
+-                    json.dumps(config | {"use_stream_k": False, "use_tma_c": False}),
+-                )
++                (maximum, _prepare_decode_tuning(HummingKernel.prepare_kernels, meta.to_str(), config, name, allow_wide))
+                 for minimum, maximum, config in grouped
+@@ -141,4 +164,2 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+             )
+-            for _, tuning in decode_tunings[name]:
+-                HummingKernel.prepare_kernels(meta.to_str(), _GROUPED_COMPUTE, tuning)
+ 

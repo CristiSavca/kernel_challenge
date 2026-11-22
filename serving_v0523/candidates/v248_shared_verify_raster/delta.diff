@@ -1,0 +1,264 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 956a8ef..45443d4 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -42,6 +42,71 @@ def _plan(
+     return row, ends, total_tiles, tiles_per_partition
+ 
+ 
++@triton.jit
++def _build_verify_raster(Lengths, CuQ, Plan, B: tl.constexpr, PARTITIONS: tl.constexpr,
++                         WINDOW_LEFT: tl.constexpr, TILE_N: tl.constexpr,
++                         BLOCK_B: tl.constexpr, BLOCK_P: tl.constexpr):
++    # [B+1 cumulative offsets, B first physical tiles, partition width, P first requests]
++    row = tl.arange(0, BLOCK_B)
++    length = tl.load(Lengths + row, row < B, other=0)
++    start = tl.load(CuQ + row, row < B, other=0)
++    stop = tl.load(CuQ + row + 1, row < B, other=0)
++    first, counts = _tile_geometry(length, stop - start, WINDOW_LEFT, TILE_N)
++    ends = tl.cumsum(counts)
++    width = tl.maximum(1, tl.cdiv(tl.sum(counts), PARTITIONS))
++    chunk = tl.program_id(0)
++    if chunk == 0:
++        tl.store(Plan, 0)
++        tl.store(Plan + 1 + row, ends, row < B)
++        tl.store(Plan + B + 1 + row, first, row < B)
++        tl.store(Plan + 2 * B + 1, width)
++    part = chunk * BLOCK_P + tl.arange(0, BLOCK_P)
++    preceding = (ends[None, :] <= part[:, None] * width) & (row[None, :] < B)
++    owner = tl.sum(preceding.to(tl.int32), 1)
++    tl.store(Plan + 2 * B + 2 + part, owner, part < PARTITIONS)
++
++
++def refresh_verify_rasters(metadata, window_left, kv_heads, num_sms):
++    previous = metadata.verify_raster_storage
++    metadata.verify_rasters = None
++    lengths, cu_q = metadata.cache_seqlens_int32, metadata.cu_seqlens_q
++    if lengths is None or cu_q is None:
++        return
++    batch = lengths.numel()
++    if not (1 < batch <= 64 and lengths.shape == (batch,) and cu_q.shape == (batch + 1,)
++            and lengths.is_cuda and lengths.device == cu_q.device and lengths.dtype == cu_q.dtype == torch.int32
++            and lengths.is_contiguous() and cu_q.is_contiguous()):
++        return
++    # Rebinding a capture variant can construct new views of the same bucket.
++    # Retain allocations only for that exact pair of native metadata spans.
++    reusable = {}
++    if previous is not None and all(old is new or (
++            old.device == new.device and old.dtype == new.dtype and old.shape == new.shape
++            and old.is_contiguous() and old.data_ptr() == new.data_ptr()
++    ) for old, new in zip(previous[:2], (lengths, cu_q))):
++        reusable = previous[2]
++    buffers = {}
++    windows = (-1, window_left) if isinstance(window_left, int) and window_left >= 0 else (-1,)
++    active = [(w, verify_partition_workspace(batch, kv_heads, 1, 1, w, num_sms)[0])
++              for w in windows if kv_heads > 0 and num_sms > 0]
++    # Captured consumers retain raw pointers. Refill their original geometries
++    # even if a later caller selects another window, and let that caller fall back.
++    for key in reusable or active:
++        window, partitions = key
++        size = 2 * batch + 2 + partitions
++        plan = reusable.get(key)
++        if (plan is None or plan.shape != (size,) or plan.device != lengths.device
++                or plan.dtype != torch.int32 or not plan.is_contiguous()):
++            plan = torch.empty(size, dtype=torch.int32, device=lengths.device)
++        buffers[key] = plan
++        _build_verify_raster[(triton.cdiv(partitions, 16),)](
++            lengths, cu_q, plan, batch, partitions, window, 64 if window >= 0 else 128,
++            triton.next_power_of_2(batch), 16, num_warps=4,
++        )
++    metadata.verify_raster_storage = (lengths, cu_q, buffers)
++    metadata.verify_rasters = (lengths, cu_q, {key: buf for key, buf in buffers.items() if key in active})
++
++
+ @triton.jit
+ def _indexed_tile(
+     K, V, Pages, request, tokens, dims, live, kv_head,
+@@ -205,28 +270,41 @@ def _partition_attention(
+     VDesc=None,
+     ORIGIN_STRIDE: tl.constexpr = 0,
+     CAPACITY: tl.constexpr = 0,
++    Plan=None,
+ ):
+     partition = tl.program_id(0)
+     kv_head = tl.program_id(1)
+-    requests, ends, total, partition_width = _plan(
+-        Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
+-    )
++    if Plan is None:
++        requests, ends, total, partition_width = _plan(
++            Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
++        )
++        request = tl.sum(((ends <= partition * partition_width) & (requests < B)).to(tl.int32))
++    else:
++        total = tl.load(Plan + B)
++        partition_width = tl.load(Plan + 2 * B + 1)
++        request = tl.load(Plan + 2 * B + 2 + partition)
+     current = partition * partition_width
+     partition_end = tl.minimum(current + partition_width, total)
+-    request = tl.sum(((ends <= current) & (requests < B)).to(tl.int32))
+     packed_row = tl.arange(0, TILE_M)
+     dims = tl.arange(0, D)
+     q_token = packed_row // GQA
+     q_head = kv_head * GQA + packed_row % GQA
+     while current < partition_end:
+-        req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
+-        req_end = tl.sum(tl.where(requests == request, ends, 0))
++        if Plan is None:
++            req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
++            req_end = tl.sum(tl.where(requests == request, ends, 0))
++        else:
++            req_start = tl.load(Plan + request)
++            req_end = tl.load(Plan + request + 1)
+         if current < req_end:
+             segment_end = tl.minimum(req_end, partition_end)
+             length = tl.load(Lengths + request)
+             q_start = tl.load(CuQ + request)
+             q_length = tl.load(CuQ + request + 1) - q_start
+-            first_tile, _ = _tile_geometry(length, q_length, WINDOW_LEFT, TILE_N)
++            if Plan is None:
++                first_tile, _ = _tile_geometry(length, q_length, WINDOW_LEFT, TILE_N)
++            else:
++                first_tile = tl.load(Plan + B + 1 + request)
+             tile_start = first_tile + current - req_start
+             tile_end = first_tile + segment_end - req_start
+             q_live = (q_token < q_length) & (q_token < MAX_Q)
+@@ -322,6 +400,7 @@ def _merge_partitions(
+     BLOCK_B: tl.constexpr,
+     BLOCK_SPLITS: tl.constexpr,
+     ROWS: tl.constexpr,
++    Plan=None,
+ ):
+     request = tl.program_id(0)
+     kv_head = tl.program_id(1)
+@@ -331,11 +410,16 @@ def _merge_partitions(
+     if first_row >= q_length * GQA:
+         return
+ 
+-    requests, ends, _, width = _plan(
+-        Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
+-    )
+-    req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
+-    req_end = tl.sum(tl.where(requests == request, ends, 0))
++    if Plan is None:
++        requests, ends, _, width = _plan(
++            Lengths, CuQ, B, PARTITIONS, WINDOW_LEFT, TILE_N, BLOCK_B
++        )
++        req_start = tl.sum(tl.where(requests == request - 1, ends, 0))
++        req_end = tl.sum(tl.where(requests == request, ends, 0))
++    else:
++        width = tl.load(Plan + 2 * B + 1)
++        req_start = tl.load(Plan + request)
++        req_end = tl.load(Plan + request + 1)
+     split_begin = req_start // width
+     split_end = (req_end - 1) // width + 1
+     dims = tl.arange(0, D)
+@@ -432,6 +516,7 @@ def paged_verify_attention(
+     num_sms,
+     origins=None,
+     workspace_limit_bytes=None,
++    raster=None,
+ ):
+     """Return BF16 attention, or None when the native FA3 route is needed."""
+     batch, _ = page_table.shape
+@@ -467,6 +552,11 @@ def paged_verify_attention(
+     partitions, workspace = verify_partition_workspace(batch, kv_heads, tile_m, head_dim, window_left, num_sms)
+     if workspace_limit_bytes is not None and workspace > workspace_limit_bytes:
+         return None
++    plan_args = {}
++    if raster is not None and raster[0] is cache_seqlens and raster[1] is cu_seqlens_q:
++        plan = raster[2].get((window_left, partitions))
++        if plan is not None and plan.shape == (2 * batch + 2 + partitions,):
++            plan_args["Plan"] = plan
+     slots = partitions + batch - 1
+     partial = torch.empty(
+         (slots, kv_heads, tile_m, head_dim),
+@@ -507,6 +597,7 @@ def paged_verify_attention(
+         partitions,
+         block_batch,
+         **direct,
++        **plan_args,
+         num_warps=4,
+     )
+     # Keep at least one grid wave while amortizing the request scan across heads.
+@@ -531,6 +622,7 @@ def paged_verify_attention(
+         block_batch,
+         16,
+         merge_rows,
++        **plan_args,
+         num_warps=4,
+     )
+     return out
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index e11b2f6..16c93fc 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -11,7 +11,7 @@ from sglang.kernels.ops.attention.metadata import (
+     prepare_swa_spec_page_table_triton,
+ )
+ from sglang.kernels.ops.attention.pa_page_table import _build_pa_page_table
+-from sglang.kernels.ops.attention.paged_verify_attention import paged_verify_attention
++from sglang.kernels.ops.attention.paged_verify_attention import paged_verify_attention, refresh_verify_rasters
+ from sglang.kernels.ops.attention.suffix_attention_merge import (
+     can_use_fused_suffix_attention_merge,
+     merge_suffix_attention_in_place,
+@@ -140,6 +140,8 @@ class FlashAttentionMetadata:
+     # Per-128-row physical origins for the full target verify page table.
+     verify_tile_origins: torch.Tensor = None
+     swa_verify_tile_origins: torch.Tensor = None
++    verify_rasters: Optional[tuple] = None
++    verify_raster_storage: Optional[tuple] = None
+ 
+ 
+ class FlashAttentionBackend(AttentionBackend):
+@@ -629,6 +631,7 @@ class FlashAttentionBackend(AttentionBackend):
+             self._init_full_cg_prefill_metadata(forward_batch, in_capture)
+         else:
+             self._init_full_cg_decode_metadata(forward_batch, in_capture)
++            self._refresh_verify_rasters(forward_batch, self.forward_metadata)
+ 
+     def _get_swa_write_locations(self, forward_batch: ForwardBatch):
+         """This step's sliding-window write ids: the plan's, sliced per
+@@ -1423,6 +1426,22 @@ class FlashAttentionBackend(AttentionBackend):
+                 self.forward_metadata_spec_decode_expand.page_table = expand_page_table
+ 
+         self.forward_metadata = metadata
++        self._refresh_verify_rasters(forward_batch, metadata)
++
++    def _refresh_verify_rasters(self, forward_batch, metadata):
++        if not forward_batch.forward_mode.is_target_verify() or metadata is None:
++            return
++        enabled = (self._hopper_verify_sms and self.topk <= 1 and not self.is_draft_runner
++                   and not self.use_mla and self.head_dim == 64 and not self._disable_scheduler_metadata_precompute
++                   and not self.kv_index_translator.is_translating)
++        if metadata.verify_raster_storage is None:
++            # The ordinary capture batch has the algorithm. Its lightweight replay
++            # view omits this field, so refresh an already-bound plan unconditionally.
++            algo = getattr(forward_batch, "spec_algorithm", None)
++            if (not enabled or algo is None or not algo.is_dflash() or forward_batch.encoder_lens is not None
++                    or getattr(forward_batch.spec_info, "ragged_verify_layout", None) is not None):
++                return
++        refresh_verify_rasters(metadata, self.sliding_window_size, self.num_kv_heads, self._hopper_verify_sms if enabled else 0)
+ 
+     def get_paged_mha_kv_cache(
+         self,
+@@ -2031,6 +2050,7 @@ class FlashAttentionBackend(AttentionBackend):
+                         out=_fa_out,
+                         num_sms=self._hopper_verify_sms,
+                         **({"origins": origins} if origins is not None else {}),
++                        **({"raster": metadata.verify_rasters} if getattr(metadata, "verify_rasters", None) is not None else {}),
+                     )
+                 if (
+                     batched_prompt_kv is not None and query.dtype == self.kv_cache_dtype
+@@ -3190,6 +3210,11 @@ class FlashAttentionBackend(AttentionBackend):
+                     metadata.swa_out_cache_loc = self.cuda_graph_swa_out_cache_loc[
+                         :num_tokens
+                     ]
++                # Another capture variant at this size must retain the original
++                # device addresses already embedded in its partition/merge nodes.
++                previous = self.target_verify_metadata.get(bs)
++                if previous is not None:
++                    metadata.verify_raster_storage = previous.verify_raster_storage
+                 self.target_verify_metadata[bs] = metadata
+             else:
+                 # Target Verify topk>1: two (or three with SWA) metadata objects

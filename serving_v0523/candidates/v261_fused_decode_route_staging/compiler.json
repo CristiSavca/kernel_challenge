@@ -1,0 +1,1258 @@
+{
+  "triton": "3.8.0",
+  "physical_gpu": false,
+  "architecture": "sm90",
+  "cases": [
+    {
+      "case": "span1_top1_e1_h1024_map0_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 1,
+        "GLOBAL_EXPERTS": 1,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 1,
+        "EXPERT_SPAN": 2,
+        "TOPK": 1,
+        "HIDDEN": 1024,
+        "BLOCK": 1024
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 128,
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "e105a2f59cb73375ec3b8579f9204a6eb2a8c67d8aaf5ec3dde886d1d957ad62"
+    },
+    {
+      "case": "span1_top1_e1_h1024_map0_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 1,
+        "GLOBAL_EXPERTS": 1,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 1,
+        "EXPERT_SPAN": 2,
+        "TOPK": 1,
+        "HIDDEN": 1024,
+        "BLOCK": 1024
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 128,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "4e5c0dbe3b0ff01e0aaa2339cffd1aef0773dcdfa06d1716b2160a3967800888"
+    },
+    {
+      "case": "span8_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 8,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "c43fe7b8ef36de5c29896db24c9593b95d6f8da4adf7079057934a3ea515fcdf"
+    },
+    {
+      "case": "span8_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 8,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 16,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "64b2b8be43b80be502592e6a095640842279576dc48c97d5227bd425762ff8c5"
+    },
+    {
+      "case": "span8_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 8,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "bea47e182afbd29be2634ca292e1770d1bf3cabd9ab08639f03cdd2bd257239f"
+    },
+    {
+      "case": "span8_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 8,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "a92cfa0003400e8d95aa1c7b0843cbe160d8fe6189d898a23f8b6f157c06b556"
+    },
+    {
+      "case": "span16_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 16,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "bf443864aa167474ae8613ce279fe015ff9562800554b1b6cd01e86587f0635a"
+    },
+    {
+      "case": "span16_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 16,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 16,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "5bdc3163a0c604f169beac0cd37e1de217e2e12e8d4137ad5216fb13e4a532f6"
+    },
+    {
+      "case": "span16_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 16,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "a00aaedb35d4be8860c43656aee53ac6ef9f1506312e7c7a2e17256d0c4e8e41"
+    },
+    {
+      "case": "span16_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 16,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "a60040a22057ab3080b76f2193dca453e79465049abef3cbf5499abe0732c04b"
+    },
+    {
+      "case": "span32_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 32,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "df82cbc2fd25c181fb90c9cf91448e0e3f20eadd58caa8da65829a4a6880f9cf"
+    },
+    {
+      "case": "span32_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 32,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 16,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "40a98d9ba4dfe94f15ff4fbf31011866a8b248e9756769f3ac364ef02fb3689b"
+    },
+    {
+      "case": "span32_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 32,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "37c5b931660f4a971d02d37adf62165aa4c24a28fc3f50897dbb821e8ab8948a"
+    },
+    {
+      "case": "span32_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 32,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "d80bbb2eb3a5127d17b7a86a18893d09f2cad33f627b3e86584315ca1677b521"
+    },
+    {
+      "case": "span64_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 64,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "deecdf36a94fe7223cf82afe7b0353d484a916e57af690622b17c824424416b7"
+    },
+    {
+      "case": "span64_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 64,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 24,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "acf5db34555e4094d098a30a9faeb15aea87d9878ef5ca36cba36c528e619ae1"
+    },
+    {
+      "case": "span64_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 64,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "68ee3df497b8bf86f36f032acd855546b49c9d990d0b66a5619399a971b8187a"
+    },
+    {
+      "case": "span64_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 64,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "f2419f473a96e1a8c3efeff8fa2fa152235e8f0821cd1df17485290744fe1e7c"
+    },
+    {
+      "case": "span128_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 128,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 512,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "4cb4d9e70cba2d2307084c7dc14b3ae430b4852d5a738a232d20d9384b1d9284"
+    },
+    {
+      "case": "span128_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 128,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 512,
+      "registers": 30,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "d2e035fb5378e321a83e27aafc9bd91765c0cf9c1a640ebbc642d93fc3453f00"
+    },
+    {
+      "case": "span128_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 128,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "48b5a0c1a3c61c6a230854120f3a01fb539bbd663e8e5d2800a5629400ba7beb"
+    },
+    {
+      "case": "span128_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 128,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 512,
+      "registers": 48,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "0ce5f4f7e419ad6dcef515c2940a6e966002239ea8256d1fc25d2e178e7741dd"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "c9368690f30b1fa8c3bfb0341d857543cff97d5645411b0b4333ef46239c70ec"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_plan_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 1024,
+      "registers": 31,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "1c962c012b997cc58ec99e703517ce16a58e925f7447edf69338b7ac5b0680ea"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_gather_grouped_decode",
+      "constants": {
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "SLOT_SPAN": 256,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 0,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "5f63eb9a1e1e3378808539b95540785e8a90b18396b311f3bfe446f6041a4e7f"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "574a8bfff81f10309d7eac732df8184dac360abd0a01acae8026172a3cd3303b"
+    },
+    {
+      "case": "span64_top4_e7_h1025_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 7,
+        "GLOBAL_EXPERTS": 56,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 64,
+        "EXPERT_SPAN": 8,
+        "TOPK": 4,
+        "HIDDEN": 1025,
+        "BLOCK": 2048
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 24,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "eb01fee96f80164a6f751247840d5c10100a5009d562f39f9652cf8cad144337"
+    },
+    {
+      "case": "span64_top4_e7_h1025_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 7,
+        "GLOBAL_EXPERTS": 56,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 64,
+        "EXPERT_SPAN": 8,
+        "TOPK": 4,
+        "HIDDEN": 1025,
+        "BLOCK": 2048
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 256,
+      "registers": 24,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "024574c3c1689e05898ff6fc298012bc5f0b9ddf8e79ff2ce3f0b8480fea5e14"
+    },
+    {
+      "case": "span128_top4_e17_h3073_map0_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 17,
+        "GLOBAL_EXPERTS": 17,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 128,
+        "EXPERT_SPAN": 32,
+        "TOPK": 4,
+        "HIDDEN": 3073,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 512,
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "efdb90c468fd8d561b30a29ecee855bbef5a21e5f864c46ef3827bf0db072892"
+    },
+    {
+      "case": "span128_top4_e17_h3073_map0_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 17,
+        "GLOBAL_EXPERTS": 17,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 128,
+        "EXPERT_SPAN": 32,
+        "TOPK": 4,
+        "HIDDEN": 3073,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 512,
+      "registers": 40,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "b1f053de9370abb8131fe4ceea2a894fc86fe91692c34d101e06a4f0583093cf"
+    },
+    {
+      "case": "span256_top16_e64_h2048_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 64,
+        "GLOBAL_EXPERTS": 512,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 128,
+        "TOPK": 16,
+        "HIDDEN": 2048,
+        "BLOCK": 2048
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "427569cf890ab1ed388f1d096e107743456992699a04be199744cfd0add87dca"
+    },
+    {
+      "case": "span256_top16_e64_h2048_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 64,
+        "GLOBAL_EXPERTS": 512,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 128,
+        "TOPK": 16,
+        "HIDDEN": 2048,
+        "BLOCK": 2048
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "fe299b2ceb6b5c2d297d2acc617876e3e4c6a1711df68ab4e5f1586cd5f12d23"
+    },
+    {
+      "case": "span256_top8_e256_h4096_map0_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 256,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 512,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 2048,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "cc62fe51e92e8a8240f381596b23cafbb21dee48f50d5e129dcd80220f2d2624"
+    },
+    {
+      "case": "span256_top8_e256_h4096_map0_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 256,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": false,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 512,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 2048,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "3f0fe108572b1718f232de4e621274df8b76a96fb812c4cb7259ed2239e8f551"
+    }
+  ],
+  "controlled_warp_sensitivity": [
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 2,
+      "shared_bytes": 1024,
+      "registers": 64,
+      "spill_bytes": [
+        84,
+        84
+      ],
+      "cubin_sha256": "4567b5d1ecf45b64306fbd025fdbd3fd37a183522f8204ec7a033b3f47278aff"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 1024,
+      "registers": 40,
+      "spill_bytes": [
+        28,
+        28
+      ],
+      "cubin_sha256": "e7588fe7ce74338eb5e46e8eeb61484801ecbfc38b0985de4da4ef497ab8cca6"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i32",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "c9368690f30b1fa8c3bfb0341d857543cff97d5645411b0b4333ef46239c70ec"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 2,
+      "shared_bytes": 1024,
+      "registers": 64,
+      "spill_bytes": [
+        84,
+        84
+      ],
+      "cubin_sha256": "522b228e485d958925d3d68f58894565f14d47f5cd37684cef483e5b126de737"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 4,
+      "shared_bytes": 1024,
+      "registers": 40,
+      "spill_bytes": [
+        28,
+        28
+      ],
+      "cubin_sha256": "56a0fa00cc61676c7ab36c058c4fb60e360ca7d56ea8db7225c7f28a7e4489dd"
+    },
+    {
+      "case": "span256_top8_e32_h4096_map1_i64",
+      "kernel": "_stage_grouped_decode",
+      "constants": {
+        "EXPERTS": 32,
+        "GLOBAL_EXPERTS": 256,
+        "HAS_EXPERT_MAP": true,
+        "SLOT_SPAN": 256,
+        "EXPERT_SPAN": 64,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "BLOCK": 4096
+      },
+      "dynamic_signature": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*bf16",
+        "i32"
+      ],
+      "warps": 8,
+      "shared_bytes": 1024,
+      "registers": 32,
+      "spill_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "574a8bfff81f10309d7eac732df8184dac360abd0a01acae8026172a3cd3303b"
+    }
+  ],
+  "source_sha256": "cb69448203db9a69fe8f542f6a5aa9bb62ea5e23871dbaa0fa5696cacaa0caf2",
+  "kernel_ast_sha256": {
+    "_decode_route_expert": "c3422bce21cee65aa6caf1acb8b8add817735a0bae6d350a7d0ce645479935bb",
+    "_plan_grouped_decode": "a10ddbc04e64fa1b61334e07ae892a6d11ae81896cc7ba5f484f91bb9c979c9d",
+    "_stage_grouped_decode": "12c7480cfdde0bfafd4637163e46099a713d8ab44bfce84ae460ae14dc598fb3",
+    "_gather_grouped_decode": "083874707eb3dec3ddd7f016fcb2b43d190de059a2c1b6ae0d1040d831e89ded"
+  }
+}

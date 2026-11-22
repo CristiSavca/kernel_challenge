@@ -1,0 +1,94 @@
+{
+  "modes": {
+    "1": {
+      "expert": "ONE_SHOT_PUSH",
+      "attention": "ONE_SHOT_PUSH",
+      "expert_payload_KiB": 8.0,
+      "attention_payload_KiB": 16.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 0.96875,
+      "one_shot_expert_peer_payload_MiB_62_layers": 3.390625
+    },
+    "8": {
+      "expert": "ONE_SHOT_PUSH",
+      "attention": "ONE_SHOT_PUSH",
+      "expert_payload_KiB": 64.0,
+      "attention_payload_KiB": 128.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 7.75,
+      "one_shot_expert_peer_payload_MiB_62_layers": 27.125
+    },
+    "16": {
+      "expert": "ONE_SHOT_PUSH",
+      "attention": "TWO_SHOT_PULL",
+      "expert_payload_KiB": 128.0,
+      "attention_payload_KiB": 256.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 15.5,
+      "one_shot_expert_peer_payload_MiB_62_layers": 54.25
+    },
+    "32": {
+      "expert": "TWO_SHOT_PULL",
+      "attention": "TWO_SHOT_PULL_MULTICAST",
+      "expert_payload_KiB": 256.0,
+      "attention_payload_KiB": 512.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 31.0,
+      "one_shot_expert_peer_payload_MiB_62_layers": 108.5
+    },
+    "64": {
+      "expert": "TWO_SHOT_PULL_MULTICAST",
+      "attention": "TWO_SHOT_PULL_MULTICAST",
+      "expert_payload_KiB": 512.0,
+      "attention_payload_KiB": 1024.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 62.0,
+      "one_shot_expert_peer_payload_MiB_62_layers": 217.0
+    },
+    "128": {
+      "expert": "TWO_SHOT_PULL_MULTICAST",
+      "attention": "TWO_SHOT_PULL_MULTICAST",
+      "expert_payload_KiB": 1024.0,
+      "attention_payload_KiB": 2048.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 124.0,
+      "one_shot_expert_peer_payload_MiB_62_layers": 434.0
+    },
+    "256": {
+      "expert": "TWO_SHOT_PULL_MULTICAST",
+      "attention": "TWO_SHOT_PULL_MULTICAST",
+      "expert_payload_KiB": 2048.0,
+      "attention_payload_KiB": 4096.0,
+      "local_expert_result_write_plus_read_MiB_62_layers": 248.0,
+      "one_shot_expert_peer_payload_MiB_62_layers": 868.0
+    }
+  },
+  "bf16_unpool_before_reduce": [
+    -254.0,
+    -255.0
+  ],
+  "bf16_norm_before_vs_after_route_sum": [
+    [
+      1.4140625,
+      1.4140625
+    ],
+    [
+      1.0,
+      1.0
+    ]
+  ],
+  "actual_W2_scale_vs_skipped_before_RMS": [
+    [
+      0.96875
+    ],
+    [
+      0.69921875
+    ]
+  ],
+  "uniform_top8_mean_active_EP_ranks_per_row": 5.294652000382479,
+  "extra_unpool_weight_MiB_per_rank_per_layer_for_row_groups": {
+    "1": 0,
+    "2": 8,
+    "4": 24,
+    "8": 56
+  },
+  "illustrative_1user_verify_ms_from_mean_acceptance_and_median_decode_rate": 19.68503937007874,
+  "microseconds_required_saved_per_layer_for_rung_speedup": {
+    "2": 158.750317500635,
+    "4": 238.1254762509525
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "patch_sha256": "1919f7bd4dec48dd03da35ccd8eea2f4a13096c887b964c904b90cc5be40c6ce",
+  "cases": [
+    {
+      "mode": "DECODE",
+      "rows": 1,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M8",
+        "small_W2_M8",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "DECODE",
+      "rows": 32,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M8",
+        "small_W2_M8",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 8,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M8",
+        "small_W2_M8",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 112,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M8",
+        "small_W2_M8",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 113,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M16",
+        "small_W2_M16",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 128,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M16",
+        "small_W2_M16",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 216,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M16",
+        "small_W2_M16",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 217,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M24",
+        "small_W2_M24",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 256,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M24",
+        "small_W2_M24",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 257,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "indexed",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 128,
+      "sp": false,
+      "guard": "no_bank",
+      "trace": [
+        "plan",
+        "gather",
+        "vendor_w13",
+        "legacy_silu",
+        "small_W2_M16",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 256,
+      "sp": false,
+      "guard": "no_w2",
+      "trace": [
+        "plan",
+        "gather",
+        "small_W13_M24",
+        "vendor_w2",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "TARGET_VERIFY",
+      "rows": 128,
+      "sp": false,
+      "guard": "compiling",
+      "trace": [
+        "indexed",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "EXTEND",
+      "rows": 128,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "indexed",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "MIXED",
+      "rows": 128,
+      "sp": false,
+      "guard": null,
+      "trace": [
+        "indexed",
+        "finalize",
+        "all_reduce"
+      ]
+    },
+    {
+      "mode": "EXTEND",
+      "rows": 16384,
+      "sp": true,
+      "guard": null,
+      "trace": [
+        "prompt_grouped",
+        "sp_reduce_scatter"
+      ]
+    },
+    {
+      "mode": "MIXED",
+      "rows": 16384,
+      "sp": true,
+      "guard": null,
+      "trace": [
+        "prompt_grouped",
+        "sp_reduce_scatter"
+      ]
+    }
+  ],
+  "boundary": "Actual model/expert methods, eligibility, Humming tier selection, optional W13/W2 wrappers and ForwardMode enum. Tensor allocation, projections/router, graph/stream primitives, Triton launches, CUDA launchers, collectives, finalizer and fallback compute are shape-only test doubles; no GPU or numerical claim."
+}

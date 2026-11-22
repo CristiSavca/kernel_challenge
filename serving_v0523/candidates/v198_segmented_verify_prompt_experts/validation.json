@@ -1,0 +1,78 @@
+{
+  "candidate": "V198",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V197",
+  "common_parent": "V195",
+  "attention_donor": "V196",
+  "parent_tree": "957fdd918906a7656f14e0a3336120546ea55b24",
+  "parent_sha256": "0974f9542bd481e7c15fbce9331cd041966ebf4e4813e7d1640defcc728b2f0e",
+  "common_tree": "0481ee37be4bff6d675a4a8fb6144ab73091977e",
+  "tree": "927369031684bbe39bd46354b552a1a32cbfbb2f",
+  "bytes": 189964,
+  "patch_sha256": "fa91157f4e5e3c9704664047ba177af4ddabf2f5d2ab0af2560e1320902a59e4",
+  "delta_sha256": "e5bf11e8d2213f3723c955497a60a91e16d915a35676a9e7ec217a7b3a7f717a",
+  "delta_bytes": 6772,
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": ""
+  },
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh",
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/direct_prompt_kv.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/dflash_context_projection.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/logits_processor.py",
+    "python/sglang/srt/layers/muse_spark/decode_gate_up.py",
+    "python/sglang/srt/layers/muse_spark/decode_mma_pair.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+    "python/sglang/srt/models/muse_spark.py",
+    "python/sglang/srt/speculative/dflash_worker_v2.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py"
+  ],
+  "exact_donor_sources": {
+    "V197": {
+      "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh": "a0e57cb3996dca3e25d15a362940849b09e9e01acb50ad33a28f54b541ba7128",
+      "python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh": "49ee3e8badd9742d3dd030fb4a0a7d50caa25395d2d3ae630ab2e46e6c8c02ac",
+      "python/sglang/srt/layers/muse_spark/decode_gate_up.py": "e547b89f80e7b2ce4992dc77e86235d003fb29a6ecc657b481bd6f77a431ccef",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "9fae6a3e8c994de5eae1685094c9dcec2e34a13d458bd32edbe0d883b5070629"
+    },
+    "V196": {
+      "python/sglang/kernels/ops/attention/paged_verify_attention.py": "8a70205cefdf58f31cb1c8e20ee98525ec16aef3b1edb5717ba30c3deac63b85"
+    }
+  },
+  "strict_apply_reverse_full_delta": true,
+  "strict_both_donor_orders": true,
+  "source_and_modes_verified": true,
+  "official_export": "okc serve diff",
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "checked_denied_flag_patterns": 76,
+  "max_added_line_chars": 147,
+  "physical_h200": false,
+  "submitted": false
+}

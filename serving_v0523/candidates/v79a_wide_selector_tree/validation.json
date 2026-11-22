@@ -1,0 +1,50 @@
+{
+  "parent": "v79_wide_selector_tree",
+  "parent_patch_sha256": "3b845bbbed63c52bfc3f8f264d0e233feb74d10e8a14cff803ab13bfc87ccac2",
+  "patch_sha256": "28690547fa3a3d52a05c1d4385c48906979b21ac52b4533d42e2cdbc4cfd94b1",
+  "patch_bytes": 144209,
+  "files": 28,
+  "max_added_line_bytes": 106,
+  "pinned_checkout": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "official_export": true,
+  "original_official_export_reproduced": true,
+  "changed_files_vs_parent": [
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py"
+  ],
+  "kernel_sha256": "995dccf47523609fd14341a09ab5c03c15a2a00ec0da8a0075ce3af12515a0eb",
+  "renamed_locals": [
+    "query_depth",
+    "key_depth"
+  ],
+  "python_sources_compiled": 25,
+  "forward_reverse_apply": true,
+  "gpu_execution": false,
+  "attention_compile": {
+    "target": "sm90",
+    "triton": "3.8.0",
+    "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+    "assembled_specializations": {
+      "width12-gqa8-2bands-i32-w-1": "b44bc91102f4073b95c3e7eb95719dde33ec57479d8c1498236e9d282f062207",
+      "width12-gqa8-2bands-i32-w-1-merge": "805dc6d31b90a02beb52bea934b953e122c3a70eb3eb661ec48ffd63d6ac088f",
+      "width12-gqa8-2bands-i64-w-1": "9b541c80c8c3536ffb05b63bbedd26307a3e468ef20e85ac72a754b1a9ead20b",
+      "width12-gqa8-2bands-i32-w512": "6c1363ab98901ea32c1d43fa1a13d88b7ea307e7a29affe8d4e80e5b621c1864",
+      "width12-gqa8-2bands-i32-w512-merge": "0b9cdce613c05786d44d8ceddaf4d329ac4d7bc6a2b61a20d71440ec4f21519f",
+      "width12-gqa8-2bands-i64-w512": "afa91ed674ec351492c53b99a5200c0af48614de9a4a2049c1428c2285de8feb"
+    }
+  },
+  "cpu_attention_regression": {
+    "source": "v79 wide fixture on repaired kernel",
+    "widths": [
+      8,
+      12,
+      16
+    ],
+    "attention_cases": 96,
+    "width8_bitwise_comparisons": 32,
+    "max_relative_l2": 0.001776,
+    "proposals": 400,
+    "accept_slot_cases": 6400,
+    "graph_resets": 202,
+    "capability_cases": 34
+  }
+}

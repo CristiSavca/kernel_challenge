@@ -1,0 +1,282 @@
+{
+  "v64_id": "abd217baf0ed49fd",
+  "cold_rows": [
+    {
+      "prefix": 0,
+      "query": 16384,
+      "full": {
+        "halo": 0,
+        "arena_bytes": 4194304
+      },
+      "swa": {
+        "halo": 0,
+        "arena_bytes": 4194304
+      }
+    },
+    {
+      "prefix": 16384,
+      "query": 16384,
+      "full": {
+        "halo": 16384,
+        "arena_bytes": 8388608
+      },
+      "swa": {
+        "halo": 2047,
+        "arena_bytes": 4718336
+      }
+    },
+    {
+      "prefix": 32768,
+      "query": 16384,
+      "full": {
+        "halo": 32768,
+        "arena_bytes": 12582912
+      },
+      "swa": {
+        "halo": 2047,
+        "arena_bytes": 4718336
+      }
+    },
+    {
+      "prefix": 49152,
+      "query": 16384,
+      "full": {
+        "halo": 49152,
+        "arena_bytes": 16777216
+      },
+      "swa": {
+        "halo": 2047,
+        "arena_bytes": 4718336
+      }
+    },
+    {
+      "prefix": 65536,
+      "query": 8624,
+      "full": {
+        "halo": 65536,
+        "arena_bytes": 18984960
+      },
+      "swa": {
+        "halo": 2047,
+        "arena_bytes": 2731776
+      }
+    }
+  ],
+  "fp8_kv_bytes_a_full_gather_would_collect": 1944578048,
+  "fp8_kv_bytes_gathered_by_direct_cast": 767510528,
+  "avoided_extra_gather_read_plus_write_bytes": 2354135040,
+  "peak_packed_payload": 18984960,
+  "cp_native_resolver": {
+    "accepted": [
+      [
+        1,
+        1,
+        false
+      ]
+    ],
+    "rejected": [
+      [
+        1,
+        1,
+        true
+      ],
+      [
+        1,
+        2,
+        false
+      ],
+      [
+        1,
+        2,
+        true
+      ],
+      [
+        2,
+        1,
+        false
+      ],
+      [
+        2,
+        1,
+        true
+      ],
+      [
+        2,
+        2,
+        false
+      ],
+      [
+        2,
+        2,
+        true
+      ],
+      [
+        4,
+        1,
+        false
+      ],
+      [
+        4,
+        1,
+        true
+      ],
+      [
+        4,
+        2,
+        false
+      ],
+      [
+        4,
+        2,
+        true
+      ],
+      [
+        8,
+        1,
+        false
+      ],
+      [
+        8,
+        1,
+        true
+      ],
+      [
+        8,
+        2,
+        false
+      ],
+      [
+        8,
+        2,
+        true
+      ]
+    ],
+    "reason": "Muse W4A16 LayerNorm SP requires no context parallelism."
+  },
+  "native_math": {
+    "full_qk_pairs": 2749889880,
+    "swa_qk_pairs": 149783552,
+    "useful_qk_and_av_flops_per_rank": 208438400909312,
+    "static_full_plus_swa_kv_bytes_per_rank": 24072045056,
+    "first_turn_kv_bytes_copied_per_rank_if_full_packed_all_chunks": 974848000,
+    "first_turn_kv_bytes_copied_per_rank_if_swa_packed_all_chunks": 969730048
+  },
+  "head_to_token_redistribution": [
+    {
+      "cohort": 2,
+      "row_partition": "contiguous",
+      "logical_q_fp8_o_bf16_sent_per_rank": 7062405120,
+      "kv_bytes_sent_per_rank": [
+        1532029440,
+        1356044288
+      ],
+      "flops_per_rank": [
+        189232737419264,
+        227644064399360
+      ],
+      "largest_rank_over_incumbent": 1.0921407159441991
+    },
+    {
+      "cohort": 2,
+      "row_partition": "paired_edges",
+      "logical_q_fp8_o_bf16_sent_per_rank": 7062405120,
+      "kv_bytes_sent_per_rank": [
+        1456089600,
+        1628451328
+      ],
+      "flops_per_rank": [
+        208043456856064,
+        208833344962560
+      ],
+      "largest_rank_over_incumbent": 1.0018947758739516
+    },
+    {
+      "cohort": 4,
+      "row_partition": "contiguous",
+      "logical_q_fp8_o_bf16_sent_per_rank": 10593607680,
+      "kv_bytes_sent_per_rank": [
+        3713287680,
+        3613242368,
+        3537302528,
+        3461362688
+      ],
+      "flops_per_rank": [
+        179037489594368,
+        199427985244160,
+        218238704680960,
+        237049424117760
+      ],
+      "largest_rank_over_incumbent": 1.1372636859793228
+    },
+    {
+      "cohort": 4,
+      "row_partition": "paired_edges",
+      "logical_q_fp8_o_bf16_sent_per_rank": 10593607680,
+      "kv_bytes_sent_per_rank": [
+        3954342400,
+        3968206848,
+        4006176768,
+        4164674048
+      ],
+      "flops_per_rank": [
+        207253568749568,
+        208833344962560,
+        208833344962560,
+        208833344962560
+      ],
+      "largest_rank_over_incumbent": 1.0018947758739516
+    },
+    {
+      "cohort": 8,
+      "row_partition": "contiguous",
+      "logical_q_fp8_o_bf16_sent_per_rank": 12359208960,
+      "kv_bytes_sent_per_rank": [
+        7634403840,
+        7572328448,
+        7534358528,
+        7496388608,
+        7458418688,
+        7420448768,
+        7382478848,
+        7344508928
+      ],
+      "flops_per_rank": [
+        172755033522176,
+        185319945666560,
+        194725305384960,
+        204130665103360,
+        213536024821760,
+        222941384540160,
+        232346744258560,
+        241752103976960
+      ],
+      "largest_rank_over_incumbent": 1.1598251709968848
+    },
+    {
+      "cohort": 8,
+      "row_partition": "paired_edges",
+      "logical_q_fp8_o_bf16_sent_per_rank": 12359208960,
+      "kv_bytes_sent_per_rank": [
+        8599899648,
+        8606825984,
+        8613764096,
+        8632749056,
+        8651734016,
+        8670718976,
+        8701114880,
+        8829216256
+      ],
+      "flops_per_rank": [
+        206463294767104,
+        208043842732032,
+        208833344962560,
+        208833344962560,
+        208833344962560,
+        208833344962560,
+        208833344962560,
+        208833344962560
+      ],
+      "largest_rank_over_incumbent": 1.0018947758739516
+    }
+  ]
+}

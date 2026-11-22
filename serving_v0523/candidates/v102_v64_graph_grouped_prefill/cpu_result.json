@@ -1,0 +1,126 @@
+{
+  "parent_integration": {
+    "state": "CPU_SP_GROUPED_PASS",
+    "integration_cases": 54,
+    "actual_pre_norm_calls": 324,
+    "details": [
+      "actual SP gather entry and replicated expert methods",
+      "actual compact grouped expert adapter and caller output bridge",
+      "TP4 and TP8, original order, padded tails, balanced and rank-empty/skew routes",
+      "each rank calls pre-expert norm exactly once",
+      "modeled BF16 GEMM and finalizer; no CUDA execution"
+    ]
+  },
+  "wave_numerics": {
+    "integrated_cases": 50,
+    "bf16_outputs": 8240,
+    "empty_waves": 151,
+    "workspace_geometry": {
+      "1024": {
+        "capacity": 8192,
+        "waves": 1,
+        "arena_bytes": 201326592
+      },
+      "8192": {
+        "capacity": 8192,
+        "waves": 8,
+        "arena_bytes": 201498624
+      },
+      "16384": {
+        "capacity": 16377,
+        "waves": 9,
+        "arena_bytes": 402653184
+      },
+      "32768": {
+        "capacity": 0,
+        "waves": 0,
+        "arena_bytes": 0
+      },
+      "131072": {
+        "capacity": 0,
+        "waves": 0,
+        "arena_bytes": 0
+      }
+    },
+    "real_gpu": false
+  },
+  "planner": {
+    "planner_source_sha256": "4da8d86fcfaf31068971b6a41dc70ef8a95caaa8b0129e602d3deeb6bf9a41db",
+    "torch": "2.5.1",
+    "plans": 60,
+    "token_writes": 296334,
+    "live_slots": 1168433,
+    "fixed_sizes": [
+      {
+        "tokens": 1,
+        "capacity": 8,
+        "rows": 15,
+        "static_waves": 1
+      },
+      {
+        "tokens": 3,
+        "capacity": 24,
+        "rows": 31,
+        "static_waves": 1
+      },
+      {
+        "tokens": 8,
+        "capacity": 64,
+        "rows": 71,
+        "static_waves": 1
+      },
+      {
+        "tokens": 31,
+        "capacity": 248,
+        "rows": 255,
+        "static_waves": 1
+      },
+      {
+        "tokens": 32,
+        "capacity": 256,
+        "rows": 263,
+        "static_waves": 1
+      },
+      {
+        "tokens": 33,
+        "capacity": 264,
+        "rows": 271,
+        "static_waves": 1
+      },
+      {
+        "tokens": 129,
+        "capacity": 1032,
+        "rows": 1039,
+        "static_waves": 1
+      },
+      {
+        "tokens": 8192,
+        "capacity": 8192,
+        "rows": 8199,
+        "static_waves": 8
+      },
+      {
+        "tokens": 16384,
+        "capacity": 16377,
+        "rows": 16384,
+        "static_waves": 9
+      },
+      {
+        "tokens": 24576,
+        "capacity": 16377,
+        "rows": 16384,
+        "static_waves": 13
+      }
+    ]
+  },
+  "model_dispatch": {
+    "production_dispatch_cases": 11,
+    "gloo_ranks": 2,
+    "readiness_cases": 6,
+    "full_geometry_wave_rows": [
+      8192,
+      16384
+    ],
+    "passed": true
+  }
+}

@@ -1,0 +1,105 @@
+diff --git a/python/sglang/kernels/ops/attention/dense_prefill_kv.py b/python/sglang/kernels/ops/attention/dense_prefill_kv.py
+new file mode 100644
+index 0000000..8a34e81
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/dense_prefill_kv.py
+@@ -0,0 +1,63 @@
++"""Pack page-one FP8 KV rows for dense Hopper prefill attention."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _pack_prefill_kv(
++    K, V, Table, Lengths, DenseK, DenseV,
++    k_stride, v_stride, table_stride, width,
++    ROW_BYTES: tl.constexpr, BLOCK_ROWS: tl.constexpr,
++):
++    batch = tl.program_id(1)
++    row = tl.program_id(0) * BLOCK_ROWS + tl.arange(0, BLOCK_ROWS)
++    length = tl.load(Lengths + batch)
++    # The allocation can cover a capture-time upper bound. Zero the last
++    # partial FA tile too, so no unwritten FP8 NaNs enter its PV product.
++    if tl.program_id(0) * BLOCK_ROWS < length + 256:
++        live = row < length
++        page = tl.load(Table + batch * table_stride + row, live, other=0).to(tl.int64)
++        col = tl.arange(0, ROW_BYTES)
++        key = tl.load(K + page[:, None] * k_stride + col[None, :], live[:, None], 0)
++        val = tl.load(V + page[:, None] * v_stride + col[None, :], live[:, None], 0)
++        dst = (batch.to(tl.int64) * width + row)[:, None] * ROW_BYTES + col[None, :]
++        tl.store(DenseK + dst, key, row[:, None] < width)
++        tl.store(DenseV + dst, val, row[:, None] < width)
++
++
++def dense_prefill_kv(key, value, table, lengths):
++    """Return packed cache views and a null page table, or the original layout."""
++    batch, width = table.shape
++    _, page_size, heads, dim = key.shape
++    row_bytes = heads * dim
++    if (
++        page_size != 1
++        or value.shape != key.shape
++        or key.dtype != torch.float8_e4m3fn
++        or value.dtype != key.dtype
++        or row_bytes < 16
++        or row_bytes > 1024
++        or row_bytes & (row_bytes - 1)
++        or not batch
++        or not width
++        or 2 * batch * width * row_bytes > 32 * 1024 * 1024
++        or key.stride()[-2:] != (dim, 1)
++        or value.stride()[-2:] != (dim, 1)
++        or table.stride(1) != 1
++        or lengths.shape != (batch,)
++        or lengths.stride(0) != 1
++    ):
++        return key, value, table
++
++    packed = torch.empty((2, batch, width, heads, dim), dtype=key.dtype, device=key.device)
++    dense_key, dense_value = packed.unbind()
++    block_rows = min(32, 4096 // row_bytes)
++    _pack_prefill_kv[(triton.cdiv(width, block_rows), batch)](
++        key.view(torch.uint8), value.view(torch.uint8), table, lengths,
++        dense_key.view(torch.uint8), dense_value.view(torch.uint8),
++        key.stride(0), value.stride(0), table.stride(0), width,
++        ROW_BYTES=row_bytes, BLOCK_ROWS=block_rows,
++    )
++    return dense_key, dense_value, None
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 7505e0d..9200091 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
+ 
+ import torch
+ 
++from sglang.kernels.ops.attention.dense_prefill_kv import dense_prefill_kv
+ from sglang.kernels.ops.attention.metadata import (
+     draft_extend_set_metadata,
+     normal_decode_set_metadata,
+@@ -1903,6 +1904,23 @@ class FlashAttentionBackend(AttentionBackend):
+                 if result is None:
+                     if metadata.tree_depths is not None:
+                         raise RuntimeError("DFLASH tree requires packed FP8 target attention.")
++                    if (
++                        self._hopper_verify_sms
++                        and self.page_size == 1
++                        and forward_batch.forward_mode == ForwardMode.EXTEND
++                        and max_seqlen_q >= 512
++                        and causal
++                        and not is_swa_layer
++                        and not use_local_attn
++                        and not return_lse
++                        and not self.kv_index_translator.is_translating
++                        and forward_batch.dcp_kv_mask is None
++                        and query.dtype == torch.float8_e4m3fn
++                        and kwargs.keys() <= {"k_descale", "v_descale"}
++                    ):
++                        key_cache, value_cache, page_table = dense_prefill_kv(
++                            key_cache, value_cache, page_table, cache_seqlens
++                        )
+                     result = flash_attn_with_kvcache(
+                         q=query,
+                         k_cache=key_cache,

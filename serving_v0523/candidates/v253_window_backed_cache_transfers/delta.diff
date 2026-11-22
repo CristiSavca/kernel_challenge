@@ -1,0 +1,70 @@
+diff --git a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+index 6cb8b16..65fc5b5 100644
+--- a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
++++ b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+@@ -81,12 +81,19 @@ inline void copy_page_first_pages_fallback(
+     const size_t src_page_bytes = static_cast<size_t>(page_size * src_stride0 * elem_size);
+     const size_t dst_page_bytes = static_cast<size_t>(page_size * dst_stride0 * elem_size);
+     RuntimeCheck(src_page_bytes == dst_page_bytes, "Source and destination page spans must match");
+-    for (const auto page_offset : irange(num_pages)) {
+-      const char* src_ptr = static_cast<const char*>(src_ptrs[tensor_id].data_ptr()) +
+-                            static_cast<size_t>(page_offset * page_size * src_stride0 * elem_size);
++    // Relayout already packed the source pages in request order. Adjacent
++    // destinations can share a DMA without changing which bytes are written.
++    for (int64_t begin = 0; begin < num_pages;) {
++      int64_t end = begin + 1;
++      while (end < num_pages && dst_indices_ptr[end * page_size] >= page_size &&
++             dst_indices_ptr[end * page_size] - page_size == dst_indices_ptr[(end - 1) * page_size]) {
++        ++end;
++      }
++      const char* src_ptr = static_cast<const char*>(src_ptrs[tensor_id].data_ptr()) + begin * src_page_bytes;
+       char* dst_ptr = static_cast<char*>(dst_ptrs[tensor_id].data_ptr()) +
+-                      static_cast<size_t>(dst_indices_ptr[page_offset * page_size] * dst_stride0 * elem_size);
+-      RuntimeDeviceCheck(cudaMemcpyAsync(dst_ptr, src_ptr, src_page_bytes, cudaMemcpyDeviceToHost, stream));
++                      static_cast<size_t>(dst_indices_ptr[begin * page_size] * dst_stride0 * elem_size);
++      RuntimeDeviceCheck(cudaMemcpyAsync(dst_ptr, src_ptr, (end - begin) * src_page_bytes, cudaMemcpyDeviceToHost, stream));
++      begin = end;
+     }
+   }
+ }
+@@ -104,6 +111,12 @@ inline bool try_copy_page_first_pages_batch(
+ #else
+   host::RuntimeCheck(src_ptrs.size() == dst_ptrs.size(), "Source and destination tensors must have the same count");
+   constexpr size_t kLargeCopyThresholdBytes = 128 * 1024;
++  // Leave small pages to the contiguous-run copy without building per-page descriptors.
++  if (src_ptrs.empty() ||
++      static_cast<size_t>(page_size * src_ptrs.front().stride(0) * host::dtype_bytes(src_ptrs.front().dtype())) <
++          kLargeCopyThresholdBytes) {
++    return false;
++  }
+   thread_local std::vector<CudaMemcpyBatchPtr> batch_srcs;
+   thread_local std::vector<CudaMemcpyBatchPtr> batch_dsts;
+   thread_local std::vector<size_t> batch_sizes;
+@@ -127,7 +140,6 @@ inline bool try_copy_page_first_pages_batch(
+   batch_dsts.reserve(num_copies);
+   batch_sizes.reserve(num_copies);
+ 
+-  size_t first_page_bytes = 0;
+   for (const auto tensor_id : host::irange(src_ptrs.size())) {
+     host::RuntimeCheck(
+         src_ptrs[tensor_id].dtype() == dst_ptrs[tensor_id].dtype(),
+@@ -138,9 +150,6 @@ inline bool try_copy_page_first_pages_batch(
+     const size_t src_page_bytes = static_cast<size_t>(page_size * src_stride0 * elem_size);
+     const size_t dst_page_bytes = static_cast<size_t>(page_size * dst_stride0 * elem_size);
+     host::RuntimeCheck(src_page_bytes == dst_page_bytes, "Source and destination page spans must match");
+-    if (tensor_id == 0) {
+-      first_page_bytes = src_page_bytes;
+-    }
+     for (const auto page_offset : host::irange(num_pages)) {
+       char* src_ptr = static_cast<char*>(src_ptrs[tensor_id].data_ptr()) +
+                       static_cast<size_t>(page_offset * page_size * src_stride0 * elem_size);
+@@ -151,9 +160,6 @@ inline bool try_copy_page_first_pages_batch(
+       batch_sizes.push_back(src_page_bytes);
+     }
+   }
+-  if (first_page_bytes < kLargeCopyThresholdBytes) {
+-    return false;
+-  }
+ 
+   std::vector<size_t> attrs_idxs(1, 0);
+   cudaMemcpyAttributes attrs{};

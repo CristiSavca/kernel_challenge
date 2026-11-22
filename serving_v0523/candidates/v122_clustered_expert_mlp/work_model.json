@@ -1,0 +1,48 @@
+{
+  "uniform_route_assumption": true,
+  "hardware_measured": false,
+  "cold_bank_assumption": "one read per touched expert, no cache residency on entry",
+  "remote_read_unit": "valid BF16 payload requested by down_rows warps; not hardware transactions",
+  "bandwidth_reference": "https://www.nvidia.com/en-us/data-center/h200/",
+  "shape": [
+    {
+      "target_rows": 128,
+      "expected_local_rows": 128.0,
+      "expected_distinct_experts": 31.450143245733827,
+      "expected_16row_tiles": 31.450161898084062,
+      "expected_worst_case_no_reuse_weight_mib_by_tile": 849.1543712482696,
+      "expected_distinct_packed_banks_mib": 849.1538676348133,
+      "cold_bank_floor_us_at_peak_hbm": 185.5004928977171,
+      "one_gate_and_activation_store_and_read_mib": 6.0,
+      "remote_dsm_operand_reads_mib_before_transaction_effects": 56.0,
+      "parent_reserved_auxiliary_arenas_saved_mib": 16.0,
+      "cluster_barriers_per_live_tile": 2,
+      "w13_activation_w2_launches_per_eligible_layer": [
+        3,
+        1
+      ]
+    },
+    {
+      "target_rows": 256,
+      "expected_local_rows": 256.0,
+      "expected_distinct_experts": 31.99055179843087,
+      "expected_16row_tiles": 32.092121608731,
+      "expected_worst_case_no_reuse_weight_mib_by_tile": 866.4872834357369,
+      "expected_distinct_packed_banks_mib": 863.7448985576335,
+      "cold_bank_floor_us_at_peak_hbm": 188.6879522395769,
+      "one_gate_and_activation_store_and_read_mib": 12.0,
+      "remote_dsm_operand_reads_mib_before_transaction_effects": 112.0,
+      "parent_reserved_auxiliary_arenas_saved_mib": 32.0,
+      "cluster_barriers_per_live_tile": 2,
+      "w13_activation_w2_launches_per_eligible_layer": [
+        3,
+        1
+      ]
+    }
+  ],
+  "four_load_sensitivity_if_only_two_high_load_ratios_change": {
+    "V64_score": 1.4119,
+    "4x_required_factor_at_each_high_load": 8.026239341524116,
+    "if_both_high_load_ratios_double": 1.9967281287145728
+  }
+}

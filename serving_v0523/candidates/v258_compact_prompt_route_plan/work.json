@@ -1,0 +1,189 @@
+{
+  "candidate": "V258",
+  "patch_sha256": "f6b674d5fa44256e9b73a33e23e40f54cdb038b18d5d19402757ac5f4f92f6ad",
+  "native_source": [
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/srt/models/muse_spark.py",
+      "sha256": "4a90efa8b9394ff3454bb2c055e92c2abb0449f59f8d8d08d8612ea8a7b6dbd7"
+    },
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/kernels/ops/moe/muse_spark_routing_jit.py",
+      "sha256": "f5ba865a81a57d512b1c18f5dd743d5984bd2787e63df6613384720afa41062a"
+    },
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+      "sha256": "701047c599ca734ea899410382c9c818a4207fb96d7540583f190c753c50fd65"
+    },
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py",
+      "sha256": "cf52c3ad04554bccd7ab01184c0010fa96dbdcc2a239b8e4ce3e060fdeed47d4"
+    },
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/srt/layers/moe/token_dispatcher/standard.py",
+      "sha256": "6c9841c65cfebe1a86a59bc74cd3db78d2d931032530d689b868932f80cb3f37"
+    },
+    {
+      "git_tree": "43f7d5c503c1c1d90a41d551a09f03ad9b34bf69",
+      "path": "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+      "sha256": "914b3ba0831854800b05e03b7bd15e2cf5ce32d9588423edfcf2dde974258207"
+    },
+    {
+      "git_tree": "fd9923eb113afab0bce4ad85f3c38546e9038e6d",
+      "path": "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py",
+      "sha256": "a610de99f069e73d6cca614ad0498427c34ef26e4844c11a45db384cfd06bb59"
+    },
+    {
+      "git_tree": "fd9923eb113afab0bce4ad85f3c38546e9038e6d",
+      "path": "python/sglang/kernels/ops/moe/muse_spark_peer_pack.py",
+      "sha256": "af3233495dde0db734e62f03345900d5b06533433691e24d6f9c91e49efbcb70"
+    }
+  ],
+  "geometry": {
+    "experts": 256,
+    "local_experts": 32,
+    "distinct_routes": 8,
+    "ranks": 8,
+    "hidden": 4096
+  },
+  "shapes": {
+    "8192": {
+      "routed_slots": 65536,
+      "average_live_routes": 8192,
+      "average_inactive_routes": 57344,
+      "tile_ctas_each_count_place": 256,
+      "expert_scan_ctas": 33,
+      "parent_explicit_bytes": {
+        "full_sorted_int32_expert_ids": 262144,
+        "full_int64_permutation": 524288
+      },
+      "candidate_explicit_rank_mean_bytes": {
+        "compact_int32_expert_ids": 32768,
+        "int32_tile_prefix": 33792,
+        "int32_totals": 132
+      },
+      "rank_mean_reduction_bytes": 719740
+    },
+    "16384": {
+      "routed_slots": 131072,
+      "average_live_routes": 16384,
+      "average_inactive_routes": 114688,
+      "tile_ctas_each_count_place": 512,
+      "expert_scan_ctas": 33,
+      "parent_explicit_bytes": {
+        "full_sorted_int32_expert_ids": 524288,
+        "full_int64_permutation": 1048576
+      },
+      "candidate_explicit_rank_mean_bytes": {
+        "compact_int32_expert_ids": 65536,
+        "int32_tile_prefix": 67584,
+        "int32_totals": 132
+      },
+      "rank_mean_reduction_bytes": 1439612
+    },
+    "16640": {
+      "routed_slots": 133120,
+      "average_live_routes": 16640,
+      "average_inactive_routes": 116480,
+      "tile_ctas_each_count_place": 520,
+      "expert_scan_ctas": 33,
+      "parent_explicit_bytes": {
+        "full_sorted_int32_expert_ids": 532480,
+        "full_int64_permutation": 1064960
+      },
+      "candidate_explicit_rank_mean_bytes": {
+        "compact_int32_expert_ids": 66560,
+        "int32_tile_prefix": 68640,
+        "int32_totals": 132
+      },
+      "rank_mean_reduction_bytes": 1462108
+    }
+  },
+  "observed_V64_score": 1.4119,
+  "archive_V41_conditional_exposure": [
+    {
+      "users": 1,
+      "rep": 0,
+      "total_prefill_passes": 18,
+      "eligible_size_prefill_passes": 6,
+      "eligible_size_prompt_rows": 92785,
+      "eligible_size_layer_calls": 372,
+      "elapsed_seconds": 25.116745897999863,
+      "net_ms_per_call_for_5pct_raw": 3.2151492444956338,
+      "net_ms_per_call_for_4x_from_V64_reference": 43.68592073831549
+    },
+    {
+      "users": 1,
+      "rep": 1,
+      "total_prefill_passes": 17,
+      "eligible_size_prefill_passes": 4,
+      "eligible_size_prompt_rows": 65536,
+      "eligible_size_layer_calls": 248,
+      "elapsed_seconds": 22.131640414999993,
+      "net_ms_per_call_for_5pct_raw": 4.249546930683568,
+      "net_ms_per_call_for_4x_from_V64_reference": 57.740825159336175
+    },
+    {
+      "users": 1,
+      "rep": 2,
+      "total_prefill_passes": 19,
+      "eligible_size_prefill_passes": 7,
+      "eligible_size_prompt_rows": 110160,
+      "eligible_size_layer_calls": 434,
+      "elapsed_seconds": 26.743092625999907,
+      "net_ms_per_call_for_5pct_raw": 2.934287099626941,
+      "net_ms_per_call_for_4x_from_V64_reference": 39.869699323358496
+    },
+    {
+      "users": 4,
+      "rep": 0,
+      "total_prefill_passes": 60,
+      "eligible_size_prefill_passes": 15,
+      "eligible_size_prompt_rows": 243692,
+      "eligible_size_layer_calls": 930,
+      "elapsed_seconds": 45.58841756400011,
+      "net_ms_per_call_for_5pct_raw": 2.3342763729646783,
+      "net_ms_per_call_for_4x_from_V64_reference": 31.71703857456685
+    },
+    {
+      "users": 4,
+      "rep": 1,
+      "total_prefill_passes": 67,
+      "eligible_size_prefill_passes": 20,
+      "eligible_size_prompt_rows": 327680,
+      "eligible_size_layer_calls": 1240,
+      "elapsed_seconds": 55.364123770000106,
+      "net_ms_per_call_for_5pct_raw": 2.126118424347165,
+      "net_ms_per_call_for_4x_from_V64_reference": 28.888687243777678
+    },
+    {
+      "users": 16,
+      "rep": 0,
+      "total_prefill_passes": 241,
+      "eligible_size_prefill_passes": 75,
+      "eligible_size_prompt_rows": 1228800,
+      "eligible_size_layer_calls": 4650,
+      "elapsed_seconds": 164.83263510899997,
+      "net_ms_per_call_for_5pct_raw": 1.6879942151459308,
+      "net_ms_per_call_for_4x_from_V64_reference": 22.93566359815069
+    },
+    {
+      "users": 32,
+      "rep": 0,
+      "total_prefill_passes": 351,
+      "eligible_size_prefill_passes": 150,
+      "eligible_size_prompt_rows": 2455793,
+      "eligible_size_layer_calls": 9300,
+      "elapsed_seconds": 304.4294033150002,
+      "net_ms_per_call_for_5pct_raw": 1.558778306784437,
+      "net_ms_per_call_for_4x_from_V64_reference": 21.17993921289118
+    }
+  ],
+  "allocation_model": "Explicit sort-specific V256 tensors vs V258 histogram plan tensors. Assumes eight valid global routes and eight ranks. Every route has one owner, so rank-mean is exact regardless of skew. Common local IDs, inverse, offsets, activations, library sort scratch, allocator behavior and transpose/remap intermediates excluded. This is not a measured peak or a bandwidth estimate.",
+  "timing_model": "Archived V41 wall and prompt-size distributions illustrate the required net reduction per eligible 62-layer prompt call at fixed work. Graph, topology, hooks or eligibility may reduce exposure; no candidate H200 latency or end-to-end score measured.",
+  "physical_candidate_timing": false
+}

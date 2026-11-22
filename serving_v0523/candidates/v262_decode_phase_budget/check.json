@@ -1,0 +1,100 @@
+{
+  "v64_official_score": 1.4119,
+  "uniform_fixed_interactivity_factor_to_four": 2.8330618315744744,
+  "source_sha256": {
+    "serving_v0523/runs/abd217baf0ed49fd.json": "aa6b0fecfc6180f7d34097432345352006182185f8e5c8a67091cc433ae9a479",
+    "experiments/runs/b5538a0dd25d46be.json": "683892a84b36e4c6fca5d4c36695f9400fb982273859be2db735534ad6d7d032",
+    "experiments/modal_serving/20261112T191039Z/result.json": "5d49c6c7a47c8597057d7a75cb9c18c46ea85c673cae92afb5c740aad8bbf555",
+    "experiments/modal_serving/20261112T191039Z/manifest.json": "f68da990e2c29b5575ff14e0ffa17866de3a0f057d10477c3c860b21d11c2d00",
+    "serving_v0523/candidates/v129_routed_projection_pair/work_model.py": "3328e6ccab20007e45f24c302408f2f89f854ecab8c2375cc2d487aba975c1a9",
+    "experiments/modal_node/20261113T204343Z-bench/results__20261113T204343Z-bench__v41__load.json": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+    "serving_v0523/candidates/v195_fused_expert_affine_verify/score_headroom.py": "c18eacd9538ae05742727245c759c8ff1c31a8b4bb3dc14f69e24d46953a77c1",
+    "tools/okc_node_loadgen.py": "d9e845a151b04ff3cc3aa359a69e7955df94d0cf16e24ba638fb58e245bfb0b2"
+  },
+  "expert_worker_sha256": "6f1f43d6c0079407cd7cee030c0d498a45c596aba4939815b88750f15df3a19f",
+  "dense_repeats_per_case": 60,
+  "target_layers": 62,
+  "new_physical_run": false,
+  "boundaries": [
+    "V64 period divides a mean commit count by a median user decode rate. It is not a step-timer trace.",
+    "The stock dense raw median includes event harness overhead. Dense calls and one EP rank's Marlin call are added as if serial.",
+    "The serving target uses Humming. Standalone timings have different dispatch, routes and overlap.",
+    "Cold weights assume uniform independent distinct top-eight routing and one 4.8 TB/s HBM read per distinct matrix.",
+    "V41 client replay removes only time after first token, keeps measured request gaps, and recomputes the last-finishing user per repetition.",
+    "The challenge scores four frontier points. The uniform fixed-interactivity factor is one sensitivity, not a necessary per-rung result."
+  ],
+  "cases": [
+    {
+      "users": 1,
+      "verify_rows": 8,
+      "serving_commits": 4,
+      "serving_median_user_decode_tok_s": 203.2,
+      "estimated_period_ms": 19.68503937007874,
+      "target_period_ms": 6.9483267716535435,
+      "required_saving_ms": 12.736712598425196,
+      "native_dense_raw_us": {
+        "qkv_gate": 18.112000077962875,
+        "o": 10.688000358641148,
+        "pooler": 25.32800007611513,
+        "unpooler": 11.04000024497509,
+        "router": 30.224000103771687
+      },
+      "dense_62_layer_raw_ms": 5.914304053410888,
+      "dense_62_layer_overhead_adjusted_ms": 4.640575997531414,
+      "expert_live_routes": 10,
+      "stock_marlin_layer_us": 129.79,
+      "v40_marlin_layer_us": 123.62,
+      "stock_marlin_62_layer_ms": 8.04698,
+      "v40_marlin_62_layer_ms": 7.664440000000001,
+      "two_family_sum_cross_benchmark_ms": 13.961284053410887,
+      "allowed_combined_ms_after_required_saving": 1.224571454985691,
+      "expected_cold_expert_weights_peak_us_per_layer": 42.33523012189865,
+      "expected_cold_expert_weights_peak_ms_62_layers": 2.6247842675577164,
+      "v41_client_wall_s": [
+        25.116745897999863,
+        22.131640414999993,
+        26.743092625999907
+      ],
+      "v41_instant_stream_client_wall_s": [
+        12.937870916000065,
+        9.170073688000002,
+        14.435104756999635
+      ],
+      "v41_instant_stream_throughput_multiplier": 2.0408397862943586
+    },
+    {
+      "users": 32,
+      "verify_rows": 256,
+      "serving_commits": 4.2,
+      "serving_median_user_decode_tok_s": 43.3,
+      "estimated_period_ms": 96.99769053117784,
+      "target_period_ms": 34.2377598152425,
+      "required_saving_ms": 62.75993071593534,
+      "native_dense_raw_us": {
+        "qkv_gate": 23.744000121951103,
+        "o": 13.088000006973743,
+        "pooler": 34.84800085425377,
+        "unpooler": 28.255999088287354,
+        "router": 21.296000108122826
+      },
+      "dense_62_layer_raw_ms": 7.516384011134505,
+      "dense_62_layer_overhead_adjusted_ms": 6.300192104652524,
+      "expert_live_routes": 252,
+      "stock_marlin_layer_us": 791.49,
+      "v40_marlin_layer_us": 381.63,
+      "stock_marlin_62_layer_ms": 49.072379999999995,
+      "v40_marlin_62_layer_ms": 23.661060000000003,
+      "two_family_sum_cross_benchmark_ms": 56.5887640111345,
+      "allowed_combined_ms_after_required_saving": -6.171166704800839,
+      "expected_cold_expert_weights_peak_us_per_layer": 188.6879522395769,
+      "expected_cold_expert_weights_peak_ms_62_layers": 11.698653038853768,
+      "v41_client_wall_s": [
+        304.4294033150002
+      ],
+      "v41_instant_stream_client_wall_s": [
+        223.9194838970002
+      ],
+      "v41_instant_stream_throughput_multiplier": 1.359548521713427
+    }
+  ]
+}

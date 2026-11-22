@@ -1,0 +1,144 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 90e64db..00b0ab6 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -181,6 +181,17 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         )
+ 
+ 
++@triton.jit
++def _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr):
++    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
++    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
++    if HAS_EXPERT_MAP:
++        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
++    else:
++        expert = tl.where(in_range, expert, -1)
++    return expert.to(tl.int32)
++
++
+ @triton.jit
+ def _plan_grouped_decode(
+     global_ids,
+@@ -197,13 +208,7 @@ def _plan_grouped_decode(
+     EXPERT_SPAN: tl.constexpr,
+ ):
+     slot = tl.arange(0, SLOT_SPAN)
+-    expert = tl.load(global_ids + slot, mask=slot < slots, other=-1)
+-    in_range = (expert >= 0) & (expert < GLOBAL_EXPERTS)
+-    if HAS_EXPERT_MAP:
+-        expert = tl.load(expert_map + expert, mask=in_range, other=-1)
+-    else:
+-        expert = tl.where(in_range, expert, -1)
+-    expert = expert.to(tl.int32)
++    expert = _decode_route_expert(global_ids, expert_map, slot, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
+     tl.store(local_ids + slot, expert, mask=slot < slots)
+     bucket = tl.where((expert >= 0) & (expert < EXPERTS), expert + 1, 0)
+     buckets = tl.arange(0, EXPERT_SPAN)
+@@ -223,6 +228,34 @@ def _plan_grouped_decode(
+     )
+ 
+ 
++@triton.jit
++def _stage_grouped_decode(
++    global_ids, expert_map, local_ids, offsets, row_keys, row_map, hidden_states, output, slots,
++    EXPERTS: tl.constexpr, GLOBAL_EXPERTS: tl.constexpr, HAS_EXPERT_MAP: tl.constexpr,
++    SLOT_SPAN: tl.constexpr, EXPERT_SPAN: tl.constexpr, TOPK: tl.constexpr,
++    HIDDEN: tl.constexpr, BLOCK: tl.constexpr,
++):
++    pid = tl.program_id(0)
++    if pid == 0:
++        _plan_grouped_decode(
++            global_ids, expert_map, local_ids, offsets, row_keys, row_map, slots,
++            EXPERTS, GLOBAL_EXPERTS, HAS_EXPERT_MAP, SLOT_SPAN, EXPERT_SPAN,
++        )
++    else:
++        mine = pid - 1
++        expert = _decode_route_expert(global_ids, expert_map, mine, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++        if (expert >= 0) & (expert < EXPERTS):
++            lanes = tl.arange(0, SLOT_SPAN)
++            mapped = _decode_route_expert(global_ids, expert_map, lanes, slots, GLOBAL_EXPERTS, HAS_EXPERT_MAP)
++            # Valid keys occupy the suffix, sorted by (local expert, original slot).
++            # Count from the end, so the remote and masked prefix needs no offset read.
++            follows = (mapped < EXPERTS) & ((mapped > expert) | ((mapped == expert) & (lanes >= mine)))
++            row = slots - tl.sum(follows.to(tl.int32), 0)
++            width = tl.arange(0, BLOCK)
++            values = tl.load(hidden_states + (mine // TOPK) * HIDDEN + width, mask=width < HIDDEN, other=0)
++            tl.store(output + row * HIDDEN + width, values, mask=width < HIDDEN)
++
++
+ @triton.jit
+ def _gather_grouped_decode(
+     hidden_states,
+@@ -282,35 +315,44 @@ def humming_grouped_decode_outputs(
+     row_keys = local_ids.new_empty(slots)
+     row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+-    _plan_grouped_decode[(1,)](
+-        topk_ids,
+-        expert_map if expert_map is not None else topk_ids,
+-        local_ids,
+-        offsets,
+-        row_keys,
+-        row_map,
+-        slots,
+-        EXPERTS=experts,
+-        GLOBAL_EXPERTS=layer.global_num_experts,
+-        HAS_EXPERT_MAP=expert_map is not None,
+-        SLOT_SPAN=span,
+-        EXPERT_SPAN=triton.next_power_of_2(experts + 1),
+-        num_warps=4 if span <= 256 else 8,
+-    )
+     staging = hidden_states.new_empty(slots * intermediate)
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+-    _gather_grouped_decode[(min(slots, 128),)](
+-        hidden_states,
+-        row_keys,
+-        offsets,
+-        inputs,
+-        slots,
+-        TOPK=topk,
+-        HIDDEN=hidden_size,
+-        SLOT_SPAN=span,
+-        BLOCK=triton.next_power_of_2(hidden_size),
+-        num_warps=8 if hidden_size >= 4096 else 4,
+-    )
++    if slots <= 256 and 1024 <= hidden_size <= 4096:
++        _stage_grouped_decode[(slots + 1,)](
++            topk_ids, expert_map if expert_map is not None else topk_ids, local_ids, offsets, row_keys, row_map,
++            hidden_states, inputs, slots, EXPERTS=experts, GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None, SLOT_SPAN=span, EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            TOPK=topk, HIDDEN=hidden_size, BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if span == 256 and hidden_size > 2048 else 4,
++        )
++    else:
++        _plan_grouped_decode[(1,)](
++            topk_ids,
++            expert_map if expert_map is not None else topk_ids,
++            local_ids,
++            offsets,
++            row_keys,
++            row_map,
++            slots,
++            EXPERTS=experts,
++            GLOBAL_EXPERTS=layer.global_num_experts,
++            HAS_EXPERT_MAP=expert_map is not None,
++            SLOT_SPAN=span,
++            EXPERT_SPAN=triton.next_power_of_2(experts + 1),
++            num_warps=4 if span <= 256 else 8,
++        )
++        _gather_grouped_decode[(min(slots, 128),)](
++            hidden_states,
++            row_keys,
++            offsets,
++            inputs,
++            slots,
++            TOPK=topk,
++            HIDDEN=hidden_size,
++            SLOT_SPAN=span,
++            BLOCK=triton.next_power_of_2(hidden_size),
++            num_warps=8 if hidden_size >= 4096 else 4,
++        )
+ 
+     estimated_local_routes = max(1, slots * experts // layer.global_num_experts)
+     def select(name):

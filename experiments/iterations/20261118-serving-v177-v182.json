@@ -1,0 +1,334 @@
+{
+  "as_of_utc": "2026-11-18T21:29:51.701159+00:00",
+  "user_target_four_load_score": 4,
+  "official_best": {
+    "candidate": "V64",
+    "id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "rung_ratios": {
+      "1": 1.17,
+      "4": 1.316,
+      "16": 1.5919,
+      "32": 1.6213
+    },
+    "additional_geomean_required": 2.8330618315744744,
+    "equal_additional_ratio_required_if_only_two_frontier_points_improve": 8.026239341524116
+  },
+  "matched_private_v68": {
+    "job": "04b01f958aa5487c",
+    "users": 16,
+    "raw_tok_s_per_gpu": 17512.9,
+    "indicative_ratio": 1.424,
+    "decode_tok_s_per_user_p50": 48.0,
+    "excess_gpu_memory_gb": 1.7,
+    "short_outputs": 0
+  },
+  "candidates": {
+    "177": {
+      "parent": "V176",
+      "donor": null,
+      "tree": "ad8ae5235bd99550e67a159593d26ae6ab274661",
+      "sha256": "ee54ea826ed3bbdc547b7bbb2c461143a6cd28196d4d7cf3287441fc61d7ebc7",
+      "bytes": 212968,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": "",
+        "--speculative-dflash-sp-prefill-context": "",
+        "--speculative-dflash-share-verify-schedule": ""
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v177_grouped_gate_up_epilogue/patch.diff"
+    },
+    "178": {
+      "parent": "V64",
+      "donor": null,
+      "tree": "8f5a57c5ac575321b442c78e6c19e7f4a83c8eae",
+      "sha256": "7965faafe3b7b3dbbc3100ea8acad009718fd491aa55e2a55738a41bb8ee2e63",
+      "bytes": 53848,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v178_direct_fp8_prompt_kv/patch.diff"
+    },
+    "178b": {
+      "parent": "V178",
+      "donor": null,
+      "tree": "f7b733938289fa943c2d2a675ce26e4e88a28cf7",
+      "sha256": "ca7a01b3d4cce18622d23735cfdbe66ab1e4d4abb60ffa635c2cab1fed9a74dc",
+      "bytes": 54509,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v178b_live_direct_prompt/patch.diff"
+    },
+    "179": {
+      "parent": "V176",
+      "donor": null,
+      "tree": "df78affeedcf5cb5801e264002b0a0532bbaeccb",
+      "sha256": "9fac0f0710d2448b5879b9187f77f89d74579f42b3d1d442cef7a354297f986d",
+      "bytes": 202989,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": "",
+        "--speculative-dflash-sp-prefill-context": "",
+        "--speculative-dflash-share-verify-schedule": ""
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v179_peer_prompt_inputs/patch.diff"
+    },
+    "180": {
+      "parent": "V68",
+      "donor": "V178b",
+      "tree": "208b625ae43f820d9f06f36e97c2b1e00484d42c",
+      "sha256": "c7a76bfd0cd6d8f2ea2cbf29eeec4f4197c1d27245c45575f1528aa27d341cc6",
+      "bytes": 94233,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v180_paged_verify_direct_prompt/patch.diff"
+    },
+    "181": {
+      "parent": "V177",
+      "donor": "V179",
+      "tree": "94c80cf445df93f435fc7c9ae8e190b57611e41c",
+      "sha256": "52976e3b3ac177de2d4e2a1ebaeb5c0f7a86c0215bb0be6130b19f3d7dee4c3e",
+      "bytes": 220541,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--muse-sparse-prompt-exchange": "",
+        "--speculative-dflash-sp-prefill-context": "",
+        "--speculative-dflash-share-verify-schedule": ""
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v181_peer_inputs_paired_gate_up/patch.diff"
+    },
+    "182": {
+      "parent": "V180",
+      "donor": "V136",
+      "tree": "9982b57b366ab5da5000c30f6d41871ee9be5d3b",
+      "sha256": "35b2086ec900233547ca35a6c2103ec9d5201d2f82818af91015421476d8ca30",
+      "bytes": 110043,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "physical_H200": false,
+      "patch": "serving_v0523/candidates/v182_paged_verify_fused_qk/patch.diff"
+    }
+  },
+  "v177": {
+    "supported_native_nvcc_shapes": 3,
+    "logical_activation_traffic_saved_per_local_16384_routes_MiB": 512,
+    "independent": "serving_v0523/candidates/v177_grouped_gate_up_epilogue/independent_epilogue.json",
+    "loader": "serving_v0523/candidates/v177_grouped_gate_up_epilogue/independent_loader.json"
+  },
+  "v178b": {
+    "live_eligibility": "serving_v0523/candidates/v178b_live_direct_prompt/replay.json",
+    "supersedes_initial_v178": true
+  },
+  "v179": {
+    "logical_input_traffic_model_MiB_at_16384": [
+      338.85772802447866,
+      201.42886401223933
+    ],
+    "assumption": "eight ranks and uniform distinct top-eight expert routing",
+    "remote_payload_MiB": 74.12512800535471,
+    "extra_resident_bytes": 16777216,
+    "gloo": "serving_v0523/candidates/v179_peer_prompt_inputs/peer.json",
+    "triton": "serving_v0523/candidates/v179_peer_prompt_inputs/independent_interpret.json"
+  },
+  "v180": {
+    "source": "V68 verification plus V178b live prompt FP8 suffix",
+    "reference": "serving_v0523/runs/04b01f958aa5487c.json",
+    "forward_comparison": {
+      "reference": "H200-passing V68 source",
+      "torch": "2.5.1",
+      "counts": {
+        "paged_verify_success": 48,
+        "paged_verify_decline_to_FA3": 48,
+        "prompt_verify_cycles": 48,
+        "physical_pool_bytes_compared": 20473344,
+        "matched_V68_V180_prompt_pairs": 24,
+        "direct_dense_V180_calls": 8
+      },
+      "backend_scope": "Real Radix eager callback, write, cache metadata and FA3 selection; host substitutes for device math",
+      "physical_H200": false,
+      "inherited_paged_attention_numerical_replay": [
+        "Passed 110 exact-source attention cases, max relative L2 0.001629",
+        "Passed 890 long-context split/merge ownership plans through 131,072 tokens"
+      ]
+    },
+    "trace_shape_evidence": "serving_v0523/candidates/v180_paged_verify_direct_prompt/trace_shapes.json",
+    "independent_attention": {
+      "helper_sha256": "d08f7d94858b4bedd0ea51a54bf9aa385befb3ad8c795558b4a5a3e22ed6a1f4",
+      "backend_sha256": "d70d5e37c298fc7a26d6c8a9619854dfe937e3048578bf90321b91adb4e11402",
+      "accepted": 6,
+      "declines": 4,
+      "cases": [
+        [
+          0,
+          4096,
+          -1,
+          false,
+          false
+        ],
+        [
+          151,
+          4097,
+          -1,
+          false,
+          true
+        ],
+        [
+          9,
+          4096,
+          2047,
+          true,
+          true
+        ],
+        [
+          2222,
+          4097,
+          2047,
+          false,
+          true
+        ],
+        [
+          4099,
+          4096,
+          0,
+          false,
+          false
+        ],
+        [
+          2081,
+          4096,
+          31,
+          false,
+          true
+        ]
+      ],
+      "logical_rows": 33140,
+      "matched_dense_cache_bytes": 11593728,
+      "attention_fp64_outputs": 3072,
+      "bf16_extreme_conversions": 262144,
+      "torch": "2.5.1",
+      "physical_gpu": false
+    }
+  },
+  "v181": {
+    "source": "V177 plus V179 on V176",
+    "joint_cpu_replay": "serving_v0523/candidates/v181_peer_inputs_paired_gate_up/joint.json",
+    "tp4_tp8_peer_to_projection_to_return_values": 1180800,
+    "hardware_allocation": null,
+    "archived_whole_expert_reference": "serving_v0523/candidates/v181_peer_inputs_paired_gate_up/physical_comparators.md",
+    "physical_full_marlin_expert_ms_range_at_16224_routes": [
+      7.188,
+      7.394
+    ]
+  },
+  "v182": {
+    "source": "V180 plus V136 fused verify Q/K and KV store",
+    "potential_removed_launches_per_eligible_verify_layer": 4,
+    "model_replay": {
+      "counts": {
+        "qk_launches": 192,
+        "ordinary_stores": 160,
+        "paged_calls": 192,
+        "native_FA3_calls": 96,
+        "integrated_stores": 32,
+        "matched_pairs": 96,
+        "matched_BF16_output_values": 1179648,
+        "matched_physical_cache_bytes": 2949120
+      },
+      "reference": "V180",
+      "torch": "2.5.1",
+      "device_substitutes": "RMS/RoPE/FP8, scatter and final attention dispatch use CPU fixtures.",
+      "hardware": false
+    },
+    "pages": {
+      "cpu": "2.5.1",
+      "counts": {
+        "_partition_attention": 8,
+        "_merge_partitions": 8,
+        "cases": 8,
+        "compared_BF16_outputs": 65536,
+        "compared_new_FP8_QKV_bytes": 81920
+      },
+      "all_FP8_encoded_words_preserved": 256,
+      "max_relative_l2_vs_independent_float64": 0.0021517972618269247,
+      "actual_H200": false,
+      "scope": "Production FP8 table, query preparation, paged launcher, partition and merge. Host-generated normalized/rotated BF16 inputs and host simulation of device math."
+    },
+    "physical_affirmation_required": [
+      "target token agreement",
+      "complete requested outputs",
+      "first and later TTFT",
+      "peak memory",
+      "four-load throughput"
+    ],
+    "hardware_allocation": null,
+    "archived_attention_microbench": "serving_v0523/candidates/v182_paged_verify_fused_qk/independent_headroom.json",
+    "analog_savings_ms_per_pass": [
+      0.4281342139082731,
+      0.42863046053637127
+    ],
+    "analog_decode_gain_if_exact_transfer": 1.005164141916981
+  },
+  "v180_conditional": {
+    "launch": "serving_v0523/runs/nov20_v180_runner.launch.json",
+    "tests": "serving_v0523/runs/nov20_v180_runner.cpu.json",
+    "armed_at_utc": "2026-11-18T21:26:54.488552+00:00",
+    "earliest_utc": "2026-11-20T00:03:00+00:00",
+    "until_utc_exclusive": "2026-11-20T07:59:00+00:00",
+    "previous_workers": 8,
+    "attempt_files_before_after": 28,
+    "submitted_on_arm": false,
+    "condition": "Third Nov20 private check after V129/1 and V163/16 are accepted, V120b/32 and V139/4 terminally fail, and the chosen Nov19 V168/16 has a verified nonrefunded candidate-attributed hardware failure. Requires the exact positive V68/16 comparison."
+  },
+  "official_status": {
+    "v93_job": "75557c21595347de",
+    "v93": "queued",
+    "v93_observed_utc": "2026-11-18T21:21:00Z",
+    "quota_on_standby_activation": {
+      "limits": {
+        "scored": {
+          "per_day": 1,
+          "used": 0,
+          "left": 1
+        },
+        "checks": {
+          "per_day": 3,
+          "used": 3,
+          "left": 0
+        }
+      },
+      "resets_at": "2026-11-19T00:00:00Z"
+    },
+    "physical_runs_launched_this_iteration": 0
+  },
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving"
+}

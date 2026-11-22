@@ -1,0 +1,109 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 0a3d17bbeba46b6b5aa6858f78235d8f530fc14b..b6beeda0a0933cb95973874247eb2bda6b0591d2 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -321,14 +321,14 @@ def _merge_partitions(
+     PARTITIONS: tl.constexpr,
+     BLOCK_B: tl.constexpr,
+     BLOCK_SPLITS: tl.constexpr,
++    ROWS: tl.constexpr,
+ ):
+     request = tl.program_id(0)
+     kv_head = tl.program_id(1)
+-    packed_row = tl.program_id(2)
++    first_row = tl.program_id(2) * ROWS
+     q_start = tl.load(CuQ + request)
+     q_length = tl.load(CuQ + request + 1) - q_start
+-    q_token = packed_row // GQA
+-    if q_token >= q_length:
++    if first_row >= q_length * GQA:
+         return
+ 
+     requests, ends, _, width = _plan(
+@@ -339,33 +339,39 @@ def _merge_partitions(
+     split_begin = req_start // width
+     split_end = (req_end - 1) // width + 1
+     dims = tl.arange(0, D)
+-    max_lse = tl.full((), float("-inf"), tl.float32)
+-    den = tl.full((), 0.0, tl.float32)
+-    output = tl.zeros((D,), tl.float32)
+-    if req_start < req_end:
+-        for start in range(split_begin, split_end, BLOCK_SPLITS):
+-            parts = start + tl.arange(0, BLOCK_SPLITS)
+-            live = parts < split_end
+-            slots = ((parts + request) * H_KV + kv_head) * TILE_M + packed_row
+-            lse = tl.load(LSE + slots, live, other=float("-inf"))
+-            partial = tl.load(
+-                Partial + slots[:, None] * D + dims[None, :],
+-                live[:, None],
+-                other=0.0,
+-            )
+-            next_max = tl.maximum(max_lse, tl.max(lse, axis=0))
+-            base = tl.where(next_max == float("-inf"), 0.0, next_max)
+-            weights = tl.exp2(lse - base)
+-            old_weight = tl.exp2(max_lse - base)
+-            output = output * old_weight + tl.sum(weights[:, None] * partial, axis=0)
+-            den = den * old_weight + tl.sum(weights, axis=0)
+-            max_lse = next_max
+-    output /= tl.where(den > 0, den, 1.0)
+-    if VScale is not None:
+-        output *= tl.load(VScale + request * VS_ROW + kv_head * VS_HEAD)
+-    q_head = kv_head * GQA + packed_row % GQA
+-    q_row = (q_start + q_token) * (H_KV * GQA) + q_head
+-    tl.store(Out + q_row * D + dims, output)
++    row_count = ROWS
++    if GQA % ROWS:
++        row_count = tl.minimum(ROWS, q_length * GQA - first_row)
++    for offset in range(row_count):
++        packed_row = first_row + offset
++        q_token = packed_row // GQA
++        max_lse = tl.full((), float("-inf"), tl.float32)
++        den = tl.full((), 0.0, tl.float32)
++        output = tl.zeros((D,), tl.float32)
++        if req_start < req_end:
++            for start in range(split_begin, split_end, BLOCK_SPLITS):
++                parts = start + tl.arange(0, BLOCK_SPLITS)
++                live = parts < split_end
++                slots = ((parts + request) * H_KV + kv_head) * TILE_M + packed_row
++                lse = tl.load(LSE + slots, live, other=float("-inf"))
++                partial = tl.load(
++                    Partial + slots[:, None] * D + dims[None, :],
++                    live[:, None],
++                    other=0.0,
++                )
++                next_max = tl.maximum(max_lse, tl.max(lse, axis=0))
++                base = tl.where(next_max == float("-inf"), 0.0, next_max)
++                weights = tl.exp2(lse - base)
++                old_weight = tl.exp2(max_lse - base)
++                output = output * old_weight + tl.sum(weights[:, None] * partial, axis=0)
++                den = den * old_weight + tl.sum(weights, axis=0)
++                max_lse = next_max
++        output /= tl.where(den > 0, den, 1.0)
++        if VScale is not None:
++            output *= tl.load(VScale + request * VS_ROW + kv_head * VS_HEAD)
++        q_head = kv_head * GQA + packed_row % GQA
++        q_row = (q_start + q_token) * (H_KV * GQA) + q_head
++        tl.store(Out + q_row * D + dims, output)
+ 
+ 
+ def _direct_tile_args(k, v, page_table, origins, window_left, tile_n, max_q=0):
+@@ -493,7 +499,10 @@ def paged_verify_attention(
+         **direct,
+         num_warps=4,
+     )
+-    _merge_partitions[(batch, kv_heads, max_q * groups)](
++    # Keep at least one grid wave while amortizing the request scan across heads.
++    programs_per_sm = max(1, batch * kv_heads * max_q * groups // max(1, num_sms))
++    merge_rows = min(4, 1 << (programs_per_sm.bit_length() - 1))
++    _merge_partitions[(batch, kv_heads, triton.cdiv(max_q * groups, merge_rows))](
+         partial,
+         lse,
+         cache_seqlens,
+@@ -511,6 +520,7 @@ def paged_verify_attention(
+         partitions,
+         block_batch,
+         16,
++        merge_rows,
+         num_warps=4,
+     )
+     return out

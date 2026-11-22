@@ -1,0 +1,47 @@
+{
+  "tokens": 16384,
+  "hidden": 4096,
+  "ranks": 8,
+  "topk": 8,
+  "assumptions": "Every token independently draws eight distinct global experts, 32 per rank. All ranks enter sparse exchange. Dense reference uses the logical byte volume of a bandwidth-optimal ring. The actual NCCL protocol on V64 is unknown.",
+  "remote_MiB_sent_per_rank_per_layer": {
+    "V64_dense_input_gather": 112.0,
+    "V64_or_V163_output_allreduce_if_ring": 224.0,
+    "V163_or_V167_sparse_input": 74.12512800535471,
+    "V167_sparse_output": 74.12512800535471,
+    "ring_V64_pair": 336.0,
+    "ring_V163_pair": 298.1251280053547,
+    "V167_pair": 148.25025601070942
+  },
+  "finalizer_rows_per_expert_rank": {
+    "V163": 16384,
+    "expected_V167": 10843.447296783317
+  },
+  "finalizer_BF16_output_MiB_per_rank": {
+    "V163": 128.0,
+    "expected_V167": 84.71443200611967
+  },
+  "fixed_graph_BF16_output_MiB_per_rank": {
+    "V163_before_native_reduce": 128.0,
+    "V167": 16.0
+  },
+  "grouped_return_extra_FP32_accumulator_MiB_per_rank": 32.0,
+  "rank_zero_route_buffer_minimum_B": 8192,
+  "seeded_16384_uniform_parent_groups": {
+    "trials": 64,
+    "production_destination_width_histogram": [
+      [
+        2,
+        28
+      ],
+      [
+        4,
+        36
+      ]
+    ],
+    "mean_remote_MiB_per_rank_on_sparse_rounds": 74.11087036132812,
+    "all_owners_and_one_hot_owner": "dense fallback"
+  },
+  "return_collectives_per_sparse_pass": "one per group of expert ranks, with the same width as the outgoing input exchange",
+  "physical_H200": false
+}

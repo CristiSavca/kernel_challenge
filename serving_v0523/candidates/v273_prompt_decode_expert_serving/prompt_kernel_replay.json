@@ -1,0 +1,233 @@
+{
+  "official_patch_sha256": "5273a9889f2820086737169740af412644b2862f6ba1e48a5f1c3b14767b8500",
+  "startup": {
+    "variants": {
+      "WidePromptWeightPipeline": {
+        "block": [
+          256,
+          128,
+          64
+        ],
+        "warp": [
+          256,
+          16,
+          64
+        ],
+        "multicast": 2,
+        "threads": 384,
+        "math_threads": 256,
+        "native_estimated_shared": 152576
+      },
+      "ResidualPromptWeightPipeline": {
+        "block": [
+          176,
+          256,
+          64
+        ],
+        "warp": [
+          176,
+          32,
+          64
+        ],
+        "multicast": 1,
+        "threads": 384,
+        "math_threads": 256,
+        "native_estimated_shared": 128000
+      },
+      "PromptWeightPipeline": {
+        "block": [
+          176,
+          256,
+          64
+        ],
+        "warp": [
+          176,
+          32,
+          64
+        ],
+        "multicast": 1,
+        "threads": 384,
+        "math_threads": 256,
+        "native_estimated_shared": 128000
+      }
+    },
+    "startup": [
+      {
+        "attempts": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline"
+        ],
+        "denied": [],
+        "config": [
+          0,
+          5248,
+          9,
+          0,
+          5248,
+          8704,
+          7,
+          128,
+          8704,
+          10688,
+          9,
+          0,
+          10688,
+          1073741824,
+          7,
+          128
+        ]
+      },
+      {
+        "attempts": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline"
+        ],
+        "denied": [
+          "WidePromptWeightPipeline"
+        ],
+        "config": [
+          0,
+          1073741824,
+          9,
+          0
+        ]
+      },
+      {
+        "attempts": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline",
+          "PromptWeightPipeline"
+        ],
+        "denied": [
+          "ResidualPromptWeightPipeline"
+        ],
+        "config": [
+          0,
+          5248,
+          11,
+          0,
+          5248,
+          8704,
+          7,
+          128,
+          8704,
+          10688,
+          11,
+          0,
+          10688,
+          1073741824,
+          7,
+          128
+        ]
+      },
+      {
+        "attempts": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline",
+          "PromptWeightPipeline"
+        ],
+        "denied": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline"
+        ],
+        "config": [
+          0,
+          1073741824,
+          11,
+          0
+        ]
+      },
+      {
+        "attempts": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline",
+          "PromptWeightPipeline"
+        ],
+        "denied": [
+          "WidePromptWeightPipeline",
+          "ResidualPromptWeightPipeline",
+          "PromptWeightPipeline"
+        ],
+        "config": null
+      }
+    ],
+    "odd_SM_fallback": [
+      "ResidualPromptWeightPipeline"
+    ],
+    "local_row_ranges": [
+      [
+        0,
+        5248,
+        9,
+        0
+      ],
+      [
+        5248,
+        8704,
+        7,
+        128
+      ],
+      [
+        8704,
+        10688,
+        9,
+        0
+      ],
+      [
+        10688,
+        1073741824,
+        7,
+        128
+      ]
+    ]
+  },
+  "emitted_images": {
+    "WidePromptWeightPipeline": {
+      "source_sha256": "915d5daea5ee67feb771c56a09fa3d6b848505f42b3e388c66f49f7632331f70",
+      "cubin_sha256": "f4e21b04c400566bc621c7cb527c3ca5c91394547588618a8499d13eadd2650d",
+      "shared_bytes": 156672
+    },
+    "ResidualPromptWeightPipeline": {
+      "source_sha256": "15eb528e669bb472f374bacf14f2f1894196b2105ee1410b70271682fc1f11f4",
+      "cubin_sha256": "597b1253b20a9f03948d4195a7fcafd01abd2c554b841d3c5b16027a30eaa196",
+      "shared_bytes": 136192
+    },
+    "PromptWeightPipeline": {
+      "source_sha256": "17e49d01f22cb3137deddf3a58dcb2d9ba03bd19d6d6c529195f7ed15a7f6416",
+      "cubin_sha256": "32ae8203ae912353f558426d695233b6da20d2e9d8b41972fbc94ff8ba3bf335",
+      "shared_bytes": 136192
+    }
+  },
+  "rejected_assembly": {
+    "WidePromptWeightPipeline": [
+      "missing_matrix",
+      "missing_transport",
+      "missing_wait",
+      "ordinary_down",
+      "missing_multicast",
+      "missing_full_width"
+    ],
+    "ResidualPromptWeightPipeline": [
+      "missing_matrix",
+      "missing_transport",
+      "missing_wait"
+    ],
+    "PromptWeightPipeline": [
+      "missing_matrix",
+      "missing_transport",
+      "missing_wait"
+    ]
+  },
+  "dispatch": {
+    "humming_grouped_expert_outputs": {
+      "prompt_table": true,
+      "decode_table": false
+    },
+    "humming_grouped_decode_outputs": {
+      "prompt_table": false,
+      "decode_table": true
+    }
+  },
+  "gpu": false,
+  "scope": "Pinned production constructor, generator and pre-registration checks. Real cuobjdump text; GPU context and final module registration are simulated."
+}

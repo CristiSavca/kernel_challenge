@@ -1,0 +1,51 @@
+{
+  "candidate": "V167",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V163",
+  "parent_tree": "aff28f2cc94bd57228886740f691d7543f9a13ac",
+  "parent_sha256": "d4840308ea25166a1a3db0b4358beb6d59b9de97faaa43ef8a3795241bdc33a1",
+  "tree": "20f9a009fea6646ab2099493e18a3f58f82b3b22",
+  "patch_sha256": "de58851c3cef9bfdf1c432b566f9294b41bbd4a81cad62e182022de11a22ba5d",
+  "bytes": 57638,
+  "delta_sha256": "7f131071798c3357815e5e00a1be84f75299510c5fe73d7f7a5ad1133a442974",
+  "delta_bytes": 7207,
+  "paths": [
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/kernels/ops/moe/muse_spark_sparse_return.py",
+    "python/sglang/srt/arg_groups/field_order.py",
+    "python/sglang/srt/arg_groups/fields/parallel.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/moe/muse_spark_sparse_return.py",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "source_sha256": {
+    "python/sglang/kernels/ops/moe/muse_spark_sparse_return.py": "c56c173b17b240863c237d4eb11860b61fc181452db8610712dfbc81f5dba497",
+    "python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py": "c41388d327c3efd94a7b714e4fa15f7ba40f5ac8920ba76c693446e3a930fa9e",
+    "python/sglang/srt/models/muse_spark.py": "bacce164d09b474579eaef58487799c60e38a923f18d0aa7d68f323feddb7053"
+  },
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--muse-sparse-prompt-exchange": ""
+  },
+  "export": "okc serve diff",
+  "all_roundtrips": true,
+  "python_units_compiled": 13,
+  "fixed_flag_patterns": 76,
+  "max_line": 126,
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "physical_H200": false
+}

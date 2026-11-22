@@ -1,0 +1,156 @@
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index b6e20f4..cd445f2 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -4614,6 +4614,60 @@ class Scheduler(
+             else:
+                 batch.sampling_info = sched_sampling_info
+ 
++    def _run_mixed_dflash_roles(self, roles, *, on_publish, grammar_barrier=None):
++        from sglang.srt.speculative.dflash_mixed_forward import (
++            start_mixed_prefix_readback,
++            try_forward_proposed_mixed,
++        )
++        from sglang.srt.speculative.draft_worker_common import make_draft_input_v2
++
++        prompt, decode = roles
++        worker = self.model_worker
++        with (
++            self._forward_isolation(prompt, overlap=False),
++            self._forward_isolation(decode, overlap=False),
++        ):
++            # Both forwards use this outer iteration's ring entry. Opening a
++            # second overlap iteration here would retire the previous entry.
++            keep_alive = self.batch_record_buf[self.batch_record_ct]
++            for role in roles:
++                keep_alive.append([getattr(role, f.name) for f in dataclasses.fields(role)])
++
++            prefix_readback = start_mixed_prefix_readback(decode)
++            proposal = worker.propose_decode_block(decode)
++            result = try_forward_proposed_mixed(
++                worker, prompt, decode, proposal, on_publish=on_publish, prefix_readback=prefix_readback
++            )
++            if result is not None:
++                return result
++
++            # A rank declined before target execution. The proposal still owns
++            # the worker scratch. Consume it before running any further forward.
++            tail_result = worker.verify_proposed_decode_block(
++                decode, proposal, grammar_barrier=grammar_barrier
++            )
++            # Release the consumed full-vocabulary verifier rows before prompt allocation.
++            tail_result.logits_output.next_token_logits = None
++            prompt_result = worker.forward_batch_generation(prompt)
++            prompt_result.logits_output.next_token_logits = None
++        # Native verification temporarily turns its input batch into TARGET_VERIFY.
++        # The isolation scopes above restore the original role snapshots for the host.
++        relay = make_draft_input_v2(
++            bonus_tokens=torch.cat((
++                prompt_result.next_draft_input.bonus_tokens,
++                tail_result.next_draft_input.bonus_tokens,
++            )),
++            new_seq_lens=torch.cat((
++                prompt_result.new_seq_lens,
++                tail_result.new_seq_lens,
++            )),
++        )
++        result = MixedDFlashResult.from_role_results(
++            prompt, decode, prompt_result, tail_result, relay, shared_target=False
++        )
++        on_publish(relay.new_seq_lens)
++        return result
++
+     @scheduler_stage_method(SCHEDULER_STAGE_RUN_BATCH)
+     def run_batch(
+         self,
+@@ -4667,8 +4721,9 @@ class Scheduler(
+                     and self._confidence_budget_prepare is None
+                     and not getattr(self.future_map, "needs_cpu_seq_lens", True)
+                 )
++                roles = batch.mixed_dflash_roles
+                 if not gpu_only_lens:
+-                    self.future_map.resolve_seq_lens_cpu(batch)
++                    self.future_map.resolve_seq_lens_cpu(roles[1] if roles is not None else batch)
+                 if self._confidence_budget_prepare is not None:
+                     self._confidence_budget_prepare(batch, self.future_map)
+ 
+@@ -4682,7 +4737,20 @@ class Scheduler(
+                     # mix_running_indices). Run OUTSIDE isolation so the
+                     # snapshot captures the post-consume state — restoring
+                     # post-forward must not un-consume staging.
+-                    resolve_forward_inputs(batch, self.future_map)
++                    if roles is None:
++                        resolve_forward_inputs(batch, self.future_map)
++                    else:
++                        # Only the live decode role owns the previous published
++                        # bonus and lengths. The prompt has its own CPU staging.
++                        prompt_role, decode_role = roles
++                        for role in roles:
++                            role.launch_ts = batch.launch_ts
++                            role.forward_iter = batch.forward_iter
++                            role.after_idle_gap = batch.after_idle_gap
++                        resolve_forward_inputs(prompt_role, self.future_map)
++                        resolve_forward_inputs(decode_role, self.future_map)
++                        batch.prefill_input_ids_cpu = None
++                        batch.mix_running_indices = batch.mix_running_indices_cpu = None
+ 
+                     with self._forward_isolation(batch, overlap=True):
+                         future_indices = batch.req_pool_indices
+@@ -4705,9 +4773,12 @@ class Scheduler(
+                                 )
+ 
+                         # FIXME: pp is not compatible with overlap
+-                        batch_result = self.model_worker.forward_batch_generation(
+-                            batch, **fwd_kwargs
+-                        )
++                        if roles is None:
++                            batch_result = self.model_worker.forward_batch_generation(
++                                batch, **fwd_kwargs
++                            )
++                        else:
++                            batch_result = self._run_mixed_dflash_roles(roles, **fwd_kwargs)
+                         if batch.spec_algorithm.is_none():
+                             self.future_map.publish(future_indices, batch.seq_lens + 1)
+                         # Park any refs the worker wants kept alive 2 iters
+@@ -4751,6 +4822,9 @@ class Scheduler(
+ 
+                 # Next-iter input_ids relayed via future_map.
+                 batch.input_ids = None
++                if roles is not None:
++                    # The next scheduler tick may reuse this outer batch for decode.
++                    batch.mixed_dflash_roles = None
+ 
+                 if not batch.spec_algorithm.is_none():
+                     batch.spec_info = batch_result.next_draft_input
+diff --git a/python/sglang/srt/managers/utils.py b/python/sglang/srt/managers/utils.py
+index f04849f..0ebd475 100644
+--- a/python/sglang/srt/managers/utils.py
++++ b/python/sglang/srt/managers/utils.py
+@@ -270,7 +270,8 @@ class MixedDFlashResult(GenerationBatchResult):
+ 
+     @classmethod
+     def from_role_results(
+-        cls, prompt_batch, decode_batch, prompt_result, decode_result, next_draft_input
++        cls, prompt_batch, decode_batch, prompt_result, decode_result, next_draft_input,
++        *, shared_target: bool = True,
+     ):
+         # The next scheduling iteration can rebind both batches before the
+         # result drains. Preserve their row order but keep request state live.
+@@ -307,7 +308,7 @@ class MixedDFlashResult(GenerationBatchResult):
+             or next_draft_input.bonus_tokens.shape != (len(all_reqs),)
+             or prompt_result.copy_done is not None
+             or decode_result.copy_done is not None
+-            or prompt_result.can_run_cuda_graph != decode_result.can_run_cuda_graph
++            or (shared_target and prompt_result.can_run_cuda_graph != decode_result.can_run_cuda_graph)
+         ):
+             raise ValueError("inconsistent mixed DFLASH results or relay")
+         return cls(
+@@ -317,7 +318,7 @@ class MixedDFlashResult(GenerationBatchResult):
+             decode_result=decode_result,
+             next_draft_input=next_draft_input,
+             new_seq_lens=next_draft_input.new_seq_lens,
+-            can_run_cuda_graph=prompt_result.can_run_cuda_graph,
++            can_run_cuda_graph=prompt_result.can_run_cuda_graph and decode_result.can_run_cuda_graph,
+             extra_keep_alive_refs=(prompt_result.extra_keep_alive_refs or [])
+             + (decode_result.extra_keep_alive_refs or []),
+         )

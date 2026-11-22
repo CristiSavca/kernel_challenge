@@ -1,0 +1,1708 @@
+{
+  "method": "V284/V289 staged outer model, public expert entry, W4A16 and grouped decode. CPU numerical operators and modeled CUDA streams.",
+  "early_plans": 14,
+  "compared_calls": 34,
+  "hashes": {
+    "python/sglang/srt/models/muse_spark.py": "c2da95fee8e5b9e8a84870a8fcb928e5289a5f11fb8edf320f566e6c5f07b370",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "1ed5c6c48d4ee599c4491ba617be1e549984e497f332ef51fbde2f99c6353ccf",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py": "10bab6cefc18853ce59e4ca6dcf35ec018b8c4efaa1c1874fb820d4353687b33",
+    "python/sglang/srt/layers/communication/muse_spark_gemm_ag.py": "ca3d638643bf5f4d6680e9fa3250211d55ca5ccdef0d936c2001b8719a06e0d9"
+  },
+  "non_power_of_two_stripe_declined": true,
+  "legacy_optional_keyword_calls": 4,
+  "cases": [
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "duplicates",
+      "rows": 32,
+      "staged_words": 577536,
+      "output_words": 131072,
+      "map_words": 256,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "all_remote",
+      "rows": 17,
+      "staged_words": 0,
+      "output_words": 69632,
+      "map_words": 136,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "all_local",
+      "rows": 8,
+      "staged_words": 262144,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 128,
+      "staged_words": 561152,
+      "output_words": 524288,
+      "map_words": 1024,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "mixed",
+      "rows": 256,
+      "staged_words": 1142784,
+      "output_words": 1048576,
+      "map_words": 2048,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "missing_gain",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "wrong_gain",
+      "rows": 8,
+      "staged_words": 36864,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "misaligned",
+      "rows": 8,
+      "staged_words": 36864,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "strided_ids",
+      "rows": 8
+    },
+    {
+      "tp": 4,
+      "case": "getter_override",
+      "rows": 8,
+      "staged_words": 45056,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "jit_failure",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "disabled",
+      "rows": 8,
+      "staged_words": 12288,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns-1"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "eager",
+      "rows": 8,
+      "staged_words": 40960,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "no_side",
+      "rows": 8,
+      "staged_words": 40960,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "main",
+          "route"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "topk_mismatch",
+      "rows": 8,
+      "staged_words": 32768,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "allocation_cap",
+      "rows": 8,
+      "staged_words": 57344,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 4,
+      "case": "negative_ids",
+      "rows": 8,
+      "staged_words": 20480,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 8,
+      "staged_words": 36864,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "duplicates",
+      "rows": 32,
+      "staged_words": 589824,
+      "output_words": 131072,
+      "map_words": 256,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "all_remote",
+      "rows": 17,
+      "staged_words": 0,
+      "output_words": 69632,
+      "map_words": 136,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "all_local",
+      "rows": 8,
+      "staged_words": 262144,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 128,
+      "staged_words": 540672,
+      "output_words": 524288,
+      "map_words": 1024,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "mixed",
+      "rows": 256,
+      "staged_words": 1003520,
+      "output_words": 1048576,
+      "map_words": 2048,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "missing_gain",
+      "rows": 8,
+      "staged_words": 45056,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "wrong_gain",
+      "rows": 8,
+      "staged_words": 28672,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "misaligned",
+      "rows": 8,
+      "staged_words": 57344,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "strided_ids",
+      "rows": 8
+    },
+    {
+      "tp": 8,
+      "case": "getter_override",
+      "rows": 8,
+      "staged_words": 49152,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "jit_failure",
+      "rows": 8,
+      "staged_words": 20480,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "disabled",
+      "rows": 8,
+      "staged_words": 28672,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns-1"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ordinary_norm"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "gather"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "eager",
+      "rows": 8,
+      "staged_words": 24576,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "no_side",
+      "rows": 8,
+      "staged_words": 40960,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "main",
+          "route"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "topk_mismatch",
+      "rows": 8,
+      "staged_words": 40960,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "allocation_cap",
+      "rows": 8,
+      "staged_words": 53248,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": false,
+      "schedule": [
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "main",
+          "plan"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    },
+    {
+      "tp": 8,
+      "case": "negative_ids",
+      "rows": 8,
+      "staged_words": 20480,
+      "output_words": 32768,
+      "map_words": 64,
+      "plan_on_side": true,
+      "schedule": [
+        [
+          "main",
+          "allocate"
+        ],
+        [
+          "side",
+          "wait:main"
+        ],
+        [
+          "main",
+          "gather_columns0"
+        ],
+        [
+          "side",
+          "route"
+        ],
+        [
+          "side",
+          "plan"
+        ],
+        [
+          "main",
+          "wait:side"
+        ],
+        [
+          "main",
+          "ranked_norm_stage"
+        ],
+        [
+          "main",
+          "W13"
+        ],
+        [
+          "main",
+          "W2"
+        ]
+      ]
+    }
+  ],
+  "totals": {
+    "staged_words": 5783552,
+    "output_words": 4399104,
+    "map_words": 8592
+  }
+}

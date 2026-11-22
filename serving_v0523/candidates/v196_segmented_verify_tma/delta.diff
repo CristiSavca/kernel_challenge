@@ -1,0 +1,123 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index a49e4fc8bbbd04bcbf1a54d9c0d170a6f120a2a0..5f71fa199e607a754773b7e99321318f94b28f50 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -75,10 +75,14 @@ def _accumulate_tiles(
+     V_PAGE: tl.constexpr, V_TOKEN: tl.constexpr, V_HEAD: tl.constexpr,
+     WINDOW_LEFT: tl.constexpr, TILE_N: tl.constexpr, TILE_M: tl.constexpr,
+     D: tl.constexpr, ORIGIN_STRIDE: tl.constexpr, DIRECT: tl.constexpr,
++    InitialMax=None, InitialSum=None, InitialAcc=None,
+ ):
+-    row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
+-    row_sum = tl.zeros((TILE_M,), tl.float32)
+-    acc = tl.zeros((TILE_M, D), tl.float32)
++    if InitialMax is None:
++        row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
++        row_sum = tl.zeros((TILE_M,), tl.float32)
++        acc = tl.zeros((TILE_M, D), tl.float32)
++    else:
++        row_max, row_sum, acc = InitialMax, InitialSum, InitialAcc
+     for tile in tl.range(tile_start, tile_end, num_stages=2):
+         tokens = tile * TILE_N + tl.arange(0, TILE_N)
+         live = tokens < length
+@@ -113,6 +117,39 @@ def _accumulate_tiles(
+     return row_max, row_sum, acc
+ 
+ 
++@triton.jit
++def _tile_origin_mask(Origins, start, end, limit):
++    offset = tl.arange(0, 32)
++    live = start + offset < end
++    origin = tl.load(Origins + start + offset, live, other=-1)
++    good = live & (origin > 0) & (origin <= limit)
++    return tl.sum(tl.where(good, tl.full((32,), 1, tl.uint32) << offset.to(tl.uint32), 0), 0)
++
++
++@triton.jit
++def _next_tile_run(Origins, start, end, limit):
++    # A four-tile run feeds multiple stages of the dedicated tensor-map load pipeline.
++    offset = tl.arange(0, 32)
++    cursor = start
++    mask = _tile_origin_mask(Origins, cursor, end, limit)
++    direct = (mask & 15) == 15
++    if direct:
++        while (mask == 0xFFFFFFFF) & (cursor + 32 < end):
++            cursor += 32
++            mask = _tile_origin_mask(Origins, cursor, end, limit)
++        marks = mask ^ tl.full((), 0xFFFFFFFF, tl.uint32)
++    else:
++        marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
++        while (marks == 0) & (cursor + 32 < end):
++            # Revisit the trailing three bits so a run crossing this mask edge is found.
++            cursor += 29
++            mask = _tile_origin_mask(Origins, cursor, end, limit)
++            marks = mask & (mask >> 1) & (mask >> 2) & (mask >> 3)
++    offset_is_marked = ((marks >> offset.to(tl.uint32)) & 1) != 0
++    count = tl.min(tl.where(offset_is_marked, offset, 32), 0)
++    return tl.minimum(cursor + count, end), direct
++
++
+ @triton.jit
+ def _partition_attention(
+     Q,
+@@ -191,28 +228,38 @@ def _partition_attention(
+                     WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False,
+                 )
+             else:
+-                # Keep the load pipelines separate. One fragment selects the indexed loop for this segment.
+-                direct = tl.full((), True, tl.int1)
+-                for i in range(tile_start, tile_end, 32):
+-                    group = i + tl.arange(0, 32)
+-                    valid = group < tile_end
+-                    origins = tl.load(Origins + request * ORIGIN_STRIDE + group, valid, other=1)
+-                    fits = (origins > 0) & (origins <= CAPACITY - TILE_N)
+-                    direct &= tl.min((~valid | fits).to(tl.int32), 0) != 0
+-                if direct:
+-                    row_max, row_sum, acc = _accumulate_tiles(
+-                        K, V, Pages, Origins, KDesc, VDesc, request, kv_head, tile_start, tile_end,
+-                        length, q_length, q_positions, q_live, query, dims, scale,
+-                        PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                        WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True,
+-                    )
+-                else:
+-                    row_max, row_sum, acc = _accumulate_tiles(
+-                        K, V, Pages, Origins, KDesc, VDesc, request, kv_head, tile_start, tile_end,
+-                        length, q_length, q_positions, q_live, query, dims, scale,
+-                        PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
+-                        WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False,
+-                    )
++                row_max = tl.full((TILE_M,), float("-inf"), tl.float32)
++                row_sum = tl.zeros((TILE_M,), tl.float32)
++                acc = tl.zeros((TILE_M, D), tl.float32)
++                cursor = tile_start
++                while cursor < tile_end:
++                    if tile_end - tile_start <= 32:
++                        # One warp vote covers the entire short intersection.
++                        lanes = cursor + tl.arange(0, 32)
++                        live_lanes = lanes < tile_end
++                        origins = tl.load(Origins + request * ORIGIN_STRIDE + lanes, live_lanes, other=1)
++                        fits = (origins > 0) & (origins <= CAPACITY - TILE_N)
++                        direct = tl.min((~live_lanes | fits).to(tl.int32), 0) != 0
++                        stop = tile_end
++                    else:
++                        stop, direct = _next_tile_run(
++                            Origins + request * ORIGIN_STRIDE, cursor, tile_end, CAPACITY - TILE_N,
++                        )
++                    if direct:
++                        row_max, row_sum, acc = _accumulate_tiles(
++                            K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,
++                            length, q_length, q_positions, q_live, query, dims, scale,
++                            PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
++                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, True, row_max, row_sum, acc,
++                        )
++                    else:
++                        row_max, row_sum, acc = _accumulate_tiles(
++                            K, V, Pages, Origins, KDesc, VDesc, request, kv_head, cursor, stop,
++                            length, q_length, q_positions, q_live, query, dims, scale,
++                            PAGE_ROW_STRIDE, PAGE_SIZE, K_PAGE, K_TOKEN, K_HEAD, V_PAGE, V_TOKEN, V_HEAD,
++                            WINDOW_LEFT, TILE_N, TILE_M, D, ORIGIN_STRIDE, False, row_max, row_sum, acc,
++                        )
++                    cursor = stop
+             # Intersections of two sorted interval partitions fit in P+B-1
+             # slots. Along the key stream, partition+request strictly increases
+             # at each distinct nonempty intersection.

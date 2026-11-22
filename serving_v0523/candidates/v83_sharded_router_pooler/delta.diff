@@ -1,0 +1,191 @@
+diff --git a/python/sglang/kernels/ops/communication/muse_spark_router_gather.py b/python/sglang/kernels/ops/communication/muse_spark_router_gather.py
+new file mode 100644
+index 0000000..e6ec513
+--- /dev/null
++++ b/python/sglang/kernels/ops/communication/muse_spark_router_gather.py
+@@ -0,0 +1,44 @@
++"""Gather sharded BF16 expert inputs and FP32 router logits together."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++@triton.jit
++def _unpack(
++    gathered, pooled, logits, rows, TP: tl.constexpr,
++    POOL_WORDS: tl.constexpr, EXPERTS: tl.constexpr, BLOCK: tl.constexpr,
++):
++    row = tl.program_id(0)
++    rank = tl.program_id(1)
++    cols = tl.program_id(2) * BLOCK + tl.arange(0, BLOCK)
++    width = POOL_WORDS + EXPERTS
++    words = tl.load(gathered + (rank * rows + row) * width + cols, cols < width, other=0)
++    # Match the existing multicast pooler's signed-zero representation.
++    # Router words are FP32 bit patterns and pass through unchanged.
++    bits = words.to(tl.uint32, bitcast=True)
++    bits |= tl.where((bits & 0xFFFF) == 0, 0x8000, 0).to(tl.uint32)
++    bits |= tl.where((bits >> 16) == 0, 0x80000000, 0).to(tl.uint32)
++    dst = row * TP + rank
++    tl.store(pooled + dst * POOL_WORDS + cols, bits.to(tl.int32, bitcast=True), cols < POOL_WORDS)
++    expert = cols - POOL_WORDS
++    tl.store(logits + dst * EXPERTS + expert, words, (expert >= 0) & (expert < EXPERTS))
++
++
++def gather_pooler_and_router(group, pool_slice, logit_slice):
++    rows, local_width = pool_slice.shape
++    local_experts = logit_slice.shape[1]
++    world = group.world_size
++    payload = torch.cat(
++        (pool_slice.contiguous().view(torch.int32), logit_slice.contiguous().view(torch.int32)), dim=1
++    )
++    gathered = group.all_gather(payload, dim=0)
++    pooled = pool_slice.new_empty((rows, local_width * world))
++    logits = logit_slice.new_empty((rows, local_experts * world))
++    pool_words = local_width // 2
++    _unpack[(rows, world, triton.cdiv(pool_words + local_experts, 128))](
++        gathered, pooled.view(torch.int32), logits.view(torch.int32), rows,
++        world, pool_words, local_experts, 128,
++    )
++    return pooled, logits
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index b829764..f71e209 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2030,6 +2030,7 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_DECODE_TWO_CTAS = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_WORKSPACE_REDUCE = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HOPPER_DECODE_GEMM_AG = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_SHARDED_ROUTER = EnvBool(True)
+     # Fuse the unpooler all-gather into the FFN-boundary norm-residual kernel.
+     SGLANG_ENABLE_MUSE_SPARK_AG_NORM_FUSION = EnvBool(True)
+     SGLANG_USE_CUSTOM_ROUTER_SUM = EnvBoolWithAlias(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 93c18c3..93ac436 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -240,11 +240,24 @@ class MuseSpark1xRouter(nn.Module):
+         self._split2_lo = lo.t().contiguous()
+         self._split2_key = key
+ 
+-    def forward_split2(self, hidden_states: torch.Tensor) -> torch.Tensor:
++    def needs_local_router_result(self) -> bool:
++        return bool(
++            torch.is_grad_enabled()
++            or torch.is_autocast_enabled()
++            or self._forward_hooks
++            or self._forward_pre_hooks
++            or torch.nn.modules.module._global_forward_hooks
++            or torch.nn.modules.module._global_forward_pre_hooks
++        )
++
++    def forward_split2(self, hidden_states: torch.Tensor, experts: Optional[slice] = None) -> torch.Tensor:
+         self._build_split2()
+         x = hidden_states.to(torch.bfloat16)
+-        acc = torch.mm(x, self._split2_hi, out_dtype=torch.float32)
+-        acc += torch.mm(x, self._split2_lo, out_dtype=torch.float32)
++        hi, lo = self._split2_hi, self._split2_lo
++        if experts is not None:
++            hi, lo = hi[:, experts], lo[:, experts]
++        acc = torch.mm(x, hi, out_dtype=torch.float32)
++        acc += torch.mm(x, lo, out_dtype=torch.float32)
+         return acc
+ 
+     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+@@ -253,6 +266,21 @@ class MuseSpark1xRouter(nn.Module):
+             return router_gemv_cute(hidden_states, self.weight)
+         return F.linear(hidden_states, self.weight)
+ 
++    def shard_for_gather(self, hidden_states, router_input, use_split2, rank, world_size):
++        width = self.weight.shape[0] // world_size
++        experts = slice(rank * width, (rank + 1) * width)
++        # Rank-local hooks and precision settings must not change the collective
++        # sequence or modify the FP32 logits consumed by other ranks.
++        with torch.autocast("cuda", enabled=False):
++            shard = (
++                self.forward_split2(hidden_states, experts) if use_split2
++                else F.linear(router_input, self.weight[experts])
++            )
++        override = None
++        if self.needs_local_router_result():
++            override = self.forward_split2(hidden_states) if use_split2 else self(router_input)
++        return shard, override
++
+ 
+ class MuseSpark1xAttention(nn.Module):
+     def __init__(self, config: MuseSparkTextConfig, layer_idx: int, prefix: str):
+@@ -867,6 +895,7 @@ class MuseSpark1xMoE(nn.Module):
+         side_stream = self._side_stream() if use_side_stream else None
+         if use_side_stream:
+             side_stream.wait_stream(main_stream)
++        joint_logits = None
+         # nn.Linear bypasses the bf16 GEMM dispatcher.
+         if self.pre_expert_proj is None:
+             expert_input = hidden_states
+@@ -882,7 +911,34 @@ class MuseSpark1xMoE(nn.Module):
+                     comm, hidden_states, self.pre_expert_proj.weight, hopper_decode=hopper_decode
+                 )
+             ):
+-                expert_input = gemm_ag(comm, hidden_states, self.pre_expert_proj.weight)
++                if (
++                    hopper_decode
++                    and self.experts.use_humming
++                    and self.router_in_fp32
++                    and self.num_experts % comm.world_size == 0
++                    and envs.SGLANG_ENABLE_MUSE_SPARK_SHARDED_ROUTER.get()
++                ):
++                    from sglang.kernels.ops.communication.muse_spark_router_gather import (
++                        gather_pooler_and_router,
++                    )
++
++                    pool_slice = gemm_local(comm, hidden_states, self.pre_expert_proj.weight)
++                    with torch.cuda.stream(side_stream):
++                        local_logits, local_override = self.gate.shard_for_gather(
++                            hidden_states, router_input, use_split2, comm.rank, comm.world_size
++                        )
++                    main_stream.wait_stream(side_stream)
++                    expert_input, joint_logits = gather_pooler_and_router(
++                        get_parallel().tp_group, pool_slice, local_logits
++                    )
++                    if not torch.cuda.is_current_stream_capturing():
++                        local_logits.record_stream(main_stream)
++                        if local_override is not None:
++                            local_override.record_stream(main_stream)
++                    if local_override is not None:
++                        joint_logits = local_override
++                else:
++                    expert_input = gemm_ag(comm, hidden_states, self.pre_expert_proj.weight)
+             else:
+                 expert_input = bf16_gemm_dispatch(
+                     hidden_states, self.pre_expert_proj.weight, None
+@@ -893,20 +949,22 @@ class MuseSpark1xMoE(nn.Module):
+             )
+         with (
+             torch.cuda.stream(side_stream)
+-            if use_side_stream
++            if use_side_stream and joint_logits is None
+             else contextlib.nullcontext()
+         ):
+-            router_logits = (
+-                self.gate.forward_split2(hidden_states)
+-                if use_split2
+-                else self.gate(router_input)
+-            )
++            router_logits = joint_logits
++            if router_logits is None:
++                router_logits = (
++                    self.gate.forward_split2(hidden_states)
++                    if use_split2
++                    else self.gate(router_input)
++                )
+             topk_scores, topk_ids, packed_topk_ids = self._routing_op()(
+                 None, router_logits, self.top_k, True, want_packed=True
+             )
+-        if use_side_stream:
++        if use_side_stream and joint_logits is None:
+             main_stream.wait_stream(side_stream)
+-        if use_side_stream and not torch.cuda.is_current_stream_capturing():
++        if use_side_stream and joint_logits is None and not torch.cuda.is_current_stream_capturing():
+             cross_stream_tensors = (
+                 (router_logits, topk_scores, topk_ids)
+                 if getattr(get_forward(), "sp_active", False)

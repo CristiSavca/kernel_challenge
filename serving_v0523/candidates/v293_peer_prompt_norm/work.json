@@ -1,0 +1,96 @@
+{
+  "source_sha256": {
+    "check.json": "a02eb4c029a237848ddd4f163a32e6acf20362e3acd4e1195781245852a4c076",
+    "routes.json": "7c01b682db4ea79714d209d67655207de33ef02fa2ad460dd99e31ca3c7d499d"
+  },
+  "geometry": {
+    "ep": 8,
+    "tp": 8,
+    "expert_tp": 1,
+    "global_experts": 256,
+    "local_experts": 32,
+    "local_routes_16k": [
+      16430,
+      16540,
+      16299,
+      16224,
+      16531,
+      16159,
+      16505,
+      16384
+    ],
+    "ideal_fully_replicated_route_balance_speedup": 1.009521484375,
+    "packed_expert_bytes": 28311552,
+    "all_expert_weights_per_rank_assigned_once": true
+  },
+  "eligible_16k": {
+    "layers": 62,
+    "shard_rows": 2048,
+    "bytes_of_native_norm_destination": 16777216,
+    "copy_bytes_removed_per_rank_layer": 33554432,
+    "whole_chunk_copy_bytes_removed_per_rank": 2080374784,
+    "native_copy_launches_removed": 62,
+    "native_rstd_output_bytes_also_elided_per_layer": 8192,
+    "identity_map_bytes_at_16640": 8320,
+    "direct_ranked_writes_into_same_physical_slot_as_copy": true
+  },
+  "per_16K_ms": {
+    "peak_bandwidth_equivalent_at_4_8_TB_s": 0.43341141333333333,
+    "time_at_one_microsecond_per_removed_launch": 0.062,
+    "historical_four_user_V44_mean": 1224.8605377226684,
+    "historical_four_user_V41_V44_delta": 177.49707820693098,
+    "extra_saving_for_fourfold_historical_chunk": 874.2711337402686
+  },
+  "conditional_by_load": [
+    {
+      "users": 1,
+      "rep": 0,
+      "publications": 372,
+      "minimum_saved_copy_bytes": 11782356992,
+      "upper_saved_copy_bytes": 11786420224
+    },
+    {
+      "users": 1,
+      "rep": 1,
+      "publications": 248,
+      "minimum_saved_copy_bytes": 8321499136,
+      "upper_saved_copy_bytes": 8324546560
+    },
+    {
+      "users": 1,
+      "rep": 2,
+      "publications": 434,
+      "minimum_saved_copy_bytes": 13987676160,
+      "upper_saved_copy_bytes": 13993771008
+    },
+    {
+      "users": 4,
+      "rep": 0,
+      "publications": 930,
+      "minimum_saved_copy_bytes": 30943543296,
+      "upper_saved_copy_bytes": 30955732992
+    },
+    {
+      "users": 4,
+      "rep": 1,
+      "publications": 1240,
+      "minimum_saved_copy_bytes": 41607495680,
+      "upper_saved_copy_bytes": 41624764416
+    },
+    {
+      "users": 16,
+      "rep": 0,
+      "publications": 4650,
+      "minimum_saved_copy_bytes": 156028108800,
+      "upper_saved_copy_bytes": 156094136320
+    },
+    {
+      "users": 32,
+      "rep": 0,
+      "publications": 9300,
+      "minimum_saved_copy_bytes": 311827660800,
+      "upper_saved_copy_bytes": 311959715840
+    }
+  ],
+  "interpretation": "Rank-balance ratio counts only live rows, assumes equal cost, ideal replication, free movement and no scheduling effects. 16K traffic is logical, throughput equivalent is not a physical saving. Per-repetition logical byte ranges apply the archived eligible token totals and bound TP8 padding per invocation. Actual branch admission, GPU memory service, scheduling and overlap, and per-token identity table loads are unmeasured."
+}

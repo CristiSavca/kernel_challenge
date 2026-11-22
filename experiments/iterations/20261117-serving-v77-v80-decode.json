@@ -1,0 +1,80 @@
+{
+  "checked_at_utc": "2026-11-17T19:39:54.622909+00:00",
+  "goal": "3x full serving score",
+  "official": {
+    "scored": {
+      "id": "abd217baf0ed49fd",
+      "candidate": "V64",
+      "score": 1.4119,
+      "at_stock_points": {
+        "1": 1.17,
+        "4": 1.316,
+        "16": 1.592,
+        "32": 1.621
+      },
+      "peak_delta_gb": 1.9,
+      "receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+    },
+    "check": {
+      "id": "220305c15ded4f6b",
+      "candidate": "V62",
+      "users": 16,
+      "ratio": 1.164,
+      "peak_delta_gb": 1.8,
+      "receipt": "serving_v0523/runs/220305c15ded4f6b.json"
+    },
+    "pending": {
+      "candidate": "V68",
+      "id": "04b01f958aa5487c",
+      "state": "queued"
+    }
+  },
+  "candidates": {
+    "v77": {
+      "description": "Fuse grouped expert route planning and input staging on the target.",
+      "patch": "serving_v0523/candidates/v77_fused_expert_staging/patch.diff",
+      "sha256": "05426d8be9e013fa73f24f10a72958a3ca4b74b942a770756f4b52126931651a",
+      "patch_bytes": 147143,
+      "files": 28,
+      "h200_validation": "pending"
+    },
+    "v78": {
+      "description": "Shard the ten dense DFLASH dynamic filter projections across the draft TP group.",
+      "patch": "serving_v0523/candidates/v78_dflash_sharded_conv_filters/patch.diff",
+      "sha256": "f042bb2d29454098bf8290bb0567949edb32303c59e05f4a8543142cfc5192d5",
+      "patch_bytes": 145959,
+      "files": 28,
+      "h200_validation": "pending"
+    },
+    "v79": {
+      "description": "Extend paged verification attention and tree guards to support a wider tree with multiple query/head CTA bands.",
+      "patch": "serving_v0523/candidates/v79_wide_selector_tree/patch.diff",
+      "sha256": "3b845bbbed63c52bfc3f8f264d0e233feb74d10e8a14cff803ab13bfc87ccac2",
+      "patch_bytes": 144189,
+      "files": 28,
+      "h200_validation": "pending"
+    },
+    "v80": {
+      "description": "Combine V77 and V78 on V76 at the native width eight.",
+      "patch": "serving_v0523/candidates/v80_fused_experts_sharded_draft_filters/patch.diff",
+      "sha256": "11a1995768ccc8419fe17caea989b27352596eb533ac73ec24d7df03b5a3e9c6",
+      "patch_bytes": 149302,
+      "files": 28,
+      "h200_validation": "pending"
+    }
+  },
+  "nov18_private_plan": {
+    "v79": {
+      "users": 16,
+      "speculative_num_draft_tokens": 12,
+      "dependency": "can run while V68 or V76 is pending, skips a known V68 failure; requires three check slots left"
+    },
+    "v72_v76": {
+      "users": 16,
+      "requires_passing_v68": true
+    },
+    "window": "Nov 18 UTC",
+    "arm_status": "armed",
+    "arm_receipt": "serving_v0523/runs/nov18_decode_runner.launch.json"
+  }
+}

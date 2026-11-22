@@ -1,0 +1,105 @@
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index 8161ea1..8faab87 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -4185,6 +4185,12 @@ class Scheduler(
+                 adder.rem_chunk_tokens or 0,
+                 self.page_size,
+             )
++            if get_spec().speculative_dflash_mixed_prefill and not running_batch.is_empty():
++                from sglang.srt.managers.scheduler_components.mixed_dflash_admission import (
++                    reserve_mixed_continuation,
++                )
++
++                reserve_mixed_continuation(self, running_batch, self.chunked_req, adder)
+             self.chunked_req = adder.add_chunked_req(self.chunked_req)
+ 
+         if self.enable_lora:
+diff --git a/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+index 91d0b64..9afecfe 100644
+--- a/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
++++ b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+@@ -119,6 +119,83 @@ def _candidate_geometry(scheduler, prompt, decode, chunk_budget):
+     return list(struct.unpack("<4I", tag))
+ 
+ 
++def _continuation_budget(scheduler, decode, req, adder):
++    """Leave space for the running verify block without adding a final prompt bucket."""
++    runner = scheduler.tp_worker.model_runner
++    prefill = runner.prefill_cuda_graph_runner
++    verify = runner.decode_cuda_graph_runner
++    worker = scheduler.draft_worker
++    cap = adder.rem_chunk_tokens
++    if (
++        not cap or cap <= 0 or cap != scheduler.chunked_prefill_size
++        or adder.chunked_req_limit is not None or scheduler.dynamic_chunk_sizer is not None
++        or not scheduler.enable_overlap or scheduler.is_mixed_chunk or scheduler.require_mlp_sync
++        or scheduler.page_size != 1 or scheduler.enable_unified_memory or scheduler.enable_hisparse
++        or scheduler.disaggregation_mode != DisaggregationMode.NULL or scheduler.dllm_config is not None
++        or adder.kv_shard_granule or adder.mamba_chunk_grid != 1 or scheduler.enable_lora
++        or not scheduler.spec_algorithm.is_dflash() or worker is None or worker is not scheduler.model_worker
++        or not isinstance(prefill, PrefillCudaGraphRunner) or not isinstance(verify, DecodeCudaGraphRunner)
++        or not prefill._uses_eager_prefill_tail() or prefill.enable_cp_bcg_capture
++        or verify.ragged_verify_mode or verify.enable_pdmux or verify.require_mlp_tp_gather
++        or verify.enable_two_batch_overlap or decode.spec_info is None or decode.is_extend_in_batch
++        or decode.sampling_info is None or not worker._can_skip_verify_logits(decode, decode.sampling_info)
++        or scheduler._reqs_finishing_inflight(decode)
++        or type(req.kv.req_pool_idx) is not int or req.kv.req_pool_idx <= 0
++        or req.sampling_params.top_k > 1 or req.return_logprob or req.grammar is not None
++        or any(r.is_retracted or r.finished() or r.multimodal_inputs is not None
++               or r.beam_group is not None for r in (req, *decode.reqs))
++    ):
++        return None
++    width = worker.block_size
++    count = len(decode.reqs)
++    reserved = count * width
++    remaining = len(req.full_untruncated_fill_ids) - req.prefix_len
++    if (
++        width < 2 or width != verify.captured_req_width or count < 1 or count > verify.max_bs
++        or count + 1 > prefill.max_bs or not 0 < reserved < cap or remaining <= cap
++        or cap > min(prefill.max_num_tokens, scheduler.max_prefill_tokens, adder.rem_input_tokens)
++        or cap not in prefill.capture_num_tokens or (verify.disable_padding and count not in verify.capture_bs)
++    ):
++        return None
++    # Moving rows to the final partial chunk must preserve both its capture bucket
++    # and the number of forwards under the configured chunk size.
++    last = (remaining - 1) % cap + 1
++    if last + reserved > cap:
++        return None
++    buckets = prefill.capture_num_tokens
++    if prefill._pad_to_bucket(last, buckets) != prefill._pad_to_bucket(last + reserved, buckets):
++        return None
++    if prefill._pad_to_bucket(cap - reserved, buckets) + verify._pad_to_bucket(count, verify.capture_bs) * width < cap:
++        return None
++    budget = adder.memory_budget
++    available = budget.available_chunk_tokens(cap)
++    if available is None or available < cap:
++        return None
++    if budget.fit_chunk(extend_input_len=remaining, max_new_tokens=adder._swa_new_tokens(req), chunk_limit=cap) != cap:
++        return None
++    return (cap - reserved, cap, remaining, req.kv.req_pool_idx, req.prefix_len, count, width)
++
++
++def reserve_mixed_continuation(scheduler, decode, req, adder):
++    parallel = get_parallel()
++    if (parallel.dp_size, parallel.pp_size, parallel.attn_cp_size, parallel.attn_dcp_size) != (1, 1, 1, 1):
++        return
++    proposal = _continuation_budget(scheduler, decode, req, adder)
++    if scheduler.tp_group.world_size > 1:
++        # A rank can be short of memory even when its peers could carry the full chunk.
++        shape = list(proposal) if proposal is not None else [-1] * 7
++        with torch.inference_mode(False):
++            vote = torch.tensor(shape + [-n for n in shape], device="cpu", dtype=torch.int64)
++            dist.all_reduce(vote, op=dist.ReduceOp.MIN, group=scheduler.tp_group.cpu_group)
++        result = vote.tolist()
++        if result[0] < 0 or result[:7] != [-n for n in result[7:]]:
++            return
++    if proposal is not None:
++        # Only this iteration's prompt budget changes. The mixed admission and allocator
++        # still see the complete configured budget and validate both request roles.
++        adder.rem_chunk_tokens = proposal[0]
++
++
+ def admit_mixed_dflash(scheduler, prompt, decode, chunk_budget):
+     parallel = get_parallel()
+     if (parallel.dp_size, parallel.pp_size, parallel.attn_cp_size, parallel.attn_dcp_size) != (1, 1, 1, 1):

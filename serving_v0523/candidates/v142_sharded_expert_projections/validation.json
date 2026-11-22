@@ -1,0 +1,81 @@
+{
+  "candidate": "V142",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "tree": "80089363c9215081f4f33f668c8e92f12f7cf3fe",
+  "parent": "V139",
+  "parent_tree": "baa2a58bc9d944ec0c1241b2e673ad212cc48057",
+  "parent_sha256": "c4428099805f991512ff14783368efdada1985b6a4b15c039a17aa54ac4782ed",
+  "official_export": "okc serve diff .",
+  "patch_sha256": "3985c07097fd2d49829313cfd82a32f3bb959df6122e3f5ac707013524548572",
+  "delta_sha256": "32bf063a29b774500165921c3a928ac1c4676503440db80ed5f18fa3e21a33f1",
+  "bytes": 93452,
+  "delta_bytes": 9389,
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--muse-shard-expert-projections": ""
+  },
+  "flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--muse-shard-expert-projections": ""
+  },
+  "fixed_flag_patterns": 76,
+  "changed_from_parent": [
+    "python/sglang/srt/arg_groups/fields/parallel.py",
+    "python/sglang/srt/layers/muse_spark/projection.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_prefill_scaled_silu.cuh",
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh",
+    "python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/fields/parallel.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/projection.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/memory_pool.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "python_compiled": 15,
+  "longest_added_line_bytes": 128,
+  "strict_full_and_parent_delta_forward_reverse_tree": true,
+  "gloo_tp": [
+    2,
+    4,
+    8
+  ],
+  "gloo_counts": {
+    "checkpoint_shards": 56,
+    "projection_pairs": 784,
+    "output_elements": 3338496,
+    "deferred_boundary_slices": 84
+  },
+  "native_capture_abi": {
+    "tested": "Pinned graph-capture, group dispatch, PyNccl send/recv and V142 projection; CPU pointer transport",
+    "hashes": {
+      "coordinator": "bd356b92933a4e5eb08f22cf3eda8b788cc09efbbb2fb421745803847b8d2f5c",
+      "py_nccl": "1b1f679d7886e8737fada83fc3dafe937042b5f5b376461b9511c49dcdc30080",
+      "projection": "44911fb32960503f7129446b19861440c0a1ba4aadd38b9ed476dd462f13495a"
+    },
+    "layouts": 15,
+    "rank_projections": 70,
+    "peer_exchanges": 420,
+    "bf16_words": 1732752,
+    "old_2d_call_rejected": 70
+  },
+  "H200": false,
+  "judge_submitted": false
+}

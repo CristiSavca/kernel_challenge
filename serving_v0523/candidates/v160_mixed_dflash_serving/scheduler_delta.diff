@@ -1,0 +1,223 @@
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..6af4d6f 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -552,5 +552,6 @@ POSITIONAL_FIELD_ORDER = (
+     "enable_return_aux_hidden_states",
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
++    "speculative_dflash_mixed_prefill",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..b18a175 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -71,6 +71,10 @@ class Spec(msgspec.Struct):
+         Optional[int],
+         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
+     ] = None
++    speculative_dflash_mixed_prefill: A[
++        bool,
++        "Allow graph-budgeted whole-cohort DFLASH verification alongside an ordinary prompt.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
+index f913abe..37bd653 100644
+--- a/python/sglang/srt/managers/schedule_batch.py
++++ b/python/sglang/srt/managers/schedule_batch.py
+@@ -2493,6 +2493,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+     inner_idle_batch: Optional[ScheduleBatch] = None
+     # Decode requests carried alongside a chunked-prefill batch
+     decoding_reqs: List[Req] = None
++    mixed_dflash_roles: Optional[Tuple[ScheduleBatch, ScheduleBatch]] = None
+ 
+     # For split prefill
+     split_index: int = 0
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index b6e20f4..4bdefd1 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -4376,6 +4376,23 @@ class Scheduler(
+             ),
+         )
+ 
++        # All TP ranks that scheduled a prompt plus a running cohort enter the
++        # same host vote, including a rank with insufficient local capacity.
++        if get_spec().speculative_dflash_mixed_prefill and not running_batch.is_empty():
++            from sglang.srt.managers.scheduler_components.mixed_dflash_admission import (
++                admit_mixed_dflash,
++                build_mixed_dflash_batch,
++            )
++
++            if admit_mixed_dflash(self, new_batch, running_batch, chunked_prefill_size):
++                running_batch.prepare_for_decode()
++                outer = build_mixed_dflash_batch(
++                    new_batch, running_batch, self.draft_worker.block_size
++                )
++                return outer, ScheduleBatch(
++                    reqs=[], batch_is_full=running_batch.batch_is_full
++                )
++
+         # Mixed-style chunked prefill
+         if (
+             self.is_mixed_chunk
+diff --git a/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+new file mode 100644
+index 0000000..91d0b64
+--- /dev/null
++++ b/python/sglang/srt/managers/scheduler_components/mixed_dflash_admission.py
+@@ -0,0 +1,151 @@
++"""Admission and scheduler bookkeeping for a whole DFLASH cohort alongside a prompt."""
++
++import hashlib
++import struct
++from copy import copy
++
++import torch
++import torch.distributed as dist
++
++from sglang.srt.disaggregation.utils import DisaggregationMode
++from sglang.srt.mem_cache.allocator.base import BaseTokenToKVPoolAllocator
++from sglang.srt.model_executor.forward_batch_info import ForwardMode
++from sglang.srt.model_executor.runner.decode_cuda_graph_runner import DecodeCudaGraphRunner
++from sglang.srt.model_executor.runner.prefill_cuda_graph_runner import PrefillCudaGraphRunner
++from sglang.srt.runtime_context import get_parallel
++from sglang.srt.sampling.sampling_batch_info import SamplingBatchInfo
++
++
++def _candidate_geometry(scheduler, prompt, decode, chunk_budget):
++    worker = scheduler.draft_worker
++    runner = scheduler.tp_worker.model_runner
++    prefill = runner.prefill_cuda_graph_runner
++    verify = runner.decode_cuda_graph_runner
++    if (
++        not scheduler.enable_overlap
++        or scheduler.is_mixed_chunk
++        or scheduler.require_mlp_sync  # Per-role cross-DP execution needs separate coordination.
++        or scheduler.page_size != 1
++        or scheduler.enable_hisparse
++        or scheduler.enable_unified_memory  # A compacting pool needs the exact combined write set.
++        or scheduler.disaggregation_mode != DisaggregationMode.NULL
++        or scheduler.dllm_config is not None
++        or not scheduler.spec_algorithm.is_dflash()
++        or worker is None
++        or worker is not scheduler.model_worker
++        or not isinstance(prefill, PrefillCudaGraphRunner)
++        or not isinstance(verify, DecodeCudaGraphRunner)
++        or not prefill._uses_eager_prefill_tail()
++        or prefill.enable_cp_bcg_capture
++        or verify.ragged_verify_mode
++        or verify.enable_pdmux
++        or verify.require_mlp_tp_gather
++        or verify.enable_two_batch_overlap
++        or decode.is_extend_in_batch
++        or decode.spec_info is None
++        or prompt.spec_info is not None
++        or scheduler._reqs_finishing_inflight(decode)
++        or prompt.input_embeds is not None
++        or prompt.replace_embeds is not None
++        or any(
++            req.multimodal_inputs is not None or req.is_retracted or req.finished()
++            for req in (*prompt.reqs, *decode.reqs)
++        )
++    ):
++        return None
++
++    # A just-promoted running cohort can still have EXTEND mode. Check its
++    # original sampling state in its intended role before preparing any slots.
++    probe = copy(decode)
++    probe.forward_mode = ForwardMode.DECODE
++    if not worker.can_settle_mixed_verify(prompt, probe):
++        return None
++    prompts, tails, width = len(prompt.reqs), len(decode.reqs), worker.block_size
++    prompt_tokens = prompt.extend_num_tokens
++    if (
++        width != verify.captured_req_width
++        or width < 2
++        or prompts + tails > prefill.max_bs
++        or tails > verify.max_bs
++        or len(prompt.extend_lens) != prompts
++        or len(prompt.prefix_lens) != prompts
++        or any(length < 1 for length in prompt.extend_lens)
++        or prompt_tokens != sum(prompt.extend_lens)
++    ):
++        return None
++    total = prompt_tokens + width * tails
++    if (
++        total > prefill.max_num_tokens
++        or total > scheduler.max_prefill_tokens
++        or (chunk_budget is not None and chunk_budget > 0 and total > chunk_budget)
++    ):
++        return None
++    prompt_rows = prefill._pad_to_bucket(prompt_tokens, prefill.capture_num_tokens)
++    verify_bs = verify._pad_to_bucket(tails, verify.capture_bs)
++    mixed_rows = prefill._pad_to_bucket(total, prefill.capture_num_tokens)
++    if (verify.disable_padding and verify_bs != tails) or mixed_rows > prompt_rows + verify_bs * width:
++        return None
++
++    allocator = decode.token_to_kv_pool_allocator
++    # Ordinary capacity checking can evict. At this point accept directly free
++    # slots only, for an allocator whose native capacity gate has no extra demand.
++    if (
++        allocator is not prompt.token_to_kv_pool_allocator
++        or type(allocator).check_decode_capacity is not BaseTokenToKVPoolAllocator.check_decode_capacity
++        or allocator.available_size() < decode.new_tokens_required_next_decode()
++    ):
++        return None
++    pool = decode.req_to_token_pool
++    if pool is not prompt.req_to_token_pool or pool is not runner.req_to_token_pool:
++        return None
++    table_rows, context = pool.req_to_token.shape
++    identities = [req.kv.req_pool_idx for req in (*prompt.reqs, *decode.reqs)]
++    if (
++        any(type(row) is not int or not 0 < row < table_rows for row in identities)
++        or len(set(identities)) != prompts + tails
++        or any(
++            not 0 <= req.kv.kv_committed_len <= req.kv.kv_allocated_len <= context
++            or req.kv.kv_committed_len + 2 * width > context
++            for req in decode.reqs
++        )
++    ):
++        return None
++    # The ordered physical rows identify current requests. Include real lengths
++    # and bucket costs because distinct shapes can round into the same graph.
++    facts = [prompts, tails, width, prompt_rows, verify_bs, mixed_rows, *identities,
++             *prompt.prefix_lens, *prompt.extend_lens]
++    facts.extend(req.kv.kv_committed_len for req in decode.reqs)
++    tag = hashlib.blake2b(struct.pack(f"<{len(facts)}q", *facts), digest_size=16).digest()
++    return list(struct.unpack("<4I", tag))
++
++
++def admit_mixed_dflash(scheduler, prompt, decode, chunk_budget):
++    parallel = get_parallel()
++    if (parallel.dp_size, parallel.pp_size, parallel.attn_cp_size, parallel.attn_dcp_size) != (1, 1, 1, 1):
++        return False
++    local = _candidate_geometry(scheduler, prompt, decode, chunk_budget)
++    group = scheduler.tp_group
++    if group.world_size == 1:
++        return local is not None
++    tag = [-1] * 4 if local is None else local
++    vote = torch.tensor(tag + [-value for value in tag], device="cpu", dtype=torch.int64)
++    dist.all_reduce(vote, op=dist.ReduceOp.MIN, group=group.cpu_group)
++    extrema = vote.tolist()
++    return extrema[0] >= 0 and extrema[:4] == [-value for value in extrema[4:]]
++
++
++def build_mixed_dflash_batch(prompt, decode, width):
++    # The outer batch owns scheduler iteration, future indices and counters.
++    # Real model inputs and exact prefix positions resolve on the original roles.
++    outer = copy(prompt)
++    outer.sampling_info = SamplingBatchInfo.from_schedule_batch(outer, outer.model_config.vocab_size)
++    outer.merge_batch(decode)
++    outer.forward_mode = ForwardMode.MIXED
++    outer.input_ids = None
++    outer.decoding_reqs = decode.reqs
++    outer.prefix_lens = [*prompt.prefix_lens, *(req.kv.kv_committed_len for req in decode.reqs)]
++    outer.extend_lens = [*prompt.extend_lens, *([width] * len(decode.reqs))]
++    outer.extend_num_tokens = sum(outer.extend_lens)
++    outer.extend_logprob_start_lens = [*prompt.extend_logprob_start_lens, *([width - 1] * len(decode.reqs))]
++    outer.mixed_dflash_roles = (prompt, decode)
++    return outer

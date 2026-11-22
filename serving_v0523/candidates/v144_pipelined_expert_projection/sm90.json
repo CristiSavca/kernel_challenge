@@ -1,0 +1,476 @@
+{
+  "nvcc": "12.9.86",
+  "source": "Actual TVM FFI wrappers with --use_fast_math -O3, SM90 and SM90a. No GPU execution.",
+  "notes": {
+    "base-low": "V141 ordinary V129 low kernel",
+    "aot": "discarded predicated prefetch, early dependent scale moves",
+    "raw": "final packed-scale register pipeline",
+    "prefetch": "compile-only L2 hint alternative",
+    "base-medium": "parent V141 medium wrapper",
+    "raw-medium": "V144 including same medium wrapper"
+  },
+  "builds": {
+    "base-low": {
+      "fingerprints": {
+        "sm_90.cubin": "d028dbcf77d677626f4643ff8db86ff646d4d9fe253301b396cb77964b7a46fa",
+        "sm_90.o": "ae56d9d8d65d549c5e10c1c61e4cf30a5bab5a41b8d1b33518824c61e12f0b2c",
+        "sm_90.ptx": "06fd1726a31820a3ba50f4a13d814723b490d5d0912a10845c5771dd3f8f69c9",
+        "sm_90.sass": "5e4ba7ca041f33f4a7b3df46e17db7325f8254c6ff2f3c90322f9f71e7028e9e",
+        "sm_90a.cubin": "dcbf8363892d0decf4e5e9b54bddbfc2ff2031c3975d8d738e15a511e8fef94e",
+        "sm_90a.o": "0a0c3eeca936e758e54ef8e6272468b3bda4ecc26a6a83119370474e758fc26f",
+        "sm_90a.ptx": "57b0c6ba1cc7fa95d33e34812e07c761751903863380899c315f3b9d797a2b16",
+        "sm_90a.sass": "1148a35e08afd41dc4e88139dbdc04f96c1737d554abdf80e03361a92934ed7c"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    },
+    "aot": {
+      "fingerprints": {
+        "sm_90.cubin": "ba84fdcfb9777493979c8d33a241b20cf678675ebad066848ed7627ab7e364a7",
+        "sm_90.o": "e6ec936dcba007c7d646a82d2e0e9a39432e3e85baa7c32f331d9df82e5d984a",
+        "sm_90.ptx": "a0b5c87c657b1247fc6a5d1c92b94f12c5da90cf5ec1279a1cd4f6d5ee53287a",
+        "sm_90.sass": "e670d55a92fc537396324077b2137360807e70140cd25172318352ae4d50b21d",
+        "sm_90a.cubin": "fa41d58922724a1c4ca42f114f315d8731febb4c7389b4d0b90d463667f69f81",
+        "sm_90a.o": "d427bee0a064d0135943fc53d026aec79420bd31b675cc490c82038d282e1607",
+        "sm_90a.ptx": "6d8972089f1b98284791233ac27faa95278ba59877feb826b70a02932be8ee88",
+        "sm_90a.sass": "1dc55280309f7d7a5bc0f009daeb701d2291f30f89d0a74126b0e3138bb66c46"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 92,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 92,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    },
+    "raw": {
+      "fingerprints": {
+        "sm_90.cubin": "ff6f34279dd0b1b1a6b8c77aea785ce6e5fac6b054d58d2888394588f6ad3bb7",
+        "sm_90.o": "2b3a4b314ef9c42ce08e2a4cd89141cad1551a0bb4c125366ab6e36ff5a84274",
+        "sm_90.ptx": "83f63b7ab017c1199078e12df8df8aeae049dc6c357e037e6f14ec1cfab5f83a",
+        "sm_90.sass": "c8a0da5f02d467d61e376052a38d40fa50cde0ca8816ba7356cb6c99e5faafdd",
+        "sm_90a.cubin": "a9be755161b4ee866fff45f6f1d0ab93b624e703500ba775e85f07d93f03a4c9",
+        "sm_90a.o": "f62d1e973012c181143da2c7e466b2d47cda4011adf3d84ac5b9ad30b2325e69",
+        "sm_90a.ptx": "e0d47a183cc26d24283f2102f0e2ae5fa914f7321224281ffdd167a043d7632f",
+        "sm_90a.sass": "b98651e1b1dbab3cae8c024825faff7283f4a4b99df7dc83bb159e57490355f2"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 56,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 78,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 56,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 78,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    },
+    "prefetch": {
+      "fingerprints": {
+        "sm_90.cubin": "573e7ef23b68d966abaf7486e81e56e9a8ade85d58b1fa8e274a9cb1ae797178",
+        "sm_90.o": "2c27c06a2dbd41543a8568273d41c73124a037534c4fd54a8f8d01411c6ee1a3",
+        "sm_90.ptx": "5c947079a833451714d184cff71df8280bbcb853bdd73862639b38cfe9aa1ab1",
+        "sm_90.sass": "9e6f2f497addb9e20c38d4d18f468a24fbf1dadd050b433da5cea1f78d0dfb53",
+        "sm_90a.cubin": "abeedd5bd5619e33bb153cf52432572fd58a52e5136abd14914a20bf4afb9a0d",
+        "sm_90a.o": "15923ed05f984ccdb20decf76492bfdef526d417f3533761ac615ec69f017d6c",
+        "sm_90a.ptx": "02625fa36874d9c92aecd77090951d0c3ab249eb4a28d7ac5adaa1e02663fc97",
+        "sm_90a.sass": "79e455dbbedc2ab672751fc8a5bbf75cb95c8e6b462d949b9c738ebcf132ef1f"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    },
+    "base-medium": {
+      "fingerprints": {
+        "sm_90.cubin": "126402e45f4acf66452ef670ddb53ee74c8bf65e17e344e10031caaf33c4da78",
+        "sm_90.o": "890cc7a308f32e8444bbdc81fb54d8d82f669414cba2b40474d76540338ce1c0",
+        "sm_90.ptx": "8b885ba28856a7567b6575c32e89b29c93e340eb16f47d681a6e3ee9d7a15e46",
+        "sm_90.sass": "32a0e187c4817b4f91df28cb4e8069074efc384469e9979c0384511692f1fb73",
+        "sm_90a.cubin": "30afe8b4f0bf6fcb1523d880ee9be8ad15e166dc9ec9cc447a4e26e749d77243",
+        "sm_90a.o": "9686492dc6490b5c7b477d2e5c9c56ba05a3649294d9923e5b9565c7287d8bcf",
+        "sm_90a.ptx": "fbe333abd5d386f92e5283b9087834674ae3d32a3abb22d1c2af26b921b7d41e",
+        "sm_90a.sass": "daa0f407d4d1c4f43ff97dab5147385591fa5cf2354b3e973ffce02a71c8920c"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 118,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 121,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 23,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 118,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 121,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 23,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 40,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 63,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    },
+    "raw-medium": {
+      "fingerprints": {
+        "sm_90.cubin": "9025441027ee268585f59fc93c46698fc61ebf0a5b90eeffe5f46d0f6c67a8cf",
+        "sm_90.o": "05dcf39673316cd9cc8693d93033f9781df3663f7b0c4a4d297ce4629b0c19bb",
+        "sm_90.ptx": "c28cfad120dd76e41b74103b66b03d95e2d78c19192ca306dc1944a509d1412f",
+        "sm_90.sass": "66225bde98622b7aa452d8f6e56294ad65bed4cb283bc7cc57ad80d6c90556d7",
+        "sm_90a.cubin": "37d9f65b44bfa4b509e4c878cfd424833920f3f3f5bcba442bf0f5cfa553087e",
+        "sm_90a.o": "04fbbdbbd800c1b553dacd05b8943300c19181bc1b6c8867e7399e4588c92413",
+        "sm_90a.ptx": "7b2b26f7eaffb315aecc7e00d2c12ba00defdf25ea69d543208c33d8ca7c5b4d",
+        "sm_90a.sass": "286e625cf78d770512432b217fa2d5b0d0f3dcff082d25bf16e89efbb13f10c4"
+      },
+      "functions": {
+        "sm_90": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 118,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 121,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 23,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 56,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 78,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        },
+        "sm_90a": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 118,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 121,
+            "barriers": 0
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 23,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 56,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 78,
+            "barriers": 0
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "stack": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "regs": 32,
+            "barriers": 1
+          }
+        }
+      }
+    }
+  },
+  "identical_medium_and_plan_isa": {
+    "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+      "instructions": 3008,
+      "sha256": "2cad8d42953b0536e32910df2d83d8bdd9c9bc0dd54929700aa7be266977f008"
+    },
+    "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+      "instructions": 2384,
+      "sha256": "3f68473cff43d4ece8cd7d72313dc073068b612a01da9b1202897c43ebcfb62f"
+    },
+    "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+      "instructions": 192,
+      "sha256": "556c947cbb3328bb896a19c17610d1869ed0e03baa4b22304586ad98250c6ec4"
+    },
+    "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+      "instructions": 440,
+      "sha256": "bf95442311f3f92d30c73f0ae29bfc1af2b83cbb71655dc1ec80c8a02d343dff"
+    }
+  }
+}

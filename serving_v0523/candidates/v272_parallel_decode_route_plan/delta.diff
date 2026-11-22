@@ -1,0 +1,172 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 891250c..21b63e2 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -576,2 +576,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         grouped_decode: bool = False,
++        decode_plan=None,
+     ) -> torch.Tensor:
+@@ -606,3 +607,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 values, row_map, local_topk_ids = humming_grouped_decode_outputs(
+-                    self, hidden_states, topk_ids
++                    self, hidden_states, topk_ids, decode_plan
+                 )
+@@ -747,2 +748,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+         grouped_decode: bool = False,
++        decode_plan=None,
+     ) -> torch.Tensor:
+@@ -756,2 +758,3 @@ class MuseSpark1xFp4Experts(nn.Module):
+                 grouped_decode=grouped_decode,
++                decode_plan=decode_plan,
+             )
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 22eb1ba..7574443 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -237,20 +237,15 @@ def humming_decode_eligible(
+ 
+-def humming_grouped_decode_outputs(
+-    layer: MuseSpark1xFp4Experts,
+-    hidden_states: torch.Tensor,
+-    topk_ids: torch.Tensor,
+-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+-    """Run local grouped GEMMs with a device-built suffix and static addresses."""
+-    from humming.layer import HummingMethod
++def allocate_decode_plan(source, rows, topk, experts):
++    local_ids = source.new_empty((rows, topk), dtype=torch.int32)
++    offsets = local_ids.new_empty(experts + 1)
++    row_keys = local_ids.new_empty(rows * topk)
++    row_map = torch.empty_like(local_ids)
++    return local_ids, offsets, row_keys, row_map
+ 
+-    hidden_size = hidden_states.shape[1]
+-    intermediate = layer.intermediate_size_per_partition
+-    topk = topk_ids.shape[1]
++
++def fill_decode_plan(layer, topk_ids, buffers):
++    local_ids, offsets, row_keys, row_map = buffers
++    experts = layer.num_local_experts
+     slots = topk_ids.numel()
+     span = triton.next_power_of_2(slots)
+-    experts = layer.num_local_experts
+-    local_ids = torch.empty_like(topk_ids, dtype=torch.int32)
+-    offsets = local_ids.new_empty(experts + 1)
+-    row_keys = local_ids.new_empty(slots)
+-    row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+@@ -271,2 +266,23 @@ def humming_grouped_decode_outputs(
+     )
++
++
++def humming_grouped_decode_outputs(
++    layer: MuseSpark1xFp4Experts,
++    hidden_states: torch.Tensor,
++    topk_ids: torch.Tensor,
++    plan=None,
++) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
++    """Run local grouped GEMMs with a device-built suffix and static addresses."""
++    from humming.layer import HummingMethod
++
++    hidden_size = hidden_states.shape[1]
++    intermediate = layer.intermediate_size_per_partition
++    topk = topk_ids.shape[1]
++    slots = topk_ids.numel()
++    span = triton.next_power_of_2(slots)
++    experts = layer.num_local_experts
++    if plan is None:
++        plan = allocate_decode_plan(topk_ids, *topk_ids.shape, experts)
++        fill_decode_plan(layer, topk_ids, plan)
++    local_ids, offsets, row_keys, row_map = plan
+     staging = hidden_states.new_empty(slots * intermediate)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 1b2d47b..08e26d5 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -766,2 +766,52 @@ class MuseSpark1xMoE(nn.Module):
+ 
++    def _capture_decode_plan(self, hidden_states):
++        """Allocate on the consuming stream before the router stream forks."""
++        from torch.nn.modules import module as hooks
++
++        from sglang.kernels import fused_op
++        from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++            _MAX_DECODE_SLOTS,
++            allocate_decode_plan,
++        )
++
++        experts = self.experts
++        norm = self.pre_expert_norm
++        routing = getattr(self, "_fused_routing_op", None)
++
++        def has_custom_call(module):
++            forward = module.forward
++            return (
++                getattr(forward, "__self__", None) is not module
++                or getattr(forward, "__func__", None) is not type(module).forward
++                or module._forward_pre_hooks or module._forward_hooks
++                or getattr(module, "_compiled_call_impl", None) is not None
++            )
++
++        if (
++            type(experts) is not MuseSpark1xFp4Experts
++            or type(norm) is not MuseSpark1xRMSNorm
++            or type(self.gate) is not MuseSpark1xRouter
++            or type(routing) is not FusedMuseSparkRouting
++            or routing.expert_bias is not self.gate.e_score_correction_bias
++            or routing.sol_topk_out is not None
++            or routing.is_torch_compile or fused_op.get_fused_op_backend() is not None
++            or getattr(routing._forward_method, "__self__", None) is not routing
++            or getattr(routing._forward_method, "__func__", None) is not fused_op.BaseFusedOp._forward_backend_dynamic
++            or any(name.startswith("forward_") or name in ("backend_eligible", "_auto_backend_candidates", "_platform_method", "_defined_method")
++                   for name in vars(routing))
++            or "forward_split2" in vars(self.gate) or "_build_split2" in vars(self.gate)
++            or not experts.use_humming
++            or not experts.humming_decode_tunings
++            or experts._post_expert_norm_weight is None
++            or experts._post_expert_norm is not experts.post_expert_norm
++            or hidden_states.shape[0] * self.top_k > _MAX_DECODE_SLOTS
++            or get_global_experts_capturer() is not None
++            or torch.is_grad_enabled() or torch.is_autocast_enabled("cuda")
++            or torch._C._is_torch_function_mode_enabled() or torch._C._len_torch_dispatch_stack()
++            or hooks._global_forward_pre_hooks or hooks._global_forward_hooks
++            or any(has_custom_call(mod) for mod in (experts, norm, self.gate, routing))
++        ):
++            return None
++        return allocate_decode_plan(hidden_states, hidden_states.shape[0], self.top_k, experts.num_local_experts)
++
+     def _forward_experts(
+@@ -803,2 +853,6 @@ class MuseSpark1xMoE(nn.Module):
+         side_stream = self._side_stream() if use_side_stream else None
++        decode_plan = None
++        if (grouped_decode and self.nvfp4_checkpoint and not sp_active and use_side_stream
++                and not torch.compiler.is_compiling() and torch.cuda.is_current_stream_capturing()):
++            decode_plan = self._capture_decode_plan(hidden_states)
+         if use_side_stream:
+@@ -840,2 +894,18 @@ class MuseSpark1xMoE(nn.Module):
+             )
++            if decode_plan is not None:
++                from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++                    fill_decode_plan, humming_decode_eligible,
++                )
++
++                if (topk_ids.shape == decode_plan[0].shape
++                        and humming_decode_eligible(self.experts, expert_input, topk_ids)):
++                    fill_decode_plan(self.experts, topk_ids, decode_plan)
++                else:
++                    decode_plan = None
++        pre_expert_norm = self.pre_expert_norm
++        if decode_plan is not None:
++            # The stock BF16 norm depends only on the pooler, while the plan
++            # depends only on the current router output. Join before gathering.
++            expert_input = pre_expert_norm(expert_input)
++            pre_expert_norm = None
+         if use_side_stream:
+@@ -871,3 +941,3 @@ class MuseSpark1xMoE(nn.Module):
+                 self.experts.post_expert_norm,
+-                pre_expert_norm=self.pre_expert_norm,
++                pre_expert_norm=pre_expert_norm,
+                 prepared_input=prepared_input,
+@@ -876,2 +946,3 @@ class MuseSpark1xMoE(nn.Module):
+                 grouped_decode=grouped_decode,
++                **({"decode_plan": decode_plan} if decode_plan is not None else {}),
+             )

@@ -1,0 +1,206 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh b/python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh
+index 3958da2..478277d 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/norm_residual.cuh
+@@ -3,3 +3,3 @@
+  *
+- * branch: [M, H] bf16, the sublayer output.
++ * branch: [M, H] or [TP, M, H / TP] bf16, the sublayer output.
+  * stream: [M, H] fp32, the residual stream.
+@@ -81,3 +81,4 @@ template <
+     bool kPostWeight,
+-    bool kGate>
++    bool kGate,
++    int kColumnRanks = 1>
+ __global__ void __launch_bounds__(kNumThreads)
+@@ -96,3 +97,4 @@ __global__ void __launch_bounds__(kNumThreads)
+   const int64_t base = static_cast<int64_t>(blockIdx.x) * kHidden;
+-  const auto branch = static_cast<const bf16_t*>(params.branch) + base;
++  static_assert(kHidden % (kVec * kColumnRanks) == 0);
++  const auto branch = static_cast<const bf16_t*>(params.branch) + base / kColumnRanks;
+   const auto stream = static_cast<const fp32_t*>(params.stream) + base;
+@@ -127,3 +129,11 @@ __global__ void __launch_bounds__(kNumThreads)
+     BF16Vec branch_v;
+-    branch_v.load(branch, idx);
++    if constexpr (kColumnRanks == 1) {
++      branch_v.load(branch, idx);
++    } else {
++      // A whole rank of rows separates adjacent shards of the same logical row.
++      constexpr int shard_vecs = kHidden / (kVec * kColumnRanks);
++      const int rank = idx / shard_vecs;
++      const auto* shard = branch + int64_t(rank) * params.num_rows * (kHidden / kColumnRanks);
++      branch_v.load(shard, idx % shard_vecs);
++    }
+ #pragma unroll
+@@ -618,3 +628,4 @@ template <
+     bool kPostNormIsInputScale,
+-    bool kHasRouter>
++    bool kHasRouter,
++    int kColumnRanks = 1>
+ struct MuseSparkNormResidual {
+@@ -644,3 +655,8 @@ struct MuseSparkNormResidual {
+ 
+-    TensorMatcher({M, H}).with_dtype<bf16_t>().with_device(device_).verify(branch);
++    if constexpr (kColumnRanks == 1) {
++      TensorMatcher({M, H}).with_dtype<bf16_t>().with_device(device_).verify(branch);
++    } else {
++      static_assert(kClusterSize == 1 && kHidden % (8 * kColumnRanks) == 0);
++      TensorMatcher({int64_t(kColumnRanks), M, kHidden / kColumnRanks}).with_dtype<bf16_t>().with_device(device_).verify(branch);
++    }
+     TensorMatcher({M, H}).with_dtype<fp32_t>().with_device(device_).verify(stream);
+@@ -706,3 +722,4 @@ struct MuseSparkNormResidual {
+                     kHasPostWeight,
+-                    kHasGate>,
++                    kHasGate,
++                    kColumnRanks>,
+                 params);
+diff --git a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py
+index d843094..e5e1e70 100644
+--- a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py
++++ b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual_jit.py
+@@ -118,2 +118,3 @@ def _jit_module(
+     cluster_size: int,
++    column_ranks: int = 1,
+ ) -> Module:
+@@ -129,8 +130,9 @@ def _jit_module(
+         *args,
++        str(column_ranks),
+         cuda_files=["muse_spark/norm_residual.cuh"],
+         cuda_wrappers=[
+-            ("run_std", f"MuseSparkNormResidual<{args}, false, false>::run"),
+-            ("run_std_router", f"MuseSparkNormResidual<{args}, false, true>::run"),
+-            ("run_scale", f"MuseSparkNormResidual<{args}, true, false>::run"),
+-            ("run_scale_router", f"MuseSparkNormResidual<{args}, true, true>::run"),
++            ("run_std", f"MuseSparkNormResidual<{args}, false, false, {column_ranks}>::run"),
++            ("run_std_router", f"MuseSparkNormResidual<{args}, false, true, {column_ranks}>::run"),
++            ("run_scale", f"MuseSparkNormResidual<{args}, true, false, {column_ranks}>::run"),
++            ("run_scale_router", f"MuseSparkNormResidual<{args}, true, true, {column_ranks}>::run"),
+         ],
+@@ -159,3 +161,5 @@ def fused_norm_residual(
+ 
+-    ``branch`` is bf16, ``stream`` is fp32, both contiguous. ``post_weight`` /
++    ``branch`` is contiguous BF16 in row-major [M,H] or rank-major [TP,M,H/TP]
++    layout. The rank-major path uses the single-CTA Hopper kernel.
++    ``stream`` is contiguous FP32. ``post_weight`` /
+     ``pre_weight`` are the already-resolved effective weights (bf16 ``[H]``);
+@@ -167,9 +171,14 @@ def fused_norm_residual(
+     assert branch.dtype == torch.bfloat16 and stream.dtype == torch.float32
+-    assert branch.dim() == 2 and stream.shape == branch.shape
++    assert stream.dim() == 2 and branch.dim() in (2, 3)
++    m, hidden_size = stream.shape
++    column_ranks = branch.shape[0] if branch.dim() == 3 else 1
++    if branch.dim() == 3:
++        assert column_ranks in (4, 8) and hidden_size % (column_ranks * _VEC) == 0
++        assert branch.shape[1:] == (m, hidden_size // column_ranks)
++    else:
++        assert stream.shape == branch.shape
+     assert branch.is_contiguous() and stream.is_contiguous()
+ 
+-    m, hidden_size = branch.shape
+-
+     if output is None:
+-        output = torch.empty_like(branch)
++        output = torch.empty_like(stream, dtype=branch.dtype)
+     if new_stream_out is None:
+@@ -205,3 +214,14 @@ def fused_norm_residual(
+             raise ValueError("cluster kernel requires FP32 pre-norm input")
+-    module = _jit_module(hidden_size, num_threads, prefetch_weights, cluster_size)
++    if column_ranks > 1 and cluster_size != 1:
++        branch = branch.transpose(0, 1).reshape(m, hidden_size)
++        column_ranks = 1
++    if column_ranks == 1:
++        module = _jit_module(hidden_size, num_threads, prefetch_weights, cluster_size)
++    else:
++        try:
++            module = _jit_module(hidden_size, num_threads, prefetch_weights, cluster_size, column_ranks)
++        except (OSError, RuntimeError):
++            # The gather has completed. Only restore the ordinary memory layout.
++            branch = branch.transpose(0, 1).reshape(m, hidden_size)
++            module = _jit_module(hidden_size, num_threads, prefetch_weights, cluster_size)
+     fn = getattr(
+diff --git a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+index 8f64512..d954d6f 100644
+--- a/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
++++ b/python/sglang/srt/layers/communication/muse_spark_gemm_ag.py
+@@ -79,2 +79,3 @@ def can_capture_decode_columns(target, runner):
+     from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import FullCudaGraphBackend
++    from sglang.srt.models.muse_spark import MuseSpark1xMoE
+     from sglang.srt.runtime_context import get_exec, get_parallel
+@@ -115,2 +116,5 @@ def can_capture_decode_columns(target, runner):
+         and bool(layers) and all(
++            type(layer) is MuseSpark1xMoE and "_forward_tp" not in vars(layer) and "_reduce_and_unpool" not in vars(layer)
++            for layer in layers
++        ) and all(
+             layer.nvfp4_checkpoint and type(linear) is torch.nn.Linear and linear.bias is None
+@@ -128,3 +132,3 @@ def can_capture_decode_columns(target, runner):
+ 
+-def try_decode_column_gather(group, x, weight):
++def try_decode_column_gather(group, x, weight, *, rank_major=False):
+     """Project full K over disjoint output columns, then concatenate in TP rank order."""
+@@ -140,2 +144,5 @@ def try_decode_column_gather(group, x, weight):
+     local = bf16_gemm_dispatch(x, local_weight, None)
+-    return group.all_gather(local.contiguous(), dim=-1)
++    local = local.contiguous()
++    if rank_major:
++        return group.all_gather(local, dim=0).view(group.world_size, *local.shape)
++    return group.all_gather(local, dim=-1)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index ca4dade..9ac9ae3 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -675,2 +675,4 @@ class MuseSpark1xMoE(nn.Module):
+         forward_batch: Optional[ForwardBatch] = None,
++        *,
++        rank_major_unpool: bool = False,
+     ) -> torch.Tensor:
+@@ -682,2 +684,4 @@ class MuseSpark1xMoE(nn.Module):
+             return self._forward_dp_attention(hidden_states, forward_batch)
++        if rank_major_unpool:
++            return self._forward_tp(hidden_states, router_input, forward_batch, rank_major_unpool=True)
+         return self._forward_tp(hidden_states, router_input, forward_batch)
+@@ -689,2 +693,4 @@ class MuseSpark1xMoE(nn.Module):
+         forward_batch: Optional[ForwardBatch] = None,
++        *,
++        rank_major_unpool: bool = False,
+     ) -> torch.Tensor:
+@@ -730,2 +736,3 @@ class MuseSpark1xMoE(nn.Module):
+             output, already_reduced=ar_workspace is not None, column_group=column_group,
++            **({"rank_major_unpool": True} if rank_major_unpool else {}),
+         )
+@@ -733,3 +740,3 @@ class MuseSpark1xMoE(nn.Module):
+     def _reduce_and_unpool(
+-        self, output: torch.Tensor, *, already_reduced: bool = False, column_group=None
++        self, output: torch.Tensor, *, already_reduced: bool = False, column_group=None, rank_major_unpool=False
+     ) -> torch.Tensor:
+@@ -756,3 +763,5 @@ class MuseSpark1xMoE(nn.Module):
+             if column_group is not None:
+-                projected = try_decode_column_gather(column_group, output, self.post_expert_proj.weight)
++                projected = try_decode_column_gather(
++                    column_group, output, self.post_expert_proj.weight, rank_major=rank_major_unpool,
++                )
+                 if projected is not None:
+@@ -1082,3 +1091,11 @@ class MuseSpark1xDecoderLayer(nn.Module):
+         if self.is_moe_layer:
+-            ffn_output = self.mlp(ffn_input, router_input, forward_batch)
++            rank_major = (
++                getattr(forward_batch, "muse_decode_column_gather", False)
++                and self._fused_ffn_boundary is not None and self._fused_ffn_boundary.jit_selected()
++                and self.operator_dtype == torch.bfloat16 and stream.dtype == torch.float32 and stream.is_contiguous()
++            )
++            if rank_major:
++                ffn_output = self.mlp(ffn_input, router_input, forward_batch, rank_major_unpool=True)
++            else:
++                ffn_output = self.mlp(ffn_input, router_input, forward_batch)
+         else:
+@@ -1086,3 +1103,10 @@ class MuseSpark1xDecoderLayer(nn.Module):
+         # A TP-sliced branch means the unpooler gather was deferred to the FFN boundary.
+-        if ffn_output.shape[-1] != stream.shape[-1]:
++        if ffn_output.ndim == 3:
++            from sglang.kernels.ops.layernorm.muse_spark_norm_residual_jit import fused_norm_residual
++
++            next_attn_input, stream, _ = fused_norm_residual(
++                ffn_output, stream, **self._fused_ffn_boundary.jit_kernel_kwargs(),
++            )
++            return stream, next_attn_input
++        elif ffn_output.shape[-1] != stream.shape[-1]:
+             next_attn_input, stream = all_gather_norm_residual(

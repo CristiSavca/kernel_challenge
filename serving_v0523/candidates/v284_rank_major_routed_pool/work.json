@@ -1,0 +1,90 @@
+{
+  "width": 4096,
+  "layers": 62,
+  "topk": 8,
+  "TP": 8,
+  "eligible_materializations_before": [
+    "pool_gather_row_reorder",
+    "pre_expert_RMS",
+    "route_plan",
+    "sorted_gather"
+  ],
+  "eligible_materializations_after": [
+    "route_plan",
+    "rank_major_RMS_to_staging"
+  ],
+  "graph_nodes_removed_per_eligible_pass_per_rank": 124,
+  "uniform_topk_expected": [
+    {
+      "rows": 8,
+      "local_routes": 8,
+      "transpose_bytes": 131072,
+      "normalized_output_bytes": 65536,
+      "old_gather_payload_read_bytes": 65536,
+      "logical_bytes_removed_per_layer": 262144,
+      "MiB_across_62_layers": 15.5,
+      "route_map_unique_bytes": 256,
+      "rank_own_gather_send_bytes": 8192
+    },
+    {
+      "rows": 32,
+      "local_routes": 32,
+      "transpose_bytes": 524288,
+      "normalized_output_bytes": 262144,
+      "old_gather_payload_read_bytes": 262144,
+      "logical_bytes_removed_per_layer": 1048576,
+      "MiB_across_62_layers": 62.0,
+      "route_map_unique_bytes": 1024,
+      "rank_own_gather_send_bytes": 32768
+    },
+    {
+      "rows": 128,
+      "local_routes": 128,
+      "transpose_bytes": 2097152,
+      "normalized_output_bytes": 1048576,
+      "old_gather_payload_read_bytes": 1048576,
+      "logical_bytes_removed_per_layer": 4194304,
+      "MiB_across_62_layers": 248.0,
+      "route_map_unique_bytes": 4096,
+      "rank_own_gather_send_bytes": 131072
+    },
+    {
+      "rows": 256,
+      "local_routes": 256,
+      "transpose_bytes": 4194304,
+      "normalized_output_bytes": 2097152,
+      "old_gather_payload_read_bytes": 2097152,
+      "logical_bytes_removed_per_layer": 8388608,
+      "MiB_across_62_layers": 496.0,
+      "route_map_unique_bytes": 8192,
+      "rank_own_gather_send_bytes": 262144
+    }
+  ],
+  "archived_inputs": [
+    {
+      "rows": 32,
+      "local_routes": 39,
+      "transpose_bytes": 524288,
+      "normalized_output_bytes": 262144,
+      "old_gather_payload_read_bytes": 319488,
+      "logical_bytes_removed_per_layer": 1105920,
+      "MiB_across_62_layers": 65.390625,
+      "route_map_unique_bytes": 1024,
+      "rank_own_gather_send_bytes": 32768
+    },
+    {
+      "rows": 256,
+      "local_routes": 354,
+      "transpose_bytes": 4194304,
+      "normalized_output_bytes": 2097152,
+      "old_gather_payload_read_bytes": 2899968,
+      "logical_bytes_removed_per_layer": 9191424,
+      "MiB_across_62_layers": 543.46875,
+      "route_map_unique_bytes": 8192,
+      "rank_own_gather_send_bytes": 262144
+    }
+  ],
+  "archived_histogram_sha256": "9a86c7d0273fcd93bb71d92aa0afa90edb5ecfba82d52fc1157005c6e6478a5e",
+  "critical_path": "V283 max(P+T,R)+N+Q+G; V284 max(P,R)+Q+F assuming independent streams and ignoring shared resources. P includes projection+transport, T is reorder, N original norm, R router, Q plan, G old sorted gather and F fused routed norm. V272 places N and Q on separate branches, giving max(P+N,R+Q)+G on its separate parent. Moving N behind Q could lose this overlap in a future V272 integration.",
+  "limits": "Logical accesses only. HBM and L2 traffic, fabric time, selective live writes, graph allocator reuse, instruction count, launch overlap and occupancy determine device performance. The native norm reads pooled rows twice and the donor executes both reads for every token. Both retain weighted output staging; the donor reads a small route map as it publishes."
+}

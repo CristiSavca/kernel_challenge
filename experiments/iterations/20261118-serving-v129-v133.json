@@ -1,0 +1,95 @@
+{
+  "checked_at_utc": "2026-11-18T16:00:21.744271+00:00",
+  "scored_incumbent": {
+    "candidate": "V64",
+    "four_load_score": 1.4119,
+    "receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+  },
+  "official_queue": {
+    "V88": {
+      "id": "30bb36feb528416f",
+      "status": "queued"
+    },
+    "V93": {
+      "id": "75557c21595347de",
+      "status": "queued"
+    }
+  },
+  "nov19": {
+    "launch_receipt": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "current_selections": [
+      "V120b/32",
+      "V102/16",
+      "V126/1"
+    ]
+  },
+  "nov20": {
+    "V129": {
+      "launch_receipt": "serving_v0523/runs/nov20_v129_runner.launch.json",
+      "users": 1,
+      "start": "2026-11-20T00:03:00+00:00",
+      "state": "armed, no submission on arm"
+    },
+    "V132": {
+      "users": 32,
+      "state": "conditionally armed, no submission on arm",
+      "armed_at_utc": "2026-11-18T15:59:34.877178+00:00",
+      "launch_receipt": "serving_v0523/runs/nov20_v132_runner.launch.json",
+      "start_utc": "2026-11-20T00:03:00+00:00",
+      "dependency": "confirmed exact V129/1 private submission and passing exact V120b/32 control",
+      "required_quota": {
+        "per_day": 3,
+        "used": 1,
+        "left": 2
+      },
+      "reserved_private_checks": 1
+    }
+  },
+  "candidates": {
+    "V129": {
+      "status": "armed one-user private check",
+      "evidence": "serving_v0523/candidates/v129_routed_projection_pair/independent_review.md",
+      "finding": "V64 low-density routed expert projection pair. Offline SM90/SM90a compiled without spills; emulated 35,968 BF16 activations and 33,792 BF16 outputs matched. H200 throughput unknown.",
+      "physical_h200_speedup": null,
+      "patch_sha256": "f20be13ffbc4d3ae2da7d473b3f8ea4b5ccd19fb42ea55a46ba954efced751e2",
+      "bytes": 58720
+    },
+    "V130": {
+      "status": "withdrawn; never schedule",
+      "evidence": "serving_v0523/candidates/v130_streamed_prompt_draft_kv/reserved_slot_witness.json",
+      "finding": "Frozen CPU witness overwrote 64 bytes in reserved V slot zero. The native writer rejects slot nine for capacity nine, while V130 wrote into its guard.",
+      "physical_h200_speedup": null,
+      "patch_sha256": "4b4ab2f797c8580ed24a7eec28525f728fa1824d559b26c1020e9f22e26713f3",
+      "bytes": 64323
+    },
+    "V131": {
+      "status": "declined feasibility study",
+      "evidence": "serving_v0523/candidates/v131_exact_verify_pruning/check.json",
+      "finding": "A two-pass verification oracle preserved accepted tokens. Cold-weight model gives little one-user benefit after dense rereads and predicts increased per-layer bytes at larger loads.",
+      "physical_h200_speedup": null
+    },
+    "V132": {
+      "status": "frozen; conditional 32-user private check armed",
+      "evidence": "serving_v0523/candidates/v132_verify_scheduler_metadata/independent_review.md",
+      "finding": "On V120b, share exact full/SWA FA3 preparation within a single verify call. Eligible long geometries predict 62 prepares down to two. Pinned native C++ geometry checks 211,680; qualified multisplit examples 56,238. CPU replay does not measure CUDA graph correctness or throughput.",
+      "physical_h200_speedup": null,
+      "patch_sha256": "45c62ddfc33bb0060b836a235367f6bbb6dba08fd4c98eddcaa6c880fcbbc4d0",
+      "bytes": 105311
+    },
+    "V133": {
+      "status": "frozen offline reserve",
+      "evidence": "serving_v0523/candidates/v133_direct_prompt_draft_kv/independent_review.md",
+      "finding": "On V120b, directly write the stacked BF16 prompt K/V into ordinary physical slots. Preserve reserved slot zero and bounds checks, uneven tails, and stock projection dims. Removes up to five scatters and 79.69 MiB of logical traffic per 16,320-row eligible prompt. Offline assembly passed without spills in 22 specializations.",
+      "physical_h200_speedup": null,
+      "patch_sha256": "1b240b9e89e7f9c4ac5bf307cb57a03f14d0e20c1c017bca1cca173be62edd2c",
+      "bytes": 101396
+    }
+  },
+  "historical_measurement_context": {
+    "measured_full_score": 1.4119,
+    "available_trace": "No steady-state per-kernel trace from an eight-H200 serving run is available. V43 JIT warmup timings are excluded from steady-state estimates.",
+    "arithmetic_to_4x": 2.83306,
+    "interpretation": "Reaching four times stock requires roughly 2.83 times the measured V64 four-load geometric mean. This required broad multiplier is arithmetic; measured kernel attribution and an achieved candidate speedup remain unavailable.",
+    "prior_model": "experiments/iterations/20261118-serving-v117-v120.json"
+  }
+}

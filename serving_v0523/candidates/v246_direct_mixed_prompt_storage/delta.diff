@@ -1,0 +1,185 @@
+diff --git a/python/sglang/kernels/ops/attention/batched_prompt_kv.py b/python/sglang/kernels/ops/attention/batched_prompt_kv.py
+index a8e713c..6c20f55 100644
+--- a/python/sglang/kernels/ops/attention/batched_prompt_kv.py
++++ b/python/sglang/kernels/ops/attention/batched_prompt_kv.py
+@@ -8,7 +8,7 @@ import triton.language as tl
+ def _pack_prompt_rows(
+     CacheK, CacheV, NewK, NewV, Slots, Lengths, CuQ, Starts, Used,
+     OutK, OutV, key_pitch, value_pitch, table_pitch,
+-    ROW: tl.constexpr, BLOCK: tl.constexpr, GUARD: tl.constexpr,
++    ROW: tl.constexpr, BLOCK: tl.constexpr, GUARD: tl.constexpr, INLINE_NEW: tl.constexpr = False,
+ ):
+     seq = tl.program_id(1)
+     q0 = tl.load(CuQ + seq)
+@@ -18,8 +18,10 @@ def _pack_prompt_rows(
+     halo = used - queries
+     begin = tl.load(Starts + seq).to(tl.int64)
+     cols = tl.arange(0, ROW)
+-    for tile in range(tl.program_id(0), tl.cdiv(used + GUARD, BLOCK), tl.num_programs(0)):
+-        row = tile * BLOCK + tl.arange(0, BLOCK)
++    work = halo if INLINE_NEW else used
++    for tile in range(tl.program_id(0), tl.cdiv(work + GUARD, BLOCK), tl.num_programs(0)):
++        index = tile * BLOCK + tl.arange(0, BLOCK)
++        row = tl.where(index < halo, index, index + queries) if INLINE_NEW else index
+         old = row < halo
+         new = (row >= halo) & (row < used)
+         slot = tl.load(Slots + seq.to(tl.int64) * table_pitch + (length - used + row), old, 0).to(tl.int64)
+@@ -27,27 +29,29 @@ def _pack_prompt_rows(
+         dst = (begin + row)[:, None] * ROW + cols[None, :]
+         key = tl.load(CacheK + slot[:, None] * key_pitch + cols[None, :], old[:, None], 0)
+         value = tl.load(CacheV + slot[:, None] * value_pitch + cols[None, :], old[:, None], 0)
+-        key = key | tl.load(NewK + src, new[:, None], 0)
+-        value = value | tl.load(NewV + src, new[:, None], 0)
+-        valid = row[:, None] < used + GUARD
++        if not INLINE_NEW:
++            key = key | tl.load(NewK + src, new[:, None], 0)
++            value = value | tl.load(NewV + src, new[:, None], 0)
++        valid = index[:, None] < work + GUARD
+         tl.store(OutK + dst, key, valid)
+         tl.store(OutV + dst, value, valid)
+ 
+ 
+-def pack_prompt_rows(key_cache, value_cache, key, value, table, lengths, cuq, layout):
++def pack_prompt_rows(key_cache, value_cache, key, value, table, lengths, cuq, layout, *, storage=None):
+     starts, used, capacity, max_used = layout
+     _, heads, dim = key.shape
+     width = heads * dim
+     block = min(32, 4096 // width)
+     count = table.shape[0]
+-    blocks = min(triton.cdiv(max_used + 256, block), triton.cdiv(1024, count))
+-    packed = key.new_empty((2, capacity, heads, dim))
++    work = max_used - key.shape[0] if storage is not None else max_used
++    blocks = min(triton.cdiv(work + 256, block), triton.cdiv(1024, count))
++    packed = key.new_empty((2, capacity, heads, dim)) if storage is None else storage[:, :capacity]
+     out_k, out_v = packed.unbind()
+     _pack_prompt_rows[(blocks, count)](
+         key_cache.view(torch.uint8), value_cache.view(torch.uint8),
+         key.view(torch.uint8), value.view(torch.uint8), table, lengths, cuq,
+         starts, used, out_k.view(torch.uint8), out_v.view(torch.uint8),
+         key_cache.stride(0), value_cache.stride(0), table.stride(0),
+-        ROW=width, BLOCK=block, GUARD=256,
++        ROW=width, BLOCK=block, GUARD=256, INLINE_NEW=storage is not None,
+     )
+     return out_k, out_v
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index f747a32..956a8ef 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -409,6 +409,12 @@ def _direct_tile_args(k, v, page_table, origins, window_left, tile_n, max_q=0):
+     )
+ 
+ 
++def verify_partition_workspace(batch, kv_heads, tile_m, head_dim, window_left, num_sms):
++    partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
++    slots = partitions + batch - 1
++    return partitions, slots * kv_heads * tile_m * (head_dim + 1) * 4
++
++
+ def paged_verify_attention(
+     q,
+     k,
+@@ -458,10 +464,10 @@ def paged_verify_attention(
+ 
+     tile_m = triton.next_power_of_2(max_q * groups)
+     tile_n = 64 if window_left >= 0 else 128
+-    partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
+-    slots = partitions + batch - 1
+-    if workspace_limit_bytes is not None and slots * kv_heads * tile_m * (head_dim + 1) * 4 > workspace_limit_bytes:
++    partitions, workspace = verify_partition_workspace(batch, kv_heads, tile_m, head_dim, window_left, num_sms)
++    if workspace_limit_bytes is not None and workspace > workspace_limit_bytes:
+         return None
++    slots = partitions + batch - 1
+     partial = torch.empty(
+         (slots, kv_heads, tile_m, head_dim),
+         device=q.device,
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index 09e92a8..28465b7 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -191,3 +191,22 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+     layout = (starts, used, capacity, max(visible)), tail
+     layouts[identity] = layout
+     return layout
++
++
++def allocate_mixed_prompt_storage(backend, layout, tail, k, layer, batch_size):
++    """Let the physical writer and a single dense prompt share the same new FP8 rows."""
++    if tail is None or layout[1].shape[0] != 1:
++        return None
++    from sglang.kernels.ops.attention.paged_verify_attention import verify_partition_workspace
++
++    cut, _, tail_width, _, _ = tail
++    n, heads, dim = k.shape
++    prefix = layout[3] - cut
++    capacity = max(layout[2], prefix + n)
++    scratch = 0
++    if backend._hopper_verify_sms:
++        tile_m = 1 << (tail_width * layer.tp_q_head_num // heads - 1).bit_length()
++        _, scratch = verify_partition_workspace(batch_size - 1, heads, tile_m, dim, -1, backend._hopper_verify_sms)
++    if capacity * 2 * heads * dim + scratch > 32 * 1024 * 1024:
++        return None
++    return torch.empty((2, capacity, heads, dim), dtype=backend.kv_cache_dtype, device=k.device)
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index d1f31dc..e11b2f6 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -23,6 +23,7 @@ from sglang.kernels.ops.attention.utils import assert_buffer_fits
+ from sglang.srt.configs.model_config import AttentionArch
+ from sglang.srt.environ import envs
+ from sglang.srt.layers.attention.direct_prompt_kv import (
++    allocate_mixed_prompt_storage,
+     complete_direct_prompt_kv,
+     prepare_batched_prompt_kv,
+     prepare_direct_prompt_kv,
+@@ -1677,6 +1678,7 @@ class FlashAttentionBackend(AttentionBackend):
+         cp_active = is_cp_active(forward_batch)
+         direct_prompt_kv = None
+         batched_prompt_kv = None
++        prompt_storage = None
+ 
+         if k is not None:
+             assert v is not None
+@@ -1732,8 +1734,18 @@ class FlashAttentionBackend(AttentionBackend):
+                                     k.div_(k_scale)
+                                 if v_scale is not None:
+                                     v.div_(v_scale)
+-                                write_k = k.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
+-                                write_v = v.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
++                                layout, tail = batched_prompt_kv
++                                prompt_storage = allocate_mixed_prompt_storage(
++                                    self, layout, tail, k, layer, forward_batch.batch_size
++                                )
++                                if prompt_storage is None:
++                                    write_k = k.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
++                                    write_v = v.to(self.kv_cache_dtype, memory_format=torch.contiguous_format)
++                                else:
++                                    prefix = layout[3] - tail[0]
++                                    write_k, write_v = prompt_storage[:, prefix:prefix + k.shape[0]].unbind()
++                                    write_k.copy_(k)
++                                    write_v.copy_(v)
+                     self.token_to_kv_pool.set_kv_buffer(layer, write, write_k, write_v, k_scale, v_scale)
+ 
+         # Use precomputed metadata across all layers
+@@ -2045,7 +2057,8 @@ class FlashAttentionBackend(AttentionBackend):
+                                 and tail_query.shape[0] == max_tail * tail_lengths.shape[0]):
+                             # The certified causal tail has a uniform width. Complete its workspace
+                             # before packing the prompt, with the live FP8 write operands accounted for.
+-                            available = 32 * 1024 * 1024 - write_k.nbytes - write_v.nbytes
++                            charged = prompt_storage.nbytes if prompt_storage is not None else write_k.nbytes + write_v.nbytes
++                            available = 32 * 1024 * 1024 - charged
+                             tail_result = paged_verify_attention(
+                                 tail_query, key_cache, value_cache, tail_pages, tail_lengths, cu_tail,
+                                 max_q=max_tail, window_left=window_size[0], softmax_scale=layer.scaling,
+@@ -2067,9 +2080,11 @@ class FlashAttentionBackend(AttentionBackend):
+                         page_table, cache_seqlens = page_table[:count], cache_seqlens[:count]
+                         cu_seqlens_q = cu_seqlens_q[:count + 1]
+                         kwargs = {k: v[:count] for k, v in kwargs.items()}
++                    if prompt_storage is not None:
++                        write_k, write_v = write_k[:cut], write_v[:cut]
+                     dense_k, dense_v = pack_prompt_rows(
+                         key_cache, value_cache, write_k, write_v, page_table, cache_seqlens,
+-                        cu_seqlens_q, layout,
++                        cu_seqlens_q, layout, storage=prompt_storage,
+                     )
+                     result = self.flash_attn_varlen_func(
+                         q=query, k=dense_k, v=dense_v, cu_seqlens_q=cu_seqlens_q,

@@ -1,0 +1,798 @@
+{
+  "archive": "experiments/modal_node/20261113T204343Z-bench",
+  "substrate": "eight H200, TP8 V41 with mixed scheduling and LayerNorm SP disabled",
+  "verified_file": "297e54fd105e974cdf401e5b4d20253a22c16f90:python/sglang/srt/model_executor/runner/base_cuda_graph_runner.py",
+  "selector_sha256": "78a02c646841d7ecf24a3c6d1f3af8c6c27d8bb85d46541cc14db76dc70ff295",
+  "target_prefill_graph_rows": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    48,
+    64,
+    80,
+    96,
+    112,
+    128,
+    144,
+    160,
+    176,
+    192,
+    208,
+    224,
+    240,
+    256,
+    288,
+    320,
+    352,
+    384,
+    416,
+    448,
+    480,
+    512,
+    576,
+    640,
+    704,
+    768,
+    832,
+    896,
+    960,
+    1024,
+    1280,
+    1536,
+    1792,
+    2048,
+    2304,
+    2560,
+    2816,
+    3072,
+    3328,
+    3584,
+    3840,
+    4096,
+    4608,
+    5120,
+    5632,
+    6144,
+    6656,
+    7168,
+    7680,
+    8192,
+    8704,
+    9216,
+    9728,
+    10240,
+    10752,
+    11264,
+    11776,
+    12288,
+    12800,
+    13312,
+    13824,
+    14336,
+    14848,
+    15360,
+    15872,
+    16384
+  ],
+  "target_verify_graph_requests": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32
+  ],
+  "width": 8,
+  "rows": {
+    "1": {
+      "observed": {
+        "prompt_passes": 54,
+        "generated_tokens": 9724
+      },
+      "policies": {},
+      "capture_changes": {}
+    },
+    "4": {
+      "observed": {
+        "prompt_passes": 127,
+        "passes_with_running_requests": 112,
+        "running_request_prompt_pairs": 271,
+        "prompt_rows_during_opportunities": 516100,
+        "standalone_verify_rows_if_every_cohort_runs_once": 2168,
+        "static_prompt_rows_during_opportunities": 523296,
+        "pair_positions_above_max_bucket": 52,
+        "generated_tokens": 21774
+      },
+      "policies": {
+        "max_context_capacity": {
+          "paired_passes": 87,
+          "tail_pairs": 219,
+          "new_verify_rows": 1752,
+          "complete_cohort_passes": 87,
+          "complete_cohort_pairs": 219,
+          "larger_prompt_bucket_passes": 21,
+          "extra_static_prompt_rows": 2560,
+          "change_in_unused_prompt_padding_rows": 808,
+          "standalone_verify_rows_removed": 1752,
+          "total_target_body_row_change": 808,
+          "passes_more_combined_rows": 21,
+          "percent_generated_at_four_commits": 4.023
+        },
+        "same_prompt_bucket": {
+          "paired_passes": 77,
+          "tail_pairs": 183,
+          "new_verify_rows": 1464,
+          "complete_cohort_passes": 66,
+          "complete_cohort_pairs": 164,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -1464,
+          "standalone_verify_rows_removed": 1464,
+          "total_target_body_row_change": -1464,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.362
+        },
+        "same_bucket_all_or_none": {
+          "paired_passes": 66,
+          "tail_pairs": 164,
+          "new_verify_rows": 1312,
+          "complete_cohort_passes": 66,
+          "complete_cohort_pairs": 164,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -1312,
+          "standalone_verify_rows_removed": 1312,
+          "total_target_body_row_change": -1312,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.013
+        },
+        "same_budget_across_both_graphs": {
+          "paired_passes": 77,
+          "tail_pairs": 183,
+          "new_verify_rows": 1464,
+          "complete_cohort_passes": 66,
+          "complete_cohort_pairs": 164,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -1464,
+          "standalone_verify_rows_removed": 1464,
+          "total_target_body_row_change": -1464,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.362
+        },
+        "same_budget_whole_cohort": {
+          "paired_passes": 66,
+          "tail_pairs": 164,
+          "new_verify_rows": 1312,
+          "complete_cohort_passes": 66,
+          "complete_cohort_pairs": 164,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -1312,
+          "standalone_verify_rows_removed": 1312,
+          "total_target_body_row_change": -1312,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.013
+        },
+        "smallest_combined_rows": {
+          "paired_passes": 77,
+          "tail_pairs": 183,
+          "new_verify_rows": 1464,
+          "complete_cohort_passes": 66,
+          "complete_cohort_pairs": 164,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -1464,
+          "standalone_verify_rows_removed": 1464,
+          "total_target_body_row_change": -1464,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.362
+        },
+        "one_tail_only": {
+          "paired_passes": 87,
+          "tail_pairs": 87,
+          "new_verify_rows": 696,
+          "complete_cohort_passes": 6,
+          "complete_cohort_pairs": 6,
+          "larger_prompt_bucket_passes": 10,
+          "extra_static_prompt_rows": 1408,
+          "change_in_unused_prompt_padding_rows": 712,
+          "standalone_verify_rows_removed": 696,
+          "total_target_body_row_change": 712,
+          "passes_more_combined_rows": 10,
+          "percent_generated_at_four_commits": 1.598
+        }
+      },
+      "capture_changes": {
+        "14336 -> 14848": {
+          "batches": 1,
+          "tails": 3,
+          "extra_static_prompt_rows": 512
+        },
+        "960 -> 1024": {
+          "batches": 5,
+          "tails": 12,
+          "extra_static_prompt_rows": 320
+        },
+        "704 -> 768": {
+          "batches": 4,
+          "tails": 11,
+          "extra_static_prompt_rows": 256
+        },
+        "512 -> 576": {
+          "batches": 1,
+          "tails": 3,
+          "extra_static_prompt_rows": 64
+        },
+        "896 -> 960": {
+          "batches": 1,
+          "tails": 3,
+          "extra_static_prompt_rows": 64
+        },
+        "832 -> 896": {
+          "batches": 1,
+          "tails": 3,
+          "extra_static_prompt_rows": 64
+        },
+        "768 -> 832": {
+          "batches": 2,
+          "tails": 6,
+          "extra_static_prompt_rows": 128
+        },
+        "640 -> 704": {
+          "batches": 2,
+          "tails": 6,
+          "extra_static_prompt_rows": 128
+        },
+        "1024 -> 1280": {
+          "batches": 2,
+          "tails": 4,
+          "extra_static_prompt_rows": 512
+        },
+        "2304 -> 2560": {
+          "batches": 1,
+          "tails": 2,
+          "extra_static_prompt_rows": 256
+        },
+        "1280 -> 1536": {
+          "batches": 1,
+          "tails": 2,
+          "extra_static_prompt_rows": 256
+        }
+      }
+    },
+    "16": {
+      "observed": {
+        "prompt_passes": 241,
+        "passes_with_running_requests": 238,
+        "running_request_prompt_pairs": 2769,
+        "prompt_rows_during_opportunities": 1366412,
+        "standalone_verify_rows_if_every_cohort_runs_once": 23080,
+        "static_prompt_rows_during_opportunities": 1381280,
+        "pair_positions_above_max_bucket": 618,
+        "generated_tokens": 45027
+      },
+      "policies": {
+        "max_context_capacity": {
+          "paired_passes": 166,
+          "tail_pairs": 2151,
+          "new_verify_rows": 17208,
+          "complete_cohort_passes": 166,
+          "complete_cohort_pairs": 2151,
+          "larger_prompt_bucket_passes": 106,
+          "extra_static_prompt_rows": 17824,
+          "change_in_unused_prompt_padding_rows": 616,
+          "standalone_verify_rows_removed": 17960,
+          "total_target_body_row_change": -136,
+          "passes_more_combined_rows": 67,
+          "percent_generated_at_four_commits": 19.109
+        },
+        "same_prompt_bucket": {
+          "paired_passes": 154,
+          "tail_pairs": 1228,
+          "new_verify_rows": 9824,
+          "complete_cohort_passes": 60,
+          "complete_cohort_pairs": 764,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -9824,
+          "standalone_verify_rows_removed": 10344,
+          "total_target_body_row_change": -10344,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 10.909
+        },
+        "same_bucket_all_or_none": {
+          "paired_passes": 60,
+          "tail_pairs": 764,
+          "new_verify_rows": 6112,
+          "complete_cohort_passes": 60,
+          "complete_cohort_pairs": 764,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -6112,
+          "standalone_verify_rows_removed": 6320,
+          "total_target_body_row_change": -6320,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 6.787
+        },
+        "same_budget_across_both_graphs": {
+          "paired_passes": 159,
+          "tail_pairs": 1756,
+          "new_verify_rows": 14048,
+          "complete_cohort_passes": 99,
+          "complete_cohort_pairs": 1305,
+          "larger_prompt_bucket_passes": 60,
+          "extra_static_prompt_rows": 5120,
+          "change_in_unused_prompt_padding_rows": -8928,
+          "standalone_verify_rows_removed": 14736,
+          "total_target_body_row_change": -9616,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 15.6
+        },
+        "same_budget_whole_cohort": {
+          "paired_passes": 99,
+          "tail_pairs": 1305,
+          "new_verify_rows": 10440,
+          "complete_cohort_passes": 99,
+          "complete_cohort_pairs": 1305,
+          "larger_prompt_bucket_passes": 39,
+          "extra_static_prompt_rows": 3776,
+          "change_in_unused_prompt_padding_rows": -6664,
+          "standalone_verify_rows_removed": 10896,
+          "total_target_body_row_change": -7120,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 11.593
+        },
+        "smallest_combined_rows": {
+          "paired_passes": 159,
+          "tail_pairs": 1628,
+          "new_verify_rows": 13024,
+          "complete_cohort_passes": 68,
+          "complete_cohort_pairs": 879,
+          "larger_prompt_bucket_passes": 50,
+          "extra_static_prompt_rows": 3200,
+          "change_in_unused_prompt_padding_rows": -9824,
+          "standalone_verify_rows_removed": 13712,
+          "total_target_body_row_change": -10512,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 14.462
+        },
+        "one_tail_only": {
+          "paired_passes": 166,
+          "tail_pairs": 166,
+          "new_verify_rows": 1328,
+          "complete_cohort_passes": 0,
+          "complete_cohort_pairs": 0,
+          "larger_prompt_bucket_passes": 12,
+          "extra_static_prompt_rows": 1312,
+          "change_in_unused_prompt_padding_rows": -16,
+          "standalone_verify_rows_removed": 1592,
+          "total_target_body_row_change": -280,
+          "passes_more_combined_rows": 12,
+          "percent_generated_at_four_commits": 1.475
+        }
+      },
+      "capture_changes": {
+        "832 -> 896": {
+          "batches": 4,
+          "tails": 47,
+          "extra_static_prompt_rows": 256
+        },
+        "704 -> 832": {
+          "batches": 4,
+          "tails": 57,
+          "extra_static_prompt_rows": 512
+        },
+        "640 -> 704": {
+          "batches": 5,
+          "tails": 58,
+          "extra_static_prompt_rows": 320
+        },
+        "1280 -> 1536": {
+          "batches": 23,
+          "tails": 318,
+          "extra_static_prompt_rows": 5888
+        },
+        "576 -> 704": {
+          "batches": 2,
+          "tails": 30,
+          "extra_static_prompt_rows": 256
+        },
+        "1024 -> 1280": {
+          "batches": 6,
+          "tails": 87,
+          "extra_static_prompt_rows": 1536
+        },
+        "2816 -> 3072": {
+          "batches": 1,
+          "tails": 13,
+          "extra_static_prompt_rows": 256
+        },
+        "640 -> 768": {
+          "batches": 3,
+          "tails": 41,
+          "extra_static_prompt_rows": 384
+        },
+        "768 -> 896": {
+          "batches": 9,
+          "tails": 131,
+          "extra_static_prompt_rows": 1152
+        },
+        "896 -> 960": {
+          "batches": 5,
+          "tails": 50,
+          "extra_static_prompt_rows": 320
+        },
+        "960 -> 1024": {
+          "batches": 4,
+          "tails": 45,
+          "extra_static_prompt_rows": 256
+        },
+        "832 -> 960": {
+          "batches": 6,
+          "tails": 77,
+          "extra_static_prompt_rows": 768
+        },
+        "896 -> 1024": {
+          "batches": 8,
+          "tails": 113,
+          "extra_static_prompt_rows": 1024
+        },
+        "384 -> 480": {
+          "batches": 1,
+          "tails": 13,
+          "extra_static_prompt_rows": 96
+        },
+        "512 -> 640": {
+          "batches": 4,
+          "tails": 55,
+          "extra_static_prompt_rows": 512
+        },
+        "1536 -> 1792": {
+          "batches": 5,
+          "tails": 61,
+          "extra_static_prompt_rows": 1280
+        },
+        "1792 -> 2048": {
+          "batches": 1,
+          "tails": 13,
+          "extra_static_prompt_rows": 256
+        },
+        "576 -> 640": {
+          "batches": 1,
+          "tails": 14,
+          "extra_static_prompt_rows": 64
+        },
+        "2304 -> 2560": {
+          "batches": 2,
+          "tails": 21,
+          "extra_static_prompt_rows": 512
+        },
+        "2048 -> 2304": {
+          "batches": 2,
+          "tails": 23,
+          "extra_static_prompt_rows": 512
+        },
+        "2560 -> 2816": {
+          "batches": 1,
+          "tails": 13,
+          "extra_static_prompt_rows": 256
+        },
+        "960 -> 1280": {
+          "batches": 3,
+          "tails": 44,
+          "extra_static_prompt_rows": 960
+        },
+        "768 -> 832": {
+          "batches": 2,
+          "tails": 25,
+          "extra_static_prompt_rows": 128
+        },
+        "448 -> 576": {
+          "batches": 1,
+          "tails": 15,
+          "extra_static_prompt_rows": 128
+        },
+        "704 -> 768": {
+          "batches": 1,
+          "tails": 10,
+          "extra_static_prompt_rows": 64
+        },
+        "416 -> 512": {
+          "batches": 1,
+          "tails": 11,
+          "extra_static_prompt_rows": 96
+        },
+        "448 -> 480": {
+          "batches": 1,
+          "tails": 2,
+          "extra_static_prompt_rows": 32
+        }
+      }
+    },
+    "32": {
+      "observed": {
+        "prompt_passes": 351,
+        "passes_with_running_requests": 347,
+        "running_request_prompt_pairs": 7405,
+        "prompt_rows_during_opportunities": 2759544,
+        "standalone_verify_rows_if_every_cohort_runs_once": 60176,
+        "static_prompt_rows_during_opportunities": 2781376,
+        "pair_positions_above_max_bucket": 2487,
+        "generated_tokens": 94370
+      },
+      "policies": {
+        "max_context_capacity": {
+          "paired_passes": 202,
+          "tail_pairs": 4918,
+          "new_verify_rows": 39344,
+          "complete_cohort_passes": 202,
+          "complete_cohort_pairs": 4918,
+          "larger_prompt_bucket_passes": 160,
+          "extra_static_prompt_rows": 40256,
+          "change_in_unused_prompt_padding_rows": 912,
+          "standalone_verify_rows_removed": 39808,
+          "total_target_body_row_change": 448,
+          "passes_more_combined_rows": 147,
+          "percent_generated_at_four_commits": 20.846
+        },
+        "same_prompt_bucket": {
+          "paired_passes": 196,
+          "tail_pairs": 2403,
+          "new_verify_rows": 19224,
+          "complete_cohort_passes": 42,
+          "complete_cohort_pairs": 844,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -19224,
+          "standalone_verify_rows_removed": 19224,
+          "total_target_body_row_change": -19224,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 10.185
+        },
+        "same_bucket_all_or_none": {
+          "paired_passes": 42,
+          "tail_pairs": 844,
+          "new_verify_rows": 6752,
+          "complete_cohort_passes": 42,
+          "complete_cohort_pairs": 844,
+          "larger_prompt_bucket_passes": 0,
+          "extra_static_prompt_rows": 0,
+          "change_in_unused_prompt_padding_rows": -6752,
+          "standalone_verify_rows_removed": 6896,
+          "total_target_body_row_change": -6896,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 3.577
+        },
+        "same_budget_across_both_graphs": {
+          "paired_passes": 199,
+          "tail_pairs": 2848,
+          "new_verify_rows": 22784,
+          "complete_cohort_passes": 55,
+          "complete_cohort_pairs": 1150,
+          "larger_prompt_bucket_passes": 28,
+          "extra_static_prompt_rows": 3776,
+          "change_in_unused_prompt_padding_rows": -19008,
+          "standalone_verify_rows_removed": 22856,
+          "total_target_body_row_change": -19080,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 12.072
+        },
+        "same_budget_whole_cohort": {
+          "paired_passes": 55,
+          "tail_pairs": 1150,
+          "new_verify_rows": 9200,
+          "complete_cohort_passes": 55,
+          "complete_cohort_pairs": 1150,
+          "larger_prompt_bucket_passes": 13,
+          "extra_static_prompt_rows": 2304,
+          "change_in_unused_prompt_padding_rows": -6896,
+          "standalone_verify_rows_removed": 9376,
+          "total_target_body_row_change": -7072,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 4.874
+        },
+        "smallest_combined_rows": {
+          "paired_passes": 199,
+          "tail_pairs": 2811,
+          "new_verify_rows": 22488,
+          "complete_cohort_passes": 47,
+          "complete_cohort_pairs": 958,
+          "larger_prompt_bucket_passes": 27,
+          "extra_static_prompt_rows": 3264,
+          "change_in_unused_prompt_padding_rows": -19224,
+          "standalone_verify_rows_removed": 22560,
+          "total_target_body_row_change": -19296,
+          "passes_more_combined_rows": 0,
+          "percent_generated_at_four_commits": 11.915
+        },
+        "one_tail_only": {
+          "paired_passes": 202,
+          "tail_pairs": 202,
+          "new_verify_rows": 1616,
+          "complete_cohort_passes": 0,
+          "complete_cohort_pairs": 0,
+          "larger_prompt_bucket_passes": 6,
+          "extra_static_prompt_rows": 960,
+          "change_in_unused_prompt_padding_rows": -656,
+          "standalone_verify_rows_removed": 1008,
+          "total_target_body_row_change": -48,
+          "passes_more_combined_rows": 6,
+          "percent_generated_at_four_commits": 0.856
+        }
+      },
+      "capture_changes": {
+        "2304 -> 2560": {
+          "batches": 10,
+          "tails": 275,
+          "extra_static_prompt_rows": 2560
+        },
+        "1792 -> 2048": {
+          "batches": 11,
+          "tails": 302,
+          "extra_static_prompt_rows": 2816
+        },
+        "3328 -> 3584": {
+          "batches": 9,
+          "tails": 248,
+          "extra_static_prompt_rows": 2304
+        },
+        "2560 -> 2816": {
+          "batches": 15,
+          "tails": 402,
+          "extra_static_prompt_rows": 3840
+        },
+        "2048 -> 2304": {
+          "batches": 18,
+          "tails": 481,
+          "extra_static_prompt_rows": 4608
+        },
+        "3584 -> 3840": {
+          "batches": 3,
+          "tails": 84,
+          "extra_static_prompt_rows": 768
+        },
+        "960 -> 1280": {
+          "batches": 8,
+          "tails": 209,
+          "extra_static_prompt_rows": 2560
+        },
+        "6656 -> 7168": {
+          "batches": 1,
+          "tails": 27,
+          "extra_static_prompt_rows": 512
+        },
+        "1536 -> 1792": {
+          "batches": 17,
+          "tails": 425,
+          "extra_static_prompt_rows": 4352
+        },
+        "3072 -> 3328": {
+          "batches": 12,
+          "tails": 330,
+          "extra_static_prompt_rows": 3072
+        },
+        "2816 -> 3072": {
+          "batches": 6,
+          "tails": 168,
+          "extra_static_prompt_rows": 1536
+        },
+        "1280 -> 1536": {
+          "batches": 15,
+          "tails": 353,
+          "extra_static_prompt_rows": 3840
+        },
+        "4096 -> 4608": {
+          "batches": 2,
+          "tails": 55,
+          "extra_static_prompt_rows": 1024
+        },
+        "1024 -> 1280": {
+          "batches": 9,
+          "tails": 212,
+          "extra_static_prompt_rows": 2304
+        },
+        "640 -> 896": {
+          "batches": 2,
+          "tails": 56,
+          "extra_static_prompt_rows": 512
+        },
+        "832 -> 1024": {
+          "batches": 5,
+          "tails": 124,
+          "extra_static_prompt_rows": 960
+        },
+        "480 -> 704": {
+          "batches": 1,
+          "tails": 27,
+          "extra_static_prompt_rows": 224
+        },
+        "3840 -> 4096": {
+          "batches": 1,
+          "tails": 27,
+          "extra_static_prompt_rows": 256
+        },
+        "416 -> 640": {
+          "batches": 1,
+          "tails": 28,
+          "extra_static_prompt_rows": 224
+        },
+        "768 -> 1024": {
+          "batches": 1,
+          "tails": 27,
+          "extra_static_prompt_rows": 256
+        },
+        "576 -> 768": {
+          "batches": 1,
+          "tails": 28,
+          "extra_static_prompt_rows": 192
+        },
+        "704 -> 960": {
+          "batches": 1,
+          "tails": 27,
+          "extra_static_prompt_rows": 256
+        },
+        "704 -> 896": {
+          "batches": 2,
+          "tails": 52,
+          "extra_static_prompt_rows": 384
+        },
+        "768 -> 960": {
+          "batches": 1,
+          "tails": 25,
+          "extra_static_prompt_rows": 192
+        },
+        "640 -> 832": {
+          "batches": 1,
+          "tails": 24,
+          "extra_static_prompt_rows": 192
+        },
+        "896 -> 960": {
+          "batches": 2,
+          "tails": 18,
+          "extra_static_prompt_rows": 128
+        },
+        "480 -> 576": {
+          "batches": 2,
+          "tails": 19,
+          "extra_static_prompt_rows": 192
+        },
+        "768 -> 832": {
+          "batches": 1,
+          "tails": 8,
+          "extra_static_prompt_rows": 64
+        },
+        "960 -> 1024": {
+          "batches": 1,
+          "tails": 7,
+          "extra_static_prompt_rows": 64
+        },
+        "576 -> 640": {
+          "batches": 1,
+          "tails": 6,
+          "extra_static_prompt_rows": 64
+        }
+      }
+    }
+  },
+  "interpretation": "Each historical opportunity holds request membership, prompt chunk and both captured grids fixed. The separated comparison assumes exactly one width-eight target verification step on that same cohort. Positive total_target_body_row_change means more padded target-body rows. Rows do not equal time: full-versus-local attention lengths, expert choice, SP, GPU occupancy, draft proposal, logits, cache work, result settlement and later admissions can differ. Four commits is a scenario. The trace contains neither mixed execution nor V64 physical timing."
+}

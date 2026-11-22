@@ -1,0 +1,462 @@
+{
+  "candidate": "V235",
+  "patch_sha256": "24042d5c31aa592580bb675c1c221cc3150b6e5da753ec90b1e9b1fc1dc60453",
+  "tree": "d03a9d93dcae3a49359a85426e02218509a6e479",
+  "source_sha256": {
+    "speculative/dflash_mixed_forward.py": "5196953563ab6a31f7782a308369430aca070a8a0e85f0af061b0c81c0201bef",
+    "speculative/dflash_mixed_graph_admission.py": "811770eb7dddaacdb5389feb3654733c4ca3ccc4284ee4515a0a1ea90c159839",
+    "speculative/dflash_worker_v2.py": "edab535dc0f53b758eabcb6deb5ef79755bf24b5e54e50e5036c34ba06a56698",
+    "model_executor/runner/prefill_cuda_graph_runner.py": "ce84ed2120e882a633ec239516aa719af30771efcccd010356df0b1e7b2c8abe",
+    "model_executor/forward_batch_info.py": "4e7a7c61350cfa6931732d24625df1f761d4d7bd3a6fb66879aa7346b718d8c9",
+    "layers/attention/direct_prompt_kv.py": "7617ecae5dc84d10deccc53b04a9850fd16f3ee0061edd228e09d44daffb56d6",
+    "layers/rotary_embedding/utils.py": "828a50285218e40c3429d2f4e75b1d051e3a89d831a7ab005e8c2609278aeddc",
+    "layers/rotary_embedding/base.py": "2a2abfbef7be789d2e992478714a5040583e71ed71a1accd1fecd65cab5da297",
+    "layers/layernorm.py": "dca150fc6e2c469d036633d0abd1b39d95480b8ade6c2f2e5260c6240c49d68e",
+    "models/dflash.py": "55f01a604f5dc1a578fa5e9a0ca4ee2325d220bd192a2a729cafdf8eb7dddef9",
+    "mem_cache/memory_pool.py": "d1ddb4994b0464f9bf2072388c2b02e493d31f305a3e5afc96cf5690dc3370f6",
+    "mem_cache/kv_loc_plan.py": "2afcf4d67e2265f3726c3ce4c26f7ed4c1188272712e1872cf9cf14d97aa876a",
+    "python/sglang/kernels/ops/speculative/fused_kv_materialize.py": "4a5bc2fe703251a7749c503f719810dd3d71ba2ed18111d925e96dd35ac82f92",
+    "speculative/draft_worker_common.py": "9ad6a13fcbce3079b794ea6f47df9030d92d6a8a1bb2c33e0ed97d2d2ce48d49",
+    "python/sglang/kernels/ops/speculative/dflash.py": "b4f181c9013915cd64e93348e5d0bdaef3032f8e2826963083c682c85f0e2b8b"
+  },
+  "cases": [
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "causal",
+      "target_entries": 1,
+      "certificate": true,
+      "live_tail_rows": 8,
+      "proposal_consumed": true
+    },
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "masked",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 8,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "top2",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 8,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "ragged",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 8,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "mixed_spec",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 8,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 1,
+      "prompt": 7,
+      "case": "remote_veto",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 8,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "causal",
+      "target_entries": 1,
+      "certificate": true,
+      "live_tail_rows": 16,
+      "proposal_consumed": true
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "masked",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 16,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "top2",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 16,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "ragged",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 16,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "mixed_spec",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 16,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 2,
+      "prompt": 7,
+      "case": "remote_veto",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 16,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "causal",
+      "target_entries": 1,
+      "certificate": true,
+      "live_tail_rows": 24,
+      "proposal_consumed": true
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "masked",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 24,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "top2",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 24,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "ragged",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 24,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "mixed_spec",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 24,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 3,
+      "prompt": 7,
+      "case": "remote_veto",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 24,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "causal",
+      "target_entries": 1,
+      "certificate": true,
+      "live_tail_rows": 32,
+      "proposal_consumed": true
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "masked",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 32,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "top2",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 32,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "ragged",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 32,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "mixed_spec",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 32,
+      "proposal_consumed": false
+    },
+    {
+      "tails": 4,
+      "prompt": 7,
+      "case": "remote_veto",
+      "target_entries": 0,
+      "certificate": false,
+      "live_tail_rows": 32,
+      "proposal_consumed": false
+    }
+  ],
+  "live_accepted": 4,
+  "declines": 20,
+  "accepted_prefix_replays": [
+    {
+      "mode": "per_layer",
+      "physical_remap": false,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "partial_tail",
+      "physical_remap": false,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "nonunit",
+      "physical_remap": false,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "per_layer",
+      "physical_remap": false,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "partial_tail",
+      "physical_remap": false,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "nonunit",
+      "physical_remap": false,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "per_layer",
+      "physical_remap": true,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "partial_tail",
+      "physical_remap": true,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "nonunit",
+      "physical_remap": true,
+      "padded": false,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "per_layer",
+      "physical_remap": true,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "partial_tail",
+      "physical_remap": true,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    },
+    {
+      "mode": "nonunit",
+      "physical_remap": true,
+      "padded": true,
+      "committed_lengths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "rejected_tail_rows": 28,
+      "pool_words": 38400,
+      "poisoned_or_unused_slots": 192
+    }
+  ],
+  "physical_h200": false,
+  "scope": "Real proposal ownership, view formation, plan validation, certificate minting and target entry; separately exact native settlement and five physical draft KV layers. CPU boundary for CUDA writer."
+}

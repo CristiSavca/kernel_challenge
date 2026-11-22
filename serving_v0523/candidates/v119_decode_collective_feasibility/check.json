@@ -1,0 +1,95 @@
+{
+  "pin": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "sources": {
+    "kernels/jit/utils/arch.py": "e9427faad6479e47623315c38705ee209e239f9e6212712746678cb27000552b",
+    "kernels/ops/communication/all_reduce.py": "173a290cb3ef35146f6891922c2bf0f95d05218a76730af7477842bb2891f480",
+    "kernels/ops/layernorm/muse_spark_norm_residual_jit.py": "76bd0c26ed4d3cf87126619c72a56de908dea0ea1b2c69f6e5ada47318035cbe",
+    "kernels/jit/csrc/muse_spark/norm_residual.cuh": "c227348c4d705183d377ac623a62b1ed6957eb8832fb0508f4ac99f1aa3cb0c8",
+    "kernels/jit/csrc/distributed/custom_all_reduce.cuh": "693fc6e5b73478bab41a6ea93c1636b180c0e2ddb733794d80f370efa9427c9a",
+    "srt/distributed/device_communicators/configs/custom_all_reduce_v2.py": "eb510c72ab31df1c681e48ce2958db03f91a860ccbf152c0cfa6cbbf4495c91f",
+    "srt/models/muse_spark.py": "71bbed3a8c253b046c21e18fcb2f09a9fc09820c6e7fbc1451ba693d93513a95",
+    "V83": "bae9bc7a0a26ea3aadbbef8c80cd5049e8dd078673a3986d4407e110050a9dc4"
+  },
+  "cluster_counterexample": {
+    "repeated_branch_pair": [
+      1.0,
+      2.0
+    ],
+    "repeated_fp32_stream_pair": [
+      -0.36419978737831116,
+      -0.7295542359352112
+    ],
+    "rounded_branch_pair": [
+      0.6328125,
+      1.265625
+    ],
+    "fp32_updated_stream": [
+      0.0009999871253967285,
+      0.0009999871253967285
+    ],
+    "materialized_mean_square": 9.999743042499176e-07,
+    "expanded_mean_square": 5.835926799591107e-07,
+    "materialized_bf16_output": [
+      0.30078125,
+      0.30078125
+    ],
+    "cluster_identity_bf16_output": [
+      0.306640625,
+      0.306640625
+    ]
+  },
+  "rungs": {
+    "1": {
+      "verify_rows": 8,
+      "v83_model_ring_send_MiB": 0.4990234375,
+      "token_owner_ideal_ring_send_MiB": 0.32855224609375,
+      "token_owner_current_v64_ring_send_MiB": 0.49261474609375,
+      "ideal_ring_send_saving_MiB": 0.17047119140625,
+      "extra_distinct_dense_weight_MiB_if_cold": 119.0,
+      "break_even_distinct_weight_bytes_per_ideal_send_byte_saved": 698.0651629072681,
+      "eliminable_O_intermediate_write_plus_read_MiB_62_layers": 15.5,
+      "illustrative_step_ms": 19.68503937007874,
+      "saved_us_per_layer_required_for_2x_current_decode": 158.750317500635,
+      "saved_us_per_layer_required_for_3x_current_decode": 211.66709000084666
+    },
+    "4": {
+      "verify_rows": 32,
+      "v83_model_ring_send_MiB": 1.99609375,
+      "token_owner_ideal_ring_send_MiB": 1.314208984375,
+      "token_owner_current_v64_ring_send_MiB": 1.970458984375,
+      "ideal_ring_send_saving_MiB": 0.681884765625,
+      "extra_distinct_dense_weight_MiB_if_cold": 119.0,
+      "break_even_distinct_weight_bytes_per_ideal_send_byte_saved": 174.51629072681703,
+      "eliminable_O_intermediate_write_plus_read_MiB_62_layers": 62.0,
+      "illustrative_step_ms": 35.587188612099645,
+      "saved_us_per_layer_required_for_2x_current_decode": 286.9934565491907,
+      "saved_us_per_layer_required_for_3x_current_decode": 382.6579420655875
+    },
+    "16": {
+      "verify_rows": 128,
+      "v83_model_ring_send_MiB": 7.984375,
+      "token_owner_ideal_ring_send_MiB": 5.2568359375,
+      "token_owner_current_v64_ring_send_MiB": 7.8818359375,
+      "ideal_ring_send_saving_MiB": 2.7275390625,
+      "extra_distinct_dense_weight_MiB_if_cold": 119.0,
+      "break_even_distinct_weight_bytes_per_ideal_send_byte_saved": 43.62907268170426,
+      "eliminable_O_intermediate_write_plus_read_MiB_62_layers": 248.0,
+      "illustrative_step_ms": 79.84031936127744,
+      "saved_us_per_layer_required_for_2x_current_decode": 643.8735432361084,
+      "saved_us_per_layer_required_for_3x_current_decode": 858.4980576481444
+    },
+    "32": {
+      "verify_rows": 256,
+      "v83_model_ring_send_MiB": 15.96875,
+      "token_owner_ideal_ring_send_MiB": 10.513671875,
+      "token_owner_current_v64_ring_send_MiB": 15.763671875,
+      "ideal_ring_send_saving_MiB": 5.455078125,
+      "extra_distinct_dense_weight_MiB_if_cold": 119.0,
+      "break_even_distinct_weight_bytes_per_ideal_send_byte_saved": 21.81453634085213,
+      "eliminable_O_intermediate_write_plus_read_MiB_62_layers": 496.0,
+      "illustrative_step_ms": 96.99769053117784,
+      "saved_us_per_layer_required_for_2x_current_decode": 782.2394397675632,
+      "saved_us_per_layer_required_for_3x_current_decode": 1042.9859196900843
+    }
+  }
+}

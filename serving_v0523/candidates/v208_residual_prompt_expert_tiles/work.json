@@ -1,0 +1,131 @@
+{
+  "assumption": "independent uniform 8-of-256 selection per input token, 32 local experts. Roofline work, no elapsed time.",
+  "data": [
+    {
+      "tokens": 8192,
+      "mean_rank_routes": 8192,
+      "expected_176_M_tiles_per_rank": 63.999998531885126,
+      "prior_MMA_rows": 11263.999741611782,
+      "new_MMA_rows": 9079.797068085381,
+      "compute_work_ratio": 1.2405563315069743,
+      "reduction_percent": 19.39100429359438,
+      "four_width_ratio": 1.2509652091271295,
+      "unchanged_weight_scale_tile_requests_MiB": 1727.9999603608985,
+      "removed_TFLOP_per_layer": 0.21986904024917944
+    },
+    {
+      "tokens": 10240,
+      "mean_rank_routes": 10240,
+      "expected_176_M_tiles_per_rank": 65.08660820289907,
+      "prior_MMA_rows": 11455.243043710238,
+      "new_MMA_rows": 11291.696955819209,
+      "compute_work_ratio": 1.014483747529794,
+      "reduction_percent": 1.427696359361208,
+      "four_width_ratio": 1.0538113485298821,
+      "unchanged_weight_scale_tile_requests_MiB": 1757.338421478275,
+      "removed_TFLOP_per_layer": 0.01646308825501666
+    },
+    {
+      "tokens": 12288,
+      "mean_rank_routes": 12288,
+      "expected_176_M_tiles_per_rank": 94.40825746701995,
+      "prior_MMA_rows": 16615.853314195512,
+      "new_MMA_rows": 13234.663736731178,
+      "compute_work_ratio": 1.2554798251564383,
+      "reduction_percent": 20.349178062228468,
+      "four_width_ratio": 1.25580251995248,
+      "unchanged_weight_scale_tile_requests_MiB": 2549.0229516095387,
+      "removed_TFLOP_per_layer": 0.3403616872684072
+    },
+    {
+      "tokens": 14336,
+      "mean_rank_routes": 14336,
+      "expected_176_M_tiles_per_rank": 96.00260984867028,
+      "prior_MMA_rows": 16896.45933336597,
+      "new_MMA_rows": 15582.034885261119,
+      "compute_work_ratio": 1.084355121637428,
+      "reduction_percent": 7.779289271032153,
+      "four_width_ratio": 1.1019610600244822,
+      "unchanged_weight_scale_tile_requests_MiB": 2592.0704659140974,
+      "removed_TFLOP_per_layer": 0.13231429728921515
+    },
+    {
+      "tokens": 16384,
+      "mean_rank_routes": 16384,
+      "expected_176_M_tiles_per_rank": 103.30954070308461,
+      "prior_MMA_rows": 18182.47916374289,
+      "new_MMA_rows": 17157.2971356774,
+      "compute_work_ratio": 1.0597519539329825,
+      "reduction_percent": 5.638296179707847,
+      "four_width_ratio": 1.0761269135578597,
+      "unchanged_weight_scale_tile_requests_MiB": 2789.3575989832843,
+      "removed_TFLOP_per_layer": 0.10319820194503675
+    }
+  ],
+  "expert_boundary_counts": {
+    "0": [
+      0,
+      0
+    ],
+    "1": [
+      176,
+      32
+    ],
+    "32": [
+      176,
+      32
+    ],
+    "33": [
+      176,
+      96
+    ],
+    "96": [
+      176,
+      96
+    ],
+    "97": [
+      176,
+      176
+    ],
+    "175": [
+      176,
+      176
+    ],
+    "176": [
+      176,
+      176
+    ],
+    "177": [
+      352,
+      208
+    ],
+    "352": [
+      352,
+      352
+    ],
+    "353": [
+      528,
+      384
+    ],
+    "511": [
+      528,
+      528
+    ],
+    "512": [
+      528,
+      528
+    ],
+    "527": [
+      528,
+      528
+    ],
+    "528": [
+      528,
+      528
+    ],
+    "529": [
+      704,
+      560
+    ]
+  }
+}

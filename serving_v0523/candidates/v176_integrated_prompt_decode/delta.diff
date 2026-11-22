@@ -1,0 +1,1337 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+index cfad8f1..d029130 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_medium_route_pair.cuh
+@@ -7,6 +7,7 @@ using namespace muse_route_pair;
+ 
+ // An entire warp owns one compact list. Negative IDs and other experts do
+ // not contribute. The published count bounds all accesses on graph replay.
++template <bool PadSparse = false>
+ __global__ void plan_rows(const int32_t* ids, int32_t* plan, uint32_t slots) {
+   const uint32_t lane = threadIdx.x, expert = blockIdx.x;
+   int32_t* list = plan + size_t(expert) * (slots + 1);
+@@ -18,6 +19,9 @@ __global__ void plan_rows(const int32_t* ids, int32_t* plan, uint32_t slots) {
+     if (live) list[1 + count + __popc(mask & ((1u << lane) - 1))] = index;
+     count += __popc(mask);
+   }
++  if constexpr (PadSparse) {
++    if (lane >= count && lane < kRows && lane < slots) list[1 + lane] = -1;
++  }
+   if (lane == 0) list[0] = count;
+ }
+ 
+@@ -98,11 +102,14 @@ SGL_DEVICE void project_rows(const Projection& p, uint32_t expert, const int32_t
+   }
+ }
+ 
+-template <bool Gate>
++template <bool Gate, bool SkipSparse = false>
+ __global__ __launch_bounds__(32 * kWarps) void projection(const __grid_constant__ Projection p, uint32_t stride) {
+   const uint32_t expert = blockIdx.y;
+   const int32_t* list = p.plan + size_t(expert) * stride;
+   const uint32_t rows = list[0];
++  if constexpr (SkipSparse) {
++    if (rows <= kRows) return;
++  }
+   const uint32_t column = (blockIdx.x * kWarps + threadIdx.x / 32) * 64;
+   // W13 owns both gate and up accumulators. A 16-row cap keeps its register
+   // footprint close to W2's 32-row case even when few expert rows are live.
+@@ -128,6 +135,18 @@ struct MuseMediumRoutePair {
+                   tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
+                   tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
+                   tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan) {
++    run_with<false>([](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
++      using namespace muse_medium_route_pair;
++      host::LaunchKernel(dim3(up.output_width / (64 * kWarps), experts), 32 * kWarps, dev)(projection<true>, up, stride);
++      host::LaunchKernel(dim3(out.output_width / (64 * kWarps), experts), 32 * kWarps, dev)(projection<false>, out, stride);
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan);
++  }
++
++  template <bool PadSparse, class Launcher>
++  static void run_with(const Launcher& launch, tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan) {
+     using namespace host;
+     using namespace muse_medium_route_pair;
+     auto m = SymbolicSize{"tokens"}, h = SymbolicSize{"hidden"}, top = SymbolicSize{"top_k"};
+@@ -156,7 +175,7 @@ struct MuseMediumRoutePair {
+                  && wg.unwrap() == 4 * inner && wd.unwrap() == 2 * hidden, "incompatible expert banks");
+     auto* work = static_cast<int32_t*>(plan.data_ptr());
+     LaunchKernel(uint32_t(experts), 32, dev.unwrap())(
+-        plan_rows, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots));
++        plan_rows<PadSparse>, static_cast<const int32_t*>(local_ids.data_ptr()), work, uint32_t(slots));
+     const Projection up{
+         static_cast<const bf16_t*>(inputs.data_ptr()), static_cast<bf16_t*>(active.data_ptr()),
+         {static_cast<const uint32_t*>(gate.data_ptr()), static_cast<const uint8_t*>(gs.data_ptr())},
+@@ -165,10 +184,7 @@ struct MuseMediumRoutePair {
+         static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
+         {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
+         static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
+-    LaunchKernel(dim3(inner / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
+-        projection<true>, up, uint32_t(slots + 1));
+-    LaunchKernel(dim3(hidden / (64 * kWarps), experts), 32 * kWarps, dev.unwrap())(
+-        projection<false>, out, uint32_t(slots + 1));
++    launch(up, out, uint32_t(experts), uint32_t(slots + 1), dev.unwrap());
+   }
+ };
+ }  // namespace sglang
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index c0ec9f1..54a4c47 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -265,11 +265,13 @@ struct VectorStage {
+ 
+ template <bool Gate>
+ SGL_DEVICE void finish_channels(const Projection& p, const int32_t* job, uint32_t column, uint32_t expert,
+-                                uint32_t lane, uint32_t band, uint32_t part, const float4& gate, const float4& up) {
++                                uint32_t lane, uint32_t band, uint32_t part, const float4& gate, const float4& up,
++                                uint32_t rows = kRows) {
+   const float scale = cast<float>(p.global[expert]);
+ #pragma unroll
+   for (uint32_t i = 0; i < 4; ++i) {
+-    const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
++    const uint32_t row = (lane % 4) * 2 + i % 2;
++    const int32_t out = row < rows ? job[1 + row] : -1;
+     if (out >= 0) {
+       const float a[4] = {gate.x, gate.y, gate.z, gate.w};
+       float value = scaled_bf16(a[i], scale);
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+index c0d4c4d..d203b9f 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+@@ -1,4 +1,4 @@
+-#include "expert_route_pair.cuh"
++#include "expert_medium_route_pair.cuh"
+ #include <cuda.h>
+ #include <cudaTypedefs.h>
+ #include <cstring>
+@@ -83,11 +83,11 @@ __global__ __launch_bounds__(32 * kChannelWarps) void tensor_projection(
+ 
+ // The producer copies each live 128-feature row contiguously. A four-word
+ // inter-row pad keeps the consuming warp's eight row groups on separate banks.
+-template <bool Gate>
++template <bool Gate, uint32_t Rows = kRows>
+ struct alignas(128) StreamTile {
+   uint32_t weights[Gate ? 2 : 1][kKSteps][256];
+   uint16_t scales[Gate ? 2 : 1][kKSteps][64];
+-  uint32_t inputs[kRows][8 * kKSteps + 4];
++  uint32_t inputs[Rows][8 * kKSteps + 4];
+ };
+ 
+ SGL_DEVICE uint32_t shared_addr(const void* ptr) {
+@@ -102,8 +102,8 @@ SGL_DEVICE void wait_phase(uint64_t* barrier, uint32_t parity) {
+   } while (!complete);
+ }
+ 
+-template <bool Gate>
+-SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Gate>& tile, uint64_t* full,
++template <bool Gate, uint32_t Rows>
++SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Gate, Rows>& tile, uint64_t* full,
+                         uint32_t expert, uint32_t column, uint32_t chunk, int32_t slot, uint32_t live) {
+   constexpr uint32_t bytes = kKSteps * 16 * sizeof(bf16_t);
+   const uint32_t lane = threadIdx.x % 32, bar = shared_addr(full);
+@@ -127,13 +127,18 @@ SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Ga
+   }
+ }
+ 
+-template <bool Gate>
++template <bool Gate, bool ExpertList = false>
+ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+-    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps) {
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps, uint32_t stride = 0) {
+   constexpr uint32_t stages = Gate ? 2 : 3;
+   __shared__ StreamTile<Gate> ring[stages];
+   __shared__ uint64_t full[stages], empty[stages];
+-  const uint32_t jobs = p.plan[0];
++  const uint32_t jobs = ExpertList ? gridDim.y : uint32_t(p.plan[0]);
++  if constexpr (ExpertList) {
++    // The companion grid handles the whole expert if it has more than one eight-row tile.
++    const uint32_t rows = p.plan[size_t(blockIdx.y) * stride];
++    if (rows == 0 || rows > kRows) return;
++  }
+   if (blockIdx.y >= jobs) return;
+   const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+   if (threadIdx.x < stages) {
+@@ -146,8 +151,8 @@ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+   const uint32_t column = blockIdx.x * 128, chunks = p.input_width / (16 * kKSteps);
+   uint32_t sequence = 0;
+   for (uint32_t j = blockIdx.y; j < jobs; j += gridDim.y) {
+-    const int32_t* job = p.plan + 1 + j * (kRows + 1);
+-    const uint32_t expert = job[0];
++    const int32_t* job = ExpertList ? p.plan + size_t(j) * stride : p.plan + 1 + j * (kRows + 1);
++    const uint32_t expert = ExpertList ? j : uint32_t(job[0]);
+     if (warp == kChannelWarps) {
+       const int32_t slot = lane < kRows ? job[1 + lane] : -1;
+       const uint32_t live = __popc(__ballot_sync(0xffffffffu, slot >= 0));
+@@ -182,6 +187,94 @@ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+   }
+ }
+ 
++// Each consumer owns sixteen output channels and one MMA accumulator per
++// eight route rows. All groups reuse the same packed operand from shared memory.
++template <bool Gate, uint32_t Groups, uint32_t Rows>
++SGL_DEVICE void consume_multirow(const Projection& p, const int32_t* job, uint32_t live, uint32_t expert,
++                                 uint32_t column, StreamTile<Gate, Rows> (&ring)[2], uint64_t* full,
++                                 uint64_t* empty, uint32_t& sequence) {
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  const uint32_t band = warp / 4, part = (warp + lane / 8) % 4;
++  const uint32_t wi = 128 * band + 4 * lane + part, si = 32 * band + 4 * (lane / 4) + part;
++  const uint32_t chunks = p.input_width / (16 * kKSteps);
++  float4 a[Groups]{}, b[Groups]{};
++  for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++    const uint32_t index = sequence % 2;
++    wait_phase(full + index, (sequence / 2) & 1);
++    const auto& tile = ring[index];
++#pragma unroll
++    for (uint32_t s = 0; s < kKSteps; ++s) {
++      const uint32_t w = tile.weights[0][s][wi], scale = tile.scales[0][s][si];
++      uint32_t w_up = 0, scale_up = 0;
++      if constexpr (Gate) {
++        w_up = tile.weights[1][s][wi];
++        scale_up = tile.scales[1][s][si];
++      }
++#pragma unroll
++      for (uint32_t g = 0; g < Groups; ++g) {
++        const uint32_t row = g * kRows + lane / 4;
++        const auto* x = &tile.inputs[row][s * 8 + lane % 4];
++        const uint32_t lo = row < live ? x[0] : 0u, hi = row < live ? x[4] : 0u;
++        contract_fragment(a[g], w, scale, lo, hi);
++        if constexpr (Gate) contract_fragment(b[g], w_up, scale_up, lo, hi);
++      }
++    }
++    __syncwarp();
++    if (lane == 0) {
++      asm volatile("mbarrier.arrive.shared::cta.b64 _, [%0];" :: "r"(shared_addr(empty + index)) : "memory");
++    }
++  }
++#pragma unroll
++  for (uint32_t g = 0; g < Groups; ++g) {
++    finish_channels<Gate>(p, job + g * kRows, column, expert, lane, band, part, a[g], b[g], live - g * kRows);
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * (kChannelWarps + 1)) void multirow_projection(
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps, uint32_t stride) {
++  constexpr uint32_t rows_per_tile = Gate ? 2 * kRows : 4 * kRows;
++  __shared__ StreamTile<Gate, rows_per_tile> ring[2];
++  __shared__ uint64_t full[2], empty[2];
++  const uint32_t expert = blockIdx.y, column = 128 * blockIdx.x;
++  const int32_t* list = p.plan + size_t(expert) * stride;
++  const uint32_t rows = list[0];
++  if (rows == 0) return;
++  if (threadIdx.x < 2) {
++    const uint32_t index = threadIdx.x;
++    asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;\n"
++                 "mbarrier.init.shared::cta.b64 [%1], %2;\n"
++                 "fence.proxy.async.shared::cta;"
++                 :: "r"(shared_addr(full + index)), "r"(shared_addr(empty + index)), "n"(kChannelWarps) : "memory");
++  }
++  __syncthreads();
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  const uint32_t chunks = p.input_width / (16 * kKSteps);
++  uint32_t sequence = 0;
++  for (uint32_t first = 0; first < rows; first += rows_per_tile) {
++    const uint32_t live = min(rows_per_tile, rows - first);
++    const int32_t* job = list + first;
++    if (warp == kChannelWarps) {
++      const int32_t slot = lane < live ? job[1 + lane] : -1;
++      for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++        const uint32_t index = sequence % 2;
++        if (sequence >= 2) wait_phase(empty + index, ((sequence / 2) - 1) & 1);
++        produce<Gate>(p, maps, ring[index], full + index, expert, column, chunk, slot, live);
++      }
++    } else if (live <= kRows) {
++      consume_multirow<Gate, 1>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if constexpr (Gate) {
++      consume_multirow<true, 2>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if (live <= 2 * kRows) {
++      consume_multirow<false, 2>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if (live <= 3 * kRows) {
++      consume_multirow<false, 3>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else {
++      consume_multirow<false, 4>(p, job, live, expert, column, ring, full, empty, sequence);
++    }
++  }
++}
++
+ template <bool Gate>
+ inline uint32_t resident_stream_blocks(int device) {
+   int current = -1, sms = 0, blocks = 0;
+@@ -197,7 +290,7 @@ inline void launch_stream(const Projection& p, const BankMaps& maps, uint32_t gr
+   const uint32_t columns = p.output_width / 128;
+   const uint32_t lanes = resident / columns;
+   if (groups < lanes) {
+-    host::LaunchKernel(dim3(columns, std::min(bound, lanes)), 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate>, p, maps);
++    host::LaunchKernel(dim3(columns, std::min(bound, lanes)), 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate>, p, maps, 0u);
+   } else {
+     host::LaunchKernel(dim3(columns, groups), 32 * kChannelWarps, dev)(tensor_projection<Gate>, p, maps);
+   }
+@@ -233,6 +326,17 @@ inline void check_map_storage(tvm::ffi::TensorView maps) {
+   host::TensorMatcher({int64_t(2 * sizeof(BankMaps) + 2 * sizeof(uint32_t))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(maps);
+ }
+ 
++template <bool Gate>
++inline void launch_medium(const Projection& p, const BankMaps& maps, uint32_t experts, uint32_t stride, DLDevice dev) {
++  const dim3 grid(p.output_width / 128, experts);
++  static_assert(kWarps * 64 == 128);
++  if (aligned_packed_projection(p) && stride > kRows) {
++    host::LaunchKernel(grid, 32 * (kChannelWarps + 1), dev)(multirow_projection<Gate>, p, maps, stride);
++  } else {
++    host::LaunchKernel(grid, 32 * kWarps, dev)(muse_medium_route_pair::projection<Gate>, p, stride);
++  }
++}
++
+ }  // namespace muse_tma_route
+ 
+ struct MuseTmaRoutePair {
+@@ -251,6 +355,21 @@ struct MuseTmaRoutePair {
+     return true;
+   }
+ 
++  static void run_medium(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
++                  tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
++                  tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
++                  tvm::ffi::TensorView active, tvm::ffi::TensorView outputs, tvm::ffi::TensorView plan,
++                  tvm::ffi::TensorView maps) {
++    using namespace muse_tma_route;
++    check_map_storage(maps);
++    BankMaps encoded[2];
++    std::memcpy(encoded, maps.data_ptr(), sizeof(encoded));
++    MuseMediumRoutePair::run_with<false>([&](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
++      launch_medium<true>(up, encoded[0], experts, stride, dev);
++      launch_medium<false>(out, encoded[1], experts, stride, dev);
++    }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan);
++  }
++
+   static void run(tvm::ffi::TensorView inputs, tvm::ffi::TensorView local_ids,
+                   tvm::ffi::TensorView gate, tvm::ffi::TensorView gs, tvm::ffi::TensorView gscale,
+                   tvm::ffi::TensorView down, tvm::ffi::TensorView ds, tvm::ffi::TensorView dscale,
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index 5e7b535..77808e1 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -553,5 +553,7 @@ POSITIONAL_FIELD_ORDER = (
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
+     "muse_sparse_prompt_exchange",
++    "speculative_dflash_sp_prefill_context",
++    "speculative_dflash_share_verify_schedule",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..6b492b4 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -71,6 +71,14 @@ class Spec(msgspec.Struct):
+         Optional[int],
+         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
+     ] = None
++    speculative_dflash_sp_prefill_context: A[
++        bool,
++        "Project and normalize DFLASH features on sequence-parallel prefill shards and gather sampled LM-head rows.",
++    ] = False
++    speculative_dflash_share_verify_schedule: A[
++        bool,
++        "Share compatible FlashAttention 3 scheduling metadata within a DFLASH target verification.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index f001e89..bcc4994 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -406,6 +406,23 @@ class FlashAttentionBackend(AttentionBackend):
+             _should_disable_scheduler_metadata_precompute()
+         )
+ 
++        self._verify_schedule_sms = 0
++        if (
++            get_spec().speculative_dflash_share_verify_schedule
++            and model_runner.spec_algorithm.is_dflash() and not self.is_draft_runner
++            and self.fa_impl_ver == 3 and get_platform().is_sm90 and self.page_size == 1
++            and model_runner.dtype == torch.bfloat16 and self.kv_cache_dtype == torch.float8_e4m3fn
++            and self.kv_cache_dtype_str != "auto" and not self.kv_cache_is_mxfp8
++            and not deterministic and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and envs.SGLANG_RAGGED_VERIFY_MODE.get() == "static" and get_parallel().attn_dcp_size == 1
++            and not self._disable_scheduler_metadata_precompute
++            and not self.is_encoder_decoder and not self.use_mla and self.topk <= 1
++            and self.local_attn_builder is None and not self.is_prefill_aware_swa
++            and self.attn_cp_size == 1 and self._kv_shard_pool is None
++            and not self.kv_index_translator.is_translating and self.num_splits == 0
++        ):
++            self._verify_schedule_sms = torch.cuda.get_device_properties(self.device).multi_processor_count
++
+     def _maybe_init_local_attn_builder(
+         self, model_runner: ModelRunner
+     ) -> Optional[LocalAttentionMetadataBuilder]:
+@@ -461,6 +478,57 @@ class FlashAttentionBackend(AttentionBackend):
+             num_splits=self.num_splits,
+         )
+ 
++    def _verify_schedule(
++        self, schedules, q, key_cache, value_cache, page_table, lengths, cu_q,
++        width, layer, window, forward_batch,
++    ):
++        # The standalone metadata API approximates total_q as batch * width.
++        # The paged attention API derives max_seqlen_k from table columns.
++        batch = lengths.shape[0]
++        q_heads, kv_heads = layer.tp_q_head_num, layer.tp_k_head_num
++        if (
++            width <= 1 or batch == 0 or q.shape[0] != batch * width
++            or q.numel() != batch * width * q_heads * 64
++            or width != getattr(forward_batch.spec_info, "num_tokens_per_req", None)
++            or getattr(forward_batch.spec_info, "ragged_verify_layout", None) is not None
++            or layer.head_dim != 64 or layer.v_head_dim != 64 or layer.logit_cap != 0
++            or kv_heads <= 0 or q_heads < kv_heads or q_heads % kv_heads
++            or q.dtype != torch.float8_e4m3fn or not q.is_cuda
++            or q.device.index != torch.cuda.current_device()
++            or len(key_cache.shape) != 4 or key_cache.shape != value_cache.shape
++            or key_cache.shape[1:] != (self.page_size, kv_heads, 64)
++            or key_cache.dtype != q.dtype or value_cache.dtype != q.dtype
++            or lengths.shape != (batch,) or cu_q.shape != (batch + 1,)
++            or lengths.dtype != torch.int32 or cu_q.dtype != torch.int32
++            or not lengths.is_contiguous() or not cu_q.is_contiguous()
++            or page_table.ndim != 2 or page_table.shape[0] != batch
++            or any(t.device != q.device for t in (key_cache, value_cache, page_table, lengths, cu_q))
++        ):
++            return None
++        packed_width = width * (q_heads // kv_heads)
++        capacity = page_table.shape[1] * self.page_size
++        loaded = capacity if window[0] < 0 else min(capacity, window[0] + 1 + 64)
++        # Pinned SM90 E4M3 small-Q/D64 tiles are 64x128. With >=5 N
++        # tiles and <=half a wave, the second split doubles efficiency.
++        # This avoids a separate per-layer semaphore zero for single-split calls.
++        m_blocks = ((batch * packed_width + 63) // 64) * kv_heads
++        if packed_width > 64 or loaded <= 4 * 128 or 2 * m_blocks > self._verify_schedule_sms:
++            return None
++        # Each mutable semaphore belongs to one stream and model invocation.
++        # Holding the original length tensors also keeps their identities live.
++        key = (
++            self, q.device, torch.cuda.current_stream(q.device).cuda_stream,
++            lengths, cu_q, width, capacity, q_heads, kv_heads, window,
++        )
++        if key not in schedules:
++            schedules[key] = self._get_scheduler_metadata(
++                batch_size=batch, max_seqlen_q=width, max_seqlen_k=capacity,
++                num_heads=q_heads, num_heads_k=kv_heads, headdim=64,
++                cache_seqlens=lengths, cu_seqlens_q=cu_q, qkv_dtype=q.dtype,
++                page_size=self.page_size, causal=True, window_size=window,
++            )
++        return schedules[key]
++
+     def validate_elastic_cuda_graph_recapture(self) -> None:
+         if self.use_mla and self.fa_impl_ver != 3:
+             raise ValueError(
+@@ -1929,6 +1997,23 @@ class FlashAttentionBackend(AttentionBackend):
+                         key_cache, value_cache, page_table = span.view(
+                             key_cache, value_cache, page_table, cache_seqlens, query.shape[0]
+                         )
++                if (
++                    getattr(self, "_verify_schedule_sms", 0) and not torch.compiler.is_compiling()
++                    and forward_batch._fa3_verify_schedules is not None
++                    and forward_batch.forward_mode.is_target_verify() and causal
++                    and not torch.are_deterministic_algorithms_enabled()
++                    and not use_local_attn and not use_cascade_attn and not return_lse
++                    and not layer.is_cross_attention and q_rope is None and k_rope is None
++                    and forward_batch.dcp_kv_mask is None
++                    and kwargs.keys() <= {"k_descale", "v_descale"}
++                ):
++                    schedule = self._verify_schedule(
++                        forward_batch._fa3_verify_schedules, query, key_cache, value_cache,
++                        page_table, cache_seqlens, cu_seqlens_q, max_seqlen_q,
++                        layer, window_size, forward_batch,
++                    )
++                    if schedule is not None:
++                        kwargs["scheduler_metadata"] = schedule
+                 result = flash_attn_with_kvcache(
+                     q=query,
+                     k_cache=key_cache,
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+new file mode 100644
+index 0000000..f7971d2
+--- /dev/null
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -0,0 +1,139 @@
++"""DFLASH context projection on sequence-parallel token rows."""
++
++from contextlib import contextmanager
++from contextvars import ContextVar
++from typing import NamedTuple
++
++import torch
++from torch import nn
++from torch.nn.modules import module as module_hooks
++
++
++class _PrefillContext(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    norm: nn.Module
++    project_target_hidden: object
++    group: object
++    target: nn.Module
++    logits_processor: nn.Module
++
++
++_prefill_context = ContextVar("dflash_sp_prefill_context", default=None)
++
++
++def _agree(ready, group):
++    # Keep device collective shapes uniform even for rank-local instrumentation.
++    status = torch.tensor(int(ready), device="cpu", dtype=torch.int32)
++    torch.distributed.all_reduce(
++        status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++    )
++    return bool(status.item())
++
++
++def _supports_shard_norm(norm, fc):
++    # RMSNorm resolves its platform dispatch lazily on the first input.
++    from sglang.srt.layers.layernorm import RMSNorm
++
++    if type(norm) is not RMSNorm:
++        return False
++    if any(name in vars(norm) for name in ("forward_cuda", "forward_native", "_resolve_forward_method")):
++        return False
++    method = norm._forward_method
++    if method is None:
++        method = norm._resolve_forward_method()
++    return (
++        getattr(method, "__self__", None) is norm
++        and getattr(method, "__func__", None) in (RMSNorm.forward_cuda, RMSNorm.forward_native)
++        and norm._quant_linear is None
++        and norm.override_orig_dtype in (None, torch.bfloat16)
++        and norm.weight.device == fc.weight.device
++        and norm.weight.shape == (fc.out_features,)
++    )
++
++
++def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
++    from sglang.srt.layers.logits_processor import LogitsProcessor
++    from sglang.srt.models.muse_spark import MuseSpark1xLogitsProcessor
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    norm = getattr(draft, "hidden_norm", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.in_features > fc.out_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++        and type(logits_processor) in (LogitsProcessor, MuseSpark1xLogitsProcessor)
++        and _supports_shard_norm(norm, fc)
++    )
++    if _agree(compatible, group):
++        return _PrefillContext(
++            draft, fc, norm, draft.project_target_hidden, group, target, logits_processor
++        )
++    return None
++
++
++@contextmanager
++def dflash_sp_prefill_scope(context):
++    token = _prefill_context.set(context)
++    try:
++        yield
++    finally:
++        _prefill_context.reset(token)
++
++
++def project_dflash_prefill_shard(inputs, num_tokens, group, logits_processor, full_capture):
++    """Assign each replicated full-K projection row to its SP owner."""
++    context = _prefill_context.get()
++    # Small shards do not amortize the GEMM and host capability agreement.
++    if context is None or num_tokens < 128 * group.world_size:
++        return None
++    if inputs.is_cuda and torch.cuda.is_current_stream_capturing():
++        return None
++    draft, fc, norm, projector, expected_group, target, expected_logits = context
++    compatible = (
++        group is expected_group
++        and full_capture
++        and logits_processor is expected_logits
++        and not logits_processor.keep_last_hidden_states
++        and logits_processor.expected_aux_hidden_states is None
++        and not draft.quantizable
++        and draft.hidden_norm is norm
++        and not any(name in vars(logits_processor) for name in (
++            "_get_pruned_states", "_get_hidden_states_to_store", "_get_last_hidden_states_to_store",
++        ))
++        and _supports_shard_norm(norm, fc)
++        and draft.fc is fc
++        and draft.project_target_hidden == projector
++        and fc.bias is None
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and all(
++            not mod._forward_hooks
++            and not mod._forward_pre_hooks
++            and getattr(mod, "_compiled_call_impl", None) is None
++            and "forward" not in vars(mod)
++            for mod in (fc, norm, target, logits_processor)
++        )
++        and inputs.ndim == 2
++        and inputs.shape[0] * group.world_size >= num_tokens
++        and inputs.shape[1] == fc.in_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_contiguous()
++        and inputs.device == fc.weight.device
++        and inputs.dtype == fc.weight.dtype == torch.bfloat16
++    )
++    if _agree(compatible, group):
++        return norm(fc(inputs))
++    return None
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index ea02720..8af97f1 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -167,6 +167,23 @@ def reduce_scatter_token_rows(full: torch.Tensor, group) -> torch.Tensor:
+     return group.reduce_scatter_along_dim(full, dim=0)
+ 
+ 
++def sp_gather_selected_rows(shard: torch.Tensor, positions: torch.Tensor, num_tokens: int) -> torch.Tensor:
++    """Gather replicated selections from row-sharded states, preserving order and bits."""
++    group = get_parallel().tp_group
++    span = shard.shape[0]
++    # Match indexing on the original unpadded global tensor, including -1.
++    valid = (positions >= -num_tokens) & (positions < num_tokens)
++    absolute = torch.where(positions < 0, positions + num_tokens, positions)
++    owner = torch.div(absolute, span, rounding_mode="floor")
++    owner = torch.where(valid, owner, group.world_size)
++    local = shard.index_select(0, absolute.remainder(span))
++    count = positions.numel()
++    gathered = shard.new_empty((group.world_size * count, shard.shape[1]))
++    group.all_gather_into_tensor(gathered, local)
++    request = torch.arange(count, device=shard.device)
++    return gathered.index_select(0, owner * count + request)
++
++
+ def maybe_exit_gather(
+     *,
+     hidden_states: torch.Tensor,
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index 8178ba3..d5cf9d2 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -292,6 +292,9 @@ class LogitsProcessorOutput:
+     # Scheduler-local output copied alongside the ordinary generation result.
+     auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None
+ 
++    # For the DFLASH worker consuming the native prefill capture on this rank.
++    dflash_prefill_context_done: bool = False
++
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+             return
+@@ -544,6 +547,8 @@ class LogitsProcessor(nn.Module):
+         logits_metadata: Union[LogitsMetadata, ForwardBatch],
+         aux_hidden_states: Optional[AuxHiddenStates] = None,
+         hidden_states_before_norm: Optional[torch.Tensor] = None,
++        *,
++        sp_prompt_tokens: Optional[int] = None,
+     ) -> LogitsProcessorOutput:
+         # Extract MIS / setwise indices before ForwardBatch → LogitsMetadata conversion
+         multi_item_delimiter_indices = None
+@@ -561,12 +566,37 @@ class LogitsProcessor(nn.Module):
+ 
+         # Under LayerNorm SP the decoder loop leaves these sequence-sharded; undo
+         # that before the LM head, which must not participate.
+-        hidden_states, hidden_states_before_norm = layernorm_sp.maybe_exit_gather(
+-            hidden_states=hidden_states,
+-            hidden_states_before_norm=hidden_states_before_norm,
+-            input_ids=input_ids,
+-            forward_mode=logits_metadata.forward_mode,
+-        )
++        sampled_sp_states = None
++        if (
++            sp_prompt_tokens is not None
++            and hidden_states_before_norm is None
++            and self.expected_aux_hidden_states is None
++            and not self.keep_last_hidden_states
++            and isinstance(aux_hidden_states, torch.Tensor)
++            and logits_metadata.capture_hidden_mode.is_full()
++            and layernorm_sp.runs_sp(logits_metadata.forward_mode)
++            and not logits_metadata.extend_return_logprob
++            and multi_item_delimiter_indices is None
++            and token_indices_to_pool is None
++            and logits_metadata.extend_seq_lens is not None
++            and logits_metadata.extend_seq_lens.ndim == 1
++            and logits_metadata.extend_seq_lens.device == hidden_states.device
++            and logits_metadata.extend_seq_lens.dtype in (torch.int32, torch.int64)
++            and 0 < logits_metadata.extend_seq_lens.numel() < hidden_states.shape[0]
++        ):
++            positions = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
++            sampled_sp_states = layernorm_sp.sp_gather_selected_rows(hidden_states, positions, sp_prompt_tokens)
++            get_forward().set("sp_active", False)
++        elif sp_prompt_tokens is not None and input_ids is None:
++            hidden_states = layernorm_sp.sp_exit_gather(hidden_states, sp_prompt_tokens)
++            get_forward().set("sp_active", False)
++        else:
++            hidden_states, hidden_states_before_norm = layernorm_sp.maybe_exit_gather(
++                hidden_states=hidden_states,
++                hidden_states_before_norm=hidden_states_before_norm,
++                input_ids=input_ids,
++                forward_mode=logits_metadata.forward_mode,
++            )
+ 
+         if self.expected_aux_hidden_states is not None:
+             self._check_aux_hidden_states(
+@@ -600,19 +630,25 @@ class LogitsProcessor(nn.Module):
+             return self._get_dllm_logits(hidden_states, lm_head, logits_metadata)
+ 
+         # Get the last hidden states and last logits for the next token prediction
+-        (
+-            pruned_states,
+-            pruned_states_before_norm,
+-            aux_pruned_states,
+-            sample_indices,
+-            input_logprob_indices,
+-            token_to_seq_idx,
+-        ) = self._get_pruned_states(
+-            hidden_states,
+-            hidden_states_before_norm,
+-            aux_hidden_states,
+-            logits_metadata,
+-        )
++        if sampled_sp_states is not None:
++            # FULL capture retains the separately gathered draft features.
++            pruned_states = sampled_sp_states
++            pruned_states_before_norm = aux_pruned_states = None
++            sample_indices = input_logprob_indices = token_to_seq_idx = None
++        else:
++            (
++                pruned_states,
++                pruned_states_before_norm,
++                aux_pruned_states,
++                sample_indices,
++                input_logprob_indices,
++                token_to_seq_idx,
++            ) = self._get_pruned_states(
++                hidden_states,
++                hidden_states_before_norm,
++                aux_hidden_states,
++                logits_metadata,
++            )
+ 
+         hidden_states_to_store = self._get_hidden_states_to_store(
+             hidden_states,
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 3c692f5..b197630 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -542,6 +542,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         input_row_map=None,
+         local_route_count=None,
+         window_token_count=None,
++        expert_counts=None,
+     ) -> None:
+         from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+             compact_prefill_and_combine,
+@@ -552,6 +553,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+             compact_prefill_and_combine(
+                 self, hidden_states, local_topk_ids, topk_scores, output,
+                 input_row_map=input_row_map, local_route_count=local_route_count, window_token_count=window_token_count,
++                expert_counts=expert_counts,
+             )
+             return
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 2b63bc5..9bde0ef 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -44,7 +44,11 @@ def _tma_route_pair_module():
+         return load_jit(
+             "muse_tma_route_pair",
+             cuda_files=["muse_spark/expert_tma_route_pair.cuh"],
+-            cuda_wrappers=[("prepare", "MuseTmaRoutePair::prepare"), ("run", "MuseTmaRoutePair::run")],
++            cuda_wrappers=[
++                ("prepare", "MuseTmaRoutePair::prepare"),
++                ("run", "MuseTmaRoutePair::run"),
++                ("run_medium", "MuseTmaRoutePair::run_medium"),
++            ],
+             extra_cuda_cflags=get_activation_cuda_cflags(),
+         )
+     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+@@ -103,6 +107,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+     params = {}
+     tunings = {}
+     grouped_tunings = {}
++    grouped_metas = {}
+     route_pair = (
+         envs.SGLANG_ENABLE_MUSE_SPARK_ROUTED_PROJECTION_PAIR.get()
+         and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
+@@ -189,6 +194,7 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         grouped = HummingMethod.get_default_tuning_configs(
+             layer, gemm_type=GemmType.GROUPED_CONTIGUOUS, sublayer_name=name
+         )[-1][2]
++        grouped_metas[name] = meta.to_str()
+         grouped_tunings[name] = json.dumps(
+             grouped | {"use_stream_k": False, "use_tma_c": False}
+         )
+@@ -208,6 +214,16 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+         and layer.hidden_size <= layer.intermediate_size_per_partition
+     ):
+         layer.humming_prefill_silu = _prefill_scaled_silu_module()
++    layer.humming_prefill_tiles = None
++    if layer.humming_prefill_silu is not None:
++        from sglang.srt.layers.muse_spark.prefill_expert_tiles import prepare_tile_widths
++        from sglang.srt.runtime_context import get_parallel
++
++        if get_parallel().muse_sparse_prompt_exchange:
++            layer.humming_prefill_tiles = prepare_tile_widths(
++                grouped_metas, grouped_tunings, _GROUPED_COMPUTE,
++                layer.hidden_size, layer.intermediate_size_per_partition, layer.gate_up_proj.device,
++            )
+     for name, tensor in params.items():
+         setattr(layer, name, torch.nn.Parameter(tensor, requires_grad=False))
+     for name in ("gate_up_proj", "down_proj"):
+@@ -309,12 +325,20 @@ def humming_expert_outputs(
+         activations = hidden_states.new_empty((slots, inner))
+         outputs = hidden_states.new_empty((slots, hidden_size))
+         experts = layer.num_local_experts
++        route = getattr(layer, "humming_route_maps", None)
++        maps_valid = route is not None and route[2] == tuple((b.data_ptr(), b.shape) for b in (
++            layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale,
++        ))
+         if medium:
+             layout = local_ids.new_empty((experts, slots + 1))
+-            _medium_route_pair_module().run(
++            if maps_valid:
++                launch, extra = route[0].run_medium, (route[1],)
++            else:
++                launch, extra = _medium_route_pair_module().run, ()
++            launch(
+                 hidden_states, local_ids, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
+                 layer.w13_global_scale, layer.w2_weight, layer.w2_weight_scale.view(torch.uint8),
+-                layer.w2_global_scale, activations, outputs, layout,
++                layer.w2_global_scale, activations, outputs, layout, *extra,
+             )
+             return outputs.view(num_tokens, topk, hidden_size), local_ids
+         used = min(experts, slots)
+@@ -324,10 +348,7 @@ def humming_expert_outputs(
+         plan = local_ids.new_empty(1 + 9 * max_tiles)
+         expected = (slots * experts + layer.global_num_experts - 1) // layer.global_num_experts
+         groups = max(1, min(used, expected))
+-        route = getattr(layer, "humming_route_maps", None)
+-        if route is not None and route[2] == tuple((b.data_ptr(), b.shape) for b in (
+-            layer.w13_weight, layer.w13_weight_scale, layer.w2_weight, layer.w2_weight_scale,
+-        )):
++        if maps_valid:
+             dispatch, extra = route[0], (route[1],)
+         else:
+             dispatch, extra = _route_pair_module(), ()
+@@ -406,6 +427,7 @@ def humming_grouped_expert_outputs(
+     *,
+     input_row_map=None,
+     local_route_count=None,
++    expert_counts=None,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     """Return mapped BF16 rows; known live counts defer the W2 scale to finalization."""
+     from humming.layer import HummingMethod
+@@ -414,13 +436,21 @@ def humming_grouped_expert_outputs(
+ 
+     _, hidden_size = hidden_states.shape
+     topk = local_ids.shape[1]
+-    route_experts, slots = local_ids.flatten().sort(stable=True)
+-    experts = torch.arange(
+-        layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device
+-    )
+-    offsets = torch.searchsorted(route_experts, experts, out_int32=True)
+     known_routes = live_routes if live_routes is not None else local_route_count
+-    first_local = offsets[0].item() if known_routes is None else slots.numel() - known_routes
++    plan = None
++    if expert_counts and known_routes == sum(expert_counts):
++        from sglang.srt.layers.muse_spark.prefill_expert_tiles import choose_tiles, sort_tile_cohorts
++
++        plan = choose_tiles(layer.humming_prefill_tiles, expert_counts)
++    if plan is None:
++        route_experts, slots = local_ids.flatten().sort(stable=True)
++        experts = torch.arange(layer.num_local_experts + 1, dtype=local_ids.dtype, device=local_ids.device)
++        offsets = torch.searchsorted(route_experts, experts, out_int32=True)
++        first_local = offsets[0].item() if known_routes is None else slots.numel() - known_routes
++        runs = [(0, slots.numel() - first_local, offsets - first_local, layer.humming_grouped_tunings)]
++    else:
++        route_experts, slots, runs = sort_tile_cohorts(local_ids, plan, layer.humming_prefill_tiles)
++        first_local = slots.numel() - known_routes
+     num_routes = slots.numel() - first_local
+     if num_routes == 0:
+         return hidden_states.new_empty((0, hidden_size)), local_ids
+@@ -437,7 +467,8 @@ def humming_grouped_expert_outputs(
+     route_experts = route_experts[first_local:]
+     if live_routes is None:
+         route_experts = route_experts.long()
+-    offsets = offsets - first_local
++    if len(runs) > 1:
++        route_experts.remainder_(layer.num_local_experts)
+     staging = hidden_states.new_empty(num_routes * stage_width)
+     arena = hidden_states.new_empty(num_routes * output_width)
+     inputs = staging[: num_routes * hidden_size].view(num_routes, hidden_size)
+@@ -453,15 +484,16 @@ def humming_grouped_expert_outputs(
+         ("w13", inputs, gate_up),
+         ("w2", activations, outputs),
+     ):
+-        HummingMethod.forward_layer(
+-            layer,
+-            inputs=source,
+-            outputs=destination,
+-            expert_layout=offsets,
+-            compute_config=_GROUPED_COMPUTE,
+-            tuning_config=layer.humming_grouped_tunings[name],
+-            sublayer_name=name,
+-        )
++        for begin, end, offsets, tunings in runs:
++            HummingMethod.forward_layer(
++                layer,
++                inputs=source[begin:end],
++                outputs=destination[begin:end],
++                expert_layout=offsets,
++                compute_config=_GROUPED_COMPUTE,
++                tuning_config=tunings[name],
++                sublayer_name=name,
++            )
+         if live_routes is not None:
+             if name == "w13":
+                 layer.humming_prefill_silu.run(
+@@ -512,7 +544,7 @@ def _compact_prefill_windows(local_ids, local_experts, global_experts, local_rou
+ 
+ 
+ def compact_prefill_and_combine(
+-    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None, window_token_count=None
++    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None, window_token_count=None, expert_counts=None
+ ):
+     from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
+         fused_post_expert_norm_weighted_sum,
+@@ -528,6 +560,7 @@ def compact_prefill_and_combine(
+         values, mapped = humming_grouped_expert_outputs(
+             layer, hidden_states[begin:end] if input_row_map is None else hidden_states,
+             ids, live, input_row_map=None if input_row_map is None else input_row_map[begin:end],
++            expert_counts=expert_counts if begin == 0 and end == local_ids.shape[0] else None,
+         )
+         fused_post_expert_norm_weighted_sum(
+             values,
+diff --git a/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py b/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py
+new file mode 100644
+index 0000000..1e84f5d
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/prefill_expert_tiles.py
+@@ -0,0 +1,111 @@
++"""Use narrower full-K grouped projections when the observed route counts allow it."""
++
++import json
++import logging
++import subprocess
++from functools import lru_cache
++from itertools import accumulate
++
++import torch
++
++
++@lru_cache(maxsize=128)
++def _prepare_cohort_variant(context, meta, compute, tuning):
++    # The vendor stores successful kernels per CUDA context. Also cache a
++    # failed optional build so later layers can immediately use their parent.
++    from humming.kernel.humming import HummingKernel
++
++    try:
++        HummingKernel.prepare_kernels(meta, compute, tuning)
++    except (ValueError, AssertionError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
++        logging.getLogger(__name__).warning("Grouped prefill tile unavailable: %s", exc)
++        return False
++    return True
++
++
++def prepare_tile_widths(metas, tunings, compute, hidden, intermediate, device):
++    from humming.kernel.humming import HummingKernel
++
++    configs = {name: json.loads(value) for name, value in tunings.items()}
++    base = configs["w13"]["block_shape"][0]
++    if any(
++        config["block_shape"][0] != base or config["warp_shape"][0] != base
++        or not config.get("use_warp_spec") or not config.get("use_tma")
++        or config.get("num_ctas_per_sm", 1) != 1 or config.get("num_sms", 0)
++        for config in configs.values()
++    ):
++        return None
++    bands = (2 * intermediate // configs["w13"]["block_shape"][1], hidden // configs["w2"]["block_shape"][1])
++    sms = torch.cuda.get_device_properties(device).multi_processor_count
++    widths = {base: tunings}
++    context = HummingKernel.current_context()
++    # Keep N/K, stages, warp count, accumulation and epilogue unchanged.
++    for width in sorted({8 * ((3 * base + 16) // 32), 8 * ((7 * base + 32) // 64)}):
++        if not 64 <= width < base or width % 8:
++            continue
++        variants = {}
++        for name, config in configs.items():
++            updated = config.copy()
++            for key in ("block_shape", "warp_shape"):
++                updated[key] = [width, *config[key][1:]]
++            variants[name] = json.dumps(updated)
++        if all(_prepare_cohort_variant(context, metas[name], compute, tuning) for name, tuning in variants.items()):
++            widths[width] = variants
++    return (widths, bands, sms) if len(widths) > 1 else None
++
++
++def choose_tiles(state, counts):
++    if not state or not counts or not any(counts):
++        return None
++    widths, bands, sms = state
++    base = max(widths)
++    tiles = [(n + base - 1) // base for n in counts]
++    total = sum(tiles)
++
++    def waves(n):
++        return sum((n * bands_per_projection + sms - 1) // sms for bands_per_projection in bands)
++
++    best = base * waves(total)
++    choice = None
++    for width in sorted(widths):
++        if width == base:
++            continue
++        # Preserve the number of packed weight-tile reads for every expert.
++        narrow = [n <= t * width for n, t in zip(counts, tiles)]
++        first = sum(t for t, use in zip(tiles, narrow) if use)
++        cost = width * waves(first) + base * waves(total - first)
++        if first and first != total:
++            # Price one extra resident wave per projection for a second launch.
++            cost += width * len(bands)
++        if cost < best:
++            best, choice = cost, (width, narrow)
++    if choice is None:
++        return None
++    width, narrow = choice
++    narrow_rows = sum(n for n, use in zip(counts, narrow) if use)
++    groups = [(width, 0, narrow_rows)]
++    if narrow_rows == sum(counts):
++        return groups, [list(accumulate(counts, initial=0))]
++    groups.append((base, narrow_rows, sum(counts)))
++    experts = len(counts)
++    keys = [-1, *(i if use else experts + i for i, use in enumerate(narrow))]
++    offsets = [
++        list(accumulate((n if use == selected else 0 for n, use in zip(counts, narrow)), initial=0))
++        for selected in (True, False)
++    ]
++    return groups, [keys, *offsets]
++
++
++def sort_tile_cohorts(ids, plan, state):
++    groups, table = plan
++    meta = torch.tensor(table, device="cpu", dtype=torch.int32).to(ids.device, non_blocking=True)
++    keys = ids.reshape(-1)
++    if len(groups) > 1:
++        keys = meta[0].index_select(0, keys.long() + 1)
++    sorted_keys, slots = keys.sort(stable=True)
++    offsets = meta[-len(groups):]
++    runs = [
++        (begin, end, offsets[index], state[0][width])
++        for index, (width, begin, end) in enumerate(groups)
++    ]
++    return sorted_keys, slots, runs
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+index b32a8a3..e0e26f5 100644
+--- a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -114,23 +114,36 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+     # Advertise actual local ownership, including remapped experts. A hook or
+     # unsupported local bank on any rank votes the entire exchange back to dense.
+     local = torch.zeros(padded_rows + 1, dtype=torch.uint8, device=shard.device)
+-    local_routes = local.new_zeros((), dtype=torch.int32)
++    route_counts = local.new_zeros(1, dtype=torch.int32)
++    histogram = False
+     if eligible:
+         local_ids = local_humming_expert_ids(experts, ids)
+         owned_slots = local_ids >= 0
+         local[:tokens] = owned_slots.any(dim=1)
+         local[-1] = 1
+-        local_routes = owned_slots.sum(dtype=torch.int32)
++        # FP32 exactly represents all integer bin counts at this bound; fixed
++        # endpoints avoid a range-discovery sync. The first bin is nonlocal.
++        histogram = (
++            bool(getattr(experts, "humming_prefill_tiles", None))
++            and experts.num_local_experts < (1 << 20) and local_ids.numel() <= (1 << 24)
++        )
++        if histogram:
++            n = experts.num_local_experts
++            route_counts = torch.histc(local_ids.float(), bins=n + 1, min=-1.5, max=n - 0.5)[1:].to(torch.int32)
++        else:
++            route_counts = owned_slots.sum(dtype=torch.int32).reshape(1)
+     all_masks = local.new_empty((group.world_size, local.numel()))
+     group.all_gather_into_tensor(all_masks, local[None, :])
+     needs = all_masks[:, :padded_rows]
+     # One small device-to-host fence for the votes and every variable split.
+     counts = needs.reshape(group.world_size, group.world_size, shard.shape[0]).sum(-1, dtype=torch.int32).T
+-    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), local_routes.view(1))).tolist()
++    descriptor = torch.cat((counts.flatten(), all_masks[:, -1].int(), route_counts)).tolist()
+     size = group.world_size
+     counts = [descriptor[i * size:(i + 1) * size] for i in range(size)]
+-    local_route_count = descriptor[-1]
+-    width = _group_width(counts, padded_rows) if all(descriptor[size * size:-1]) else 0
++    controls = size * size + size
++    expert_counts = descriptor[controls:] if histogram else None
++    local_route_count = sum(descriptor[controls:])
++    width = _group_width(counts, padded_rows) if all(descriptor[size * size:controls]) else 0
+     if width:
+         inputs = _exchange_inputs(shard, needs, counts, width, group)
+         # The stable route sort is unaffected by dropping entirely nonlocal tokens.
+@@ -141,14 +154,17 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+         compact_scores = scores.index_select(0, live_rows)
+         # Grouped projection stages its inputs before the finalizer writes them back.
+         experts._grouped_humming_and_combine_impl(
+-            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count, window_token_count=tokens
++            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count, window_token_count=tokens,
++            expert_counts=expert_counts,
+         )
+         _return_partials(inputs, needs, counts, width, group, output)
+     else:
+         inputs = layernorm_sp.sp_exit_gather(shard, tokens)
+         if eligible:
+             partial = shard.new_empty((tokens, shard.shape[1]))
+-            experts._grouped_humming_and_combine_impl(inputs, local_ids, scores, partial, local_route_count=local_route_count)
++            experts._grouped_humming_and_combine_impl(
++                inputs, local_ids, scores, partial, local_route_count=local_route_count, expert_counts=expert_counts
++            )
+         else:
+             partial = experts(inputs, scores, ids, experts.post_expert_norm)
+         output.copy_(layernorm_sp.reduce_scatter_token_rows(partial, group))
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index a8280c2..98a9436 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -829,6 +829,9 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # forward-path re-plan would clobber their metadata.
+     forward_metadata_replan_equivalent: bool = False
+ 
++    # Set only for the duration of one target model call.
++    _fa3_verify_schedules: Optional[dict] = None
++
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+ 
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..d57be59 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2314,6 +2314,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # Bounded SWA replay returns the late layers' tail rows plus the
+             # extend indices they came from; the DSpark injector needs both.
+             hidden_states_token_indices=output.hidden_states_token_indices,
++            dflash_prefill_context_done=output.dflash_prefill_context_done,
+         )
+ 
+     def _finalize_execute_output(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 89dfd16..6fe08ff 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -50,6 +50,7 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.layers.attention.trtllm_mha_backend import TRTLLMHAAttnBackend
+ from sglang.srt.layers.aux_hidden_states import pack_aux_hidden_states
++from sglang.srt.layers.dflash_context_projection import project_dflash_prefill_shard
+ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+@@ -100,7 +101,7 @@ from sglang.srt.model_executor.forward_context import (
+     get_token_to_kv_pool,
+ )
+ from sglang.srt.model_loader.weight_utils import default_weight_loader
+-from sglang.srt.runtime_context import get_forward, get_memory, get_parallel
++from sglang.srt.runtime_context import get_forward, get_memory, get_parallel, get_spec
+ from sglang.srt.state_capturer.routed_experts import get_global_experts_capturer
+ from sglang.srt.utils import add_prefix, is_cpu, use_intel_amx_backend
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+@@ -1351,6 +1352,7 @@ class MuseSparkTextForCausalLM(nn.Module):
+             config, logit_scale=config.output_multiplier
+         )
+         self.capture_aux_hidden_states = False
++        self._share_verify_schedule = get_spec().speculative_dflash_share_verify_schedule
+ 
+     def forward(
+         self,
+@@ -1359,10 +1361,25 @@ class MuseSparkTextForCausalLM(nn.Module):
+         forward_batch: ForwardBatch,
+         input_embeds: Optional[torch.Tensor] = None,
+     ):
+-        hidden_states = self.model(
+-            input_ids, positions, forward_batch, input_embeds=input_embeds
+-        )
++        if (
++            self._share_verify_schedule
++            and not torch.compiler.is_compiling()
++            and forward_batch.forward_mode.is_target_verify()
++        ):
++            previous = forward_batch._fa3_verify_schedules
++            forward_batch._fa3_verify_schedules = {}
++            try:
++                hidden_states = self.model(
++                    input_ids, positions, forward_batch, input_embeds=input_embeds
++                )
++            finally:
++                forward_batch._fa3_verify_schedules = previous
++        else:
++            hidden_states = self.model(
++                input_ids, positions, forward_batch, input_embeds=input_embeds
++            )
+         aux_hidden_states = None
++        prefill_context_done = False
+         if self.capture_aux_hidden_states:
+             hidden_states, aux_hidden_states = hidden_states
+         if aux_hidden_states is not None and layernorm_sp.runs_sp(
+@@ -1378,6 +1395,18 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+             aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
++            projected = project_dflash_prefill_shard(
++                aux_hidden_states,
++                num_tokens,
++                get_parallel().tp_group,
++                self.logits_processor,
++                forward_batch.capture_hidden_mode.is_full()
++                and forward_batch.multi_item_delimiter_indices is None
++                and forward_batch.token_indices_to_pool is None,
++            )
++            if projected is not None:
++                aux_hidden_states = projected
++                prefill_context_done = True
+             aux_hidden_states = layernorm_sp.sp_exit_gather(
+                 aux_hidden_states, num_tokens=num_tokens
+             )
+@@ -1388,12 +1417,20 @@ class MuseSparkTextForCausalLM(nn.Module):
+         if (
+             input_ids is None
+             and input_embeds is not None
++            and not prefill_context_done
+             and layernorm_sp.runs_sp(forward_batch.forward_mode)
+         ):
+             hidden_states = layernorm_sp.sp_exit_gather(
+                 hidden_states, num_tokens=input_embeds.shape[0]
+             )
+             get_forward().set("sp_active", False)
++        if prefill_context_done:
++            output = self.logits_processor(
++                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states,
++                sp_prompt_tokens=num_tokens,
++            )
++            output.dflash_prefill_context_done = True
++            return output
+         return self.logits_processor(
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..aa4003c 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from contextlib import nullcontext
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -19,6 +20,10 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ )
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
++from sglang.srt.layers.dflash_context_projection import (
++    dflash_sp_prefill_scope,
++    prepare_dflash_sp_prefill,
++)
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+     LogitsProcessor,
+@@ -614,6 +619,25 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._out_tokens_bufs: List[torch.Tensor] = []
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
++        self._sp_prefill_context = None
++        parallel = get_parallel()
++        if (
++            get_spec().speculative_dflash_sp_prefill_context
++            and is_cuda()
++            and parallel.tp_group.world_size > 1
++            and parallel.pp_size == 1
++            and parallel.attn_cp_size == 1
++            and not parallel.attn_dp_enabled
++            and not get_exec().deterministic.enable_deterministic_inference
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and torch.distributed.get_backend(parallel.tp_group.cpu_group) == "gloo"
++        ):
++            self._sp_prefill_context = prepare_dflash_sp_prefill(
++                self.draft_model,
++                self.target_worker.model_runner.model,
++                self._target_logits_processor,
++                parallel.tp_group,
++            )
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1827,6 +1851,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        prefill_context_done: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1926,7 +1951,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
++            if prefill_context_done:
++                ctx_hidden = target_hidden
++            else:
++                ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+                 self._lilicorr_anchor = publish_anchor(
+                     draft_sampler=self._draft_sampler,
+@@ -2345,12 +2373,22 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if batch.forward_mode.is_extend() or batch.is_extend_in_batch:
+             self._wait_for_fused_hicache_load(batch)
+             # Target prefill: capture DFlash aux hidden states for prompt tokens.
+-            batch_output = self.target_worker.forward_batch_generation(
+-                batch,
+-                pp_proxy_tensors=pp_proxy_tensors,
+-                capture_hidden_mode=CaptureHiddenMode.FULL,
+-                return_kv_loc_plan=True,
+-            )
++            scope = nullcontext()
++            if (
++                self._sp_prefill_context is not None
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.return_logprob
++                and not batch.return_hidden_states_mode.need_capture()
++                and not torch.cuda.is_current_stream_capturing()
++            ):
++                scope = dflash_sp_prefill_scope(self._sp_prefill_context)
++            with scope:
++                batch_output = self.target_worker.forward_batch_generation(
++                    batch,
++                    pp_proxy_tensors=pp_proxy_tensors,
++                    capture_hidden_mode=CaptureHiddenMode.FULL,
++                    return_kv_loc_plan=True,
++                )
+             kv_loc_plan, batch_output.kv_loc_plan = batch_output.kv_loc_plan, None
+ 
+             logits_output, next_token_ids = (
+@@ -2410,6 +2448,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc=self._draft_write_ids(kv_loc_plan),
+                 positions=positions,
+                 extend_lens=ctx_lens,
++                prefill_context_done=logits_output.dflash_prefill_context_done,
+             )
+ 
+             # Avoid copying large hidden-state buffers to CPU in overlap scheduling.

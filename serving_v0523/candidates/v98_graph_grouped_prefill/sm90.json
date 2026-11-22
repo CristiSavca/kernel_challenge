@@ -1,0 +1,611 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "512tokens-H4096-E32",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 4096,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 4096
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Edges",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "4da8d86fcfaf31068971b6a41dc70ef8a95caaa8b0129e602d3deeb6bf9a41db",
+      "cubin_sha256": "028572fffafdd79b3dd2bc50341ce1684ac100a998cf895346cdc7b66bcb4bbd",
+      "cubin_bytes": 8624,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "16384tokens-H4096-E32",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Edges",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "4da8d86fcfaf31068971b6a41dc70ef8a95caaa8b0129e602d3deeb6bf9a41db",
+      "cubin_sha256": "033bb2a7483d560a21cd5008eff71f6e06c06c5d0d038e8d51df2b23d4132b97",
+      "cubin_bytes": 8624,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "16384tokens-H8192-E32",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 12288,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 8192,
+        "WIDTH": 8192,
+        "SPAN": 131072
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Edges",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "4da8d86fcfaf31068971b6a41dc70ef8a95caaa8b0129e602d3deeb6bf9a41db",
+      "cubin_sha256": "95e52ccf3357d53867505929d5ce961d82c3097aa8e839e83db19bf7732b01c9",
+      "cubin_bytes": 9520,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "257tokens-H4736-E64",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 2056,
+        "EXPERTS": 64,
+        "TOPK": 8,
+        "HIDDEN": 4736,
+        "WIDTH": 8192,
+        "SPAN": 4096
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Edges",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "4da8d86fcfaf31068971b6a41dc70ef8a95caaa8b0129e602d3deeb6bf9a41db",
+      "cubin_sha256": "c8cc1f93033a8023b02604a11ac4042bf250ea0b22497b4cad5c11613c889dcf",
+      "cubin_bytes": 9392,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 30 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_finalize_wave",
+      "label": "weight-bf16-score-fp32-weight-first-True",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*fp32",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": true,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "818775d6da6f689c58777773dc0eeebc90e176e1f84480a37f074ae7b3829c44",
+      "cubin_bytes": 83976,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_finalize_wave",
+      "label": "weight-fp32-score-fp32-weight-first-True",
+      "types": [
+        "*bf16",
+        "*fp32",
+        "*fp32",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": true,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "da9fde401ab2268650c3894dac70eca6bb1cc298507a11717248a57d28e7dd87",
+      "cubin_bytes": 83336,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_finalize_wave",
+      "label": "weight-bf16-score-bf16-weight-first-False",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": false,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "ad60e9cac017b1a908d1db9b737c66ecf5d499572eb25033522aa2930f8e945b",
+      "cubin_bytes": 85256,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_finalize_wave",
+      "label": "weight-fp32-score-bf16-weight-first-False",
+      "types": [
+        "*bf16",
+        "*fp32",
+        "*bf16",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": false,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "26366356961d7d7990197e627f809e37d5b2c2e0e3fb040d34474ccbc4c4b14e",
+      "cubin_bytes": 84488,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_post_expert_norm_weighted_sum_kernel",
+      "label": "weight-bf16-score-fp32-weight-first-True",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*fp32",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": true,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "77eafb77e45fd9efb40ffdf4e5065e38da7c3adf144a228df97daec4e05a456e",
+      "cubin_bytes": 84864,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_post_expert_norm_weighted_sum_kernel",
+      "label": "weight-fp32-score-fp32-weight-first-True",
+      "types": [
+        "*bf16",
+        "*fp32",
+        "*fp32",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": true,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "2fd0217f57a8ee04843af377091678e4cb42532f9dd17501d355ce37b9fa691f",
+      "cubin_bytes": 84096,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_post_expert_norm_weighted_sum_kernel",
+      "label": "weight-bf16-score-bf16-weight-first-False",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": false,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "ca91b8b7efa0c52167ee926c8656482c0ba8030d65e4edff649302a6a7328f5c",
+      "cubin_bytes": 85760,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_post_expert_norm_weighted_sum_kernel",
+      "label": "weight-fp32-score-bf16-weight-first-False",
+      "types": [
+        "*bf16",
+        "*fp32",
+        "*bf16",
+        "*bf16",
+        "*i32",
+        "*i32",
+        "*bf16",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": true,
+        "HAS_WEIGHT": true,
+        "WEIGHT_FIRST": false,
+        "HAS_IDS": true,
+        "HAS_ROW_MAP": true,
+        "HAS_EXPERT_SCALE": true,
+        "ROUND_PRODUCT": false
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "w_ptr",
+        "s_ptr",
+        "out_ptr",
+        "ids_ptr",
+        "scale_ids_ptr",
+        "expert_scales_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "f09fe43a01497f470cd8ab9fdb7b2d6175eeabae6167272d4b96b6e76faafb0a",
+      "cubin_bytes": 85376,
+      "shared_bytes": 32,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 64 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "kernel": "_post_expert_norm_weighted_sum_kernel",
+      "label": "unmapped-no-scale-round-product",
+      "types": [
+        "*bf16",
+        "*bf16",
+        "*fp32",
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "*bf16",
+        "fp32"
+      ],
+      "constants": {
+        "TOPK": 8,
+        "H": 4096,
+        "BLOCK_H": 4096,
+        "APPLY_NORM": false,
+        "HAS_WEIGHT": false,
+        "WEIGHT_FIRST": false,
+        "HAS_IDS": false,
+        "HAS_ROW_MAP": false,
+        "HAS_EXPERT_SCALE": false,
+        "ROUND_PRODUCT": true
+      },
+      "num_warps": 8,
+      "num_stages": 2,
+      "aligned": [
+        "x_ptr",
+        "s_ptr",
+        "out_ptr"
+      ],
+      "source_sha256": "3f9f09689ba0d8f41c7ae85cd09d7c5bf746ed171996403dd8e92fa06b7b7dee",
+      "cubin_sha256": "7f4ee09e5c6d67b00d40953664e45467d0c502a5fcfe0cbf5130ed0797be2aad",
+      "cubin_bytes": 50296,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 44 registers, used 0 barriers"
+      ]
+    }
+  ],
+  "provenance": {
+    "ubuntu": "24.04-minimal release-20261105 arm64",
+    "ubuntu_img_sha256": "3dc8370d923978d4b610fa7964d1b36ba040eefb43198809ca5bc8ac51777b18",
+    "ubuntu_detached_signature_key_fingerprint": "D2EB44626FDDC30B513D5BB71A5D6C4C7DB87C81",
+    "lima_darwin_arm64_version": "2.3.0",
+    "lima_archive_sha256": "b7af444bd8f91d3c307477e562f2cf3bd7595d62b9429185e4fa841563578cfc",
+    "pypi_triton_wheel": "triton-3.8.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl a9c404c69ed4a39e8ec632eaf6b9fe058a060bf98979c177f6ef666f06bb8d50",
+    "pypi_tvm_ffi_and_nvidia_toolchain": [
+      "apache_tvm_ffi-0.1.11-cp312-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl da2c8d07fdc737d1ba75f4de25c29f156905b9dc980f1da90c395b4db525f522",
+      "cuda-nvcc-12-9_12.9.86-1_arm64.deb 75ad546841a32612d762e62610cb7119cafefa2acb520498d4445fdf4482c7ca",
+      "cuda-cudart-dev-12-9_12.9.79-1_arm64.deb c99094e77ae2d5c506fdfdad26a717db867da820f7e9bd637ce62667bc3a3081",
+      "cuda-cudart-12-9_12.9.79-1_arm64.deb 16fd9767849dcadfb3cc2e79b2f0cbb8cf565effec84879146be247e2a1f8ddc",
+      "cuda-crt-12-9_12.9.86-1_arm64.deb 1c0b5f2b19c94cce34eca3ed8cf6697b352491267b54f8982719ad2b1f2d8c72",
+      "cuda-nvvm-12-9_12.9.86-1_arm64.deb 8c7af66aa7bada6e9a511e5652870d5e4a388c38396e81b9e1512a1e9e9634c2",
+      "cuda-cccl-12-9_12.9.27-1_arm64.deb 85c63dc4351dbdb10045fe6f3d4b2f3160693b670696b816fd9544ac0002038a",
+      "cuda-driver-dev-12-9_12.9.79-1_arm64.deb 683a7ced41fcae20e872efac1b2244bce8200dec7028ff0f683d2ec001674c67"
+    ],
+    "gcc": "13.3.0",
+    "triton_script": "serving_v0523/runs/compile_decode_sm90.py",
+    "triton_reproduce_args": "/path/to/patched/sglang --only-extra --extra sm90.json",
+    "cuda_flags": "-std=c++20 -O3 -arch=sm_90 -DSGL_CUDA_ARCH=900 --expt-relaxed-constexpr --expt-extended-lambda --use_fast_math",
+    "cuda_header": "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "cuda_compile_log": "sm90_nvcc.log",
+    "runtime_validation": "no GPU execution"
+  }
+}

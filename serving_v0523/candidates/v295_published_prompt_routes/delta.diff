@@ -1,0 +1,154 @@
+diff --git a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+index fddd6d6..a33411d 100644
+--- a/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
++++ b/python/sglang/srt/layers/muse_spark/peer_prompt_pack.py
+@@ -19,4 +19,5 @@ logger = logging.getLogger(__name__)
+ class PeerPromptInputs:
+-    def __init__(self, storage, handle, group, banks=1):
+-        self.storage = storage[:storage.shape[0] // banks]
++    def __init__(self, storage, handle, group, banks=1, route_rows=0, topk=0):
++        pitch = storage.shape[0] // banks
++        self.storage = storage[:pitch - route_rows]
+         self.handle = handle
+@@ -29,4 +30,4 @@ class PeerPromptInputs:
+         self.banks = [
+-            (storage.narrow(0, i * rows, rows), torch.tensor(
+-                [p.narrow(0, i * rows, rows).data_ptr() for p in self.peers], device=storage.device, dtype=torch.int64
++            (storage.narrow(0, i * pitch, rows), torch.tensor(
++                [p.narrow(0, i * pitch, rows).data_ptr() for p in self.peers], device=storage.device, dtype=torch.int64
+             ))
+@@ -34,2 +35,12 @@ class PeerPromptInputs:
+         ]
++        self.route_packets = []
++        self.topk = topk
++        if route_rows:
++            # get_buffer maps every peer view into this device's address space.
++            self.route_packets = [
++                [p.narrow(0, i * pitch + rows, route_rows).view(torch.int32).flatten() for p in self.peers]
++                for i in range(banks)
++            ]
++            # A four-word trailer preserves ATen's 16-byte vectorized copy for aligned route planes.
++            self.yes = torch.ones(4, dtype=torch.int32, device=storage.device)
+         self.next_bank = 0
+@@ -102,3 +113,7 @@ def prepare_peer_prompt_inputs(group, hidden, topk, chunk_rows, capture_rows, gr
+     # A local allocation failure must be visible to all ranks before entering rendezvous.
+-    def setup(banks):
++    packet_bytes = (2 * rows * topk + 4) * 4
++
++    def setup(banks, publish_routes=False):
++        route_bytes = packet_bytes if publish_routes else 0
++        route_rows = (route_bytes + 2 * hidden - 1) // (2 * hidden)
+         storage = None
+@@ -109,3 +124,3 @@ def prepare_peer_prompt_inputs(group, hidden, topk, chunk_rows, capture_rows, gr
+                 storage = _SymmetricMemory.empty_strided_p2p(
+-                    (banks * rows, hidden), (hidden, 1), torch.bfloat16, comm.device, group.device_group.group_name
++                    (banks * (rows + route_rows), hidden), (hidden, 1), torch.bfloat16, comm.device, group.device_group.group_name
+                 )
+@@ -119,3 +134,3 @@ def prepare_peer_prompt_inputs(group, hidden, topk, chunk_rows, capture_rows, gr
+             if handle is not None and handle.rank == group.rank_in_group and handle.world_size == group.world_size:
+-                workspace = PeerPromptInputs(storage, handle, group, banks)
++                workspace = PeerPromptInputs(storage, handle, group, banks, route_rows, topk)
+                 # Compile before accepting collective work. Read only this rank's own row.
+@@ -135,2 +150,7 @@ def prepare_peer_prompt_inputs(group, hidden, topk, chunk_rows, capture_rows, gr
+ 
++    # Bound the two route planes even for narrow models with a large token limit.
++    if hidden % 2 == 0 and packet_bytes <= 1024 * 1024:
++        workspace = setup(2, publish_routes=True)
++        if workspace is not None:
++            return workspace
+     return setup(2) or setup(1)
+@@ -184,2 +204,70 @@ def _peer_experts_into(workspace, experts, shard, scores, ids, group, output):
+ 
++class _PublishedRows:
++    def __init__(self, addresses):
++        self.addresses = addresses
++
++    def pack(self, shard, row_map, result):
++        if result is not None:
++            pack_peer_rows(self.addresses, row_map, result, shard.shape[0])
++
++
++def _try_published_routes(workspace, experts, shard, scores, ids, group, output):
++    from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++        local_humming_expert_ids, prompt_route_order,
++    )
++
++    tokens = output.shape[0]
++    rows = (tokens + group.world_size - 1) // group.world_size
++    shape = (rows, workspace.topk)
++    slots = rows * workspace.topk
++    eligible = (
++        workspace.supports(shard, group) and _local_grouped_eligible(experts, shard)
++        and "_grouped_humming_and_combine_impl" not in vars(experts)
++        and all(type(t) is torch.Tensor for t in (shard, scores, ids))
++        and shard.shape[0] == rows and scores.shape == ids.shape == shape
++        and scores.dtype == torch.float32 and ids.dtype == torch.int32
++        and scores.device == ids.device == shard.device
++    )
++    caller = torch.cuda.current_stream(shard.device)
++    with workspace.lock:
++        # Both protocols use this stream to order successive publications, including vetoes.
++        caller.wait_stream(workspace.stream)
++        bank = workspace.next_bank
++        storage, addresses = workspace.banks[bank]
++        packets = [p[:2 * slots + 4] for p in workspace.route_packets[bank]]
++        local = packets[group.rank_in_group]
++        if eligible:
++            storage[:rows].copy_(shard)
++            torch.cat((scores.contiguous().view(torch.int32).view(-1), ids.reshape(-1), workspace.yes), out=local)
++        else:
++            local.zero_()
++        workspace.handle.barrier(channel=0)
++        received = torch.stack(packets)
++        fields = received[:, :-4].reshape(group.world_size, 2, slots).transpose(0, 1).contiguous()
++        all_scores = fields[0].view(torch.float32).view(-1, workspace.topk)[:tokens]
++        if eligible:
++            local_ids = local_humming_expert_ids(experts, fields[1].view(-1, workspace.topk)[:tokens])
++            sorted_experts, order, offsets = prompt_route_order(local_ids, experts.num_local_experts)
++            first = offsets[:1]
++        else:
++            first = local[-1:]
++        # The parent's live-count host synchronization also receives the group decision.
++        decision = torch.cat((received[:, -1], first)).tolist()
++        accepted = all(decision[:-1])
++        if accepted:
++            plan = _PublishedRows(addresses), sorted_experts, order, offsets, decision[-1]
++            experts._grouped_humming_and_combine_impl(shard, local_ids, all_scores, output, peer_plan=plan)
++        workspace.next_bank ^= 1
++        workspace.stream.wait_stream(caller)
++    return accepted
++
++
++def _published_experts_into(workspace, experts, shard, scores, ids, group, output):
++    if not _try_published_routes(workspace, experts, shard, scores, ids, group, output):
++        # Recreate native padded tensors and route ordering before invoking any hooked expert.
++        full_scores = layernorm_sp.sp_exit_gather(scores, output.shape[0])
++        full_ids = layernorm_sp.sp_exit_gather(ids, output.shape[0])
++        _peer_experts_into(workspace, experts, shard, full_scores, full_ids, group, output)
++
++
+ def _capture_stub(workspace, experts, shard, scores, ids, group, output):
+@@ -189 +277,3 @@ def _capture_stub(workspace, experts, shard, scores, ids, group, output):
+ peer_experts_into = eager_on_graph(True, capture_stub=_capture_stub)(_peer_experts_into)
++
++published_experts_into = eager_on_graph(True, capture_stub=_capture_stub)(_published_experts_into)
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 0bd95a0..dba07df 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1065,8 +1065,11 @@ class MuseSpark1xMoE(nn.Module):
+                     and (not torch.cuda.is_current_stream_capturing() or is_in_breakable_cuda_graph())):
+-                from sglang.srt.layers.muse_spark.peer_prompt_pack import peer_experts_into
++                from sglang.srt.layers.muse_spark.peer_prompt_pack import peer_experts_into, published_experts_into
+ 
+-                scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+-                ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
+                 output = expert_input.new_empty((num_tokens, expert_input.shape[1]))
+-                peer_experts_into(workspace, self.experts, expert_input, scores, ids, tp_group, output)
++                if workspace.route_packets and num_tokens <= workspace.storage.shape[0] * tp_group.world_size:
++                    published_experts_into(workspace, self.experts, expert_input, topk_scores, topk_ids, tp_group, output)
++                else:
++                    scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
++                    ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
++                    peer_experts_into(workspace, self.experts, expert_input, scores, ids, tp_group, output)
+                 return layernorm_sp.reduce_scatter_token_rows(output, tp_group)

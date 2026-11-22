@@ -1,0 +1,73 @@
+{
+  "reference_job": "04b01f958aa5487c",
+  "actual_v182_h200": false,
+  "matched_public_kernel_source": "experiments/candidates/muse_attention_decode/e97e9e5fabb18b518281b19d71b7d29a11e16d6c7cd0328392eeef965820c3e6.py",
+  "archive_evidence": [
+    {
+      "profile": "experiments/candidates/muse_attention_decode/profiles/e97e9e5fabb18b518281b19d71b7d29a11e16d6c7cd0328392eeef965820c3e6.8727d7d1d2da427c.json",
+      "job": "8727d7d1d2da427c",
+      "by_layer": {
+        "sliding": {
+          "weight": 46,
+          "fused_producer_us": 1.7,
+          "baseline_whole_us": 29.31200060993433,
+          "candidate_whole_us": 22.587949702704034,
+          "whole_delta_us": 6.724050907230295
+        },
+        "full": {
+          "weight": 16,
+          "fused_producer_us": 1.7,
+          "baseline_whole_us": 204.12799762561917,
+          "candidate_whole_us": 196.7012556146392,
+          "whole_delta_us": 7.4267420109799716
+        }
+      },
+      "weighted_whole_attention_delta_ms": 0.4281342139082731,
+      "implied_speedup_if_critical_path_transfer_is_exact": 1.005164141916981
+    },
+    {
+      "profile": "muse_attention_decode/profiles/submission.702a17ec1ad94e03.json",
+      "job": "702a17ec1ad94e03",
+      "by_layer": {
+        "sliding": {
+          "weight": 46,
+          "fused_producer_us": 1.6,
+          "baseline_whole_us": 28.767998330295086,
+          "candidate_whole_us": 22.030808161486796,
+          "whole_delta_us": 6.737190168808291
+        },
+        "full": {
+          "weight": 16,
+          "fused_producer_us": 1.7,
+          "baseline_whole_us": 204.07999632880092,
+          "candidate_whole_us": 196.66001428060156,
+          "whole_delta_us": 7.419982048199366
+        }
+      },
+      "weighted_whole_attention_delta_ms": 0.42863046053637127,
+      "implied_speedup_if_critical_path_transfer_is_exact": 1.0051701585758535
+    }
+  ],
+  "v68_acceptance": 4,
+  "v68_user_p50_tokens_per_s": 48,
+  "conditional_verify_period_ms": 83.33333333333333,
+  "max_operations_per_pass": 248,
+  "required_at_fixed_acceptance": {
+    "1.05": {
+      "net_ms_per_verify": 3.9682539682539724,
+      "net_us_per_eligible_layer": 64.00409626216084,
+      "net_us_per_removed_operation": 16.00102406554021
+    },
+    "2.833": {
+      "net_ms_per_verify": 53.91810801270737,
+      "net_us_per_eligible_layer": 869.646903430764,
+      "net_us_per_removed_operation": 217.411725857691
+    }
+  },
+  "limits": [
+    "The profiled GPU region is another fused producer. The per-layer difference is a complete timed attention-call comparison; separate stock casts and physical scatter have no individual measurement in the matched reports.",
+    "The 8727... source has the same FA3 arguments and norm-gate tail except for its ready FP8 query. Its fused producer uses an FP8 destination cast and allows live slot zero. V182 uses a BF16-to-FP8 lookup, checks current physical capacity and reserves zero.",
+    "The matched attention microbench uses native FA3 and 128 query rows on one H200. V182 may dispatch to V68 paged verify. Scheduling, graph execution, rank imbalance, and concurrent prefill can change the serving delta.",
+    "Mean acceptance divided by median per-user speed is an illustrative fixed-cycle proxy, not a measured GPU iteration. Serving and overall score changes require an actual private rung."
+  ]
+}

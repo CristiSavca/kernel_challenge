@@ -1,0 +1,359 @@
+{
+  "checked_at_utc": "2026-11-18T18:24:35.842268+00:00",
+  "score": {
+    "candidate": "V64",
+    "official_four_load": 1.4119,
+    "per_load": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "target": 4,
+    "remaining_multiplier": 2.8330618315744744
+  },
+  "patches": {
+    "V153": {
+      "directory": "serving_v0523/candidates/v153_cooperative_expert_channels",
+      "manifest": "serving_v0523/candidates/v153_cooperative_expert_channels/validation.json",
+      "parent": "V147",
+      "tree": "e5f82fcadcb3b0db80f33c68d270113b47f717ab",
+      "sha256": "ca8b5aa125f47c86d7f20cf4c2a941d8498c962f28ac62d85b684509fa35cc0a",
+      "bytes": 120121,
+      "changed_paths": 17,
+      "delta_paths": [
+        "python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh"
+      ],
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "longest_added_line_chars": 128
+    },
+    "V154": {
+      "directory": "serving_v0523/candidates/v154_coalesced_hicache_backup",
+      "manifest": "serving_v0523/candidates/v154_coalesced_hicache_backup/validation.json",
+      "parent": "V151",
+      "tree": "090592289ae0c82dadb93c627a869cadc2941592",
+      "sha256": "840af39c2a298069d553ac252de0977f634deaafa6d8f598fe885815eea025cd",
+      "bytes": 127197,
+      "changed_paths": 20,
+      "delta_paths": [
+        "python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh"
+      ],
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--speculative-dflash-share-verify-schedule": ""
+      },
+      "longest_added_line_chars": 128
+    },
+    "V154c": {
+      "directory": "serving_v0523/candidates/v154c_v64_hicache_backup",
+      "manifest": "serving_v0523/candidates/v154c_v64_hicache_backup/validation.json",
+      "parent": "V64",
+      "tree": "ce86ba9a3c3f182021ddbf14c3ea40852119d8e9",
+      "sha256": "7bc2eca145404dd077273440e2d18b9c0b9c5da83ff8bdcc5c10907733896b23",
+      "bytes": 47816,
+      "changed_paths": 10,
+      "delta_paths": [
+        "python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh"
+      ],
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      },
+      "longest_added_line_chars": 124
+    }
+  },
+  "V152": {
+    "state": "CPU reference only; serving graph replay, KV settlement, logit selection and sequence-parallel integration open",
+    "directory": "serving_v0523/candidates/v152_mixed_prefill_verify_reference",
+    "cpu_batches": 64,
+    "native_attention_comparisons": 320,
+    "totals": {
+      "request_rows": 320,
+      "verified_requests": 224,
+      "target_token_rows": 2400,
+      "required_logit_rows": 1888,
+      "committed_tail_rows": 1008,
+      "discarded_tail_rows": 784
+    },
+    "historical_admissions": {
+      "1": {
+        "prefill_steps": 54,
+        "prompt_rows": 303536,
+        "current_decode_requests": 0,
+        "observed_output_tokens": 9724,
+        "all_tail_input_rows": 0,
+        "four_commit_percent_of_output_unchanged_chunks": 0.0,
+        "four_commit_percent_of_output_rechunked": 0.0
+      },
+      "4": {
+        "prefill_steps": 127,
+        "prompt_rows": 669797,
+        "current_decode_requests": 271,
+        "mixed_opportunities": 112,
+        "prompt_rows_during_mixed": 516100,
+        "tail_requests_fitting_unchanged_chunks": 219,
+        "steps_fitting_all_without_rechunk": 87,
+        "steps_fitting_some_without_rechunk": 87,
+        "prompt_rows_to_move_for_all_tails": 416,
+        "tail_requests_in_graph_tagged_steps": 271,
+        "observed_output_tokens": 21774,
+        "all_tail_input_rows": 2168,
+        "four_commit_percent_of_output_unchanged_chunks": 4.02,
+        "four_commit_percent_of_output_rechunked": 4.98
+      },
+      "16": {
+        "prefill_steps": 241,
+        "prompt_rows": 1415564,
+        "current_decode_requests": 2769,
+        "mixed_opportunities": 238,
+        "prompt_rows_during_mixed": 1366412,
+        "tail_requests_fitting_unchanged_chunks": 2151,
+        "steps_fitting_all_without_rechunk": 166,
+        "steps_fitting_some_without_rechunk": 166,
+        "prompt_rows_to_move_for_all_tails": 4944,
+        "tail_requests_in_graph_tagged_steps": 2769,
+        "observed_output_tokens": 45027,
+        "all_tail_input_rows": 22152,
+        "four_commit_percent_of_output_unchanged_chunks": 19.11,
+        "four_commit_percent_of_output_rechunked": 24.6
+      },
+      "32": {
+        "prefill_steps": 351,
+        "prompt_rows": 2825080,
+        "current_decode_requests": 7405,
+        "mixed_opportunities": 347,
+        "prompt_rows_during_mixed": 2759544,
+        "tail_requests_fitting_unchanged_chunks": 4918,
+        "steps_fitting_all_without_rechunk": 202,
+        "steps_fitting_some_without_rechunk": 202,
+        "prompt_rows_to_move_for_all_tails": 19896,
+        "tail_requests_in_graph_tagged_steps": 7405,
+        "observed_output_tokens": 94370,
+        "all_tail_input_rows": 59240,
+        "four_commit_percent_of_output_unchanged_chunks": 20.85,
+        "four_commit_percent_of_output_rechunked": 31.39
+      }
+    },
+    "peer_prefill_overlap": "experiments/iterations/20261118-serving-peer-prefill-overlap.json",
+    "scope": "Own V41 trace; peer-first-token waits can include scheduler wait."
+  },
+  "V153": {
+    "work": "Cooperative NVFP4 expert channels with eight warp owners and double-buffered 16-byte copies; same reduction order and model precision.",
+    "uniform_one_user": {
+      "target_rows": 8,
+      "mean_useful_blocks": 229.6833231439814,
+      "V147_warps_per_SM": 3.4800503506663847,
+      "V153_warps_per_SM": 13.920201402665539,
+      "V147_useful_warps": 459.3666462879628,
+      "V153_useful_warps": 1837.4665851518512,
+      "phases": {
+        "W13": {
+          "packed_bytes_per_CTA_K16": 2304,
+          "shared_bytes_per_CTA": 43008,
+          "register_limited_blocks_per_SM": 4,
+          "shared_capacity_blocks_per_SM": 5,
+          "V147_nominal_bank_lookahead_MiB": 0.5046752705800372,
+          "V153_ideal_resident_blocks": 229.6833231439814,
+          "V153_one_chunk_bank_lookahead_MiB": 4.037402164640298
+        },
+        "W2": {
+          "packed_bytes_per_CTA_K16": 1152,
+          "shared_bytes_per_CTA": 24576,
+          "register_limited_blocks_per_SM": 4,
+          "shared_capacity_blocks_per_SM": 9,
+          "V147_nominal_bank_lookahead_MiB": 0.5046752705800372,
+          "V153_ideal_resident_blocks": 229.6833231439814,
+          "V153_one_chunk_bank_lookahead_MiB": 2.018701082320149
+        }
+      },
+      "cold_packed_bank_MiB": 193.7953039027343
+    },
+    "physical_latency": null,
+    "validation": [
+      "serving_v0523/candidates/v153_cooperative_expert_channels/sm90.json",
+      "serving_v0523/candidates/v153_cooperative_expert_channels/warp.json",
+      "serving_v0523/candidates/v153_cooperative_expert_channels/host.json",
+      "serving_v0523/candidates/v153_cooperative_expert_channels/dispatch.json",
+      "serving_v0523/candidates/v153_cooperative_expert_channels/independent_geometry.json"
+    ]
+  },
+  "V154": {
+    "work": "Coalesce consecutive host destinations after staging real K and V; preserve order and transfer stream.",
+    "same_header_sha256": "471ec8582a59fbd1779809e13d663a75323c06c9de92a835c31ca8a7ff57e9b3",
+    "cpu_paths": [
+      {
+        "path": "cuda12_7",
+        "cases": 567,
+        "compared_payload_bytes": 87055812,
+        "stock_descriptors": 32286,
+        "candidate_descriptors": 17484,
+        "eliminated_small_page_driver_queries": 0
+      },
+      {
+        "path": "cuda12_9",
+        "cases": 567,
+        "compared_payload_bytes": 87055812,
+        "stock_descriptors": 32286,
+        "candidate_descriptors": 17504,
+        "eliminated_small_page_driver_queries": 519
+      },
+      {
+        "path": "cuda13",
+        "cases": 567,
+        "compared_payload_bytes": 87055812,
+        "stock_descriptors": 32286,
+        "candidate_descriptors": 17504,
+        "eliminated_small_page_driver_queries": 519
+      },
+      {
+        "path": "rocm",
+        "cases": 567,
+        "compared_payload_bytes": 87055812,
+        "stock_descriptors": 32286,
+        "candidate_descriptors": 17484,
+        "eliminated_small_page_driver_queries": 0
+      }
+    ],
+    "linux_asan_ubsan": {
+      "cases": 567,
+      "compared_payload_bytes": 87055812,
+      "stock_descriptors": 32286,
+      "candidate_descriptors": 17504,
+      "eliminated_small_page_driver_queries": 519
+    },
+    "independent_allocator_and_dispatch_bytes": 13699104,
+    "geometry_16384_one_pool": {
+      "pool": "target_full",
+      "layers": 16,
+      "tokens": 16384,
+      "K_page_bytes": 2048,
+      "copy_bytes": 67108864,
+      "relayouts": 256,
+      "stock_async_copy_calls": 32768,
+      "candidate_contiguous_async_copy_calls": 512,
+      "candidate_fully_fragmented_async_copy_calls": 32768
+    },
+    "measured_backup_prevalence": null,
+    "physical_serving_latency": null
+  },
+  "hardware": {
+    "v93_read_only_snapshot": "serving_v0523/runs/nov20_pending_schema.cpu.json",
+    "v93_job": "75557c21595347de",
+    "v93_status": "queued",
+    "v93_observed_at": "2026-11-18T18:21:12.508647+00:00",
+    "quota": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "reset_utc": "2026-11-19T00:00:00Z",
+    "new_private_submissions": 0,
+    "new_scored_submissions": 0,
+    "runners": {
+      "nov19_integrated_verify_runner": {
+        "pid": 75333,
+        "caffeinate_pid": 75340,
+        "exclusive_lock_held": true,
+        "receipt": "serving_v0523/runs/nov19_integrated_verify_runner.launch.json"
+      },
+      "nov20_v129_runner": {
+        "pid": 47821,
+        "caffeinate_pid": 47831,
+        "exclusive_lock_held": true,
+        "receipt": "serving_v0523/runs/nov20_v129_runner.launch.json"
+      },
+      "nov20_v132_runner": {
+        "pid": 3073,
+        "caffeinate_pid": 3077,
+        "exclusive_lock_held": true,
+        "receipt": "serving_v0523/runs/nov20_v132_runner.launch.json"
+      },
+      "nov20_v141_runner": {
+        "pid": 3084,
+        "caffeinate_pid": 3087,
+        "exclusive_lock_held": true,
+        "receipt": "serving_v0523/runs/nov20_v141_runner.launch.json"
+      },
+      "nov20_v154c_runner": {
+        "pid": 3094,
+        "caffeinate_pid": 3097,
+        "exclusive_lock_held": true,
+        "receipt": "serving_v0523/runs/nov20_v154c_runner.launch.json"
+      }
+    },
+    "nov19_current_choices": [
+      "V120b/32",
+      "V147/16 if V93 pending",
+      "V139/4"
+    ],
+    "nov20_v154c_eligible": "serving_v0523/runs/nov20_v154c_runner.plan.json",
+    "v154c_comparator": "ac89fddc4ee147ab",
+    "comparator_private_tok_s_gpu": 17349.9,
+    "runner_regressions": {
+      "nov20": 64,
+      "nov19": 91,
+      "new_schema_tests": 7
+    },
+    "rollover": "serving_v0523/runs/nov20_pending_schema.rollover.json"
+  },
+  "physical_checks_outstanding": [
+    "H200 output agreement and exact lengths",
+    "peak GPU memory <= 2 GB over stock",
+    "TTFT <= 2x stock at each load",
+    "four-load speed at stock per-user frontier"
+  ],
+  "sources": {
+    "policy": "https://openkernelchallenge.dev/api/v1/serving",
+    "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+    "closes": "2026-11-20T00:00:00-08:00",
+    "fixed_flag_patterns_checked": 76,
+    "maximum_patch_bytes": 409600,
+    "maximum_added_line_chars": 400,
+    "score_receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+  }
+}

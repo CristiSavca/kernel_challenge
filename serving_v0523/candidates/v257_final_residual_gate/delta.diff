@@ -1,0 +1,67 @@
+diff --git a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
+index 8d0b813..55c18a5 100644
+--- a/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
++++ b/python/sglang/kernels/ops/layernorm/muse_spark_norm_residual.py
+@@ -25,6 +25,33 @@ from sglang.kernels.spec import CapabilityRequirement, KernelBackend
+ logger = logging.getLogger(__name__)
+ 
+ 
++@triton.jit
++def _gated_residual_kernel(
++    Stream, Branch, Alpha, Beta, Output, count, WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    index = tl.program_id(0).to(tl.int64) * BLOCK + tl.arange(0, BLOCK)
++    live = index < count
++    channel = index % WIDTH
++    stream = tl.load(Stream + index, mask=live, other=0)
++    # Widen BF16 exactly, including subnormal values and signed zero.
++    bits = tl.load(Branch + index, mask=live, other=0).to(tl.uint16, bitcast=True)
++    branch = (bits.to(tl.uint32) << 16).to(tl.float32, bitcast=True)
++    alpha = tl.load(Alpha + channel)
++    beta = tl.load(Beta + channel)
++    tl.store(Output + index, alpha * stream + beta * branch, mask=live)
++
++
++def gated_residual(stream, branch, alpha, beta):
++    output = torch.empty_like(stream)
++    with torch.cuda.device(stream.device):
++        _gated_residual_kernel[(triton.cdiv(stream.numel(), 512),)](
++            stream, branch, alpha, beta, output, stream.numel(), stream.shape[1], 512,
++            # Match eager FP32 multiply, multiply, add rounding.
++            enable_fp_fusion=False,
++        )
++    return output
++
++
+ def _fused_norm_residual_config(
+     hidden_size: int,
+     m_bucket: int,
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_layers.py b/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
+index 7b72a09..6f510cc 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_layers.py
+@@ -184,6 +184,24 @@ class MuseSpark1xNormPreservingResidualConnection(nn.Module):
+             )
+         else:
+             alpha, beta = self._alpha, self._beta
++        if (
++            stream.is_cuda and torch.version.hip is None and self._alpha is not None
++            and not torch.is_grad_enabled() and not torch.compiler.is_compiling()
++            and not torch.are_deterministic_algorithms_enabled()
++            and torch.overrides._get_current_function_mode() is None
++            and not torch.utils._python_dispatch.is_in_torch_dispatch_mode()
++            and type(stream) is torch.Tensor and type(branch) is torch.Tensor
++            and type(alpha) is torch.Tensor and type(beta) is torch.Tensor
++            and stream.ndim == 2 and stream.dtype == torch.float32 and branch.dtype == torch.bfloat16
++            and branch.shape == stream.shape and alpha.shape == beta.shape == (1, stream.shape[1])
++            and alpha.dtype == beta.dtype == torch.float32
++            and stream.device == branch.device == alpha.device == beta.device
++            and stream.is_contiguous() and branch.is_contiguous() and alpha.is_contiguous() and beta.is_contiguous()
++            and torch.cuda.get_device_capability(stream.device)[0] >= 8
++        ):
++            from sglang.kernels.ops.layernorm.muse_spark_norm_residual import gated_residual
++
++            return gated_residual(stream, branch, alpha, beta)
+         return (alpha * stream + beta * branch.to(stream.dtype)).to(stream.dtype)
+ 
+ 

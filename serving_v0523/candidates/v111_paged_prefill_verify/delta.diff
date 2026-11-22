@@ -1,0 +1,502 @@
+diff --git a/python/sglang/kernels/ops/attention/verify_fp8_cache.py b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+new file mode 100644
+index 0000000..00d4ae5
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+@@ -0,0 +1,69 @@
++"""Encode a target verification query and scatter its current keys and values."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++def bf16_e4m3_encodings(device):
++    # Use this installation's torch cast, including signed NaNs and overflow.
++    bits = torch.arange(65536, dtype=torch.int32, device=device).to(torch.int16)
++    return bits.view(torch.bfloat16).to(torch.float8_e4m3fn).view(torch.uint8)
++
++
++@triton.jit
++def _encode_and_scatter(
++    Q, K, V, OUT, KC, VC, LOC, TABLE,
++    q_pitch, k_pitch, v_pitch, kc_pitch, vc_pitch, loc_pitch, capacity,
++    Q_WIDTH: tl.constexpr, KV_WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    row = tl.program_id(0).to(tl.int64)
++    start = tl.program_id(1) * BLOCK
++    cols = start + tl.arange(0, BLOCK)
++    q_bits = tl.load(Q + row * q_pitch + cols, cols < Q_WIDTH, other=0).to(tl.uint32)
++    q8 = tl.load(TABLE + q_bits)
++    tl.store(OUT + row * Q_WIDTH + cols, q8, cols < Q_WIDTH)
++    if start < KV_WIDTH:
++        slot = tl.load(LOC + row * loc_pitch).to(tl.int64)
++        tl.device_assert((slot >= 0) & (slot < capacity), "KV cache slot out of range")
++        if (slot > 0) & (slot < capacity):
++            live = cols < KV_WIDTH
++            k_bits = tl.load(K + row * k_pitch + cols, live, other=0).to(tl.uint32)
++            v_bits = tl.load(V + row * v_pitch + cols, live, other=0).to(tl.uint32)
++            tl.store(KC + slot * kc_pitch + cols, tl.load(TABLE + k_bits), live)
++            tl.store(VC + slot * vc_pitch + cols, tl.load(TABLE + v_bits), live)
++
++
++def encode_verify_qkv(q, k, v, k_cache, v_cache, slots, capacity, table):
++    rows = q.shape[0]
++    if (
++        q.ndim != 2 or not rows or q.stride(1) != 1
++        or k.ndim != 3 or k.shape[0] != rows or v.shape != k.shape
++        or k.stride()[1:] != (k.shape[2], 1) or v.stride()[1:] != k.stride()[1:]
++        or any(t.dtype != torch.bfloat16 for t in (q, k, v))
++        or slots.ndim != 1 or slots.numel() != rows
++        or slots.dtype not in (torch.int32, torch.int64)
++        or any(t.device != q.device for t in (k, v, k_cache, v_cache, slots, table))
++    ):
++        return None
++    q_width, kv_width = q.shape[1], k.shape[1] * k.shape[2]
++    if not (0 < kv_width <= q_width and 0 < capacity):
++        return None
++    for cache in (k_cache, v_cache):
++        if (
++            cache.ndim != 3 or cache.shape[1:] != k.shape[1:]
++            or cache.shape[0] < capacity or cache.stride(0) < kv_width
++            or cache.stride()[1:] != k.stride()[1:]
++            or cache.dtype != torch.float8_e4m3fn
++        ):
++            return None
++    out = torch.empty(q.shape, device=q.device, dtype=torch.float8_e4m3fn)
++    block = min(256, triton.next_power_of_2(q_width))
++    _encode_and_scatter[(rows, triton.cdiv(q_width, block))](
++        q.view(torch.uint16), k.view(torch.uint16), v.view(torch.uint16),
++        out.view(torch.uint8), k_cache.view(torch.uint8), v_cache.view(torch.uint8),
++        slots, table, q.stride(0), k.stride(0), v.stride(0),
++        k_cache.stride(0), v_cache.stride(0), slots.stride(0), capacity,
++        Q_WIDTH=q_width, KV_WIDTH=kv_width, BLOCK=block, num_warps=4, debug=True,
++    )
++    return out
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..0c3475b 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -71,6 +71,10 @@ class Spec(msgspec.Struct):
+         Optional[int],
+         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
+     ] = None
++    speculative_dflash_sp_prefill_context: A[
++        bool,
++        "Project DFLASH prefill features before gathering sequence-parallel token rows.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 8d035c2..e8d8450 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -41,7 +41,7 @@ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.radix_attention import AttentionType
+ from sglang.srt.mem_cache.kv_loc_plan import IdSpaceKind
+ from sglang.srt.mem_cache.layout.paged_view import paged_kv_view, paged_view
+-from sglang.srt.mem_cache.memory_pool import KVWriteLoc
++from sglang.srt.mem_cache.memory_pool import KVWriteLoc, MHATokenToKVPool
+ from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+ from sglang.srt.runtime_context import (
+@@ -324,6 +324,20 @@ class FlashAttentionBackend(AttentionBackend):
+         else:
+             raise ValueError(f"Invalid version: {self.fa_impl_ver=}")
+ 
++        self._verify_fp8_encodings = None
++        if (
++            self.fa_impl_ver == 3 and device_capability[0] == 9
++            and self.kv_cache_dtype == torch.float8_e4m3fn
++            and self.kv_cache_dtype_str != "auto"
++            and not self.is_draft_runner and not self.use_mla
++            and not self.kv_index_translator.is_translating and self._kv_shard_pool is None
++            and not get_memory().enable_unified_memory
++            and not get_exec().deterministic.enable_deterministic_inference
++        ):
++            from sglang.kernels.ops.attention.verify_fp8_cache import bf16_e4m3_encodings
++
++            self._verify_fp8_encodings = bf16_e4m3_encodings(self.device)
++
+         self.flash_attn_varlen_func = flash_attn_varlen_func
+         self.flash_attn_with_kvcache = flash_attn_with_kvcache
+ 
+@@ -1454,6 +1468,39 @@ class FlashAttentionBackend(AttentionBackend):
+             k_rope = k_rope.to(self.kv_cache_dtype) if k_rope is not None else None
+         return q, q_rope, k_rope, k_descale, v_descale
+ 
++    def _encode_verify_qkv(self, q, k, v, layer, forward_batch):
++        from sglang.kernels.ops.attention.verify_fp8_cache import encode_verify_qkv
++        from sglang.kernels.ops.kvcache.kvcache import can_use_store_cache
++
++        if (
++            layer.is_cross_attention or layer.head_dim > 256
++            or layer.k_scale is not None or layer.v_scale is not None
++            or layer.tp_k_head_num != layer.tp_v_head_num
++            or forward_batch.dcp_kv_mask is not None
++        ):
++            return None
++        pool = self.token_to_kv_pool
++        owner = pool
++        write = KVWriteLoc.for_layer(
++            forward_batch, layer, swa_loc=self.forward_metadata.swa_out_cache_loc
++        )
++        slots = write.loc
++        if type(pool) is SWAKVPool:
++            _, sliding = pool.layers_mapping[layer.layer_id]
++            owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
++            slots = write.swa_loc if sliding else write.loc
++        if (
++            type(owner) is not MHATokenToKVPool or slots is None
++            or owner.is_quantized_kv_cache or owner.kv_cache_layout != "nhd"
++            or not can_use_store_cache(owner.row_dim, owner.v_row_dim)
++        ):
++            return None
++        k_cache, v_cache = pool.get_kv_buffer(layer.layer_id)
++        return encode_verify_qkv(
++            q, k, v, k_cache, v_cache, slots, owner.size + owner.page_size,
++            self._verify_fp8_encodings,
++        )
++
+     def get_fused_kv_write_buffers(self, layer, forward_batch):
+         if (
+             self.kv_cache_dtype != torch.bfloat16
+@@ -1551,18 +1598,28 @@ class FlashAttentionBackend(AttentionBackend):
+                 else:
+                     k_scale = k_descale if self.kv_cache_is_mxfp8 else layer.k_scale
+                     v_scale = v_descale if self.kv_cache_is_mxfp8 else layer.v_scale
+-                    self.token_to_kv_pool.set_kv_buffer(
+-                        layer,
+-                        KVWriteLoc.for_layer(
+-                            forward_batch,
++                    encoded_q = None
++                    if (
++                        getattr(self, "_verify_fp8_encodings", None) is not None
++                        and forward_batch.forward_mode.is_target_verify()
++                        and q_rope is None and k_rope is None
++                    ):
++                        encoded_q = self._encode_verify_qkv(q, k, v, layer, forward_batch)
++                    if encoded_q is not None:
++                        q = encoded_q
++                    else:
++                        self.token_to_kv_pool.set_kv_buffer(
+                             layer,
+-                            swa_loc=self.forward_metadata.swa_out_cache_loc,
+-                        ),
+-                        k,
+-                        v,
+-                        k_scale,
+-                        v_scale,
+-                    )
++                            KVWriteLoc.for_layer(
++                                forward_batch,
++                                layer,
++                                swa_loc=self.forward_metadata.swa_out_cache_loc,
++                            ),
++                            k,
++                            v,
++                            k_scale,
++                            v_scale,
++                        )
+ 
+         # Use precomputed metadata across all layers
+         metadata = self.forward_metadata
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+new file mode 100644
+index 0000000..edbb803
+--- /dev/null
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -0,0 +1,109 @@
++"""DFLASH context projection on sequence-parallel token rows."""
++
++from contextlib import contextmanager
++from contextvars import ContextVar
++from typing import NamedTuple
++
++import torch
++from torch import nn
++from torch.nn.modules import module as module_hooks
++
++
++class _PrefillContext(NamedTuple):
++    draft: nn.Module
++    fc: nn.Linear
++    project_target_hidden: object
++    group: object
++    target: nn.Module
++    logits_processor: nn.Module
++
++
++_prefill_context = ContextVar("dflash_sp_prefill_context", default=None)
++
++
++def _agree(ready, group):
++    # Keep device collective shapes uniform even for rank-local instrumentation.
++    status = torch.tensor(int(ready), device="cpu", dtype=torch.int32)
++    torch.distributed.all_reduce(
++        status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group
++    )
++    return bool(status.item())
++
++
++def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
++    from sglang.srt.layers.logits_processor import LogitsProcessor
++    from sglang.srt.models.dflash import DFlashDraftModel
++
++    fc = getattr(draft, "fc", None)
++    compatible = (
++        getattr(type(draft), "project_target_hidden", None)
++        is DFlashDraftModel.project_target_hidden
++        and "project_target_hidden" not in vars(draft)
++        and not draft.quantizable
++        and type(fc) is nn.Linear
++        and fc.bias is None
++        and fc.in_features > fc.out_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_cuda
++        and fc.weight.dtype == torch.bfloat16
++        and fc.weight.is_contiguous()
++        and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
++        and type(logits_processor) is LogitsProcessor
++    )
++    if _agree(compatible, group):
++        return _PrefillContext(
++            draft, fc, draft.project_target_hidden, group, target, logits_processor
++        )
++    return None
++
++
++@contextmanager
++def dflash_sp_prefill_scope(context):
++    token = _prefill_context.set(context)
++    try:
++        yield
++    finally:
++        _prefill_context.reset(token)
++
++
++def project_dflash_prefill_shard(inputs, num_tokens, group, logits_processor, full_capture):
++    """Assign each replicated full-K projection row to its SP owner."""
++    context = _prefill_context.get()
++    # Small shards do not amortize the GEMM and host capability agreement.
++    if context is None or num_tokens < 128 * group.world_size:
++        return None
++    if inputs.is_cuda and torch.cuda.is_current_stream_capturing():
++        return None
++    draft, fc, projector, expected_group, target, expected_logits = context
++    compatible = (
++        group is expected_group
++        and full_capture
++        and logits_processor is expected_logits
++        and not logits_processor.keep_last_hidden_states
++        and logits_processor.expected_aux_hidden_states is None
++        and not draft.quantizable
++        and draft.fc is fc
++        and draft.project_target_hidden == projector
++        and fc.bias is None
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and not module_hooks._global_forward_hooks
++        and not module_hooks._global_forward_pre_hooks
++        and all(
++            not mod._forward_hooks
++            and not mod._forward_pre_hooks
++            and getattr(mod, "_compiled_call_impl", None) is None
++            and "forward" not in vars(mod)
++            for mod in (fc, target, logits_processor)
++        )
++        and inputs.ndim == 2
++        and inputs.shape[0] * group.world_size >= num_tokens
++        and inputs.shape[1] == fc.in_features
++        and fc.weight.shape == (fc.out_features, fc.in_features)
++        and fc.weight.is_contiguous()
++        and inputs.device == fc.weight.device
++        and inputs.dtype == fc.weight.dtype == torch.bfloat16
++    )
++    if _agree(compatible, group):
++        return fc(inputs)
++    return None
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index 8178ba3..ed5f5e1 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -292,6 +292,9 @@ class LogitsProcessorOutput:
+     # Scheduler-local output copied alongside the ordinary generation result.
+     auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None
+ 
++    # For the DFLASH worker consuming the native prefill capture on this rank.
++    dflash_prefill_fc_done: bool = False
++
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+             return
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 5587d0d..5d324f0 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -2314,6 +2314,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             # Bounded SWA replay returns the late layers' tail rows plus the
+             # extend indices they came from; the DSpark injector needs both.
+             hidden_states_token_indices=output.hidden_states_token_indices,
++            dflash_prefill_fc_done=output.dflash_prefill_fc_done,
+         )
+ 
+     def _finalize_execute_output(
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 395a5d8..0aa53f4 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -50,6 +50,7 @@ from sglang.srt.environ import envs
+ from sglang.srt.layers import layernorm_sp
+ from sglang.srt.layers.attention.trtllm_mha_backend import TRTLLMHAAttnBackend
+ from sglang.srt.layers.aux_hidden_states import pack_aux_hidden_states
++from sglang.srt.layers.dflash_context_projection import project_dflash_prefill_shard
+ from sglang.srt.layers.communication.muse_spark_gemm_ag import (
+     gemm_ag,
+     gemm_local,
+@@ -1332,6 +1333,7 @@ class MuseSparkTextForCausalLM(nn.Module):
+             input_ids, positions, forward_batch, input_embeds=input_embeds
+         )
+         aux_hidden_states = None
++        prefill_fc_done = False
+         if self.capture_aux_hidden_states:
+             hidden_states, aux_hidden_states = hidden_states
+         if aux_hidden_states is not None and layernorm_sp.runs_sp(
+@@ -1347,6 +1349,16 @@ class MuseSparkTextForCausalLM(nn.Module):
+             # duplicate the full replicated draft context with torch.cat.
+             # Release the tap list before allocating the gathered output.
+             aux_hidden_states = pack_aux_hidden_states(aux_hidden_states)
++            projected = project_dflash_prefill_shard(
++                aux_hidden_states,
++                num_tokens,
++                get_parallel().tp_group,
++                self.logits_processor,
++                forward_batch.capture_hidden_mode.is_full(),
++            )
++            if projected is not None:
++                aux_hidden_states = projected
++                prefill_fc_done = True
+             aux_hidden_states = layernorm_sp.sp_exit_gather(
+                 aux_hidden_states, num_tokens=num_tokens
+             )
+@@ -1363,9 +1375,12 @@ class MuseSparkTextForCausalLM(nn.Module):
+                 hidden_states, num_tokens=input_embeds.shape[0]
+             )
+             get_forward().set("sp_active", False)
+-        return self.logits_processor(
++        output = self.logits_processor(
+             input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
+         )
++        if prefill_fc_done:
++            output.dflash_prefill_fc_done = True
++        return output
+ 
+     def set_dflash_layers_to_capture(self, layer_ids: List[int]) -> None:
+         """Capture the residual stream after each listed decoder layer.
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..1b4568b 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1,6 +1,7 @@
+ import logging
+ import math
+ import os
++from contextlib import nullcontext
+ from typing import TYPE_CHECKING, List, Optional, Tuple
+ 
+ import torch
+@@ -19,6 +20,10 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ )
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
++from sglang.srt.layers.dflash_context_projection import (
++    dflash_sp_prefill_scope,
++    prepare_dflash_sp_prefill,
++)
+ from sglang.srt.layers.dp_attention import get_dp_tp_group
+ from sglang.srt.layers.logits_processor import (
+     LogitsProcessor,
+@@ -614,6 +619,25 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._out_tokens_bufs: List[torch.Tensor] = []
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
++        self._sp_prefill_context = None
++        parallel = get_parallel()
++        if (
++            get_spec().speculative_dflash_sp_prefill_context
++            and is_cuda()
++            and parallel.tp_group.world_size > 1
++            and parallel.pp_size == 1
++            and parallel.attn_cp_size == 1
++            and not parallel.attn_dp_enabled
++            and not get_exec().deterministic.enable_deterministic_inference
++            and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++            and torch.distributed.get_backend(parallel.tp_group.cpu_group) == "gloo"
++        ):
++            self._sp_prefill_context = prepare_dflash_sp_prefill(
++                self.draft_model,
++                self.target_worker.model_runner.model,
++                self._target_logits_processor,
++                parallel.tp_group,
++            )
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1827,6 +1851,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         cache_loc_2d: Optional[torch.Tensor] = None,
+         commit_lens: Optional[torch.Tensor] = None,
+         extend_lens: Optional[torch.Tensor] = None,
++        prefill_fc_done: bool = False,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -1926,7 +1951,10 @@ class DFlashWorkerV2(BaseSpecWorker):
+             torch.inference_mode(),
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+-            ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
++            if prefill_fc_done:
++                ctx_hidden = self.draft_model.hidden_norm(target_hidden)
++            else:
++                ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+             if self.lilicorr is not None:
+                 self._lilicorr_anchor = publish_anchor(
+                     draft_sampler=self._draft_sampler,
+@@ -2345,12 +2373,22 @@ class DFlashWorkerV2(BaseSpecWorker):
+         if batch.forward_mode.is_extend() or batch.is_extend_in_batch:
+             self._wait_for_fused_hicache_load(batch)
+             # Target prefill: capture DFlash aux hidden states for prompt tokens.
+-            batch_output = self.target_worker.forward_batch_generation(
+-                batch,
+-                pp_proxy_tensors=pp_proxy_tensors,
+-                capture_hidden_mode=CaptureHiddenMode.FULL,
+-                return_kv_loc_plan=True,
+-            )
++            scope = nullcontext()
++            if (
++                self._sp_prefill_context is not None
++                and batch.forward_mode == ForwardMode.EXTEND
++                and not batch.return_logprob
++                and not batch.return_hidden_states_mode.need_capture()
++                and not torch.cuda.is_current_stream_capturing()
++            ):
++                scope = dflash_sp_prefill_scope(self._sp_prefill_context)
++            with scope:
++                batch_output = self.target_worker.forward_batch_generation(
++                    batch,
++                    pp_proxy_tensors=pp_proxy_tensors,
++                    capture_hidden_mode=CaptureHiddenMode.FULL,
++                    return_kv_loc_plan=True,
++                )
+             kv_loc_plan, batch_output.kv_loc_plan = batch_output.kv_loc_plan, None
+ 
+             logits_output, next_token_ids = (
+@@ -2410,6 +2448,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 cache_loc=self._draft_write_ids(kv_loc_plan),
+                 positions=positions,
+                 extend_lens=ctx_lens,
++                prefill_fc_done=logits_output.dflash_prefill_fc_done,
+             )
+ 
+             # Avoid copying large hidden-state buffers to CPU in overlap scheduling.

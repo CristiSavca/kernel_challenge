@@ -1,0 +1,389 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+index 1278068..caf27eb 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up.cuh
+@@ -5,9 +5,14 @@ constexpr uint32_t kMuseGateK = 64;
+ #else
+ constexpr uint32_t kMuseGateK = 128;
+ #endif
++// Each output plane has one 64-channel band per 16 channels of warp N.
++#ifndef MUSE_GATE_BANDS
++#define MUSE_GATE_BANDS 2
++#endif
++constexpr uint32_t kMuseGateBands = MUSE_GATE_BANDS;
+ using MuseGateCtx = KernelContext<
+-    MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>, Shape<MUSE_GATE_M, 256, kMuseGateK>,
+-    Shape<MUSE_GATE_M, 32, 64>, Shape<0, 0, 0>, FloatingPointType<16, 8, 7>,
++    MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>, Shape<MUSE_GATE_M, 128 * kMuseGateBands, kMuseGateK>,
++    Shape<MUSE_GATE_M, 16 * kMuseGateBands, 64>, Shape<0, 0, 0>, FloatingPointType<16, 8, 7>,
+     FloatingPointType<4, 2, 1>, FloatingPointType<16, 8, 7>, FloatingPointType<8, 4, 3>,
+     LayerConfig, ComputeConfig, TuningConfig>;
+ 
+@@ -23,7 +28,7 @@ struct MusePackedGateLoader {
+   CUDA_INLINE MusePackedGateLoader(MuseGateCtx& ctx) : ctx(ctx), map(Weight ? ctx.params.b : ctx.params.bs) {}
+ 
+   CUDA_INLINE void seek(uint32_t expert, uint32_t n_tile, uint32_t k_tile) {
+-    col = n_tile * (Weight ? 16 : 8);
++    col = n_tile * kMuseGateBands * (Weight ? 8 : 4);
+     row = expert * (HUMMING_SHAPE_K / 16) + k_tile * (kMuseGateK / 16);
+   }
+ 
+@@ -33,7 +38,7 @@ struct MusePackedGateLoader {
+       const auto dst = cast_smem_ptr_to_uint(dest);
+       const auto mbar = cast_smem_ptr_to_uint(bar);
+       // Physical gate/up halves are distinct planes. The TMA box packs two
+-      // matching 128-channel bands consecutively in each native 256-wide row.
++      // matching gate and up channel bands consecutively in each weight row.
+       asm volatile("cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes "
+                    "[%0], [%1, {0, %2, 0, %3}], [%4];"
+                    :: "r"(dst), "l"(map), "r"(col), "r"(row), "r"(mbar) : "memory");
+@@ -73,7 +78,7 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+   CUDA_INLINE void seek(uint32_t, uint32_t n_tile, uint32_t expert_end, uint32_t row_start) {
+     start = row_start;
+     live = min(static_cast<uint32_t>(MUSE_GATE_M), expert_end - start);
+-    band = n_tile * 16;
++    band = n_tile * kMuseGateBands * 8;
+     const auto* scales = static_cast<const __nv_bfloat16*>(ctx.params.bs2);
+ #ifdef MUSE_GATE_PROMPT
+     scale = __bfloat162float(scales[ctx.params.expert_ids_ptr[start]]);
+@@ -85,11 +90,11 @@ template <> class EpilogueGmemWriter<MuseGateCtx, EpilogueArithmetic<MuseGateCtx
+ 
+   CUDA_INLINE void write(uint32_t, uint32_t, uint32_t) {
+     constexpr uint32_t pitch = HUMMING_SHAPE_N / 2 / 8;
+-    for (uint32_t i = threadIdx.x; i < MUSE_GATE_M * 16; i += MuseGateCtx::kNumMathThreads) {
++    for (uint32_t i = threadIdx.x; i < MUSE_GATE_M * kMuseGateBands * 8; i += MuseGateCtx::kNumMathThreads) {
+       const uint32_t s = i / 8, col = i % 8, row = s % MUSE_GATE_M;
+       if (row >= live) continue;
+       auto gate = fragment(s, col);
+-      auto up = fragment(s + 2 * MUSE_GATE_M, col);
++      auto up = fragment(s + kMuseGateBands * MUSE_GATE_M, col);
+       auto* g = reinterpret_cast<__nv_bfloat16*>(&gate);
+       auto* u = reinterpret_cast<__nv_bfloat16*>(&up);
+       PRAGMA_UNROLL
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+index 8e2929b..ef517db 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -9,12 +9,12 @@ struct MuseDecodeGateUp {
+   using Tensor = tvm::ffi::TensorView;
+   struct Maps { CUtensorMap weight, scale; };
+ 
+-  template <bool Prompt>
++  template <bool Prompt, uint32_t Bands>
+   static bool bank_map(Tensor bank, uint64_t inner, bool weight, CUtensorMap* out) {
+     const cuuint64_t x = weight ? inner / 8 : inner / 16;
+     const cuuint64_t dims[] = {16, x, 2, uint64_t(bank.size(0)) * bank.size(1)};
+     const cuuint64_t stride[] = {weight ? 64u : 16u, (weight ? 64u : 16u) * x, (weight ? 128u : 32u) * x};
+-    const cuuint32_t box[] = {16, weight ? 16u : 8u, 2, Prompt ? 4u : 8u}, step[] = {1, 1, 1, 1};
++    const cuuint32_t box[] = {16, Bands * (weight ? 8u : 4u), 2, Prompt ? 4u : 8u}, step[] = {1, 1, 1, 1};
+     return cuTensorMapEncodeTiled(out, weight ? CU_TENSOR_MAP_DATA_TYPE_UINT32 : CU_TENSOR_MAP_DATA_TYPE_UINT8,
+         4, bank.data_ptr(), dims, stride, box, step, CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_NONE,
+         CU_TENSOR_MAP_L2_PROMOTION_NONE, CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) == CUDA_SUCCESS;
+@@ -24,7 +24,7 @@ struct MuseDecodeGateUp {
+     host::TensorMatcher({int64_t(sizeof(Maps))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(storage);
+   }
+ 
+-  template <bool Prompt>
++  template <bool Prompt, uint32_t Bands = 2>
+   static bool prepare(Tensor bank, Tensor scales, Tensor storage) {
+     check_storage(storage);
+     if (!bank.IsContiguous() || !scales.IsContiguous() || bank.ndim() != 3 || scales.ndim() != 3
+@@ -36,7 +36,8 @@ struct MuseDecodeGateUp {
+         || bank.size(0) > INT32_MAX / bank.size(1)) return false;
+     Maps maps{};
+     const auto inner = scales.size(2) / 2;
+-    if (!bank_map<Prompt>(bank, inner, true, &maps.weight) || !bank_map<Prompt>(scales, inner, false, &maps.scale)) return false;
++    if (inner % (64 * Bands) || !bank_map<Prompt, Bands>(bank, inner, true, &maps.weight)
++        || !bank_map<Prompt, Bands>(scales, inner, false, &maps.scale)) return false;
+     std::memcpy(storage.data_ptr(), &maps, sizeof(maps));
+     return true;
+   }
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+index b8dd290..ca60fc5 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/grouped_decode_mma_pair.cuh
+@@ -2,22 +2,25 @@
+ using MuseOverlapCtx = MUSE_OVERLAP_CONTEXT;
+ #else
+ using MuseOverlapCtx = KernelContext<MmaOpClass, Shape<0, HUMMING_SHAPE_N, HUMMING_SHAPE_K>,
+-    Shape<MUSE_OVERLAP_M, 128, 256>, Shape<MUSE_OVERLAP_M, 32, 64>, Shape<0, 0, 0>,
++    Shape<MUSE_OVERLAP_M, 4 * MUSE_PAIR_WARP_N, 256>, Shape<MUSE_OVERLAP_M, MUSE_PAIR_WARP_N, 64>, Shape<0, 0, 0>,
+     BFloat16, Float4E2M1, BFloat16, Float8E4M3, LayerConfig, ComputeConfig, TuningConfig>;
+ #endif
+ 
+-// Humming 0.1.12's BF16 grouped geometry has two independent output bands
+-// per warpgroup and four K16 slices per shared stage. Consecutive operations
+-// on the same FP32 accumulators retain their HGMMA program order.
++// Each output band accumulates the four K16 slices in their native order.
+ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>> {
+   using Base = WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>>;
+   using Base::Base;
+   static_assert(kWarpIters == 4 && !kUsePackedKLayout && kPackedKFactor == 1 &&
+                 kRegsBKDim == 1 && final_regs_c_index() == 0 && kSwizzleBytes == 128);
+-  static_assert(sizeof(regs_b[0]) == 8 * sizeof(uint32_t));
++  static constexpr uint32_t bands = MuseOverlapCtx::WarpShape::N / 16;
++  static_assert((bands == 2 || bands == 4) && sizeof(regs_b[0]) == bands * sizeof(uint4));
++  CUDA_INLINE void transform_b(uint32_t buffer, uint32_t iteration) {
++    if constexpr (bands == 2) Base::transform_b(buffer, iteration);
++  }
+   CUDA_INLINE void run(uint32_t stage, uint32_t iteration) {
+     // Only the late-release W2 pipeline may keep the last pair in flight.
+ #ifndef MUSE_PAIR_LAST_K_SLICES
++    static_assert(bands == 2, "wide decode requires the late-release loop");
+     if (iteration >= 2) {
+       Base::run(stage, iteration);
+       return;
+@@ -26,20 +29,30 @@ struct MuseOverlapMma : WGMMA<MuseOverlapCtx, MainloopArithmetic<MuseOverlapCtx>
+     const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
+         + stage * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
+     auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
+-    wgmma_fence();
++    const uint32_t buffer = iteration % 2;
++    if constexpr (bands == 2) wgmma_fence();
+     PRAGMA_UNROLL
+-    for (int j = 0; j < 2; ++j)
+-      MmaOpClass::fma(desc, regs_b[iteration % 2][j][0], regs_c[0][j][0], true);
+-    if (iteration % 2 == 1) {
++    for (uint32_t j = 0; j < bands; ++j) {
++      if constexpr (bands == 4) {
++        static_assert(!kHasZeroPoint && !kUseFusedE8m0Scale && ElementB::kBits == 4 && ElementA::kBits == 16);
++        auto* frag = reinterpret_cast<uint32_t*>(&regs_b[buffer][j][0]);
++        uint4 zp{};
++        dequant<ElementB, ElementA, false, false, kNumWarpShapeNSplits>(regs_qb[buffer], frag, j, reinterpret_cast<uint32_t*>(&zp));
++        arith.may_apply_bs_and_zp_on_b(frag, j, buffer);
++        wgmma_fence();
++      }
++      MmaOpClass::fma(desc, regs_b[buffer][j][0], regs_c[0][j][0], true);
++    }
++    if (bands == 4 || iteration % 2 == 1) {
+       wgmma_commit();
+       wgmma_wait<0>();
+       // Keep both register-source fragments alive through the async group's
+       // completion, including the first fragment's four-word halves.
+       PRAGMA_UNROLL
+-      for (uint32_t b = 0; b < 2; ++b) {
+-        auto* values = reinterpret_cast<uint32_t*>(&regs_b[b]);
++      for (uint32_t b = 0; b < (bands == 4 ? 1 : 2); ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&regs_b[bands == 4 ? buffer : b]);
+         PRAGMA_UNROLL
+-        for (uint32_t i = 0; i < 8; ++i) warpgroup_fence_operand(values[i]);
++        for (uint32_t i = 0; i < bands * 4; ++i) warpgroup_fence_operand(values[i]);
+       }
+     }
+   }
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+index 66373ad..177f7ea 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/live_decode_reduce.cuh
+@@ -12,8 +12,8 @@ struct MuseLiveDecodeEpilogue : EpiloguePipeline<Ctx, MMA, Arith> {
+   static_assert(Ctx::kUseWgmma && Ctx::kIsGroupedContiguousGemm && !Ctx::kUseStreamK && !Ctx::kUseTmaC);
+   static_assert(!Ctx::TuningConfig::kReduceOverlapLastStageOnly && Ctx::kNumWriteSplits == 1);
+   static_assert(Ctx::kNumMathThreads == 512 && (groups == 2 || groups == 4));
+-  static_assert(Warp::K == 64 && Warp::N == 32 && Warp::M == Block::M);
+-  static_assert((Block::M == 8 || Block::M == 16 || Block::M == 24) && parts == 2 * (Block::M / 8));
++  static_assert(Warp::K == 64 && (Warp::N == 32 || Warp::N == 64) && Warp::M == Block::M);
++  static_assert((Block::M == 8 || Block::M == 16 || Block::M == 24) && parts == (Warp::N / 16) * (Block::M / 8));
+   static_assert(std::is_same_v<typename Ctx::MmaOpClass::ValTypeC, float>);
+   using Scratch = float4[groups - 1][parts][owners];
+   // The producer cannot start another job while the ordinary math epilogue owns
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index 23e2a0b..f5d21ed 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -19,6 +19,7 @@ def _launcher():
+             "muse_decode_gate_up", cuda_files=["muse_spark/decode_gate_up_launch.cuh"],
+             cuda_wrappers=[
+                 ("prepare", "MuseDecodeGateUp::prepare<false>"), ("run", "MuseDecodeGateUp::run<false>"),
++                ("prepare_wide", "MuseDecodeGateUp::prepare<false, 4>"),
+                 ("prepare_prompt", "MuseDecodeGateUp::prepare<true>"), ("run_prompt", "MuseDecodeGateUp::run<true>"),
+                 ("configure", "MuseDecodeGateUp::configure"),
+             ],
+@@ -61,7 +62,7 @@ def _compile(context, meta, compute, tuning, prompt=False):
+             if self.live_reduction:
+                 from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
+ 
+-                valid = has_live_decode_isa(assembly, self.block_shape[0])
++                valid = has_live_decode_isa(assembly, self.block_shape[0], bands=self.warp_shape[1] // 16)
+             if self.residual_tiles:
+                 from sglang.srt.layers.muse_spark.residual_prompt_mma import has_residual_isa
+ 
+@@ -72,8 +73,10 @@ def _compile(context, meta, compute, tuning, prompt=False):
+ 
+         def prepare(self):
+             block_k, threads, math_threads = (64, 384, 256) if prompt else (128, 640, 512)
+-            if (self.sm_version != 90 or self.num_stages != 4 or tuple(self.block_shape[1:]) != (256, block_k)
+-                    or tuple(self.warp_shape) != (self.block_shape[0], 32, 64)
++            wide = not prompt and self.block_shape[1] == 512
++            if (self.sm_version != 90 or self.num_stages != 4 or self.block_shape[2] != block_k
++                    or self.block_shape[1] != (512 if wide else 256)
++                    or tuple(self.warp_shape) != (self.block_shape[0], 64 if wide else 32, 64)
+                     or self.num_threads != threads or self.num_math_threads != math_threads
+                     or not (self.use_tma_a and self.use_tma_b and self.use_tma_bs)
+                     or self.use_tma_as or self.use_tma_bzp or self.use_tma_bias or self.use_tma_bs2
+@@ -86,6 +89,8 @@ def _compile(context, meta, compute, tuning, prompt=False):
+                 from sglang.srt.layers.muse_spark.decode_mma_pair import enable_full_pair
+ 
+                 enable_full_pair(self)
++            if wide:
++                self.code += "\n#define MUSE_GATE_BANDS 4\n"
+             if prompt:
+                 self.code += "\n#define MUSE_GATE_PROMPT\n"
+             self.code += f"\n#define MUSE_GATE_M {self.block_shape[0]}\n" + header.read_text()
+@@ -120,14 +125,18 @@ def _compile(context, meta, compute, tuning, prompt=False):
+     }
+     # Humming shares initialized instances by class name, context and tuner arguments.
+     # Reject the other ABI before constructing a possibly cached instance.
+-    expected_block = (256, 64 if prompt else 128)
+-    if (tuple(config.get("block_shape", ()))[1:] != expected_block
++    block = tuple(config.get("block_shape", ()))
++    wide = not prompt and block in ((16, 512, 128), (24, 512, 128))
++    expected_block = (512 if wide else 256, 64 if prompt else 128)
++    if (block[1:] != expected_block
+             or config.pop("num_sms", 0) or any(config.get(k) != v for k, v in required.items())
+             or any(config.get(k) for k in ("has_bias", "has_zero_point", "use_packed_k_layout",
+                                            "use_fused_e8m0_scale", "input_scale_group_size",
+                                            "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
+         return None
+-    if prompt and config["block_shape"][0] == 176:
++    if wide:
++        variants = (LiveDecodeGateUpKernel,)
++    elif prompt and config["block_shape"][0] == 176:
+         variants = (GroupedResidualPromptGateUpKernel, GroupedDecodeGateUpKernel)
+     elif prompt:
+         variants = (GroupedDecodeGateUpKernel,)
+@@ -176,7 +185,24 @@ def prepare_gate_up(layer, meta, compute, tunings, *, prompt=False):
+         if not prepare_maps(bank, scales.view(torch.uint8), maps):
+             return None
+         ctx = HummingKernel.current_context()
+-        kernels = {t: _compile(ctx, meta, compute, t, prompt) for t in sorted(widths)}
++        kernels = {}
++        wide_maps = None
++        if not prompt and intermediate % 256 == 0:
++            try:
++                storage = torch.empty_like(maps)
++                if launcher.prepare_wide(bank, scales.view(torch.uint8), storage):
++                    wide_maps = storage
++            except (AttributeError, ValueError, RuntimeError, OSError):
++                pass
++        for t in sorted(widths):
++            config = json.loads(t)
++            m, n, k = config["block_shape"]
++            result = None
++            if (wide_maps is not None and m in (16, 24) and (n, k) == (256, 128)
++                    and tuple(config["warp_shape"]) == (m, 32, 64)):
++                wide = config | {"block_shape": [m, 512, 128], "warp_shape": [m, 64, 64]}
++                result = _compile(ctx, meta, compute, json.dumps(wide))
++            kernels[t] = (*result, wide_maps) if result is not None else _compile(ctx, meta, compute, t, prompt)
+     except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+         logging.getLogger(__name__).warning("Using ordinary grouped decode: %s", exc)
+         return None
+@@ -198,7 +224,9 @@ def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+         (t.data_ptr(), t.shape) for t in (layer.w13_weight, layer.w13_weight_scale)
+     ):
+         return None
+-    _, handle, shared, width = kernel
++    _, handle, shared, width, *wide_maps = kernel
++    if wide_maps:
++        maps = wide_maps[0]
+     active = inputs.new_empty((inputs.shape[0], layer.intermediate_size_per_partition))
+     launch = launcher.run_prompt if prompt else launcher.run
+     if prompt:
+diff --git a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+index e24a06b..3f1d6d6 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
++++ b/python/sglang/srt/layers/muse_spark/decode_mma_pair.py
+@@ -23,14 +23,20 @@ def enable_full_pair(kernel):
+     if hashlib.sha256(loop.encode()).hexdigest() != "6a148cc29b81d4009066667c347d9091a8a138009f7884226e9969a6936e2899":
+         raise ValueError("unsupported grouped Humming loop")
+     # Every math worker releases its shared A tile after the last pair drains.
+-    # The next-stage wait is safe while this tile is held: the four-stage
+-    # producer primes three stages and refills two stages ahead of this wait.
++    # With at least three stages, the next tile is primed or issued after the
++    # preceding tile releases. Its readiness never requires releasing this tile.
+     loop = loop.replace("              consumer.arrive(stage_id);\n", "")
+     loop = loop.replace("            mma.transform_b(\n",
+                         "            if (warp_iter_id + 1 == Ctx::kWarpIters) consumer.arrive(stage_id);\n"
+                         "            mma.transform_b(\n")
+     prefetch = "s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);"
+     loop = loop.replace(prefetch, "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch)
++    if kernel.warp_shape[1] == 64:
++        # 512 math lanes at 112 registers plus 128 loader lanes at 32 exactly
++        # consume the original 61,440-register CTA pool.
++        loop = loop.replace("? 40 : 24;", "? 32 : 24;").replace("? 96 : 232;", "? 112 : 232;")
++        guarded = "if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) " + prefetch
++        loop = loop.replace(guarded, "").replace("            mma.transform_b(", "            " + guarded + "\n            mma.transform_b(")
+     include = "#include <humming/kernel/humming_ws.cuh>"
+     if kernel.code.count(include) != 1:
+         raise ValueError("unsupported grouped Humming source include")
+@@ -42,15 +48,16 @@ def append_pair(kernel, both_pairs=False):
+     from sglang.kernels import jit
+ 
+     width = kernel.block_shape[0]
+-    if (kernel.sm_version != 90 or tuple(kernel.block_shape[1:]) != (128, 256)
+-            or tuple(kernel.warp_shape) != (width, 32, 64) or kernel.num_stages != 4
++    warp_n = kernel.warp_shape[1]
++    if (kernel.sm_version != 90 or warp_n not in (32, 64) or tuple(kernel.block_shape[1:]) != (4 * warp_n, 256)
++            or tuple(kernel.warp_shape) != (width, warp_n, 64) or kernel.num_stages not in ((3, 4) if warp_n == 64 else (4,))
+             or kernel.num_threads != 640 or kernel.num_math_threads != 512
+             or not kernel.use_warp_spec or kernel.use_stream_k or kernel.use_tma_c):
+         raise ValueError("unsupported grouped matrix pipeline")
+     header = Path(jit.__file__).parent / "csrc/muse_spark/grouped_decode_mma_pair.cuh"
+     if both_pairs:
+         enable_full_pair(kernel)
+-    kernel.code += f"\n#define MUSE_OVERLAP_M {width}\n" + header.read_text()
++    kernel.code += f"\n#define MUSE_OVERLAP_M {width}\n#define MUSE_PAIR_WARP_N {warp_n}\n" + header.read_text()
+ 
+ 
+ def check_pair_code(compiler, kernel, both_pairs=False):
+@@ -64,7 +71,7 @@ def check_pair_code(compiler, kernel, both_pairs=False):
+     if getattr(kernel, "live_reduction", False):
+         from sglang.srt.layers.muse_spark.live_decode_reduce import has_live_decode_isa
+ 
+-        valid = has_live_decode_isa(code, kernel.block_shape[0])
++        valid = has_live_decode_isa(code, kernel.block_shape[0], bands=kernel.warp_shape[1] // 16, stages=kernel.num_stages)
+     if not valid or "UTMALDG.3D" not in code:
+         raise RuntimeError("grouped matrix pipeline compiled with unsupported instruction schedule")
+ 
+@@ -114,9 +121,16 @@ def _prepare_down(context, meta, compute, tuning):
+                                            "use_fused_e8m0_scale", "input_scale_group_size",
+                                            "weight_scale_group_size_n", "pad_shape_n", "pad_shape_k"))):
+         return None
+-    for variant in (LiveDecodeDownKernel, GroupedDecodeFullPairDownKernel, GroupedDecodePairDownKernel):
++    variants = [(cls, config) for cls in (LiveDecodeDownKernel, GroupedDecodeFullPairDownKernel, GroupedDecodePairDownKernel)]
++    m, n, k = config["block_shape"]
++    if (m in (16, 24) and (n, k) == (128, 256) and tuple(config["warp_shape"]) == (m, 32, 64)
++            and config["num_stages"] == 4 and config["shape_n"] % 256 == config["shape_k"] % 256 == 0
++            and config.get("num_ctas_per_sm", 1) == 1):
++        wide = config | {"block_shape": (m, 256, 256), "warp_shape": (m, 64, 64), "num_stages": 3}
++        variants.insert(0, (LiveDecodeDownKernel, wide))
++    for variant, geometry in variants:
+         try:
+-            kernel = variant(**config)
++            kernel = variant(**geometry)
+             kernel.check_context()
+             return torch.tensor([0, 1 << 30, kernel.kernel_id, 0], dtype=torch.int64, device="cpu")
+         except (AssertionError, ValueError, TypeError, ImportError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+diff --git a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+index 61b45bd..114b26d 100644
+--- a/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
++++ b/python/sglang/srt/layers/muse_spark/live_decode_reduce.py
+@@ -1,5 +1,6 @@
+ """Bind the live-row K-partial reduction only to the version-pinned paired decode loop."""
+ import hashlib
++import re
+ from pathlib import Path
+ 
+ 
+@@ -27,7 +28,9 @@ def bind_live_decode_reduce(kernel):
+         adapt_residual_tiles(kernel, paired=True, decode_width=kernel.block_shape[0])
+ 
+ 
+-def has_live_decode_isa(assembly, width):
++def has_live_decode_isa(assembly, width, *, bands=2, stages=4):
++    if bands == 4 and re.search(r"\b(?:LDL|STL)\b", assembly):
++        return False
+     widths = range(8, width + 1, 8)
+-    return (all(assembly.count(f"HGMMA.64x{w}x16.F32.BF16") == 32 for w in widths)
+-            and assembly.count("WARPGROUP.DEPBAR.LE") == 8 * len(widths))
++    return (all(assembly.count(f"HGMMA.64x{w}x16.F32.BF16") == 4 * stages * bands for w in widths)
++            and assembly.count("WARPGROUP.DEPBAR.LE") == (4 if bands == 4 else 2) * stages * len(widths))

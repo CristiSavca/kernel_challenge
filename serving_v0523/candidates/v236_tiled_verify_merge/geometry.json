@@ -1,0 +1,85 @@
+{
+  "public_sizes": {
+    "1": {
+      "rows": 1,
+      "old_ctas_per_layer": 128,
+      "new_ctas_per_layer": 128,
+      "old_ctas_62_layers": 7936,
+      "new_ctas_62_layers": 7936,
+      "planning_i32_words_saved_full_grid": 0
+    },
+    "4": {
+      "rows": 2,
+      "old_ctas_per_layer": 512,
+      "new_ctas_per_layer": 256,
+      "old_ctas_62_layers": 31744,
+      "new_ctas_62_layers": 15872,
+      "planning_i32_words_saved_full_grid": 190464
+    },
+    "16": {
+      "rows": 4,
+      "old_ctas_per_layer": 2048,
+      "new_ctas_per_layer": 512,
+      "old_ctas_62_layers": 126976,
+      "new_ctas_62_layers": 31744,
+      "planning_i32_words_saved_full_grid": 4571136
+    },
+    "32": {
+      "rows": 4,
+      "old_ctas_per_layer": 4096,
+      "new_ctas_per_layer": 1024,
+      "old_ctas_62_layers": 253952,
+      "new_ctas_62_layers": 63488,
+      "planning_i32_words_saved_full_grid": 18284544
+    }
+  },
+  "valid_dispatches": 14976,
+  "invalid_dispatches": 6,
+  "coverage_proofs": 54464,
+  "q_gqa_pairs": 117,
+  "standalone_h200_comparison": [
+    {
+      "batch": 1,
+      "layer": "sliding",
+      "load": "verify 1",
+      "total_us": 6.3
+    },
+    {
+      "batch": 1,
+      "layer": "full",
+      "load": "verify 1",
+      "total_us": 13.6
+    },
+    {
+      "batch": 16,
+      "layer": "sliding",
+      "load": "verify 16",
+      "total_us": 10.8
+    },
+    {
+      "batch": 16,
+      "layer": "full",
+      "load": "verify 16",
+      "total_us": 100.0
+    },
+    {
+      "batch": 32,
+      "layer": "sliding",
+      "load": "verify 32",
+      "total_us": 13.9
+    },
+    {
+      "batch": 32,
+      "layer": "full",
+      "load": "verify 32",
+      "total_us": 185.3
+    }
+  ],
+  "profile_sha256": "7a33067ab2561c36f6137e117405dc0417ff37656cb5dae28a4a87eb3ac57f0c",
+  "full_patch_sha256": "c38b23ad967bd3ba862f2d4a7fee0885f62649dd1f27758fc64b97524e9791a8",
+  "source_sha256": [
+    "4e80e7f56cfc0de735316e72b3e6eee14785f9480276996728efb66b45bde268",
+    "3f2bc3fac01d96b37ae43e5b5730ec84b3917d20add4e2c8943847699ffb85c5"
+  ],
+  "scope": "CPU meta tensor launch replay and integer ownership proof. Logical lane loads are not measured HBM traffic."
+}

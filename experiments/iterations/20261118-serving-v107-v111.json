@@ -1,0 +1,199 @@
+{
+  "at": "2026-11-18T11:57:52.748945+00:00",
+  "milestone": 3,
+  "four_load_goal": 4,
+  "best_verified": {
+    "job": "abd217baf0ed49fd",
+    "candidate": "V64",
+    "score": 1.4119,
+    "frontier": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "32_user_rung": {
+      "acceptance": 4.2,
+      "cache_hit": 0.92,
+      "concurrency": 32,
+      "reps": 1,
+      "spread": 0,
+      "tok_s_per_gpu": 20547.4,
+      "tok_s_per_user_e2e": 14.8,
+      "tok_s_per_user_e2e_p50": 39.4,
+      "tok_s_per_user_p50": 43.3,
+      "truncated": false,
+      "ttft_first_p90_s": 110,
+      "ttft_later_p90_s": 0.696,
+      "ttft_p90_s": 0.894
+    },
+    "peak_over_stock_gb": 1.9
+  },
+  "four_load_requirement_on_same_stock_curve": {
+    "stock_anchor_geomean": 9996.000336893705,
+    "highest_v64_raw_toks_per_s_per_gpu": 20547.4,
+    "necessary_raw_maximum_for_scores": {
+      "3": 29988.001010681117,
+      "4": 39984.00134757482
+    },
+    "required_raw_maximum_factor_for_4x": 1.945939697848624
+  },
+  "queue_snapshot_at_utc": "2026-11-18T11:56Z",
+  "queued": {
+    "V87/4": "00c134c978104d65",
+    "V88/4": "30bb36feb528416f",
+    "V93/16": "75557c21595347de"
+  },
+  "official_checks_left": 0,
+  "official_scored_left": 1,
+  "next_quota_reset": "2026-11-19T00:00:00Z",
+  "V107_feasibility": "serving_v0523/candidates/v107_sparse_reduce_feasibility/README.md",
+  "builds": {
+    "V108": {
+      "directory": "serving_v0523/candidates/v108_replicated_sp_draft_context",
+      "sha256": "eea21733298ddcbdb51716abe512bb3ccb5ffc814c18fc58426d7d5abcefaf17",
+      "delta_sha256": "03e46f6cecef047ef6399cef6ef014b1265d8c082a53ce0bf9e2198d60fc1284",
+      "bytes": 57326,
+      "official_hardware_result": null
+    },
+    "V109": {
+      "directory": "serving_v0523/candidates/v109_calibrated_dflash_tree",
+      "sha256": "c8fa4e84afde3e6a2cf0f62b1388a82db38c94debb3820eccc7522be24ad50e4",
+      "delta_sha256": "2120590e9d27520cda9ce7a81d8d4994cad85446adcc9c4fab4a56762d309b75",
+      "bytes": 232031,
+      "official_hardware_result": null
+    },
+    "V110": {
+      "directory": "serving_v0523/candidates/v110_verify_fp8_qkv_store",
+      "sha256": "49a35645f8600ccea7294e4362dd2f82bf54480cd5d99c51a521a4f69fbc0022",
+      "delta_sha256": "1c3fa9bdaf7274ed096ff7909e8930459c64688b40d8f90255ea252368cf5e82",
+      "bytes": 52795,
+      "official_hardware_result": null
+    },
+    "V111": {
+      "directory": "serving_v0523/candidates/v111_paged_prefill_verify",
+      "sha256": "3b899d0739a395a8a96bbcaf4a97794b6b2b07c8e0ba2a5a646ab836f5db943a",
+      "delta_sha256": "3a65175d87df50ee3bbae074c2ef66285afd3f2d8ad0cf57986ec8a915aa7e00",
+      "bytes": 81434,
+      "official_hardware_result": null
+    }
+  },
+  "candidate_selection": {
+    "V107": "No fused cross-rank expert reduction export. Pinned H200 one-shot path ends at 128 KiB and the incumbent BF16 reduction must precede the projection.",
+    "V108": "Replicated DFLASH FC runs on each rank’s owned prompt rows then gathers the projected result. TP8 modeled per-rank ring sends shrink 1120 to 224 MiB on a 16,384-token chunk and GEMM work shrinks 11.00 to 1.37 TFLOP. CUDA GEMM order and host agreement synchronization need hardware measurement.",
+    "V109": "Checkpoint-only, fixed-width DFLASH proposals at three conditional temperatures, selected by verified per-request feedback. No input/output lookup or cross-request history. Held-out synthetic mean yield moved under one percent under the conservative two-win rule; no private slot.",
+    "V110": "FA3 TARGET_VERIFY on ordinary FP8 NHD pools casts Q and stores K/V in one launch instead of four. Up to 186 fewer launches per verification for the 62-layer target. A 64 KiB table stores the running Torch installation’s dtype encodings. CUDA bandwidth, execution and latency remain unmeasured.",
+    "V111": "Combines V106, V108 and V110 with byte-identical inherited kernels. Prioritize the integrated high-load comparison against scored V64 at 32 users, retaining standalone candidates for attribution."
+  },
+  "V111_merged_evidence": {
+    "composition": "serving_v0523/candidates/v111_paged_prefill_verify/composition.json",
+    "prefill_projection": "serving_v0523/candidates/v111_paged_prefill_verify/prefill_projection.json",
+    "prefill_dispatch": "serving_v0523/candidates/v111_paged_prefill_verify/prefill_dispatch.json",
+    "attention_reference": "serving_v0523/candidates/v111_paged_prefill_verify/paged_attention_oracle.json",
+    "verify_dispatch": "serving_v0523/candidates/v111_paged_prefill_verify/verify_dispatch.json",
+    "component_kernel_tests": {
+      "V106": "89,743,360 interpreter bytes, 40 offline Hopper assemblies",
+      "V110": "4,323,144 interpreter bytes, complete 65,536-code BF16 coverage in Q/K/V, 10 offline Hopper binaries including device bounds assertion"
+    }
+  },
+  "next_private": {
+    "start": "2026-11-19T00:03:00+00:00",
+    "runner_pid_at_arm": 16541,
+    "receipt": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "first": {
+      "alternatives": [
+        {
+          "candidate": "v89",
+          "users": 4,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": "",
+            "--speculative-dflash-compact-context": "",
+            "--speculative-dflash-fused-candidate-head": ""
+          },
+          "sha256": "e20ea10ed16c9b4dec6e0d4c834ef44c086f5cbf468ee6574a5a258800da6e18"
+        },
+        {
+          "candidate": "v111",
+          "users": 32,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--page-size": "160",
+            "--chunked-prefill-size": "16320",
+            "--max-prefill-tokens": "16320",
+            "--cuda-graph-max-bs-prefill": "16384",
+            "--speculative-dflash-sp-prefill-context": ""
+          },
+          "sha256": "3b899d0739a395a8a96bbcaf4a97794b6b2b07c8e0ba2a5a646ab836f5db943a"
+        },
+        {
+          "candidate": "v80a",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": ""
+          },
+          "sha256": "9c6cf15326e1fbda08159c6d20d6dc1c23150695738453df15d60ace3b2d3864"
+        }
+      ],
+      "decision_receipt": "v87_nov18_check4",
+      "when_passed": "v89",
+      "when_queued_or_running_and_v64_passed": "v111",
+      "legacy_attempt_receipts": [
+        "v100c_nov19_check32",
+        "v106_nov19_check32"
+      ],
+      "v64_scored_receipt": "abd217baf0ed49fd.json",
+      "when_failed_or_skipped": "v80a",
+      "when_unknown": "defer this slot"
+    },
+    "other_slots_unchanged": true,
+    "offline_tests_total": 90,
+    "submitted_at_arm": 0
+  },
+  "source_rules": "serving_v0523/RULES.md",
+  "cleanup": [
+    "serving_v0523/candidates/v111_paged_prefill_verify/compiler_cleanup.json",
+    "serving_v0523/candidates/v108_replicated_sp_draft_context/cleanup.json",
+    "serving_v0523/candidates/v109_calibrated_dflash_tree/cleanup.json",
+    "serving_v0523/candidates/v110_verify_fp8_qkv_store/cleanup.json",
+    "serving_v0523/candidates/v111_paged_prefill_verify/cleanup.json"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "state": "CPU_PASS",
+  "script_sha256": "b04830f38a89cf0bb00f65a44bba504e8f9dad4205d4fefe02a80c616ce4028f",
+  "cases": [
+    "ordered exact frozen sources",
+    "exact flags including boolean SP",
+    "three private checks only",
+    "exclusive receipts suppress duplicates",
+    "early window refused without CLI",
+    "late window refused without CLI",
+    "quota rejected 0",
+    "quota rejected -1",
+    "quota rejected True",
+    "quota rejected '3'",
+    "quota rejected None",
+    "reset rejected",
+    "quota_failure rejected",
+    "hash mismatch refused before CLI",
+    "timeout preserves ambiguity and blocks retry",
+    "nonzero preserves ambiguity and blocks retry",
+    "no scored endpoint"
+  ],
+  "commands": [
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v64_humming_grouped_sequence_parallel/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "enable-layernorm-sp",
+      "--flag",
+      "moe-runner-backend=humming",
+      "--flag",
+      "speculative-moe-runner-backend=marlin",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ],
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v62_paged_verify_attention/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ],
+    [
+      "okc-sim",
+      "serve",
+      "check",
+      "/Users/cristisavca/Documents/HASIDIC_PROJECTS/open-kernel-challenge/serving_v0523/candidates/v68_grouped_decode_verify/patch.diff",
+      "--users",
+      "16",
+      "--flag",
+      "enable-layernorm-sp",
+      "--flag",
+      "moe-runner-backend=humming",
+      "--flag",
+      "speculative-moe-runner-backend=marlin",
+      "--flag",
+      "swa-full-tokens-ratio=0.25",
+      "--no-wait"
+    ]
+  ],
+  "scratch": "/var/folders/5k/_z9k5ddd6w1d8z97dkgyqmyr0000gn/T/okc-v68-runner-test-pq_pf1fk",
+  "gpu_actions": false
+}

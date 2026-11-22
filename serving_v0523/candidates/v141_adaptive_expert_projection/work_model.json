@@ -1,0 +1,132 @@
+{
+  "source_archive_sha256": "c96c37c95f74379067d2d2d0c5154d12ee9a8cfa29a7c3370a7f3e34f207ca72",
+  "actual_vendor_tuning_sha256": "ebbcc1d834a46087299d1148373f8be307afcb6b6a60a09c9ca3ff6711558fc5",
+  "model_only": true,
+  "limitations": "Weight tiles assume no inter-CTA reuse and one complete packed bank traversal per M tile. This is not measured HBM or serving speed.",
+  "cases": [
+    {
+      "M": 64,
+      "distribution": "uniform-distinct",
+      "live": 64.0,
+      "active_experts": 27.8053109606888,
+      "w13": {
+        "parent_block_m": 8,
+        "parent_block_n": 256,
+        "parent_block_k": 128,
+        "parent_aligned_rows": 222.4847866577062,
+        "candidate_mma_rows": 222.4847866577062,
+        "parent_weight_tiles": 27.810598332213274,
+        "candidate_weight_tiles": 27.805310960968814,
+        "parent_nominal_packed_mib": 500.5907699798389,
+        "candidate_nominal_packed_mib": 500.4955972974387
+      },
+      "w2": {
+        "parent_block_m": 8,
+        "parent_block_n": 128,
+        "parent_block_k": 256,
+        "parent_aligned_rows": 222.4847866577062,
+        "candidate_mma_rows": 222.48478665994634,
+        "parent_weight_tiles": 27.810598332213274,
+        "candidate_weight_tiles": 27.8053109606888,
+        "parent_nominal_packed_mib": 250.29538498991946,
+        "candidate_nominal_packed_mib": 250.24779864619921
+      },
+      "per_rank_plan_bytes": 65664,
+      "old_reserved_activation_and_scratch_mib": 12.0,
+      "new_reserved_activation_output_and_plan_mib": 8.0626220703125
+    },
+    {
+      "M": 128,
+      "distribution": "uniform-distinct",
+      "live": 128.0,
+      "active_experts": 31.450143245733827,
+      "w13": {
+        "parent_block_m": 16,
+        "parent_block_n": 256,
+        "parent_block_k": 128,
+        "parent_aligned_rows": 503.202590369345,
+        "candidate_mma_rows": 256.5955132307622,
+        "parent_weight_tiles": 31.450161898084062,
+        "candidate_weight_tiles": 31.450161898084062,
+        "parent_nominal_packed_mib": 566.1029141655131,
+        "candidate_nominal_packed_mib": 566.1029141655131
+      },
+      "w2": {
+        "parent_block_m": 16,
+        "parent_block_n": 128,
+        "parent_block_k": 256,
+        "parent_aligned_rows": 503.202590369345,
+        "candidate_mma_rows": 256.5956624494983,
+        "parent_weight_tiles": 31.450161898084062,
+        "candidate_weight_tiles": 31.450143245733827,
+        "parent_nominal_packed_mib": 283.05145708275654,
+        "candidate_nominal_packed_mib": 283.05128921160446
+      },
+      "per_rank_plan_bytes": 131200,
+      "old_reserved_activation_and_scratch_mib": 24.0,
+      "new_reserved_activation_output_and_plan_mib": 16.1251220703125
+    },
+    {
+      "M": 256,
+      "distribution": "uniform-distinct",
+      "live": 256.0,
+      "active_experts": 31.99055179843087,
+      "w13": {
+        "parent_block_m": 24,
+        "parent_block_n": 256,
+        "parent_block_k": 128,
+        "parent_aligned_rows": 767.7737499762895,
+        "candidate_mma_rows": 361.04202072958776,
+        "parent_weight_tiles": 31.99057291567873,
+        "candidate_weight_tiles": 32.092121608731,
+        "parent_nominal_packed_mib": 575.8303124822171,
+        "candidate_nominal_packed_mib": 577.658188957158
+      },
+      "w2": {
+        "parent_block_m": 24,
+        "parent_block_n": 128,
+        "parent_block_k": 256,
+        "parent_aligned_rows": 767.7737499762895,
+        "candidate_mma_rows": 361.85441027170054,
+        "parent_weight_tiles": 31.99057291567873,
+        "candidate_weight_tiles": 31.990551798719043,
+        "parent_nominal_packed_mib": 287.91515624110855,
+        "candidate_nominal_packed_mib": 287.9149661884714
+      },
+      "per_rank_plan_bytes": 262272,
+      "old_reserved_activation_and_scratch_mib": 48.0,
+      "new_reserved_activation_output_and_plan_mib": 32.2501220703125
+    },
+    {
+      "M": 256,
+      "distribution": "diagnostic",
+      "live": 354,
+      "active_experts": 26,
+      "w13": {
+        "parent_block_m": 24,
+        "parent_block_n": 256,
+        "parent_block_k": 128,
+        "parent_aligned_rows": 792,
+        "candidate_mma_rows": 456,
+        "parent_weight_tiles": 33,
+        "candidate_weight_tiles": 38,
+        "parent_nominal_packed_mib": 594,
+        "candidate_nominal_packed_mib": 684
+      },
+      "w2": {
+        "parent_block_m": 24,
+        "parent_block_n": 128,
+        "parent_block_k": 256,
+        "parent_aligned_rows": 792,
+        "candidate_mma_rows": 472,
+        "parent_weight_tiles": 33,
+        "candidate_weight_tiles": 30,
+        "parent_nominal_packed_mib": 297,
+        "candidate_nominal_packed_mib": 270
+      },
+      "per_rank_plan_bytes": 262272,
+      "old_reserved_activation_and_scratch_mib": 48.0,
+      "new_reserved_activation_output_and_plan_mib": 32.2501220703125
+    }
+  ]
+}

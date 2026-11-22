@@ -1,0 +1,54 @@
+{
+  "frozen_sha256": {
+    "submit_nov20_v187_check.py": "dd785ed7cfccc25b73ac0a76599701e7584b986511df2471d80810eae2def4bf",
+    "test_nov20_v187_check.py": "c2d82140a63f863b18dce253727d31ab4c25703c61d4e1655c2ac8e7b365b789",
+    "test_nov20_v189_check.py": "09f5496c807e4e2e6b34d5c5757daecbf5ee4f499add43c5fc33001cd9d7f2fa",
+    "test_nov20_v198_check.py": "c4f7ff8d5f564384f86e0e352d2a01f30926ec6e4ef2f0f44a5468d9cccc8083",
+    "nov20_v187_runner.plan.json": "cf4651da8e3b14e1dacb214da25e69130e3dd48892d89834a5f8b4b0d8676c55",
+    "nov20_v189_runner.plan.json": "dc89c64a3dec07b29d8a1c9eccafd644f4dc75fedcee750b5a14a5896ba95975",
+    "nov20_v198_runner.plan.json": "0031e77d8d34a31b4020e5cedab0adc5230e12c41ff48f751da12a7cfa88cff4"
+  },
+  "offline_only": true,
+  "complete_nov20_methods_passed": 130,
+  "new_v198_methods_passed": 13,
+  "regression_command": "python3 -B -m unittest discover -s serving_v0523/runs -p 'test_nov20*.py'",
+  "archived_V189_worker": "598b96441805115374dc679ebcfa7518c2cd3867ff5f767c24df61108a4c40d3",
+  "rollback_directory": "history/nov20_v189_before_v198",
+  "V198_patch_sha256": "fa91157f4e5e3c9704664047ba177af4ddabf2f5d2ab0af2560e1320902a59e4",
+  "V198_tree": "927369031684bbe39bd46354b552a1a32cbfbb2f",
+  "V198_validation_sha256": "4adb67a6b55fb5d8a0990f0e9254c2ef3ea2294a36c88c226a82281d7cfe0808",
+  "flags": {
+    "--swa-full-tokens-ratio": "0.25",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--enable-layernorm-sp": "",
+    "--speculative-dflash-sp-prefill-context": ""
+  },
+  "mode": "check",
+  "users": 16,
+  "impact": {
+    "previous_plan_output_byte_identical": [
+      "default V187",
+      "explicit V189"
+    ],
+    "process_lock": "nov20_v187_runner.lock",
+    "arbitration_lock": "nov20_v132_v141_arbitration.lock",
+    "durable_claim": "v187_or_v189_in_v132_standby_slot_nov20_check16.submit.txt",
+    "priority": "Any V120b completion before the final parent observation yields the slot.",
+    "required_quota": {
+      "per_day": 3,
+      "used": 2,
+      "left": 1
+    },
+    "max_private_checks": 1
+  },
+  "coverage": [
+    "Authenticated V68/16 and ordered V129/1 and V141/32 acceptances, V120b pending after final quota",
+    "Exact V198/16 flags, hash, mode, CLI binding and shared claim across all aliases in each restart ordering",
+    "Prior V189 executable and new selector exclude one another after success or ambiguous timeout in both orders",
+    "Alias and raw SHA renames arriving during final quota block; damaged manifest writes no receipt",
+    "Legacy dry plans byte-identical; existing process and arbitration locks; cold/missing parent evidence declines",
+    "Boundary times, competitor claims, terminal transition, ambiguous metrics/identity and freshness through inherited guards"
+  ],
+  "service_actions": 0
+}

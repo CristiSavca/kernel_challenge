@@ -1,0 +1,77 @@
+{
+  "candidate": "V241",
+  "tree": "bdcbadeed85c9294faa7c1959a2bc10baf4006e0",
+  "patch_sha256": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+  "flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25",
+    "--speculative-dflash-sp-prefill-context": "",
+    "--speculative-dflash-mixed-prefill": "",
+    "--max-prefill-tokens": "16640",
+    "--cuda-graph-max-bs-prefill": "16640"
+  },
+  "parsed_cases": 40320,
+  "parsed_values": {
+    "enable_layernorm_sp": true,
+    "moe_runner_backend": "humming",
+    "speculative_moe_runner_backend": "marlin",
+    "swa_full_tokens_ratio": 0.25,
+    "speculative_dflash_sp_prefill_context": true,
+    "speculative_dflash_mixed_prefill": true,
+    "max_prefill_tokens": 16640,
+    "cuda_graph_max_bs_prefill": 16640
+  },
+  "msgspec": "0.22.0",
+  "original_positional_fields": 546,
+  "current_positional_fields": 548,
+  "dataclasses": {
+    "ForwardBatch": {
+      "legacy": 131,
+      "current": 138,
+      "added_defaults": {
+        "mixed_verify_logits_indices": null,
+        "mixed_verify_sharded_logits": false,
+        "dflash_verify_raw_buffer": null,
+        "dflash_prefill_raw_buffer": null,
+        "muse_decode_column_gather": false,
+        "mixed_verify_is_causal": false,
+        "mixed_verify_prompt_count": 0
+      }
+    },
+    "LogitsMetadata": {
+      "legacy": 28,
+      "current": 30,
+      "added_defaults": {
+        "mixed_verify_logits_indices": null,
+        "mixed_verify_sharded_logits": false
+      }
+    },
+    "LogitsProcessorOutput": {
+      "legacy": 24,
+      "current": 28,
+      "added_defaults": {
+        "dflash_prefill_context_done": false,
+        "dflash_prefill_kv_projected": false,
+        "dflash_verify_fc_shard": null,
+        "dflash_verify_logit_scale": null
+      }
+    }
+  },
+  "source_sha256": {
+    "utils/common.py": "60c3b514fcaba47dce2b1f7b74484db809c0d635ba646d94554552170cf01d73",
+    "model_executor/cuda_graph_config.py": "0f6774dd498548e2220606c5e60eeb6c5a768ab50d7d978384ed0eab677ef8d0",
+    "arg_groups/arg_utils.py": "2a5b4e36dfb5ffcf2fe9dc9ead716f2e7951e3c5658e6333e2f68d2de4df4400",
+    "arg_groups/choices.py": "1a92af7024c6ccc8773e622b30ca4ae28125d67882c255d886b2d96d2a604dc1",
+    "arg_groups/field_order.py": "8d4947196d2d149daf72acc355d741dc530fae41308b89b9caf6996e41b2aeac",
+    "arg_groups/fields/__init__.py": "1123322908fef29cc844456dee627ea579251736bf4bea26e4e02bdf265e446f",
+    "arg_groups/fields/parallel.py": "1b4ffe3b3e17281607610a2b554df70e13c17a82580807a04603d417b114437a",
+    "arg_groups/fields/spec.py": "cf6f23f6dbe92e007af3fb1a83030df16905ce9226c0244345b651e1281f5895",
+    "arg_groups/fields/schedule.py": "67aa6f19add93821a0aa758a5d54a42c9c65a9e408a80c3fa4402bac459aaf9e",
+    "arg_groups/fields/exec_.py": "c3f07250a0e2e96e87de9a080d1a95de5f21773f089d96453242e4c171d135af",
+    "model_executor/forward_batch_info.py": "8ecc0cbcf05069d9cee405bc9f4744e3848cb656c202adbe5c459bc762faaf71",
+    "layers/logits_processor.py": "3e4edd7904765005eac61e269c37c8acc7cc0a67e87ee394cc772e70c199d7d0"
+  },
+  "physical_h200": false
+}

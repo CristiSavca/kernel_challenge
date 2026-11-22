@@ -1,0 +1,148 @@
+diff --git a/python/sglang/kernels/ops/speculative/dflash.py b/python/sglang/kernels/ops/speculative/dflash.py
+index 061e788..048cf8e 100644
+--- a/python/sglang/kernels/ops/speculative/dflash.py
++++ b/python/sglang/kernels/ops/speculative/dflash.py
+@@ -248,6 +248,35 @@ def _prepare_dflash_draft_block_unchecked(
+     )
+ 
+ 
++@triton.jit
++def _prefix_value_plan(scores_ptr, row, slots: tl.constexpr, top_k: tl.constexpr):
++    """Choose the linear path with the greatest sum of conditional prefix masses."""
++    ranks = tl.arange(0, top_k)
++    values = tl.full((top_k,), 0.0, tl.float32)
++    paths = tl.full((top_k,), 0, tl.uint32)
++    valid = True
++    for step in tl.static_range(slots):
++        depth = slots - step - 1
++        base = (row * slots + depth) * top_k * top_k
++        scores = tl.load(scores_ptr + base + ranks[:, None] * top_k + ranks[None, :]).to(tl.float32)
++        finite = (scores > -float("inf")) & (scores < float("inf"))
++        clean = tl.where(finite, scores, -float("inf"))
++        maxima = tl.max(clean, 1)
++        usable = (maxima > -float("inf")) & (tl.min((finite | (scores == -float("inf"))).to(tl.int32), 1) != 0)
++        # Only parent zero represents the verified anchor at the first slot.
++        valid = valid & (tl.min((usable | ((depth == 0) & (ranks != 0))).to(tl.int32), 0) != 0)
++        weights = tl.exp(clean - tl.where(usable, maxima, 0.0)[:, None])
++        mass = tl.sum(weights, 1)
++        utility = weights * (1.0 + values[None, :])
++        best = tl.max(utility, 1)
++        # On a utility tie prefer the larger native score, then the first rank.
++        tie_scores = tl.where(utility == best[:, None], clean, -float("inf"))
++        choice = tl.argmax(tie_scores, 1, tie_break_left=True)
++        paths = choice.to(tl.uint32) + top_k * tl.gather(paths, choice, 0)
++        values = tl.where(usable, best / tl.maximum(mass, 1.0), 0.0)
++    return tl.sum(tl.where(ranks == 0, paths, 0), 0), valid
++
++
+ @triton.jit
+ def _selector_walk_kernel(
+     scores_ptr,
+@@ -259,6 +288,7 @@ def _selector_walk_kernel(
+     q_ptr,
+     slots: tl.constexpr,
+     top_k: tl.constexpr,
++    PREFIX_VALUE: tl.constexpr,
+ ):
+     """One program per request: a slot's K scores stay in registers and the walk is a
+     loop, so the slot-to-slot dependency costs nothing instead of one kernel each."""
+@@ -266,6 +296,11 @@ def _selector_walk_kernel(
+     offsets = tl.arange(0, top_k)
+     temperature = tl.load(temperatures_ptr + row)
+     greedy = tl.load(greedy_ptr + row) != 0
++    path = tl.full((), 0, tl.uint32)
++    use_plan = False
++    if PREFIX_VALUE:
++        if greedy:
++            path, use_plan = _prefix_value_plan(scores_ptr, row, slots, top_k)
+     previous = 0
+     for slot in range(slots):
+         base = (row * slots + slot) * top_k
+@@ -279,6 +314,9 @@ def _selector_walk_kernel(
+             has_nan = tl.max(is_nan.to(tl.int32), axis=0) > 0
+             hit = tl.where(has_nan, is_nan, scores == best)
+             index = tl.min(tl.where(hit, offsets, top_k), axis=0)
++            if PREFIX_VALUE:
++                index = tl.where(use_plan, (path % top_k).to(tl.int32), index)
++                path = path // top_k
+             probabilities = tl.where(offsets == index, 1.0, 0.0)
+         else:
+             scaled = scores / temperature
+@@ -301,6 +339,7 @@ def selector_walk_triton(
+     uniforms,
+     temperatures,
+     greedy_mask,
++    prefix_value: bool = False,
+ ):
+     batch, slots, top_k = candidate_ids.shape
+     tokens = torch.empty((batch, slots), dtype=torch.int64, device=scores.device)
+@@ -317,6 +356,8 @@ def selector_walk_triton(
+         q_rows,
+         slots=slots,
+         top_k=top_k,
++        # One uint32 carries all candidate ranks of the suffix, low digit first.
++        PREFIX_VALUE=prefix_value and 1 < slots <= 8 and top_k in (2, 4, 8, 16),
+         num_warps=1,
+     )
+     return tokens, q_rows
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index e61963e..bb7ea23 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -552,5 +552,6 @@ POSITIONAL_FIELD_ORDER = (
+     "enable_return_aux_hidden_states",
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
++    "speculative_dflash_prefix_value",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index f89deec..093ec7d 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -28,6 +28,9 @@ class Spec(msgspec.Struct):
+     # -------------------------------------------------------------------------
+     # Speculative decoding
+     # -------------------------------------------------------------------------
++    speculative_dflash_prefix_value: A[
++        bool, "Choose greedy DFLASH draft chains by expected verified prefix length."
++    ] = False
+     speculative_algorithm: A[
+         Optional[str],
+         "Speculative algorithm. Builtins: EAGLE, EAGLE3, NEXTN, STANDALONE, NGRAM, DFLASH, DSPARK, UNO. Or any name registered via `SpeculativeAlgorithm.register`.",
+diff --git a/python/sglang/srt/models/dflash.py b/python/sglang/srt/models/dflash.py
+index 331965e..2aa8542 100644
+--- a/python/sglang/srt/models/dflash.py
++++ b/python/sglang/srt/models/dflash.py
+@@ -1153,6 +1153,7 @@ class CandidateSelector(nn.Module):
+         vocab_size: int,
+         state_rank: int,
+         top_k: int,
++        prefix_value: bool = False,
+     ) -> None:
+         super().__init__()
+         if _flashinfer_top_k is None:
+@@ -1163,6 +1164,7 @@ class CandidateSelector(nn.Module):
+             )
+         state_rank = int(state_rank)
+         self.top_k = int(top_k)
++        self.prefix_value = prefix_value
+         self.predecessor_codebook = nn.Parameter(
+             torch.zeros(int(vocab_size), state_rank), requires_grad=False
+         )
+@@ -1218,6 +1220,7 @@ class CandidateSelector(nn.Module):
+                 uniforms=uniforms,
+                 temperatures=temperatures,
+                 greedy_mask=greedy_mask,
++                prefix_value=self.prefix_value,
+             )
+         top_k = self.top_k
+         temps = temperatures.view(-1, 1)
+@@ -1276,6 +1279,7 @@ class DFlash2DraftModel(DFlashDraftModel):
+             vocab_size=int(config.vocab_size),
+             state_rank=draft_config.selector_rank,
+             top_k=draft_config.selector_top_k,
++            prefix_value=get_spec().speculative_dflash_prefix_value,
+         )
+         # The draft has no head of its own; the worker points this at the target's
+         # before capture.

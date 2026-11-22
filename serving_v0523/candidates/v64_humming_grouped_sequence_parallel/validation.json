@@ -1,0 +1,62 @@
+{
+  "state": "CPU_AND_INDEPENDENT_SOURCE_PASS",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+  "bytes": 43799,
+  "parents": {
+    "v53": "341c37c4d6e8cd7011218597de42870023fe2a33a046c6e2c7249d123107cb48",
+    "v59": "ea60c518cb47f98a8a740757f055398c816d1c30aff4573252f53a57c13f0773",
+    "v63": "f5c5a2d1c18c522d584ec5b19dc39e607bbc47f4d10225f9fa4213407002c5f5"
+  },
+  "grouped_delta_files": [
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py"
+  ],
+  "sp_delta_files": [
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "files": [
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "max_added_line": 98,
+  "disjoint_deltas": true,
+  "exact_parent_source_parity": true,
+  "python_compiled": 9,
+  "gpu_tested": false,
+  "scratch": "/var/folders/5k/_z9k5ddd6w1d8z97dkgyqmyr0000gn/T/okc-v64-compose-297o_0fn",
+  "integration_cases": 54,
+  "actual_pre_norm_calls": 324,
+  "integration_harness_sha256": "fd1af79f982797f52184beca284b3b2038b4efadfa7831db0b1a39f2c4d4c912",
+  "integration_limits": "Actual Python adapters with NumPy BF16 GEMM/finalizer and collective models; no CUDA kernels or NCCL executed.",
+  "integration_harness": "cpu_integration.py",
+  "independent_review": {
+    "reviewer": "perf_scan",
+    "decision": "source-approved for private H200 check",
+    "checks": [
+      "pinned Humming 0.1.12 grouped API and CUDA tensor maps",
+      "main-thread precompilation and matching cache key",
+      "arbitrary expert offsets and tails",
+      "BCG graph-pool pointers and same-stream replay",
+      "SP pre/post norm exactly once and rank convergence"
+    ],
+    "gpu_tested": false
+  },
+  "cleanup": {
+    "path": "/var/folders/5k/_z9k5ddd6w1d8z97dkgyqmyr0000gn/T/okc-v64-compose-297o_0fn",
+    "files": 8,
+    "bytes": 6169154,
+    "free_before_bytes": 36749107200,
+    "free_after_bytes": 36755251200
+  }
+}

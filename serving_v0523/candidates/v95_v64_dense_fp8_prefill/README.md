@@ -1,0 +1,9 @@
+# V95 dense FP8 prefill on V64
+
+V95 adds V92’s dense FP8 packing to V64, our measured 1.4119× four-load candidate. Eligible long, full-attention EXTEND batches gather the page-one K/V bytes into a bounded dense buffer before calling FA3. All 11 changed files are Python source. Nine are identical to V64. The other two contain the pack kernel and its integration at V64’s native prefill call site. [V64 scored result](../../runs/abd217baf0ed49fd.json), [FA3 interface review](../v92_dense_fp8_prefill/independent_review.md).
+
+Use V64’s exact four overrides: `--flag enable-layernorm-sp`, `--flag moe-runner-backend=humming`, `--flag speculative-moe-runner-backend=marlin` and `--flag swa-full-tokens-ratio=0.25`. The prefill path activates automatically on compatible inputs. The dense buffer is capped at 32 MiB per invocation. Peak reserved GPU memory is a separate end-to-end measurement.
+
+This is a diagnostic candidate for a failed V93 or a passing V93 that leaves its prefill contribution unclear. A matched V95/V64 comparison changes only the prefill path. Capture TTFT and throughput together with first/later-turn agreement, exact request lengths and measured memory. V95 has no H200 measurement or queued run.
+
+The frozen pack source matches V92 byte-for-byte, including all seven SM90 compiler specializations. CPU checks executed 98 gather cases and verified 28,382,976 live bytes and 12 layout fallbacks on this source. A separate comparison checked V92's initialization and request predicates, 13 eligible/ineligible dispatch cases, every downstream FA3 argument from V64 and 54 inherited V64 integration cases. The CUDA graph, FA3 device execution and score remain unverified. [Export receipt](validation.json), [CPU results](cpu_result.json), [SM90 receipts](../v92_dense_fp8_prefill/sm90.json).

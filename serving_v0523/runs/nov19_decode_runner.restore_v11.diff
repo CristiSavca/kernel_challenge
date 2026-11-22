@@ -1,0 +1,276 @@
+--- a/submit_nov19_decode_checks.py
++++ b/submit_nov19_decode_checks.py
+@@ -25,14 +25,6 @@
+     "v89", "v89_paired_expert_dequant",
+     "e20ea10ed16c9b4dec6e0d4c834ef44c086f5cbf468ee6574a5a258800da6e18", V87.flags,
+ )
+-V116 = Candidate(
+-    "v116", "v116_staged_active_experts",
+-    "341ad47ffba45fb7521fa0a4d1795140f65509a9591dfc363772ac434e19beeb", V89.flags,
+-)
+-V116b = Candidate(
+-    "v116b", "v116b_staged_active_experts_regcap",
+-    "8d20646d565613a685baea176e49a91ae5c395ec0bb477600a8f3180f07517b8", V116.flags,
+-)
+ V93_JOB = "75557c21595347de"
+ V93 = Candidate(
+     "v93", "v93_expert_argmax_dense_prefill",
+@@ -78,17 +70,17 @@
+     "3b899d0739a395a8a96bbcaf4a97794b6b2b07c8e0ba2a5a646ab836f5db943a",
+     V106.flags | {"--speculative-dflash-sp-prefill-context": ""},
+ )
+-LEGACY_EXPERT_ALTERNATIVES = (V100c, V106, V89, V116)
+-ALTERNATIVES = (V116b, V111, V80a)
++LEGACY_EXPERT_ALTERNATIVES = (V100c, V106)
++ALTERNATIVES = (V89, V111, V80a)
+ PREFILL_ALTERNATIVES = (V98, V102, V95)
+ TREE_ALTERNATIVES = (V101b, V79a)
+ CANDIDATES = (*ALTERNATIVES, *PREFILL_ALTERNATIVES, *TREE_ALTERNATIVES)
+ 
+ 
+ def check_load(candidate):
+-    if candidate in (V100c, V106, V111):
++    if candidate in (*LEGACY_EXPERT_ALTERNATIVES, V111):
+         return 32
+-    return 4 if candidate in (V87, V89, V116, V116b) else 16
++    return 4 if candidate in (V87, V89) else 16
+ 
+ 
+ def prefix(candidate):
+@@ -117,7 +109,7 @@
+     if not isinstance(meta, dict) or (meta.get("candidate"), meta.get("sha256"), meta.get("flags"),
+                                      meta.get("users")) != (V87.name, V87.sha256, V87.flags, 4):
+         return None, "V87 submission metadata mismatch"
+-    return parent_choice(V87, V87_JOB, 4, V116b, V80a, okc, execute, pending=V111)
++    return parent_choice(V87, V87_JOB, 4, V89, V80a, okc, execute, pending=V111)
+ 
+ 
+ def v64_gate(runs):
+@@ -359,7 +351,7 @@
+         checks[candidate.name] = {"candidate": candidate.name, "users": check_load(candidate),
+                                   "flags": candidate.flags, "sha256": candidate.sha256}
+     first = {"alternatives": [checks[c.name] for c in ALTERNATIVES], "decision_receipt": prefix(V87),
+-             "when_passed": V116b.name, "when_queued_or_running_and_v64_passed": V111.name,
++             "when_passed": V89.name, "when_queued_or_running_and_v64_passed": V111.name,
+              "legacy_attempt_receipts": [prefix(c) for c in LEGACY_EXPERT_ALTERNATIVES],
+              "v64_scored_receipt": f"{V64_JOB}.json", "when_failed_or_skipped": V80a.name,
+              "when_unknown": "defer this slot"}
+--- a/test_nov19_decode_checks.py
++++ b/test_nov19_decode_checks.py
+@@ -23,7 +23,7 @@
+         self.on_quota = lambda: None
+         self.at = r.START
+         self.submit_result = 0
+-        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v116b","v95","v98","v99","v111","v101b","v102"), 1)}
++        self.ids = {c: f"{i:016x}" for i, c in enumerate(("v72a","v76a","v80a","v84a","v79a","v87","v89","v95","v98","v99","v111","v101b","v102"), 1)}
+         self.jobs[r.V68_JOB] = {"id": r.V68_JOB, "board":"serving", "mode":"check",
+                                 "status":"queued", "result":None}
+         self.ids[r.V87.name] = r.V87_JOB
+@@ -83,7 +83,7 @@
+         self.assertEqual(checks[0]["decision_receipt"], "v87_nov18_check4")
+         alternatives = checks[0]["alternatives"]
+         self.assertEqual([(v["candidate"], v["users"], len(v["flags"])) for v in alternatives],
+-                         [("v116b", 4, 9), ("v111", 32, 9), ("v80a", 16, 7)])
++                         [("v89", 4, 9), ("v111", 32, 9), ("v80a", 16, 7)])
+         self.assertEqual(alternatives[0]["flags"], r.V87.flags)
+         self.assertEqual(checks[1]["decision_receipt"], "v93_nov18_check16")
+         self.assertEqual(checks[1]["v93_job"], r.V93_JOB)
+@@ -97,7 +97,7 @@
+                          r.V93.flags | {"--speculative-dflash-adaptive-tree": "", "--speculative-dflash-adaptive-spine": ""})
+         self.assertEqual(checks[2]["alternatives"][1]["flags"], r.V76a.flags | {"--speculative-num-draft-tokens": "12"})
+         self.assertEqual([r.prefix(c) for c in r.CANDIDATES],
+-                         ["v116b_nov19_check4", "v111_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
++                         ["v89_nov19_check4", "v111_nov19_check32", "v80a_nov19_check16", "v98_nov19_check16", "v102_nov19_check16", "v95_nov19_check16",
+                           "v101b_nov19_check16", "v79a_nov19_check16"])
+         self.assertEqual(r.START.isoformat(), "2026-11-19T00:03:00+00:00")
+         self.assertEqual(r.END.hour,22)
+@@ -243,7 +243,7 @@
+         self.assertEqual(self.left,1)
+ 
+     def test_first_slot_tracks_v87_and_exact_v111_payload(self):
+-        for state, selected in (("queued",r.V111),("running",r.V111),("done",r.V116b)):
++        for state, selected in (("queued",r.V111),("running",r.V111),("done",r.V89)):
+             with self.subTest(state=state):
+                 self.job(r.V87, state=state)
+                 for other in r.ALTERNATIVES:
+@@ -292,7 +292,7 @@
+         self.assertFalse(self.receipt(r.V111).exists())
+         self.assertEqual(self.left,3)
+         self.job(r.V87)
+-        self.assertTrue(self.offer(r.V116b).startswith("submitted"))
++        self.assertTrue(self.offer(r.V89).startswith("submitted"))
+ 
+     def test_v111_revalidates_frozen_parent_after_quota(self):
+         self.job(r.V87,state="running")
+@@ -306,7 +306,7 @@
+         self.on_quota=lambda: self.job(r.V87)
+         self.assertEqual(self.offer(r.V111),"quota request failed")
+         self.assertFalse(self.receipt(r.V111).exists())
+-        self.assertTrue(self.offer(r.V116b).startswith("submitted"))
++        self.assertTrue(self.offer(r.V89).startswith("submitted"))
+ 
+     def test_v111_cannot_claim_unknown_or_wrong_v87(self):
+         self.job(r.V87,state="queued")
+@@ -322,7 +322,7 @@
+ 
+     def test_old_first_slot_attempt_blocks_v111(self):
+         self.job(r.V87,state="running")
+-        for past in (r.V89,r.V116,r.V116b,r.V80a):
++        for past in (r.V89,r.V80a):
+             self.receipt(past).write_text("uncertain old attempt")
+             self.assertEqual(self.offer(r.V111),"attempt recorded")
+             self.receipt(past).unlink()
+@@ -343,77 +343,9 @@
+         self.assertFalse(self.commands)
+         self.assertEqual(self.left, 3)
+ 
+-    def test_any_historical_v89_receipt_occupies_four_user_slot(self):
+-        self.assertEqual(r.prefix(r.V89), "v89_nov19_check4")
+-        for old in ("", "orphaned attempt without exit status", "job abcd0123456789ef\nCLI exit code: 71\n"):
+-            self.receipt(r.V89).write_text(old)
+-            for state in ("queued", "done", "failed"):
+-                self.job(r.V87, state=state)
+-                for candidate in r.ALTERNATIVES:
+-                    self.assertEqual(self.offer(candidate), "attempt recorded")
+-            self.receipt(r.V89).unlink()
+-        self.assertFalse(self.commands)
+-        self.assertEqual(self.left, 3)
+-        with self.assertRaises(ValueError):
+-            self.offer(r.V89)
+-
+-    def test_previous_v116_at_four_users_blocks_all_first_slot_choices(self):
+-        self.assertEqual(r.prefix(r.V116), "v116_nov19_check4")
+-        for data in ("", "previous CLI attempt with no confirmed job", "job 123456789abcdef0\nCLI exit code: 71\n"):
+-            self.receipt(r.V116).write_text(data)
+-            for state in ("running", "done", "failed"):
+-                self.job(r.V87, state=state)
+-                for candidate in r.ALTERNATIVES:
+-                    self.assertEqual(self.offer(candidate), "attempt recorded")
+-            self.receipt(r.V116).unlink()
+-        with self.assertRaises(ValueError):
+-            self.offer(r.V116)
+-        self.assertFalse(self.commands)
+-        self.assertEqual(self.left, 3)
+-
+-    def test_late_v89_or_v116_receipt_during_final_v87_pass_blocks_v116b(self):
+-        self.job(r.V87)
+-        for old in (r.V89, r.V116):
+-            with self.subTest(old=old.name):
+-                calls = []
+-                def recover(command, **kwargs):
+-                    if command[1:] == ["serve", "status", r.V87_JOB, "--json"]:
+-                        calls.append(command)
+-                        if len(calls) == 2:
+-                            self.receipt(old).write_text("previous four-user attempt")
+-                    return self.execute(command, **kwargs)
+-                result = r.run_candidate(r.V116b, runs=self.runs, okc="mock", execute=recover,
+-                                         clock=lambda: self.at)
+-                self.assertEqual(result, "quota request failed")
+-                self.assertEqual(len(calls), 2)
+-                self.assertEqual(self.offer(r.V116b), "attempt recorded")
+-                self.assertFalse(self.receipt(r.V116b).exists())
+-                self.assertEqual(self.left, 3)
+-                self.receipt(old).unlink()
+-
+-    def test_v116b_frozen_patch_has_matched_v87_flags_and_four_users(self):
+-        import hashlib
+-        directory = r.ROOT / "serving_v0523/candidates" / r.V116b.directory
+-        receipt = json.loads((directory / "validation.json").read_text())
+-        self.assertEqual(r.V116b.sha256, receipt["patch_sha256"])
+-        self.assertEqual(r.V116b.flags, receipt["launch_flags"])
+-        self.assertNotEqual(r.V116b.sha256, r.V116.sha256)
+-        self.assertEqual(r.V116b.flags, r.V116.flags)
+-        self.assertEqual(r.V116b.flags, r.V89.flags)
+-        self.assertEqual(r.V116b.flags, r.V87.flags)
+-        self.assertEqual(r.V116b.sha256, hashlib.sha256((directory / "patch.diff").read_bytes()).hexdigest())
+-        self.assertEqual(r.plan()["checks"][0]["when_passed"], "v116b")
+-        self.job(r.V87)
+-        self.assertTrue(self.offer(r.V116b).startswith("submitted"))
+-        command = self.commands[-1]
+-        flags = [item for name, value in sorted(r.V87.flags.items())
+-                 for item in ("--flag", name[2:] + ("=" + value if value else ""))]
+-        self.assertEqual(command, ["mock", "serve", "check", str(directory / "patch.diff"),
+-                                   "--users", "4", *flags, "--no-wait"])
+-
+     def test_recovered_legacy_first_slot_attempt_during_quota(self):
+-        for legacy in (r.V100c, r.V106, r.V89, r.V116):
+-            for state, selected in (("running", r.V111), ("done", r.V116b), ("failed", r.V80a)):
++        for legacy in (r.V100c, r.V106):
++            for state, selected in (("running", r.V111), ("done", r.V89), ("failed", r.V80a)):
+                 self.job(r.V87, state=state)
+                 self.on_quota = lambda: self.receipt(legacy).write_text("recovered uncertain attempt")
+                 self.assertEqual(self.offer(selected), "quota request failed")
+@@ -444,7 +376,7 @@
+         self.assertEqual(r.V111.flags, r.V106.flags | {"--speculative-dflash-sp-prefill-context": ""})
+         self.assertEqual(r.V106.flags, r.V100c.flags)
+         self.assertEqual(r.plan()["checks"][0]["legacy_attempt_receipts"],
+-                         [r.prefix(r.V100c), r.prefix(r.V106), r.prefix(r.V89), r.prefix(r.V116)])
++                         [r.prefix(r.V100c), r.prefix(r.V106)])
+         for candidate in (r.V100c, r.V106, r.V111):
+             self.assertEqual(hashlib.sha256((root / candidate.directory / "patch.diff").read_bytes()).hexdigest(),
+                              candidate.sha256)
+@@ -461,31 +393,31 @@
+         self.assertEqual(command, ["mock", "serve", "check", str(root/r.V111.directory/"patch.diff"), "--users", "32",
+                                    *(item for flag in expected_flags for item in ("--flag", flag)), "--no-wait"])
+ 
+-    def test_v80a_for_exact_failure_or_skip_and_no_v116b(self):
++    def test_v80a_for_exact_failure_or_skip_and_no_v89(self):
+         self.job(r.V87, passed=False)
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V89).startswith("waiting"))
+         self.assertTrue(self.offer(r.V80a).startswith("submitted"))
+         self.receipt(r.V80a).unlink()
+         self.receipt(r.V87).unlink()
+         skip = self.runs / (r.prefix(r.V87) + ".skip.json")
+         skip.write_text(json.dumps({"candidate":"v87","reason":"shared dependency skip"}))
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V89).startswith("waiting"))
+         self.assertTrue(self.offer(r.V80a).startswith("submitted"))
+-        self.assertFalse(self.receipt(r.V116b).exists())
++        self.assertFalse(self.receipt(r.V89).exists())
+ 
+     def test_v87_mismatch_never_guesses_but_unrelated_jobs_run(self):
+         for changes in ({"patch":{"sha256":"wrong"}},{"serving_flags":{}},{"concurrency":[16]}):
+             self.job(r.V87, passed=False, **changes)
+-            self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++            self.assertTrue(self.offer(r.V89).startswith("waiting"))
+             self.assertTrue(self.offer(r.V80a).startswith("waiting"))
+         self.receipt(r.V87).write_text("ambiguous CLI")
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V89).startswith("waiting"))
+         self.assertTrue(self.offer(r.V80a).startswith("waiting"))
+         self.assertTrue(self.offer(r.V102).startswith("submitted"))
+         self.assertTrue(self.offer(r.V79a).startswith("submitted"))
+         self.assertEqual(self.left,1)
+         self.job(r.V87)
+-        self.assertTrue(self.offer(r.V116b).startswith("submitted"))
++        self.assertTrue(self.offer(r.V89).startswith("submitted"))
+         self.assertEqual(self.left,0)
+         self.assertFalse(self.receipt(r.V80a).exists())
+ 
+@@ -500,21 +432,21 @@
+     def test_ambiguous_alternative_attempt_permanently_occupies_slot(self):
+         self.job(r.V87)
+         self.submit_result=71
+-        self.assertIn("no retry",self.offer(r.V116b))
++        self.assertIn("no retry",self.offer(r.V89))
+         self.job(r.V87,state="failed")
+         self.assertEqual(self.offer(r.V80a), "attempt recorded")
+-        self.assertEqual(self.offer(r.V116b), "attempt recorded")
++        self.assertEqual(self.offer(r.V89), "attempt recorded")
+         self.assertEqual(self.left,2)
+ 
+     def test_conflicting_or_unverifiable_v87_provenance(self):
+         job=self.job(r.V87,state="queued")
+         self.jobs[job]["serving_flags"]={}
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V89).startswith("waiting"))
+         self.jobs[job]["serving_flags"]=r.V87.flags
+         self.jobs[job]["users"]=16
+         self.assertTrue(self.offer(r.V80a).startswith("waiting"))
+         self.receipt(r.V87).unlink()
+-        self.assertTrue(self.offer(r.V116b).startswith("waiting"))
++        self.assertTrue(self.offer(r.V89).startswith("waiting"))
+         skip=self.runs/(r.prefix(r.V87)+".skip.json")
+         skip.write_text("{")
+         self.assertTrue(self.offer(r.V80a).startswith("waiting"))

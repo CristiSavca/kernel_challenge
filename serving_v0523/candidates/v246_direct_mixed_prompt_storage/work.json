@@ -1,0 +1,39 @@
+{
+  "patch_sha256": "f8ec0e68057b0a63fe67f659cb2d3e1cd9832b3d6198c2e889d1e90290245dd2",
+  "server_sha256": "b7212de67ee2c9fe42b113054891cb4f56cdb3eaa5d9daf5cca2602c1af29bc4",
+  "client_sha256": "1abd909c8452de852f23c408ce73decf20d30f1d86b5c16047969370308b9a19",
+  "rungs": {
+    "1": {
+      "repetitions": 3
+    },
+    "4": {
+      "repetitions": 2,
+      "eligible_single_prompt_joins": 21,
+      "full_layer_calls": 336,
+      "logical_copy_bytes_avoided_per_rank": 2818572288,
+      "max_parent_admission_upper_bytes": 28655104,
+      "max_backing_plus_paged_workspace_upper_bytes": 28914176
+    },
+    "16": {
+      "repetitions": 1,
+      "eligible_single_prompt_joins": 58,
+      "full_layer_calls": 928,
+      "logical_copy_bytes_avoided_per_rank": 7784628224,
+      "max_parent_admission_upper_bytes": 32030976,
+      "max_backing_plus_paged_workspace_upper_bytes": 32664832
+    },
+    "32": {
+      "repetitions": 1,
+      "eligible_single_prompt_joins": 115,
+      "full_layer_calls": 1840,
+      "logical_copy_bytes_avoided_per_rank": 15435038720,
+      "max_parent_admission_upper_bytes": 31612160,
+      "max_backing_plus_paged_workspace_upper_bytes": 32745728
+    }
+  },
+  "full_layers": 16,
+  "bytes_per_new_kv_row": 256,
+  "budget_bytes": 33554432,
+  "assumptions": "V41 initial waves replayed with V241 mixed admission, all 16 full layers eligible, native FP8 layout, eight GPUs, full causal width-eight verification. These counts sum repetitions. They represent a removed logical read and write of each prompt row; device memory traffic, end-to-end memory peaks, number of actual joins and timing need hardware measurement.",
+  "physical_V246": false
+}

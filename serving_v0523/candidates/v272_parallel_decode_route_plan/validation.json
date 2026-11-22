@@ -1,0 +1,47 @@
+{
+  "candidate": "V272",
+  "parent": "V68",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_tree": "f9966bf0dfca287d58d8d24ea2d055b3c2162702",
+  "tree": "b6e9b716b22b76927c95f527a62211360fac0a99",
+  "parent_sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+  "patch_sha256": "726e77358f1e4b6bbc081dd4a130b8da0f75855ee60cde36ef6cc089e8afae19",
+  "delta_sha256": "07aecdd8bafd8b4babeb042605f8be982788218e890c4f70d7f8b698f5fb0089",
+  "bytes": 79868,
+  "delta_bytes": 8393,
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "forbidden_flag_patterns": 76,
+  "max_added_line_chars": 145,
+  "strict_apply_reverse_full_delta": true,
+  "official_export": "okc serve diff",
+  "official_rules": "https://openkernelchallenge.dev/api/v1/serving",
+  "physical_H200": false,
+  "submitted": false
+}

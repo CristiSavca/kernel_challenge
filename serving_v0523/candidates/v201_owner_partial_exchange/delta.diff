@@ -1,0 +1,228 @@
+diff --git a/python/sglang/srt/arg_groups/field_order.py b/python/sglang/srt/arg_groups/field_order.py
+index 228a41f..63dc2dd 100644
+--- a/python/sglang/srt/arg_groups/field_order.py
++++ b/python/sglang/srt/arg_groups/field_order.py
+@@ -553,5 +553,6 @@ POSITIONAL_FIELD_ORDER = (
+     "aux_hidden_state_capture",
+     "return_aux_hidden_state_layer_ids",
+     "speculative_dflash_sp_prefill_context",
++    "muse_owner_partial_exchange",
+ )
+ # fmt: on
+diff --git a/python/sglang/srt/arg_groups/fields/parallel.py b/python/sglang/srt/arg_groups/fields/parallel.py
+index 9bd0b1c..3bf8f83 100644
+--- a/python/sglang/srt/arg_groups/fields/parallel.py
++++ b/python/sglang/srt/arg_groups/fields/parallel.py
+@@ -250,6 +250,10 @@ class Parallel(msgspec.Struct):
+         "Muse Spark requires the FlashInfer TRT-LLM MoE runner and "
+         "NVLink/NVSwitch.",
+     ] = False
++    muse_owner_partial_exchange: A[
++        bool,
++        "Send large Muse sequence-parallel BF16 output partials to each token owner for FP32 summation.",
++    ] = False
+     enable_megamoe_for_layernorm_sp: A[
+         bool,
+         "Use fused MegaMoE for Muse Spark NVFP4 TP4/EP4 or TP8/EP8 LayerNorm-SP prefill, "
+diff --git a/python/sglang/srt/layers/communication/sp_owner_sum.py b/python/sglang/srt/layers/communication/sp_owner_sum.py
+new file mode 100644
+index 0000000..9932e73
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_owner_sum.py
+@@ -0,0 +1,138 @@
++"""Return large sequence-parallel BF16 row sums to the ranks consuming those rows."""
++
++import os
++
++import torch
++import triton
++import triton.language as tl
++
++from sglang.srt.runtime_context import get_exec, get_parallel
++from sglang.srt.utils.custom_op import register_custom_op
++
++_MAX_RECEIVE_BYTES = 32 * 1024**2
++_WINDOW_SLACK_BYTES = 256 * 1024
++
++
++def prepare_owner_sum(group, row_linears):
++    """Agree on one communicator and establish its peer connections before capture."""
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++
++    if group.world_size < 2 or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return False
++    comm = group.pynccl_comm
++    ready = (
++        comm is not None
++        and comm.available
++        and comm.world_size == group.world_size
++        and comm.rank == group.rank_in_group
++        and torch.cuda.get_device_capability(comm.device) == (9, 0)
++        and all(fc.tp_group is not None and fc.tp_group.ranks == group.ranks for fc in row_linears)
++        and os.environ.get("NCCL_NVLS_ENABLE", "1") != "0"
++        and not torch.are_deterministic_algorithms_enabled()
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not is_batch_invariant_mode_enabled()
++    )
++    with torch.inference_mode(False):
++        vote = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++        torch.distributed.all_reduce(vote, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if not vote.item():
++        return False
++    with comm.change_state(enable=True):
++        # Use the same grouped send/receive protocol as the subsequent captured operation.
++        outgoing = torch.zeros(group.world_size, dtype=torch.bfloat16, device=comm.device)
++        incoming = torch.empty_like(outgoing)
++        comm.all_to_all_single(incoming, outgoing)
++    return True
++
++
++def owner_sum_eligible(full, size):
++    # Small collectives already fit the custom all-reduce workspace. The owner
++    # exchange amortizes its peer operations on tensors larger than two receive windows.
++    return (
++        full.ndim == 2 and full.is_cuda and full.dtype == torch.bfloat16
++        and 1 < size <= 16 and full.shape[0] >= size and full.shape[1] > 0
++        and (size - 1) * full.shape[1] * 2 <= _MAX_RECEIVE_BYTES
++        and full.numel() * 2 >= 2 * _MAX_RECEIVE_BYTES
++    )
++
++
++@triton.jit
++def _sum_owned_rows(Local, Remote, Out, count, stride, SIZE: tl.constexpr, RANK: tl.constexpr, BLOCK: tl.constexpr):
++    i = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
++    live = i < count
++    if RANK == 0:
++        first = tl.load(Local + i, live, other=0.0)
++    else:
++        first = tl.load(Remote + i, live, other=0.0)
++    total = first.to(tl.float32)
++    for src in tl.static_range(1, SIZE):
++        if src == RANK:
++            v = tl.load(Local + i, live, other=0.0)
++        else:
++            peer = src if src < RANK else src - 1
++            v = tl.load(Remote + peer * stride.to(tl.int64) + i, live, other=0.0)
++        total += v.to(tl.float32)
++    tl.store(Out + i, total, live)
++
++
++def _finish(local, received, out, rank, size):
++    count = local.numel()
++    _sum_owned_rows[(triton.cdiv(count, 256),)](
++        local, received, out, count, received.stride(0), size, rank, 256
++    )
++
++
++def _exchange(full, group, out, received):
++    rows = full.shape[0]
++    span, window = out.shape[0], received.shape[1]
++    rank, size = group.rank_in_group, group.world_size
++    comm = group.pynccl_comm
++    local_start = rank * span
++    local_rows = max(0, min(span, rows - local_start))
++    with comm.change_state(enable=True):
++        for offset in range(0, span, window):
++            here = min(window, max(0, local_rows - offset))
++            comm.group_start()
++            try:
++                for peer in range(size):
++                    if peer != rank:
++                        start = peer * span + offset
++                        n = max(0, min(window, span - offset, rows - start))
++                        if n:
++                            comm.send(full[start : start + n], peer)
++                        if here:
++                            slot = peer if peer < rank else peer - 1
++                            comm.recv(received[slot, :here], peer)
++            finally:
++                comm.group_end()
++            if here:
++                local = full[local_start + offset : local_start + offset + here]
++                _finish(local, received, out[offset : offset + here], rank, size)
++    if local_rows < span:
++        out[local_rows:].zero_()
++
++
++def _owner_shape(full: torch.Tensor, size: int):
++    return full.new_empty(((full.shape[0] + size - 1) // size, full.shape[1]))
++
++
++def _window_rows(span, remote_row_bytes):
++    # Balance the rounds so integer division of the byte budget cannot create
++    # a nearly empty last round. Permit at most 256 KiB of row-alignment slack.
++    rounds = (span * remote_row_bytes + _MAX_RECEIVE_BYTES - 1) // _MAX_RECEIVE_BYTES
++    balanced = (span + rounds - 1) // rounds
++    return min(balanced, (_MAX_RECEIVE_BYTES + _WINDOW_SLACK_BYTES) // remote_row_bytes)
++
++
++@register_custom_op(fake_impl=_owner_shape)
++def owner_sum(full: torch.Tensor, size: int) -> torch.Tensor:
++    group = get_parallel().tp_group
++    # A different local stride cannot change which collective the ranks enter.
++    full = full.contiguous()
++    out = _owner_shape(full, size)
++    window = _window_rows(out.shape[0], (size - 1) * full.shape[1] * full.element_size())
++    received = full.new_empty((size - 1, window, full.shape[1]))
++    _exchange(full, group, out, received)
++    return out
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 8af97f1..1bc2523 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -144,9 +144,14 @@ def sp_exit_gather(hidden_states: torch.Tensor, num_tokens: int) -> torch.Tensor
+     return output[:num_tokens]
+ 
+ 
+-def reduce_scatter_token_rows(full: torch.Tensor, group) -> torch.Tensor:
++def reduce_scatter_token_rows(full: torch.Tensor, group, *, owner_exchange: bool = False) -> torch.Tensor:
+     """Shard a replicated SUM while retaining accelerated all-reduce precision."""
+     num_tokens = full.shape[0]
++    if owner_exchange:
++        from sglang.srt.layers.communication.sp_owner_sum import owner_sum, owner_sum_eligible
++
++        if owner_sum_eligible(full, group.world_size):
++            return owner_sum(full, group.world_size)
+     padded = ceil_align(num_tokens, group.world_size)
+     # Preserve the original dispatcher on accelerator paths that may accumulate
+     # in FP32. Check unpadded metadata so tails keep the original algorithm.
+@@ -298,7 +303,7 @@ def row_parallel_gbar_matmul(linear, input_: torch.Tensor, bias) -> torch.Tensor
+         group = linear.tp_group
+         with group.use_symmetric_memory(group):
+             full = linear.quant_method.apply(linear, x, bias)
+-        return reduce_scatter_token_rows(full, group)
++        return reduce_scatter_token_rows(full, group, owner_exchange=getattr(linear, "_sp_owner_exchange", False))
+     num_tokens = x.shape[0]
+     padded = ceil_align(num_tokens, tp_size)
+     if padded != num_tokens:
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index ae7af01..f7d03cd 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -951,7 +951,9 @@ class MuseSpark1xMoE(nn.Module):
+         scores = layernorm_sp.sp_exit_gather(topk_scores, num_tokens)
+         ids = layernorm_sp.sp_exit_gather(topk_ids, num_tokens)
+         output = self.experts(inputs, scores, ids, self.experts.post_expert_norm)
+-        return layernorm_sp.reduce_scatter_token_rows(output, tp_group)
++        return layernorm_sp.reduce_scatter_token_rows(
++            output, tp_group, owner_exchange=getattr(self, "_sp_owner_exchange", False)
++        )
+ 
+ 
+ class MuseSpark1xDecoderLayer(nn.Module):
+@@ -1209,6 +1211,13 @@ class MuseSpark1xModel(nn.Module):
+                         linear._sp_unfused_collective = True
+                     else:
+                         linear._sp_use_cutlass = True
++            if replicate_expert_input and get_parallel().muse_owner_partial_exchange:
++                from sglang.srt.layers.communication.sp_owner_sum import prepare_owner_sum
++
++                row_linears = [layer.self_attn.o_proj for layer in self.layers]
++                if prepare_owner_sum(get_parallel().tp_group, row_linears):
++                    for mod in (*row_linears, *moe_layers):
++                        mod._sp_owner_exchange = True
+             if replicate_expert_input:
+                 for moe_layer in moe_layers:
+                     moe_layer.sp_replicate_expert_input = True

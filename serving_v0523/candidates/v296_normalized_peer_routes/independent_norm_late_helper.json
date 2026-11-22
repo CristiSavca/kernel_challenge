@@ -1,0 +1,46 @@
+{
+  "torch": "2.5.1",
+  "sources": {
+    "python/sglang/srt/models/muse_spark.py": "458920c1723b9f60e518ab3f70b36daf123d54a11278246e248aea134f2ceae5",
+    "python/sglang/srt/layers/muse_spark/peer_prompt_pack.py": "5cf9925342f405704c4ac7ef07b8963f657fdc32a88eb3a372e1faed9bb48401",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py": "98cb89a74d36d3fe4369b8465224ef7570fe2ede031815b7357426ec7c3e696f",
+    "python/sglang/srt/layers/layernorm_sp.py": "24bb5a0581b366c1da0326b3f9f0a034ef3213653b88157d79f31b8956bb1993",
+    "python/sglang/kernels/jit/csrc/muse_spark/ranked_pool_norm.cuh": "9a1dc3db3505a03ec2f44ef1042cdf690d1af1c3d9b0ba98c77f6f7571d6459e"
+  },
+  "counts": {
+    "calls": 12,
+    "direct": 8,
+    "functional": 2,
+    "module": 2,
+    "retired_clone": 0,
+    "route_pairs": 43152,
+    "activation_words": 207104,
+    "empty_local": 0,
+    "helper_called": 2
+  },
+  "cases": {
+    "tp4/legacy/ragged": {
+      "calls": 4,
+      "direct": 2,
+      "functional": 1,
+      "module": 1,
+      "retired_clone": 0,
+      "route_pairs": 8624,
+      "activation_words": 68992,
+      "empty_local": 0,
+      "helper_called": 1
+    },
+    "tp8/legacy/ragged": {
+      "calls": 8,
+      "direct": 6,
+      "functional": 1,
+      "module": 1,
+      "retired_clone": 0,
+      "route_pairs": 34528,
+      "activation_words": 138112,
+      "empty_local": 0,
+      "helper_called": 1
+    }
+  },
+  "scope": "Distributed CPU peer mappings and real Gloo exercise staged SP dispatch, route callbacks and asymmetric normalization. Direct arithmetic executes the CUDA body compiled as a host coroutine. The functional oracle implements the pinned ATen reduction with CPU reciprocal square root. GPU streams and final reduction are modeled."
+}

@@ -1,0 +1,48 @@
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index 7f2ba21..4540bf7 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -98,8 +98,21 @@ def project_dflash_verify(context, inputs):
+     return draft.hidden_norm(projected)
+ 
+ 
+-def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
++def _supports_projected_prompt_taps(processor):
+     from sglang.srt.layers.logits_processor import LogitsProcessor
++
++    if type(processor) is LogitsProcessor:
++        return True
++    if not isinstance(processor, LogitsProcessor):
++        return False
++    # Muse changes the LM-head GEMM but inherits the native auxiliary-state
++    # pruning and FULL capture. Other processors may consume the raw taps.
++    from sglang.srt.models.muse_spark import MuseSpark1xLogitsProcessor
++
++    return type(processor) is MuseSpark1xLogitsProcessor
++
++
++def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
+     from sglang.srt.models.dflash import DFlashDraftModel
+ 
+     fc = getattr(draft, "fc", None)
+@@ -116,7 +129,7 @@ def prepare_dflash_sp_prefill(draft, target, logits_processor, group):
+         and fc.weight.dtype == torch.bfloat16
+         and fc.weight.is_contiguous()
+         and torch.cuda.get_device_capability(fc.weight.device)[0] == 9
+-        and type(logits_processor) is LogitsProcessor
++        and _supports_projected_prompt_taps(logits_processor)
+     )
+     if _agree(compatible, group):
+         return _PrefillContext(
+@@ -149,6 +162,11 @@ def project_dflash_prefill_shard(inputs, num_tokens, group, logits_processor, fu
+         and logits_processor is expected_logits
+         and not logits_processor.keep_last_hidden_states
+         and logits_processor.expected_aux_hidden_states is None
++        and not any(
++            name in vars(logits_processor)
++            for name in ("_get_pruned_states", "_get_hidden_states_to_store",
++                         "_get_last_hidden_states_to_store")
++        )
+         and not draft.quantizable
+         and draft.fc is fc
+         and draft.project_target_hidden == projector

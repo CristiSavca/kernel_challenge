@@ -1,0 +1,130 @@
+{
+  "candidate_sha256": "e8a04e873ea3dafcc84dd97c49de239b42fe389cd63dbeab4f444279c1f7d082",
+  "expert_output_words_compared": 1048576,
+  "connected_bf16_words": 640,
+  "connected_sha256": "1e34578474b9c1ffa0d0cd0c1d02738620d284dd2042227b1d248e8a9ececd53",
+  "results": {
+    "4": {
+      "complete_rounds": 84,
+      "compared_pairs": 42,
+      "declined": 4,
+      "cache_words_per_rank": 10330560,
+      "scenarios": [
+        "compiled_head",
+        "context_off",
+        "global_hook",
+        "global_pre_hook",
+        "head_hook",
+        "head_off",
+        "head_pre_hook",
+        "local_hook",
+        "long",
+        "rank_fc_hook",
+        "short",
+        "target_hook",
+        "unsupported_norm",
+        "wrapped_head"
+      ],
+      "full_graph_examples": [
+        {
+          "backend": "FULL",
+          "case": "long",
+          "fixed": false,
+          "rows": 544,
+          "head_width": 43,
+          "hidden_width": 40,
+          "collectives": [
+            [
+              18,
+              11
+            ]
+          ],
+          "committed": 5,
+          "cache_words": 131040
+        },
+        {
+          "backend": "FULL",
+          "case": "long",
+          "fixed": true,
+          "rows": 544,
+          "head_width": 11,
+          "hidden_width": 8,
+          "collectives": [
+            [
+              2,
+              11
+            ],
+            [
+              16,
+              2
+            ]
+          ],
+          "committed": 5,
+          "cache_words": 131040
+        }
+      ]
+    },
+    "8": {
+      "complete_rounds": 84,
+      "compared_pairs": 42,
+      "declined": 4,
+      "cache_words_per_rank": 20064960,
+      "scenarios": [
+        "compiled_head",
+        "context_off",
+        "global_hook",
+        "global_pre_hook",
+        "head_hook",
+        "head_off",
+        "head_pre_hook",
+        "local_hook",
+        "long",
+        "rank_fc_hook",
+        "short",
+        "target_hook",
+        "unsupported_norm",
+        "wrapped_head"
+      ],
+      "full_graph_examples": [
+        {
+          "backend": "FULL",
+          "case": "long",
+          "fixed": false,
+          "rows": 1064,
+          "head_width": 43,
+          "hidden_width": 40,
+          "collectives": [
+            [
+              18,
+              6
+            ]
+          ],
+          "committed": 5,
+          "cache_words": 255840
+        },
+        {
+          "backend": "FULL",
+          "case": "long",
+          "fixed": true,
+          "rows": 1064,
+          "head_width": 6,
+          "hidden_width": 8,
+          "collectives": [
+            [
+              2,
+              6
+            ],
+            [
+              16,
+              2
+            ]
+          ],
+          "committed": 5,
+          "cache_words": 255840
+        }
+      ]
+    }
+  },
+  "physical_H200": false,
+  "scope": "Real host expert and scheduler source, shared synthetic expert results drive all target hidden states, CPU-modeled expert GEMMs and graph body, native host verification, physical slot checks, real Gloo."
+}

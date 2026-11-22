@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "scope": "independent source and frozen-payload audit",
+  "architecture_runner_sha256": "d316ede39df785c8e8311e53412685f37d197a447159e86b157aa8ce1143a49a",
+  "integrated_runner_sha256": "10e91ed68e614d87bc5ba5913ca5a6b11883e00c44b6147ceb57f0fe0a55d42c",
+  "permitted_ast_changes": [
+    "module docstring",
+    "V60 replaced by V68 at candidate position 3"
+  ],
+  "all_other_module_ast_identical": true,
+  "payloads": [
+    {
+      "candidate": "v64",
+      "sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+      "users": 16,
+      "argv_flags": [
+        "enable-layernorm-sp",
+        "moe-runner-backend=humming",
+        "speculative-moe-runner-backend=marlin",
+        "swa-full-tokens-ratio=0.25"
+      ]
+    },
+    {
+      "candidate": "v62",
+      "sha256": "f0595f55c6c13380f67ed033bb4174780276188c44d779dfd9fee00bf517541f",
+      "users": 16,
+      "argv_flags": [
+        "swa-full-tokens-ratio=0.25"
+      ]
+    },
+    {
+      "candidate": "v68",
+      "sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+      "users": 16,
+      "argv_flags": [
+        "enable-layernorm-sp",
+        "moe-runner-backend=humming",
+        "speculative-moe-runner-backend=marlin",
+        "swa-full-tokens-ratio=0.25"
+      ]
+    }
+  ],
+  "endpoints": [
+    "okc serve status --json",
+    "okc serve check <patch> --users 16 --flag <flag> ... --no-wait"
+  ],
+  "scored_endpoint": false,
+  "start_utc_inclusive": "2026-11-17T00:03:00Z",
+  "end_utc_exclusive": "2026-11-17T23:30:00Z",
+  "expected_quota_reset_utc": "2026-11-18T00:00:00Z",
+  "quota": "Checks must be a strictly positive integer and reset must match exactly, verified before each attempt",
+  "attempt_guard": "Stable runs/<candidate>_nov17_check16.submit.txt, exclusive creation and flush before CLI; ambiguous or timed-out requests retain the receipt",
+  "guard_scope": "One attempted check per candidate. Previous architecture runner must be retired before the open window to avoid concurrent independent V60/V68 offers",
+  "queued_job_mutations": 0,
+  "submitted_checks": 0,
+  "process_actions": 0
+}

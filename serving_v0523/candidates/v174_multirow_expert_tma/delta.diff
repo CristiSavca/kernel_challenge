@@ -1,0 +1,163 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index c0ec9f1..54a4c47 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -265,11 +265,13 @@ struct VectorStage {
+ 
+ template <bool Gate>
+ SGL_DEVICE void finish_channels(const Projection& p, const int32_t* job, uint32_t column, uint32_t expert,
+-                                uint32_t lane, uint32_t band, uint32_t part, const float4& gate, const float4& up) {
++                                uint32_t lane, uint32_t band, uint32_t part, const float4& gate, const float4& up,
++                                uint32_t rows = kRows) {
+   const float scale = cast<float>(p.global[expert]);
+ #pragma unroll
+   for (uint32_t i = 0; i < 4; ++i) {
+-    const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
++    const uint32_t row = (lane % 4) * 2 + i % 2;
++    const int32_t out = row < rows ? job[1 + row] : -1;
+     if (out >= 0) {
+       const float a[4] = {gate.x, gate.y, gate.z, gate.w};
+       float value = scaled_bf16(a[i], scale);
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+index 231ba91..d203b9f 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_tma_route_pair.cuh
+@@ -83,11 +83,11 @@ __global__ __launch_bounds__(32 * kChannelWarps) void tensor_projection(
+ 
+ // The producer copies each live 128-feature row contiguously. A four-word
+ // inter-row pad keeps the consuming warp's eight row groups on separate banks.
+-template <bool Gate>
++template <bool Gate, uint32_t Rows = kRows>
+ struct alignas(128) StreamTile {
+   uint32_t weights[Gate ? 2 : 1][kKSteps][256];
+   uint16_t scales[Gate ? 2 : 1][kKSteps][64];
+-  uint32_t inputs[kRows][8 * kKSteps + 4];
++  uint32_t inputs[Rows][8 * kKSteps + 4];
+ };
+ 
+ SGL_DEVICE uint32_t shared_addr(const void* ptr) {
+@@ -102,8 +102,8 @@ SGL_DEVICE void wait_phase(uint64_t* barrier, uint32_t parity) {
+   } while (!complete);
+ }
+ 
+-template <bool Gate>
+-SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Gate>& tile, uint64_t* full,
++template <bool Gate, uint32_t Rows>
++SGL_DEVICE void produce(const Projection& p, const BankMaps& maps, StreamTile<Gate, Rows>& tile, uint64_t* full,
+                         uint32_t expert, uint32_t column, uint32_t chunk, int32_t slot, uint32_t live) {
+   constexpr uint32_t bytes = kKSteps * 16 * sizeof(bf16_t);
+   const uint32_t lane = threadIdx.x % 32, bar = shared_addr(full);
+@@ -187,6 +187,94 @@ __global__ __launch_bounds__(32 * (kChannelWarps + 1)) void streamed_projection(
+   }
+ }
+ 
++// Each consumer owns sixteen output channels and one MMA accumulator per
++// eight route rows. All groups reuse the same packed operand from shared memory.
++template <bool Gate, uint32_t Groups, uint32_t Rows>
++SGL_DEVICE void consume_multirow(const Projection& p, const int32_t* job, uint32_t live, uint32_t expert,
++                                 uint32_t column, StreamTile<Gate, Rows> (&ring)[2], uint64_t* full,
++                                 uint64_t* empty, uint32_t& sequence) {
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  const uint32_t band = warp / 4, part = (warp + lane / 8) % 4;
++  const uint32_t wi = 128 * band + 4 * lane + part, si = 32 * band + 4 * (lane / 4) + part;
++  const uint32_t chunks = p.input_width / (16 * kKSteps);
++  float4 a[Groups]{}, b[Groups]{};
++  for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++    const uint32_t index = sequence % 2;
++    wait_phase(full + index, (sequence / 2) & 1);
++    const auto& tile = ring[index];
++#pragma unroll
++    for (uint32_t s = 0; s < kKSteps; ++s) {
++      const uint32_t w = tile.weights[0][s][wi], scale = tile.scales[0][s][si];
++      uint32_t w_up = 0, scale_up = 0;
++      if constexpr (Gate) {
++        w_up = tile.weights[1][s][wi];
++        scale_up = tile.scales[1][s][si];
++      }
++#pragma unroll
++      for (uint32_t g = 0; g < Groups; ++g) {
++        const uint32_t row = g * kRows + lane / 4;
++        const auto* x = &tile.inputs[row][s * 8 + lane % 4];
++        const uint32_t lo = row < live ? x[0] : 0u, hi = row < live ? x[4] : 0u;
++        contract_fragment(a[g], w, scale, lo, hi);
++        if constexpr (Gate) contract_fragment(b[g], w_up, scale_up, lo, hi);
++      }
++    }
++    __syncwarp();
++    if (lane == 0) {
++      asm volatile("mbarrier.arrive.shared::cta.b64 _, [%0];" :: "r"(shared_addr(empty + index)) : "memory");
++    }
++  }
++#pragma unroll
++  for (uint32_t g = 0; g < Groups; ++g) {
++    finish_channels<Gate>(p, job + g * kRows, column, expert, lane, band, part, a[g], b[g], live - g * kRows);
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * (kChannelWarps + 1)) void multirow_projection(
++    const __grid_constant__ Projection p, const __grid_constant__ BankMaps maps, uint32_t stride) {
++  constexpr uint32_t rows_per_tile = Gate ? 2 * kRows : 4 * kRows;
++  __shared__ StreamTile<Gate, rows_per_tile> ring[2];
++  __shared__ uint64_t full[2], empty[2];
++  const uint32_t expert = blockIdx.y, column = 128 * blockIdx.x;
++  const int32_t* list = p.plan + size_t(expert) * stride;
++  const uint32_t rows = list[0];
++  if (rows == 0) return;
++  if (threadIdx.x < 2) {
++    const uint32_t index = threadIdx.x;
++    asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;\n"
++                 "mbarrier.init.shared::cta.b64 [%1], %2;\n"
++                 "fence.proxy.async.shared::cta;"
++                 :: "r"(shared_addr(full + index)), "r"(shared_addr(empty + index)), "n"(kChannelWarps) : "memory");
++  }
++  __syncthreads();
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  const uint32_t chunks = p.input_width / (16 * kKSteps);
++  uint32_t sequence = 0;
++  for (uint32_t first = 0; first < rows; first += rows_per_tile) {
++    const uint32_t live = min(rows_per_tile, rows - first);
++    const int32_t* job = list + first;
++    if (warp == kChannelWarps) {
++      const int32_t slot = lane < live ? job[1 + lane] : -1;
++      for (uint32_t chunk = 0; chunk < chunks; ++chunk, ++sequence) {
++        const uint32_t index = sequence % 2;
++        if (sequence >= 2) wait_phase(empty + index, ((sequence / 2) - 1) & 1);
++        produce<Gate>(p, maps, ring[index], full + index, expert, column, chunk, slot, live);
++      }
++    } else if (live <= kRows) {
++      consume_multirow<Gate, 1>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if constexpr (Gate) {
++      consume_multirow<true, 2>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if (live <= 2 * kRows) {
++      consume_multirow<false, 2>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else if (live <= 3 * kRows) {
++      consume_multirow<false, 3>(p, job, live, expert, column, ring, full, empty, sequence);
++    } else {
++      consume_multirow<false, 4>(p, job, live, expert, column, ring, full, empty, sequence);
++    }
++  }
++}
++
+ template <bool Gate>
+ inline uint32_t resident_stream_blocks(int device) {
+   int current = -1, sms = 0, blocks = 0;
+@@ -243,8 +331,7 @@ inline void launch_medium(const Projection& p, const BankMaps& maps, uint32_t ex
+   const dim3 grid(p.output_width / 128, experts);
+   static_assert(kWarps * 64 == 128);
+   if (aligned_packed_projection(p) && stride > kRows) {
+-    host::LaunchKernel(grid, 32 * (kChannelWarps + 1), dev)(streamed_projection<Gate, true>, p, maps, stride);
+-    host::LaunchKernel(grid, 32 * kWarps, dev)(muse_medium_route_pair::projection<Gate, true>, p, stride);
++    host::LaunchKernel(grid, 32 * (kChannelWarps + 1), dev)(multirow_projection<Gate>, p, maps, stride);
+   } else {
+     host::LaunchKernel(grid, 32 * kWarps, dev)(muse_medium_route_pair::projection<Gate>, p, stride);
+   }
+@@ -277,7 +364,7 @@ struct MuseTmaRoutePair {
+     check_map_storage(maps);
+     BankMaps encoded[2];
+     std::memcpy(encoded, maps.data_ptr(), sizeof(encoded));
+-    MuseMediumRoutePair::run_with<true>([&](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
++    MuseMediumRoutePair::run_with<false>([&](const auto& up, const auto& out, uint32_t experts, uint32_t stride, DLDevice dev) {
+       launch_medium<true>(up, encoded[0], experts, stride, dev);
+       launch_medium<false>(out, encoded[1], experts, stride, dev);
+     }, inputs, local_ids, gate, gs, gscale, down, ds, dscale, active, outputs, plan);

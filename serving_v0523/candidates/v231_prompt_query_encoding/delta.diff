@@ -1,0 +1,182 @@
+diff --git a/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py b/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
+index 699df82..9945ced 100644
+--- a/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
++++ b/python/sglang/kernels/ops/attention/muse_spark_qk_norm_rope_store.py
+@@ -65,6 +65,7 @@ def _qk_rms_norm_fwd_kernel(
+     USE_PDL: tl.constexpr = False,
+     FP8_MAX: tl.constexpr = 448.0,
+     ENCODINGS=None,
++    QUERY_ENCODINGS=None,
+ ):
+     # One (token, head) row per lane of the block; fp32 RMS reduction over D.
+     if USE_PDL:
+@@ -159,7 +160,14 @@ def _qk_rms_norm_fwd_kernel(
+ 
+     q_dst = tl.where(is_q, (token * NUM_Q_HEADS + head) * D, 0)
+     k_dst = tl.where(is_k, (token * NUM_KV_HEADS + head - NUM_Q_HEADS) * D, 0)
+-    tl.store(Q_OUT + q_dst[:, None] + cols[None, :], x, mask=mask & is_q[:, None])
++    q_mask = mask & is_q[:, None]
++    if QUERY_ENCODINGS is not None:
++        # The BF16 norm/RoPE output is the input to the native FA3 FP8 cast.
++        bits = x.to(tl.bfloat16).to(tl.uint16, bitcast=True)
++        q_value = tl.load(QUERY_ENCODINGS + bits.to(tl.int32), mask=q_mask, other=0)
++        tl.store(Q_OUT + q_dst[:, None] + cols[None, :], q_value, mask=q_mask)
++    else:
++        tl.store(Q_OUT + q_dst[:, None] + cols[None, :], x, mask=q_mask)
+     tl.store(K_OUT + k_dst[:, None] + cols[None, :], x, mask=mask & is_k[:, None])
+ 
+ 
+@@ -352,6 +360,7 @@ class FusedQKNorm(BaseFusedOp):
+         positions: Optional[torch.Tensor] = None,
+         cos_sin_cache: Optional[torch.Tensor] = None,
+         kv_store: Optional[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = None,
++        *, query_encodings: Optional[torch.Tensor] = None,
+     ) -> tuple[torch.Tensor, torch.Tensor]:
+         """Run the Triton implementation without model-specific dispatch."""
+ 
+@@ -361,7 +370,7 @@ class FusedQKNorm(BaseFusedOp):
+         q_out = torch.empty(
+             tokens,
+             self._num_q_heads * d,
+-            dtype=torch.float8_e4m3fn if fp8_kv else qkv.dtype,
++            dtype=torch.float8_e4m3fn if fp8_kv or query_encodings is not None else qkv.dtype,
+             device=qkv.device,
+         )
+         exact = isinstance(kv_store, VerifyFP8Store)
+@@ -383,7 +392,7 @@ class FusedQKNorm(BaseFusedOp):
+             cache_loc = cache_loc.contiguous()
+         _qk_rms_norm_fwd_kernel[(triton.cdiv(n_rows, block_m),)](
+             qkv,
+-            q_out.view(torch.uint8) if exact else q_out,
++            q_out.view(torch.uint8) if exact or query_encodings is not None else q_out,
+             qkv if exact else k_out,
+             positions if has_rope else qkv,
+             cos_sin_cache if has_rope else qkv,
+@@ -403,6 +412,7 @@ class FusedQKNorm(BaseFusedOp):
+             HAS_KV_STORE=has_kv,
+             FP8_KV_STORE=fp8_kv,
+             ENCODINGS=kv_store.encodings if exact else None,
++            QUERY_ENCODINGS=query_encodings,
+             num_warps=num_warps,
+             **pdl,
+         )
+diff --git a/python/sglang/srt/layers/attention/direct_prompt_kv.py b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+index 7d7c868..f24e564 100644
+--- a/python/sglang/srt/layers/attention/direct_prompt_kv.py
++++ b/python/sglang/srt/layers/attention/direct_prompt_kv.py
+@@ -60,8 +60,8 @@ def prepare_direct_prompt_kv(backend, q, k, v, layer, batch, write, k_scale, v_s
+         n < 4096 or prefix < 0 or n != metadata.max_seq_len_q or n != q.shape[0]
+         or batch.seq_lens_cpu is None or n + prefix != metadata.max_seq_len_k or (n + halo) * h * d * 2 > 32 * 1024 * 1024
+         or d != layer.v_head_dim or d > 256 or d % 16 or h != layer.tp_v_head_num
+-        or q.numel() != n * layer.tp_q_head_num * d or q.dtype != torch.bfloat16
+-        or k.shape != (n, h, d) or k.dtype != q.dtype or v.shape != k.shape or v.dtype != k.dtype
++        or q.numel() != n * layer.tp_q_head_num * d or q.dtype not in (torch.bfloat16, backend.kv_cache_dtype)
++        or k.shape != (n, h, d) or k.dtype != torch.bfloat16 or v.shape != k.shape or v.dtype != k.dtype
+         or slots is None or slots.shape != (n,) or table is None or table.ndim != 2 or table.shape[0] != 1
+         or table.shape[1] < prefix + n or table.dtype not in (torch.int32, torch.int64)
+         or lengths is None or lengths.shape != (1,) or cuq is None or cuq.shape != (2,)
+@@ -133,8 +133,8 @@ def prepare_batched_prompt_kv(backend, q, k, v, layer, batch, write):
+         n < 4096 or q.shape[0] != n or q.numel() != n * layer.tp_q_head_num * d
+         or d != layer.v_head_dim or h != layer.tp_v_head_num or d > 256 or d % 16
+         or not 16 <= h * d <= 1024 or (h * d) & (h * d - 1)
+-        or k.shape != (n, h, d) or v.shape != k.shape or q.dtype != torch.bfloat16
+-        or k.dtype != q.dtype or v.dtype != q.dtype or slots is None or slots.shape != (n,)
++        or k.shape != (n, h, d) or v.shape != k.shape or q.dtype not in (torch.bfloat16, backend.kv_cache_dtype)
++        or k.dtype != torch.bfloat16 or v.dtype != k.dtype or slots is None or slots.shape != (n,)
+         or table is None or table.ndim != 2 or table.shape[0] != count or table.stride(1) != 1
+         or table.shape[1] < metadata.max_seq_len_k or table.dtype not in (torch.int32, torch.int64)
+         or lengths is None or lengths.shape != (count,) or cuq is None or cuq.shape != (count + 1,)
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 45f4194..cb5247b 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -1491,6 +1491,50 @@ class FlashAttentionBackend(AttentionBackend):
+             k_rope = k_rope.to(self.kv_cache_dtype) if k_rope is not None else None
+         return q, q_rope, k_rope, k_descale, v_descale
+ 
++    def muse_prompt_query_encodings(self, norm, layer, batch, qkv, positions, cos_sin):
++        """Fuse only the query cast; the replay callback still owns all KV writes."""
++        from sglang.kernels.fused_op import BaseFusedOp, _trace_enabled, get_fused_op_backend
++        from sglang.kernels.ops.attention.muse_spark_qk_norm_rope_store import FusedQKNorm
++        from sglang.kernels.spec import KernelBackend
++        from sglang.srt.layers.radix_attention import RadixAttention
++        from sglang.srt.model_executor.runner_utils.prefill_graph import is_in_full_prefill_graph
++
++        table = self._muse_verify_encodings
++        if (
++            table is None or type(self) is not FlashAttentionBackend or not self._direct_fp8_prompt
++            or self.fa_skip_kv_cache or self.kv_cache_is_mxfp8 or is_in_full_prefill_graph()
++            or type(layer) is not RadixAttention or type(norm) is not FusedQKNorm
++            or batch.forward_mode != ForwardMode.EXTEND or batch.dcp_kv_mask is not None
++            or is_cp_active(batch) or batch.mha_return_lse
++            or layer.is_cross_attention or layer.head_dim != 64 or layer.head_dim != layer.v_head_dim
++            or norm._head_dim != layer.head_dim or norm._num_q_heads != layer.tp_q_head_num
++            or norm._num_kv_heads != layer.tp_k_head_num
++            or not layer.use_prefill_attention_wrapper or layer.attn_type != AttentionType.DECODER
++            or qkv.dtype != torch.bfloat16 or qkv.device != table.device
++            or qkv.ndim != 2 or qkv.stride(1) != 1 or qkv.shape[0] < 4096
++            or qkv.shape[1] < (norm._num_q_heads + 2 * norm._num_kv_heads) * norm._head_dim
++            or qkv.numel() >= 2 ** 31 or (qkv.shape[0] - 1) * qkv.stride(0) + qkv.shape[1] >= 2 ** 31
++            or torch.is_grad_enabled() or torch.are_deterministic_algorithms_enabled()
++            or _trace_enabled or get_fused_op_backend() is not None or norm.is_torch_compile
++            or getattr(norm._forward_method, "__func__", None) is not BaseFusedOp._forward_backend_dynamic
++            or norm._dynamic_backend_candidates[:1] != (KernelBackend.TRITON,)
++            or {"backend_eligible", "forward_triton", "_forward_triton"} & vars(norm).keys()
++            or {"forward", "forward_extend", "prepare_paged_mha_query"} & vars(self).keys()
++            or torch.nn.modules.module._global_forward_hooks or torch.nn.modules.module._global_forward_pre_hooks
++            or any(m._forward_hooks or m._forward_pre_hooks or "forward" in vars(m)
++                   or m._compiled_call_impl is not None for m in (norm, layer))
++        ):
++            return None
++        if positions is not None and (
++            positions.shape != (qkv.shape[0],) or not positions.is_contiguous()
++            or positions.dtype not in (torch.int32, torch.int64) or positions.device != qkv.device
++            or cos_sin is None or cos_sin.device != qkv.device or not cos_sin.is_contiguous()
++        ):
++            return None
++        if not norm.backend_eligible(KernelBackend.TRITON, qkv, positions, cos_sin, None):
++            return None
++        return table
++
+     def muse_verify_fp8_store(self, norm, layer, batch, qkv, positions, cos_sin):
+         from sglang.kernels.fused_op import BaseFusedOp, get_fused_op_backend
+         from sglang.kernels.ops.attention.muse_spark_qk_norm_rope_store import FusedQKNorm, VerifyFP8Store
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index ca4dade..3ddb6e5 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -95,7 +95,7 @@ from sglang.srt.layers.vocab_parallel_embedding import (
+     VocabParallelEmbedding,
+     get_embedding_tp_kwargs,
+ )
+-from sglang.srt.model_executor.forward_batch_info import ForwardBatch
++from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+ from sglang.srt.model_executor.forward_context import (
+     get_attn_backend,
+     get_token_to_kv_pool,
+@@ -439,7 +439,24 @@ class MuseSpark1xAttention(nn.Module):
+                     positions if fuse_rope else None,
+                     self.rotary_emb.cos_sin_cache if fuse_rope else None,
+                 )
+-        if fuse_rope:
++        prompt_encodings = None
++        if (kv_store is None and self._fused_qk_norm is not None
++                and forward_batch.forward_mode == ForwardMode.EXTEND
++                and qkv.shape[0] >= 4096 and not torch.compiler.is_compiling()):
++            prepare_query = getattr(get_attn_backend(), "muse_prompt_query_encodings", None)
++            if prepare_query is not None:
++                prompt_encodings = prepare_query(
++                    self._fused_qk_norm, self.attn, forward_batch, qkv,
++                    positions if fuse_rope else None,
++                    self.rotary_emb.cos_sin_cache if fuse_rope else None,
++                )
++        if prompt_encodings is not None:
++            q, k = self._fused_qk_norm._forward_triton(
++                qkv, positions if fuse_rope else None,
++                self.rotary_emb.cos_sin_cache if fuse_rope else None,
++                query_encodings=prompt_encodings,
++            )
++        elif fuse_rope:
+             q, k = self._fused_qk_norm(
+                 qkv, positions, self.rotary_emb.cos_sin_cache, kv_store=kv_store
+             )

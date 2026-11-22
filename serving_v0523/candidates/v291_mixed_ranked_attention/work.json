@@ -1,0 +1,95 @@
+{
+  "candidate": "V291",
+  "per_load": [
+    {
+      "users": 1,
+      "logged_repetitions": 3,
+      "archived_wall_seconds": 73.99147893899976,
+      "full_chunk_join_opportunities": 0,
+      "full_attention_prompt_packs_fitting_byte_cap": 0,
+      "full_layers": 16,
+      "sliding_layers": 46,
+      "fit_full_layer_calls": 0,
+      "size_eligible_prompt_layer_calls": 1054,
+      "ranked_nodes_removed_vs_V229_per_eligible_TP8_verify": 124,
+      "uniform_logical_MiB_removed_vs_V229_per_eligible_TP8_verify": 15.5,
+      "V64_period_proxy_ms": 19.68503937007874,
+      "at_one_fully_hidden_round_per_join_seconds": 0.0,
+      "illustrative_wall_ratio_if_only_this_work_were_free": 1.0
+    },
+    {
+      "users": 4,
+      "logged_repetitions": 2,
+      "archived_wall_seconds": 100.95254133400022,
+      "full_chunk_join_opportunities": 25,
+      "full_attention_prompt_packs_fitting_byte_cap": 21,
+      "full_layers": 16,
+      "sliding_layers": 46,
+      "fit_full_layer_calls": 336,
+      "size_eligible_prompt_layer_calls": 2170,
+      "ranked_nodes_removed_vs_V229_per_eligible_TP8_verify": 185,
+      "uniform_logical_MiB_removed_vs_V229_per_eligible_TP8_verify": 123.0,
+      "V64_period_proxy_ms": 35.587188612099645,
+      "at_one_fully_hidden_round_per_join_seconds": 0.8896797153024911,
+      "illustrative_wall_ratio_if_only_this_work_were_free": 1.008891207995757
+    },
+    {
+      "users": 16,
+      "logged_repetitions": 1,
+      "archived_wall_seconds": 164.83263510899997,
+      "full_chunk_join_opportunities": 72,
+      "full_attention_prompt_packs_fitting_byte_cap": 58,
+      "full_layers": 16,
+      "sliding_layers": 46,
+      "fit_full_layer_calls": 928,
+      "size_eligible_prompt_layer_calls": 4650,
+      "ranked_nodes_removed_vs_V229_per_eligible_TP8_verify": 185,
+      "uniform_logical_MiB_removed_vs_V229_per_eligible_TP8_verify": 492.0,
+      "V64_period_proxy_ms": 79.84031936127744,
+      "at_one_fully_hidden_round_per_join_seconds": 5.748502994011976,
+      "illustrative_wall_ratio_if_only_this_work_were_free": 1.0361349866739498
+    },
+    {
+      "users": 32,
+      "logged_repetitions": 1,
+      "archived_wall_seconds": 304.4294033150002,
+      "full_chunk_join_opportunities": 145,
+      "full_attention_prompt_packs_fitting_byte_cap": 115,
+      "full_layers": 16,
+      "sliding_layers": 46,
+      "fit_full_layer_calls": 1840,
+      "size_eligible_prompt_layer_calls": 9300,
+      "ranked_nodes_removed_vs_V229_per_eligible_TP8_verify": 185,
+      "uniform_logical_MiB_removed_vs_V229_per_eligible_TP8_verify": 984.0,
+      "V64_period_proxy_ms": 96.99769053117784,
+      "at_one_fully_hidden_round_per_join_seconds": 14.064665127020787,
+      "illustrative_wall_ratio_if_only_this_work_were_free": 1.048437924022012
+    }
+  ],
+  "peer_16k_synthetic_fixture": {
+    "dense_remote_per_rank_MiB": 112.0,
+    "highest_peer_input_per_rank_MiB": 74.703125,
+    "highest_peer_output_per_rank_MiB": 74.65625,
+    "least_saved_per_rank_MiB": 37.296875
+  },
+  "memory": "TP8 peer slab is 32.5 MiB versus 16.25 MiB on the single-bank parent under expanded rows. Short-tail and packed prompt temporaries are independently bounded; peak allocations across both graph pools require a real node.",
+  "physical_cross_check": {
+    "matched_four_user_full_chunk_difference_ms": 177.49707820693098,
+    "cold_ms_per_16k_equivalent_layer_in_uniform_coupled_4x_scenario": 12.911400872081748,
+    "throughput_only_and_coupled_4x_crossings": {
+      "both_axes": 2.293083555679885,
+      "throughput_only": 2.8330534106419787,
+      "interactivity_only": null
+    }
+  },
+  "limitations": "Each V41 run was a different historical candidate. The join illustration credits one full V64-period estimate per join and ignores new split attention costs, actual scheduling and changing cohort widths. The peer row counts use a synthetic routing fixture. The ranked I/O and launch counts assume eligible graph paths and uniform expert assignment. These scenarios have different baselines and do not add into a serving score.",
+  "input_sha256": {
+    "attention": "8b2070bbf99a1bb0ad8e317e3ae41879843f99493c2ef521da2a59ee1c0798b0",
+    "prompt": "e134a4793078b1119d40feb9a61e0c48052b8d213af6db5d3d02549d48d63560",
+    "routing": "247f9d882356c9c62b89b6558247e341141e04824cf8724dcc5bd2afa9e4a636",
+    "decode": "3162713e711acda21b9f385f4418e1891fcb65ec52f4054e5e4bea882f2cfc19",
+    "decoder_io": "f31d0c466336b6ecd7671c0122de5b6d3e34faefe250fe21c33a9c2a9fe96292",
+    "expert_timing": "a02eb4c029a237848ddd4f163a32e6acf20362e3acd4e1195781245852a4c076",
+    "score": "f6f9294e6b192289463b71ab4ebda740a9f9ad4b1d5357cef2a5379f9163c703"
+  }
+}

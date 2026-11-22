@@ -1,0 +1,113 @@
+{
+  "at_utc": "2026-11-18T15:03:33.388877+00:00",
+  "objective": "4x four-load frontier with intermediate 3x milestone",
+  "incumbent": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "four_load_score": 1.4119,
+    "one_user_raw_tok_gpu_s": 6979.2,
+    "one_user_decode_median_tps": 203.2,
+    "one_user_frontier_ratio": 1.17
+  },
+  "v126": {
+    "parent": "V125",
+    "checked_ancestor": "V68 at 16 users",
+    "candidate_patch": "serving_v0523/candidates/v126_split_cluster_expert_mlp/patch.diff",
+    "validation": "serving_v0523/candidates/v126_split_cluster_expert_mlp/validation.json",
+    "sha256": "eeba21105433a3bc908b943eb3dfd04b1c8213f474a84d556db654c2f0670c27",
+    "patch_bytes": 115477,
+    "files": 17,
+    "official_export": true,
+    "work_model": "serving_v0523/candidates/v126_split_cluster_expert_mlp/work_model.json",
+    "production_dot_fixtures": "serving_v0523/candidates/v126_split_cluster_expert_mlp/warp.json",
+    "integrated_route_fixtures": "serving_v0523/candidates/v126_split_cluster_expert_mlp/integrated.json",
+    "finalizer_fixture_count": 108,
+    "finalizer_outputs_per_rounding_mode": 5906124,
+    "finalizer_rounding_modes": [
+      "native Triton interpreter truncation",
+      "emulated round-to-nearest-even verified against PTX conversion"
+    ],
+    "finalizer_sm90_variants": 27,
+    "finalizer_spills": 0,
+    "ownership_cells": 1916928,
+    "synthetic_addition_order_study": {
+      "dot_products": 16384,
+      "k": 4096,
+      "bf16_changes_gate_down": {
+        "2": [
+          2,
+          1
+        ],
+        "4": [
+          1,
+          1
+        ]
+      },
+      "largest_absolute_change_gate_down": {
+        "2": [
+          0.00048828125,
+          3.0517578125e-05
+        ],
+        "4": [
+          3.0517578125e-05,
+          3.0517578125e-05
+        ]
+      }
+    },
+    "h200_agreement": null,
+    "h200_speed": null,
+    "source_limitations": "FP32 split summation changes rounding. Four-way cluster concurrency does not determine throughput.",
+    "independent_review": "serving_v0523/candidates/v126_split_cluster_expert_mlp/independent_review.md"
+  },
+  "v127": {
+    "disposition": "research only",
+    "evidence": "serving_v0523/candidates/v127_native_prefix_verify/README.md",
+    "cases": 1024,
+    "judge_check": false
+  },
+  "v128": {
+    "disposition": "research only",
+    "evidence": "serving_v0523/candidates/v128_compact_noise_embedding_feasibility/README.md",
+    "compact_test": "serving_v0523/candidates/v128_compact_noise_embedding_feasibility/check.json",
+    "mixed_layout_test": "serving_v0523/candidates/v128_compact_noise_embedding_feasibility/dense.json",
+    "judge_check": false
+  },
+  "official": {
+    "v88": {
+      "job": "30bb36feb528416f",
+      "users": 4,
+      "status": "queued"
+    },
+    "v93": {
+      "job": "75557c21595347de",
+      "users": 16,
+      "status": "queued"
+    },
+    "v68": {
+      "job": "04b01f958aa5487c",
+      "users": 16,
+      "status": "passed",
+      "raw_tok_gpu_s": 17512.9
+    },
+    "submitted_this_iteration": 0,
+    "scored_this_iteration": 0,
+    "private_checks_remaining_nov18": 0
+  },
+  "next_private_window": {
+    "opens_utc": "2026-11-19T00:03:00+00:00",
+    "plan_on_current_results": [
+      "V120b/32",
+      "V102/16",
+      "V126/1"
+    ],
+    "third_if_v93_passes": "V101b/16 if eligible",
+    "previous_experiment_displaced": "V125/16 fallback",
+    "comparison": "V64 one-user whole-build rung. V68 at 16 users is ancestry evidence.",
+    "runner": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "tests": 104
+  },
+  "cleanup": [
+    "serving_v0523/candidates/v126_split_cluster_expert_mlp/cleanup.json",
+    "serving_v0523/candidates/v126_split_cluster_expert_mlp/compiler_cleanup.json"
+  ]
+}

@@ -1,0 +1,156 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+index d8ebc2a..b979925 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_skinny_gate_up.cuh
+@@ -146,6 +146,15 @@ __global__ __launch_bounds__(32 * kWarps) void run_active_kernel(const __grid_co
+   }
+ }
+ 
++// Keep the projection in its six-CTA Hopper register allocation class.
++__global__ __launch_bounds__(32 * kWarps, 6) void run_planned_kernel(const __grid_constant__ Params p) {
++  const int32_t* plan = p.offsets + p.experts + 1;
++  const uint32_t count = plan[0];
++  for (uint32_t ordinal = blockIdx.y; ordinal < count; ordinal += gridDim.y) {
++    project_tile(p, plan[ordinal + 1], blockIdx.x * kWidth);
++  }
++}
++
+ }  // namespace muse_skinny_gate_up
+ 
+ struct MuseSkinnyGateUp {
+@@ -156,7 +165,8 @@ struct MuseSkinnyGateUp {
+       tvm::ffi::TensorView scales,
+       tvm::ffi::TensorView globals,
+       tvm::ffi::TensorView offsets,
+-      int64_t expected_local_routes) {
++      int64_t expected_local_routes,
++      int64_t active_groups) {
+     using namespace host;
+     using namespace muse_skinny_gate_up;
+     auto rows = SymbolicSize{"routes"}, hidden = SymbolicSize{"hidden"}, inner = SymbolicSize{"intermediate"};
+@@ -174,7 +184,9 @@ struct MuseSkinnyGateUp {
+     RuntimeCheck(groups.unwrap() * 16 == hidden.unwrap(), "incompatible W4A16 reduction dimension");
+     RuntimeCheck(words.unwrap() == 4 * inner.unwrap() && scale_width.unwrap() == 2 * inner.unwrap(),
+                  "incompatible W4A16 projection width");
+-    RuntimeCheck(inner.unwrap() % kWidth == 0 && boundaries.unwrap() == experts.unwrap() + 1,
++    RuntimeCheck(active_groups >= 0 && active_groups <= experts.unwrap(), "invalid active expert grid");
++    RuntimeCheck(inner.unwrap() % kWidth == 0 &&
++                     boundaries.unwrap() == (active_groups ? 2 : 1) * (experts.unwrap() + 1),
+                  "incompatible expert tile dimensions");
+     const Params params{
+         .input = static_cast<const bf16_t*>(input.data_ptr()),
+@@ -188,9 +200,10 @@ struct MuseSkinnyGateUp {
+         .experts = static_cast<uint32_t>(experts.unwrap()),
+     };
+     const uint32_t bands = params.intermediate / kWidth;
+-    // Allow two work groups per expected local route. Skew only adds iterations
+-    // over the live mask; the bound controls launch size, never expert coverage.
+-    if (params.experts <= 32 && expected_local_routes > 0 && expected_local_routes <= (params.experts - 1) / 2) {
++    if (active_groups) {
++      const dim3 grid(bands, static_cast<uint32_t>(active_groups));
++      LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_planned_kernel, params);
++    } else if (params.experts <= 32 && expected_local_routes > 0 && expected_local_routes <= (params.experts - 1) / 2) {
+       const dim3 grid(bands, static_cast<uint32_t>(expected_local_routes) * 2);
+       LaunchKernel(grid, 32 * kWarps, dev.unwrap())(run_active_kernel, params);
+     } else {
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index d396891..c5ba07e 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import json
+ import logging
++import math
+ import subprocess
+ from typing import TYPE_CHECKING
+ 
+@@ -397,6 +398,7 @@ def _stage_token_routes(
+     out_ptr, eps, SLOTS: tl.constexpr, GLOBAL: tl.constexpr, EXPERTS: tl.constexpr,
+     HAS_MAP: tl.constexpr, TOPK: tl.constexpr, K_TILE: tl.constexpr, HIDDEN: tl.constexpr,
+     SPAN: tl.constexpr, BUCKETS: tl.constexpr, WIDTH: tl.constexpr,
++    WRITE_ACTIVE: tl.constexpr = False,
+ ):
+     token = tl.program_id(0)
+     all_slots = tl.arange(0, SPAN)
+@@ -410,10 +412,18 @@ def _stage_token_routes(
+     # Bin zero contains all remote and padding rows. Subtract the padding to
+     # leave the same live suffix that the grouped GEMMs and finalizer consume.
+     bucket = tl.where((ids >= 0) & (ids < EXPERTS), ids + 1, 0)
+-    starts = tl.cumsum(tl.histogram(bucket, BUCKETS), 0) - (SPAN - SLOTS)
++    counts = tl.histogram(bucket, BUCKETS)
++    starts = tl.cumsum(counts, 0) - (SPAN - SLOTS)
+     if token == 0:
+         bins = tl.arange(0, BUCKETS)
+         tl.store(offsets_ptr + bins, starts, bins <= EXPERTS)
++        if WRITE_ACTIVE:
++            # The second half of the layout holds a count and sorted live IDs.
++            nonempty = (bins > 0) & (bins <= EXPERTS) & (counts > 0)
++            ordinal = tl.cumsum(nonempty.to(tl.int32), 0)
++            plan = offsets_ptr + EXPERTS + 1
++            tl.store(plan + ordinal, bins - 1, nonempty)
++            tl.store(plan, tl.sum(nonempty.to(tl.int32), 0))
+     before = tl.histogram(tl.where(all_slots < token * TOPK, bucket, 0), BUCKETS)
+     lanes = tl.arange(0, K_TILE)
+     slot = token * TOPK + lanes
+@@ -485,6 +495,15 @@ def humming_decode_eligible(
+     )
+ 
+ 
++def _active_expert_groups(tokens, topk, global_experts, local_experts):
++    # Distinct live experts for uniform top-k routing, with room for one
++    # standard deviation. Skew changes only the number of grid-stride iterations.
++    p = 1.0 - (1.0 - min(topk / global_experts, 1.0)) ** tokens
++    mean = local_experts * p
++    groups = max(1, math.ceil(mean + math.sqrt(mean * (1.0 - p))))
++    return groups if groups < local_experts else 0
++
++
+ def humming_grouped_decode_outputs(
+     layer: MuseSpark1xFp4Experts,
+     hidden_states: torch.Tensor,
+@@ -502,7 +521,6 @@ def humming_grouped_decode_outputs(
+     span = triton.next_power_of_2(slots)
+     experts = layer.num_local_experts
+     local_ids = torch.empty_like(topk_ids, dtype=torch.int32)
+-    offsets = local_ids.new_empty(experts + 1)
+     row_keys = local_ids.new_empty(slots)
+     row_map = torch.empty_like(local_ids)
+     expert_map = layer._expert_map
+@@ -510,6 +528,13 @@ def humming_grouped_decode_outputs(
+     # At sparse occupancy the warp kernel loads one packed weight tile for up
+     # to eight live routes and writes the activation directly into a second bank.
+     skinny_gate_up = layer.humming_skinny_gate_up and slots <= layer.global_num_experts
++    active_groups = 0
++    if skinny_gate_up and norm_weight is not None:
++        active_groups = _active_expert_groups(
++            hidden_states.shape[0], topk, layer.global_num_experts, experts
++        )
++    layout = local_ids.new_empty((2 if active_groups else 1) * (experts + 1))
++    offsets = layout[: experts + 1] if active_groups else layout
+     arena_width = intermediate if skinny_gate_up else 2 * intermediate
+     arena = hidden_states.new_empty(slots * max(arena_width, hidden_size))
+     inputs = staging[: slots * hidden_size].view(slots, hidden_size)
+@@ -523,11 +548,11 @@ def humming_grouped_decode_outputs(
+     if norm_weight is not None:
+         _stage_token_routes[(hidden_states.shape[0],)](
+             topk_ids, expert_map if expert_map is not None else topk_ids,
+-            hidden_states, norm_weight, local_ids, offsets, row_keys, row_map,
++            hidden_states, norm_weight, local_ids, layout, row_keys, row_map,
+             inputs, norm_eps, slots, layer.global_num_experts, experts, expert_map is not None,
+             topk, triton.next_power_of_2(topk), hidden_size, span,
+             triton.next_power_of_2(experts + 1), triton.next_power_of_2(hidden_size),
+-            num_warps=8,
++            WRITE_ACTIVE=bool(active_groups), num_warps=8,
+         )
+     elif hidden_size <= 8192 and envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_FUSED_STAGE.get():
+         tile = min(span, 128)
+@@ -572,7 +597,7 @@ def humming_grouped_decode_outputs(
+     if skinny_gate_up:
+         _skinny_gate_up_module().run(
+             inputs, activations, layer.w13_weight, layer.w13_weight_scale.view(torch.uint8),
+-            layer.w13_global_scale, offsets, estimated_local_routes,
++            layer.w13_global_scale, layout, estimated_local_routes, active_groups,
+         )
+         projections = (("w2", activations, outputs),)
+     else:

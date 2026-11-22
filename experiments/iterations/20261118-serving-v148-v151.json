@@ -1,0 +1,163 @@
+{
+  "checked_at_utc": "2026-11-18T17:56:05.469471+00:00",
+  "score": {
+    "candidate": "V64",
+    "official_four_load": 1.4119,
+    "per_load": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "memory": {
+      "limit_gb": 2,
+      "over_stock_gb": 1.9
+    },
+    "target": 4,
+    "remaining_multiplier": 2.8330618315744744
+  },
+  "patches": {
+    "V149": {
+      "directory": "serving_v0523/candidates/v149_overlapped_expert_route_planning",
+      "parent": "V64",
+      "sha256": "3d95c2a024218660f942a0801e9e5e4778ef9d6fe694aac23fe89772e03718e5",
+      "tree": "00965b3a8bdc611f45d8a0ec383ee944f2b9aa0e",
+      "bytes": 48957,
+      "paths": 9,
+      "max_added_line_chars": 108,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      }
+    },
+    "V150": {
+      "directory": "serving_v0523/candidates/v150_owner_output_projection",
+      "parent": "V147",
+      "sha256": "c3ae02dd894635a15031fe106499948733caee3368e2b1354a3bb429e0012f57",
+      "tree": "245ad049f146c1ab47c83d462df6af2eb5a5e181",
+      "bytes": 121206,
+      "paths": 18,
+      "max_added_line_chars": 128,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25"
+      }
+    },
+    "V151": {
+      "directory": "serving_v0523/candidates/v151_integrated_verify_scheduler",
+      "parent": "V147",
+      "sha256": "2923c97cf66ca37c2c27ded28b53658e1a6d6ea5da3e828907da46fb7290b543",
+      "tree": "d16ab420f98008d630c73691a6e0692709edf481",
+      "bytes": 123180,
+      "paths": 19,
+      "max_added_line_chars": 128,
+      "launch_flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--speculative-dflash-share-verify-schedule": ""
+      }
+    }
+  },
+  "sources": {
+    "policy": "https://openkernelchallenge.dev/api/v1/serving",
+    "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+    "closes": "2026-11-20T00:00:00-08:00",
+    "flag_patterns_checked": 76
+  },
+  "completed": {
+    "V148": "Six offline SASS builds; the best saved 8 of 516 static sites. No new submission.",
+    "V149": "Stable route planning overlaps the prompt input exchange. Real Gloo validation matched 1353600 BF16 elements.",
+    "V150": "Direct BF16 partial sends to token owners. 403188 Gloo values, 224712 pre-round Triton results and two SM90 builds.",
+    "V151": "Two reusable native FA3 prepares in eligible verification. 1488 native call pairs on page-one V147."
+  },
+  "hardware": {
+    "v93_job": "75557c21595347de",
+    "v93_status": "queued",
+    "quota": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "reset_utc": "2026-11-19T00:00:00Z",
+    "new_runs_this_iteration": 0,
+    "private_runners": {
+      "nov19_integrated_verify_runner": {
+        "pid": 75333,
+        "receipt": "serving_v0523/runs/nov19_integrated_verify_runner.launch.json",
+        "live": true
+      },
+      "nov20_v129_runner": {
+        "pid": 47821,
+        "receipt": "serving_v0523/runs/nov20_v129_runner.launch.json",
+        "live": true
+      },
+      "nov20_v132_runner": {
+        "pid": 74375,
+        "receipt": "serving_v0523/runs/nov20_v132_runner.launch.json",
+        "live": true
+      },
+      "nov20_v141_runner": {
+        "pid": 74393,
+        "receipt": "serving_v0523/runs/nov20_v141_runner.launch.json",
+        "live": true
+      }
+    }
+  },
+  "physical_checks_outstanding": [
+    "H200 output agreement and exact lengths",
+    "peak GPU memory <= 2 GB over stock",
+    "TTFT <= 2x stock at each load",
+    "four-load speed at stock per-user frontier"
+  ],
+  "V151_joint_writer_scheduler": {
+    "fused_writes": 820,
+    "checked_fp8_bytes": 47108096,
+    "ordinary_writes": 916,
+    "complete_verification_calls": 28,
+    "FA3_consumers": 1736,
+    "native_metadata_prepares": 16,
+    "length_refresh_replays": 24,
+    "physical_GPU": false,
+    "constructor_patterns": 25,
+    "method_scope": "Real pure-Python FP8 ownership selection, Muse attention/outer call, paged preparation, FA3 forward and scheduler helper. GPU kernel math, streams, FA3 calls and semaphore are host stand-ins."
+  },
+  "V151_eligibility": "Single stream, fixed-width target verification, two eligible native full/sliding geometries and multi-split FA3. Builder re-reads live sequence lengths.",
+  "mixed_prefill_analysis": "experiments/iterations/20261118-serving-mixed-prefill-triage.json"
+}

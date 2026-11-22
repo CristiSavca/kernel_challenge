@@ -1,0 +1,87 @@
+--- shipping.cu
++++ eager.cu
+@@ -253,7 +253,7 @@
+   uint64_t debug_start_clock = debug_kernel_timer_start();
+   constexpr uint32_t kNumStages = TuningConfig::kNumStages;
+   constexpr bool kReduceOverlapLastStageOnly = TuningConfig::kReduceOverlapLastStageOnly;
+-  constexpr uint32_t kLoadThreadRegisters = TuningConfig::kNumMathThreads > 256 || (TuningConfig::kNumCtasPerSm == 1 && ElementA::kBits != 16) ? 32 : 24;
++  constexpr uint32_t kLoadThreadRegisters = TuningConfig::kNumMathThreads > 256 || (TuningConfig::kNumCtasPerSm == 1 && ElementA::kBits != 16) ? 40 : 24;
+ 
+   using SharedStorage = SharedStorage<
+       MmaOpClass, BlockShape, WarpShape, ElementA, ElementB, ElementBS,
+@@ -326,7 +326,7 @@
+       if constexpr (Ctx::kIsIndexedGemm) producer.wait_math_epilogue();
+     }
+   } else {
+-    constexpr uint32_t kPreferredMathThreadRegisters = TuningConfig::kNumMathThreads > 256 ? 112 : 232;
++    constexpr uint32_t kPreferredMathThreadRegisters = TuningConfig::kNumMathThreads > 256 ? 96 : 232;
+     constexpr uint32_t kNumWarps = TuningConfig::kNumThreads / 32;
+     constexpr uint32_t kRegisterAllocationGranularityPerWarp = 256;
+     constexpr uint32_t kRegisterBudgetPerWarp =
+@@ -371,7 +371,7 @@
+           debug_kernel_timeout_check(debug_start_clock);
+           PRAGMA_UNROLL
+           for (uint32_t warp_iter_id = 0; warp_iter_id < Ctx::kWarpIters; warp_iter_id++) {
+-            
++            if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);
+             if constexpr (std::is_same_v<Op, MuseFullWidth>) mma.run(stage_id, warp_iter_id); else mma.template run_as<Op>(stage_id, warp_iter_id);
+             if (warp_iter_id == Ctx::kWarpIters - 2) {
+               if (slice_iters > 1) {
+@@ -379,7 +379,6 @@
+               }
+             }
+             if (warp_iter_id + 1 == Ctx::kWarpIters) consumer.arrive(stage_id);
+-            if (warp_iter_id + 1 < Ctx::kWarpIters || slice_iters > 1) s2r_pipe.load_stage_iter(stage_id, warp_iter_id + 1);
+             mma.transform_b(
+                 (warp_iter_id + 1) % 2,
+                 (warp_iter_id + 1) % Ctx::kWarpIters);
+@@ -749,14 +748,10 @@
+                 kRegsBKDim == 1 && final_regs_c_index() == 0 && kSwizzleBytes == 128);
+   static constexpr uint32_t bands = MuseOverlapCtx::WarpShape::N / 16;
+   static_assert((bands == 2 || bands == 4) && sizeof(regs_b[0]) == bands * sizeof(uint4));
+-  CUDA_INLINE void transform_b(uint32_t buffer, uint32_t iteration) {
+-    if constexpr (bands == 2) Base::transform_b(buffer, iteration);
+-  }
+   CUDA_INLINE void run(uint32_t stage, uint32_t iteration) { run_as<MmaOpClass>(stage, iteration); }
+   template<class SliceOp> CUDA_INLINE void run_as(uint32_t stage, uint32_t iteration) {
+     // Only the late-release W2 pipeline may keep the last pair in flight.
+ #ifndef MUSE_PAIR_LAST_K_SLICES
+-    static_assert(bands == 2, "wide decode requires the late-release loop");
+     if (iteration >= 2) {
+       Base::run(stage, iteration);
+       return;
+@@ -765,28 +760,18 @@
+     const uint32_t address = cast_smem_ptr_to_uint(&ctx.smem) + offsetof(SharedStorage, stages)
+         + stage * sizeof(typename SharedStorage::StageStorage) + iteration * 2 * sizeof(int4) + smem_offset;
+     auto desc = make_wgmma_smem_desc<kSwizzleBytes>(address);
+-    const uint32_t buffer = iteration % 2;
+-    if constexpr (bands == 2) wgmma_fence();
++    wgmma_fence();
+     PRAGMA_UNROLL
+-    for (uint32_t j = 0; j < bands; ++j) {
+-      if constexpr (bands == 4) {
+-        static_assert(!kHasZeroPoint && !kUseFusedE8m0Scale && ElementB::kBits == 4 && ElementA::kBits == 16);
+-        auto* frag = reinterpret_cast<uint32_t*>(&regs_b[buffer][j][0]);
+-        uint4 zp{};
+-        dequant<ElementB, ElementA, false, false, kNumWarpShapeNSplits>(regs_qb[buffer], frag, j, reinterpret_cast<uint32_t*>(&zp));
+-        arith.may_apply_bs_and_zp_on_b(frag, j, buffer);
+-        wgmma_fence();
+-      }
+-      SliceOp::fma(desc, regs_b[buffer][j][0], regs_c[0][j][0], true);
+-    }
+-    if (bands == 4 || iteration % 2 == 1) {
++    for (uint32_t j = 0; j < bands; ++j)
++      SliceOp::fma(desc, regs_b[iteration % 2][j][0], regs_c[0][j][0], true);
++    if (iteration % 2 == 1) {
+       wgmma_commit();
+       wgmma_wait<0>();
+       // Keep both register-source fragments alive through the async group's
+       // completion, including the first fragment's four-word halves.
+       PRAGMA_UNROLL
+-      for (uint32_t b = 0; b < (bands == 4 ? 1 : 2); ++b) {
+-        auto* values = reinterpret_cast<uint32_t*>(&regs_b[bands == 4 ? buffer : b]);
++      for (uint32_t b = 0; b < 2; ++b) {
++        auto* values = reinterpret_cast<uint32_t*>(&regs_b[b]);
+         PRAGMA_UNROLL
+         for (uint32_t i = 0; i < bands * 4; ++i) warpgroup_fence_operand(values[i]);
+       }

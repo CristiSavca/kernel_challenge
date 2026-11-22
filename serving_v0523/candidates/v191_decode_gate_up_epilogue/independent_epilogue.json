@@ -1,0 +1,81 @@
+{
+  "device_sha256": "da8097cc6bb72fd8e5e48da687a2d952aaa3ebc8ee2c92ad5209e9af00bdffa8",
+  "launcher_sha256": "65313c977c91381ebcdefc6a6408fe86ebd13af53d70a819981fe658fe04c10e",
+  "cases": [
+    {
+      "tile_m": 8,
+      "intermediate": 384,
+      "allocated_route_slots": 64,
+      "first_sorted_row": 13,
+      "base_swizzle": 1,
+      "bf16_outputs": 36864,
+      "guard_words": 406080,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 3072,
+      "up_patterns": 3072
+    },
+    {
+      "tile_m": 8,
+      "intermediate": 128,
+      "allocated_route_slots": 65,
+      "first_sorted_row": 57,
+      "base_swizzle": 7,
+      "bf16_outputs": 12288,
+      "guard_words": 138048,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 1024,
+      "up_patterns": 1024
+    },
+    {
+      "tile_m": 16,
+      "intermediate": 4096,
+      "allocated_route_slots": 128,
+      "first_sorted_row": 112,
+      "base_swizzle": 6,
+      "bf16_outputs": 786432,
+      "guard_words": 8651328,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 65536,
+      "up_patterns": 65536
+    },
+    {
+      "tile_m": 16,
+      "intermediate": 384,
+      "allocated_route_slots": 255,
+      "first_sorted_row": 0,
+      "base_swizzle": 2,
+      "bf16_outputs": 73728,
+      "guard_words": 1689408,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 6144,
+      "up_patterns": 6144
+    },
+    {
+      "tile_m": 24,
+      "intermediate": 4096,
+      "allocated_route_slots": 257,
+      "first_sorted_row": 233,
+      "base_swizzle": 3,
+      "bf16_outputs": 1179648,
+      "guard_words": 17769024,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 65536,
+      "up_patterns": 65536
+    },
+    {
+      "tile_m": 24,
+      "intermediate": 128,
+      "allocated_route_slots": 2048,
+      "first_sorted_row": 1023,
+      "base_swizzle": 7,
+      "bf16_outputs": 36864,
+      "guard_words": 4682304,
+      "packed_weight_scale_addresses": 1769472,
+      "gate_patterns": 3072,
+      "up_patterns": 3072
+    }
+  ],
+  "cuda": false,
+  "native_math": "CPU expf and software RN BF16; both oracle and source use same primitive",
+  "scope": "Actual packed map builder, shared BF16 epilogue read/store, precision-sensitive packed route keys, row- and tile-relative output addresses, independently assembled shared bands."
+}

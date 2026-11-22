@@ -1,0 +1,180 @@
+diff --git a/python/sglang/srt/arg_groups/fields/spec.py b/python/sglang/srt/arg_groups/fields/spec.py
+index 1ba82fa..4189107 100644
+--- a/python/sglang/srt/arg_groups/fields/spec.py
++++ b/python/sglang/srt/arg_groups/fields/spec.py
+@@ -83,6 +83,10 @@ class Spec(msgspec.Struct):
+         bool,
+         "Partition full-width DFLASH context outputs across draft TP ranks during verification.",
+     ] = False
++    speculative_dflash_share_verify_schedule: A[
++        bool,
++        "Share compatible FlashAttention 3 scheduling metadata within a DFLASH target verification.",
++    ] = False
+     speculative_domino_candidate_pool_size: A[
+         int,
+         "Domino only. Size of the approximate block-shared base-logit candidate pool. Set to 0 to score the full vocabulary.",
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index e8d8450..46af32d 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -409,6 +409,18 @@ class FlashAttentionBackend(AttentionBackend):
+         self._disable_scheduler_metadata_precompute = (
+             _should_disable_scheduler_metadata_precompute()
+         )
++        self._verify_schedule_sms = 0
++        if (
++            get_spec().speculative_dflash_share_verify_schedule
++            and model_runner.spec_algorithm.is_dflash()
++            and self._pack_swa_fp8_prefill and not self.is_draft_runner
++            and not self._disable_scheduler_metadata_precompute
++            and not self.is_encoder_decoder and not self.use_mla and self.topk <= 1
++            and self.local_attn_builder is None and not self.is_prefill_aware_swa
++            and self.attn_cp_size == 1 and self._kv_shard_pool is None
++            and not self.kv_index_translator.is_translating and self.num_splits == 0
++        ):
++            self._verify_schedule_sms = torch.cuda.get_device_properties(self.device).multi_processor_count
+ 
+     def _maybe_init_local_attn_builder(
+         self, model_runner: ModelRunner
+@@ -465,6 +477,57 @@ class FlashAttentionBackend(AttentionBackend):
+             num_splits=self.num_splits,
+         )
+ 
++    def _verify_schedule(
++        self, schedules, q, key_cache, value_cache, page_table, lengths, cu_q,
++        width, layer, window, forward_batch,
++    ):
++        # The standalone metadata API approximates total_q as batch * width.
++        # The paged attention API derives max_seqlen_k from table columns.
++        batch = lengths.shape[0]
++        q_heads, kv_heads = layer.tp_q_head_num, layer.tp_k_head_num
++        if (
++            width <= 1 or batch == 0 or q.shape[0] != batch * width
++            or q.numel() != batch * width * q_heads * 64
++            or width != getattr(forward_batch.spec_info, "num_tokens_per_req", None)
++            or getattr(forward_batch.spec_info, "ragged_verify_layout", None) is not None
++            or layer.head_dim != 64 or layer.v_head_dim != 64 or layer.logit_cap != 0
++            or kv_heads <= 0 or q_heads < kv_heads or q_heads % kv_heads
++            or q.dtype != torch.float8_e4m3fn or not q.is_cuda
++            or q.device.index != torch.cuda.current_device()
++            or len(key_cache.shape) != 4 or key_cache.shape != value_cache.shape
++            or key_cache.shape[1:] != (self.page_size, kv_heads, 64)
++            or key_cache.dtype != q.dtype or value_cache.dtype != q.dtype
++            or lengths.shape != (batch,) or cu_q.shape != (batch + 1,)
++            or lengths.dtype != torch.int32 or cu_q.dtype != torch.int32
++            or not lengths.is_contiguous() or not cu_q.is_contiguous()
++            or page_table.ndim != 2 or page_table.shape[0] != batch
++            or any(t.device != q.device for t in (key_cache, value_cache, page_table, lengths, cu_q))
++        ):
++            return None
++        packed_width = width * (q_heads // kv_heads)
++        capacity = page_table.shape[1] * self.page_size
++        loaded = capacity if window[0] < 0 else min(capacity, window[0] + 1 + 64)
++        # Pinned SM90 E4M3 small-Q/D64 tiles are 64x128. With >=5 N
++        # tiles and <=half a wave, the second split doubles efficiency.
++        # This avoids a separate per-layer semaphore zero for single-split calls.
++        m_blocks = ((batch * packed_width + 63) // 64) * kv_heads
++        if packed_width > 64 or loaded <= 4 * 128 or 2 * m_blocks > self._verify_schedule_sms:
++            return None
++        # Each mutable semaphore belongs to one stream and model invocation.
++        # Holding the original length tensors also keeps their identities live.
++        key = (
++            self, q.device, torch.cuda.current_stream(q.device).cuda_stream,
++            lengths, cu_q, width, capacity, q_heads, kv_heads, window,
++        )
++        if key not in schedules:
++            schedules[key] = self._get_scheduler_metadata(
++                batch_size=batch, max_seqlen_q=width, max_seqlen_k=capacity,
++                num_heads=q_heads, num_heads_k=kv_heads, headdim=64,
++                cache_seqlens=lengths, cu_seqlens_q=cu_q, qkv_dtype=q.dtype,
++                page_size=self.page_size, causal=True, window_size=window,
++            )
++        return schedules[key]
++
+     def validate_elastic_cuda_graph_recapture(self) -> None:
+         if self.use_mla and self.fa_impl_ver != 3:
+             raise ValueError(
+@@ -1889,6 +1952,22 @@ class FlashAttentionBackend(AttentionBackend):
+                     **{name: with_padding_descale(value) for name, value in kwargs.items()},
+                 )
+             else:
++                if (
++                    getattr(self, "_verify_schedule_sms", 0) and not torch.compiler.is_compiling()
++                    and forward_batch._fa3_verify_schedules is not None
++                    and forward_batch.forward_mode.is_target_verify() and causal
++                    and not use_local_attn and not use_cascade_attn and not return_lse
++                    and not layer.is_cross_attention and q_rope is None and k_rope is None
++                    and forward_batch.dcp_kv_mask is None
++                    and kwargs.keys() <= {"k_descale", "v_descale"}
++                ):
++                    schedule = self._verify_schedule(
++                        forward_batch._fa3_verify_schedules, q, key_cache, value_cache,
++                        page_table, cache_seqlens, cu_seqlens_q, max_seqlen_q,
++                        layer, window_size, forward_batch,
++                    )
++                    if schedule is not None:
++                        kwargs["scheduler_metadata"] = schedule
+                 result = flash_attn_with_kvcache(
+                     q=q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim),
+                     k_cache=key_cache,
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index a8280c2..b6c0a44 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -714,6 +714,8 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # === Runtime-filled (set during the forward pass / cuda graph / managers; not at construction) ===
+     # Preallocated piecewise-graph attention output, set by RadixAttention.
+     _attn_output: Optional[torch.Tensor] = None
++    # Set only for the duration of one target model call.
++    _fa3_verify_schedules: Optional[dict] = None
+ 
+     # Decode-graph-owned destination for AuxHiddenStatePacker; None when eager.
+     aux_hidden_states_buffer: Optional[torch.Tensor] = None
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 0aa53f4..e6e865f 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -97,7 +97,7 @@ from sglang.srt.model_executor.forward_context import (
+     get_token_to_kv_pool,
+ )
+ from sglang.srt.model_loader.weight_utils import default_weight_loader
+-from sglang.srt.runtime_context import get_forward, get_memory, get_parallel
++from sglang.srt.runtime_context import get_forward, get_memory, get_parallel, get_spec
+ from sglang.srt.state_capturer.routed_experts import get_global_experts_capturer
+ from sglang.srt.utils import add_prefix, is_cpu, use_intel_amx_backend
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+@@ -1321,6 +1321,7 @@ class MuseSparkTextForCausalLM(nn.Module):
+             config, logit_scale=config.output_multiplier
+         )
+         self.capture_aux_hidden_states = False
++        self._share_verify_schedule = get_spec().speculative_dflash_share_verify_schedule
+ 
+     def forward(
+         self,
+@@ -1329,9 +1330,23 @@ class MuseSparkTextForCausalLM(nn.Module):
+         forward_batch: ForwardBatch,
+         input_embeds: Optional[torch.Tensor] = None,
+     ):
+-        hidden_states = self.model(
+-            input_ids, positions, forward_batch, input_embeds=input_embeds
+-        )
++        if (
++            self._share_verify_schedule
++            and not torch.compiler.is_compiling()
++            and forward_batch.forward_mode.is_target_verify()
++        ):
++            previous = forward_batch._fa3_verify_schedules
++            forward_batch._fa3_verify_schedules = {}
++            try:
++                hidden_states = self.model(
++                    input_ids, positions, forward_batch, input_embeds=input_embeds
++                )
++            finally:
++                forward_batch._fa3_verify_schedules = previous
++        else:
++            hidden_states = self.model(
++                input_ids, positions, forward_batch, input_embeds=input_embeds
++            )
+         aux_hidden_states = None
+         prefill_fc_done = False
+         if self.capture_aux_hidden_states:

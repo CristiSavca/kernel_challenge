@@ -1,0 +1,189 @@
+diff --git a/python/sglang/kernels/ops/attention/verify_fp8_cache.py b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+new file mode 100644
+index 0000000..00d4ae5
+--- /dev/null
++++ b/python/sglang/kernels/ops/attention/verify_fp8_cache.py
+@@ -0,0 +1,69 @@
++"""Encode a target verification query and scatter its current keys and values."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++def bf16_e4m3_encodings(device):
++    # Use this installation's torch cast, including signed NaNs and overflow.
++    bits = torch.arange(65536, dtype=torch.int32, device=device).to(torch.int16)
++    return bits.view(torch.bfloat16).to(torch.float8_e4m3fn).view(torch.uint8)
++
++
++@triton.jit
++def _encode_and_scatter(
++    Q, K, V, OUT, KC, VC, LOC, TABLE,
++    q_pitch, k_pitch, v_pitch, kc_pitch, vc_pitch, loc_pitch, capacity,
++    Q_WIDTH: tl.constexpr, KV_WIDTH: tl.constexpr, BLOCK: tl.constexpr,
++):
++    row = tl.program_id(0).to(tl.int64)
++    start = tl.program_id(1) * BLOCK
++    cols = start + tl.arange(0, BLOCK)
++    q_bits = tl.load(Q + row * q_pitch + cols, cols < Q_WIDTH, other=0).to(tl.uint32)
++    q8 = tl.load(TABLE + q_bits)
++    tl.store(OUT + row * Q_WIDTH + cols, q8, cols < Q_WIDTH)
++    if start < KV_WIDTH:
++        slot = tl.load(LOC + row * loc_pitch).to(tl.int64)
++        tl.device_assert((slot >= 0) & (slot < capacity), "KV cache slot out of range")
++        if (slot > 0) & (slot < capacity):
++            live = cols < KV_WIDTH
++            k_bits = tl.load(K + row * k_pitch + cols, live, other=0).to(tl.uint32)
++            v_bits = tl.load(V + row * v_pitch + cols, live, other=0).to(tl.uint32)
++            tl.store(KC + slot * kc_pitch + cols, tl.load(TABLE + k_bits), live)
++            tl.store(VC + slot * vc_pitch + cols, tl.load(TABLE + v_bits), live)
++
++
++def encode_verify_qkv(q, k, v, k_cache, v_cache, slots, capacity, table):
++    rows = q.shape[0]
++    if (
++        q.ndim != 2 or not rows or q.stride(1) != 1
++        or k.ndim != 3 or k.shape[0] != rows or v.shape != k.shape
++        or k.stride()[1:] != (k.shape[2], 1) or v.stride()[1:] != k.stride()[1:]
++        or any(t.dtype != torch.bfloat16 for t in (q, k, v))
++        or slots.ndim != 1 or slots.numel() != rows
++        or slots.dtype not in (torch.int32, torch.int64)
++        or any(t.device != q.device for t in (k, v, k_cache, v_cache, slots, table))
++    ):
++        return None
++    q_width, kv_width = q.shape[1], k.shape[1] * k.shape[2]
++    if not (0 < kv_width <= q_width and 0 < capacity):
++        return None
++    for cache in (k_cache, v_cache):
++        if (
++            cache.ndim != 3 or cache.shape[1:] != k.shape[1:]
++            or cache.shape[0] < capacity or cache.stride(0) < kv_width
++            or cache.stride()[1:] != k.stride()[1:]
++            or cache.dtype != torch.float8_e4m3fn
++        ):
++            return None
++    out = torch.empty(q.shape, device=q.device, dtype=torch.float8_e4m3fn)
++    block = min(256, triton.next_power_of_2(q_width))
++    _encode_and_scatter[(rows, triton.cdiv(q_width, block))](
++        q.view(torch.uint16), k.view(torch.uint16), v.view(torch.uint16),
++        out.view(torch.uint8), k_cache.view(torch.uint8), v_cache.view(torch.uint8),
++        slots, table, q.stride(0), k.stride(0), v.stride(0),
++        k_cache.stride(0), v_cache.stride(0), slots.stride(0), capacity,
++        Q_WIDTH=q_width, KV_WIDTH=kv_width, BLOCK=block, num_warps=4, debug=True,
++    )
++    return out
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 0b4ecf1..13eddd1 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -35,7 +35,7 @@ from sglang.srt.layers.cp.utils import is_cp_active
+ from sglang.srt.layers.radix_attention import AttentionType
+ from sglang.srt.mem_cache.kv_loc_plan import IdSpaceKind
+ from sglang.srt.mem_cache.layout.paged_view import paged_kv_view, paged_view
+-from sglang.srt.mem_cache.memory_pool import KVWriteLoc
++from sglang.srt.mem_cache.memory_pool import KVWriteLoc, MHATokenToKVPool
+ from sglang.srt.mem_cache.swa_memory_pool import SWAKVPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+ from sglang.srt.runtime_context import (
+@@ -317,6 +317,20 @@ class FlashAttentionBackend(AttentionBackend):
+         else:
+             raise ValueError(f"Invalid version: {self.fa_impl_ver=}")
+ 
++        self._verify_fp8_encodings = None
++        if (
++            self.fa_impl_ver == 3 and device_capability[0] == 9
++            and self.kv_cache_dtype == torch.float8_e4m3fn
++            and self.kv_cache_dtype_str != "auto"
++            and not self.is_draft_runner and not self.use_mla
++            and not self.kv_index_translator.is_translating and self._kv_shard_pool is None
++            and not get_memory().enable_unified_memory
++            and not get_exec().deterministic.enable_deterministic_inference
++        ):
++            from sglang.kernels.ops.attention.verify_fp8_cache import bf16_e4m3_encodings
++
++            self._verify_fp8_encodings = bf16_e4m3_encodings(self.device)
++
+         self.flash_attn_varlen_func = flash_attn_varlen_func
+         self.flash_attn_with_kvcache = flash_attn_with_kvcache
+ 
+@@ -1438,6 +1452,39 @@ class FlashAttentionBackend(AttentionBackend):
+             k_rope = k_rope.to(self.kv_cache_dtype) if k_rope is not None else None
+         return q, q_rope, k_rope, k_descale, v_descale
+ 
++    def _encode_verify_qkv(self, q, k, v, layer, forward_batch):
++        from sglang.kernels.ops.attention.verify_fp8_cache import encode_verify_qkv
++        from sglang.kernels.ops.kvcache.kvcache import can_use_store_cache
++
++        if (
++            layer.is_cross_attention or layer.head_dim > 256
++            or layer.k_scale is not None or layer.v_scale is not None
++            or layer.tp_k_head_num != layer.tp_v_head_num
++            or forward_batch.dcp_kv_mask is not None
++        ):
++            return None
++        pool = self.token_to_kv_pool
++        owner = pool
++        write = KVWriteLoc.for_layer(
++            forward_batch, layer, swa_loc=self.forward_metadata.swa_out_cache_loc
++        )
++        slots = write.loc
++        if type(pool) is SWAKVPool:
++            _, sliding = pool.layers_mapping[layer.layer_id]
++            owner = pool.swa_kv_pool if sliding else pool.full_kv_pool
++            slots = write.swa_loc if sliding else write.loc
++        if (
++            type(owner) is not MHATokenToKVPool or slots is None
++            or owner.is_quantized_kv_cache or owner.kv_cache_layout != "nhd"
++            or not can_use_store_cache(owner.row_dim, owner.v_row_dim)
++        ):
++            return None
++        k_cache, v_cache = pool.get_kv_buffer(layer.layer_id)
++        return encode_verify_qkv(
++            q, k, v, k_cache, v_cache, slots, owner.size + owner.page_size,
++            self._verify_fp8_encodings,
++        )
++
+     def get_fused_kv_write_buffers(self, layer, forward_batch):
+         if (
+             self.kv_cache_dtype != torch.bfloat16
+@@ -1535,18 +1582,28 @@ class FlashAttentionBackend(AttentionBackend):
+                 else:
+                     k_scale = k_descale if self.kv_cache_is_mxfp8 else layer.k_scale
+                     v_scale = v_descale if self.kv_cache_is_mxfp8 else layer.v_scale
+-                    self.token_to_kv_pool.set_kv_buffer(
+-                        layer,
+-                        KVWriteLoc.for_layer(
+-                            forward_batch,
++                    encoded_q = None
++                    if (
++                        getattr(self, "_verify_fp8_encodings", None) is not None
++                        and forward_batch.forward_mode.is_target_verify()
++                        and q_rope is None and k_rope is None
++                    ):
++                        encoded_q = self._encode_verify_qkv(q, k, v, layer, forward_batch)
++                    if encoded_q is not None:
++                        q = encoded_q
++                    else:
++                        self.token_to_kv_pool.set_kv_buffer(
+                             layer,
+-                            swa_loc=self.forward_metadata.swa_out_cache_loc,
+-                        ),
+-                        k,
+-                        v,
+-                        k_scale,
+-                        v_scale,
+-                    )
++                            KVWriteLoc.for_layer(
++                                forward_batch,
++                                layer,
++                                swa_loc=self.forward_metadata.swa_out_cache_loc,
++                            ),
++                            k,
++                            v,
++                            k_scale,
++                            v_scale,
++                        )
+ 
+         # Use precomputed metadata across all layers
+         metadata = self.forward_metadata

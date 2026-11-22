@@ -1,0 +1,222 @@
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 7ab51f791f92f2b46860ac8e8005ab5d2390ba78..ae7af01540e50efe1717acf8ec421051683aaddf 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1371,11 +1371,10 @@ class MuseSparkTextForCausalLM(nn.Module):
+             if projected is not None:
+                 aux_hidden_states = projected
+                 prefill_context_done = True
+-                if forward_batch.mixed_verify_logits_indices is None:
+-                    raw_kv = project_paired_draft_kv(projected, num_tokens, get_parallel().tp_group)
+-                    if raw_kv is not None:
+-                        aux_hidden_states = raw_kv
+-                        prefill_kv_projected = True
++                raw_kv = project_paired_draft_kv(projected, num_tokens, get_parallel().tp_group)
++                if raw_kv is not None:
++                    aux_hidden_states = raw_kv
++                    prefill_kv_projected = True
+             if not prefill_kv_projected:
+                 aux_hidden_states = layernorm_sp.sp_exit_gather(
+                     aux_hidden_states, num_tokens=num_tokens
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+index e5ffe6ed3694e0da027e8e7f2e560d1752e95156..f71604cd817bfa7bacd70a05a3fbc2a353b1bf49 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_forward.py
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -196,7 +196,7 @@ def try_forward_proposed_mixed(
+     # Admission requires the eager model tail. The captured layer body returns
+     # its original taps; the tail can project them on their sequence owners.
+     # Running verification rows still need the accepted-prefix draft KV writer.
+-    with dflash_sp_prefill_scope(worker._sp_prefill_context, kv_helper=None):
++    with dflash_sp_prefill_scope(worker._sp_prefill_context, worker._prefill_kv_helper()):
+         target_out = worker.target_worker.forward_batch_generation(
+             batch=None, forward_batch=mixed_fb, is_verify=True, return_kv_loc_plan=True
+         )
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 539220f2ac31570d85f2db3355fc9c2b60d0e264..e8a113072da53d018ee0fa4304d4aad1258deb98 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -1071,6 +1071,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     fused_disable_reason = f"{reason}: layer={layer_idx}"
+                     break
+ 
++                # The ordinary attention projection multiplies V before cache
++                # quantization. The stacked materializer uses the raw V bank.
++                value_scale = getattr(attn, "v_scale", None)
++                if value_scale is not None and not (type(value_scale) in (int, float) and value_scale == 1):
++                    fused_disable_reason = f"non-unit model V scale: layer={layer_idx}"
++                    break
++
+                 # Keep semantics aligned with set_kv_buffer scaling behavior.
+                 k_scale = getattr(attn.attn, "k_scale", None)
+                 v_scale = getattr(attn.attn, "v_scale", None)
+@@ -1864,6 +1871,19 @@ class DFlashWorkerV2(BaseSpecWorker):
+         physical ids for a fused draft, the virtual ids for a private one."""
+         return plan.write_ids(self.draft_model_runner.kv_index_translator)
+ 
++    def _prefill_kv_helper(self):
++        if self._sp_prefill_context is None or not self._use_fused_kv_materialize or self.lilicorr is not None:
++            return None
++        # Stacked projections carry raw V. Fused and per-layer recovery must
++        # use the same V scaling if a write fails after some layers complete.
++        if all(
++            layer.self_attn.v_scale is None
++            or (type(layer.self_attn.v_scale) in (int, float) and layer.self_attn.v_scale == 1)
++            for layer in self.draft_model.layers
++        ):
++            return self._fused_kv_helper
++        return None
++
+     def _append_target_hidden_to_draft_kv_by_loc(
+         self,
+         *,
+@@ -1939,10 +1959,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     "DFLASH cache_loc_2d size mismatch: "
+                     f"cache_loc_2d={int(cache_loc_2d.numel())}, target_hidden={num_tokens}."
+                 )
+-            if commit_lens is None:
+-                raise ValueError(
+-                    "DFLASH cache_loc_2d requires commit_lens for prefix-valid writes."
+-                )
++            if commit_lens is None or commit_lens.shape != cache_loc_2d.shape[:1]:
++                raise ValueError("DFLASH prefix-valid writes require one commit length per request.")
+ 
+         device = self.model_runner.device
+         if cache_loc.device != device:
+@@ -1975,9 +1993,9 @@ class DFlashWorkerV2(BaseSpecWorker):
+             draft_tp_context(self.draft_parallel_layout),
+         ):
+             if prefill_kv_projected:
+-                if not prefill_context_done or cache_loc_2d is not None or self.lilicorr is not None:
+-                    raise ValueError("Preprojected draft K/V requires ordinary full-prompt materialization.")
+-                self._append_paired_prompt_kv(target_hidden, positions, cache_loc)
++                if not prefill_context_done or self.lilicorr is not None:
++                    raise ValueError("Preprojected draft K/V requires finalized context with LiLiCorr disabled.")
++                self._append_paired_prompt_kv(target_hidden, positions, cache_loc, cache_loc_2d, commit_lens)
+                 return
+             if prefill_context_done:
+                 ctx_hidden = target_hidden
+@@ -1992,13 +2010,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 )
+ 
+             if cache_loc_2d is not None:
+-                bs = int(commit_lens.shape[0])
+-                if int(cache_loc_2d.shape[0]) != bs:
+-                    raise ValueError(
+-                        "DFLASH cache_loc_2d batch size mismatch: "
+-                        f"cache_loc_2d={tuple(cache_loc_2d.shape)}, commit_lens={tuple(commit_lens.shape)}."
+-                    )
+-                if bs == 0:
++                if cache_loc_2d.shape[0] == 0:
+                     return
+                 if self._use_fused_kv_materialize and self._fused_kv_helper is not None:
+                     try:
+@@ -2062,14 +2074,16 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 ctx_cache_loc=cache_loc,
+             )
+ 
+-    def _append_paired_prompt_kv(self, projected, positions, cache_loc):
++    def _append_paired_prompt_kv(self, projected, positions, cache_loc, cache_loc_2d=None, commit_lens=None):
+         layers = self.draft_model.layers
+         kv_width = layers[0].self_attn.kv_size
+         if projected.shape != (positions.numel(), len(layers) * 2 * kv_width):
+             raise ValueError("Invalid stacked prompt K/V shape")
+         if self._use_fused_kv_materialize and self._fused_kv_helper is not None:
+             try:
+-                self._append_target_hidden_fused(projected, positions, cache_loc, projection_ready=True)
++                self._append_target_hidden_fused(
++                    projected, positions, cache_loc, cache_loc_2d, commit_lens, projection_ready=True
++                )
+                 return
+             except Exception as exc:
+                 logger.warning("DFLASH fused projected KV append failed, using per-layer writes: %s", exc)
+@@ -2087,12 +2101,13 @@ class DFlashWorkerV2(BaseSpecWorker):
+             v = rows[:, index, 1].contiguous()
+             if attn.v_scale is not None:
+                 v = v * attn.v_scale
+-            self.draft_model_runner.token_to_kv_pool.set_kv_buffer(
+-                attn.attn, KVWriteLoc(cache_loc, physical=True),
+-                k.view(-1, attn.num_kv_heads, attn.head_dim),
+-                v.view(-1, attn.num_kv_heads, attn.head_dim),
+-                attn.attn.k_scale, attn.attn.v_scale,
+-            )
++            k = k.view(-1, attn.num_kv_heads, attn.head_dim)
++            v = v.view(-1, attn.num_kv_heads, attn.head_dim)
++            pool = self.draft_model_runner.token_to_kv_pool
++            if cache_loc_2d is None:
++                pool.set_kv_buffer(attn.attn, KVWriteLoc(cache_loc, physical=True), k, v, attn.attn.k_scale, attn.attn.v_scale)
++            else:
++                pool.set_kv_buffer_prefix_valid(attn.attn, cache_loc_2d, commit_lens, k, v, attn.attn.k_scale, attn.attn.v_scale)
+ 
+     def _append_target_hidden_sequential(
+         self,
+@@ -2540,7 +2555,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._wait_for_fused_hicache_load(mixed_batch)
+         # Project the target taps to normalized draft features on their SP owners.
+         # Running requests still need the prefix-valid KV writer after acceptance.
+-        with dflash_sp_prefill_scope(self._sp_prefill_context, kv_helper=None):
++        with dflash_sp_prefill_scope(self._sp_prefill_context, self._prefill_kv_helper()):
+             target = self.target_worker.forward_batch_generation(
+                 mixed_batch,
+                 is_verify=True,
+@@ -2582,6 +2597,15 @@ class DFlashWorkerV2(BaseSpecWorker):
+         output = target_out.logits_output
+         logits, hidden = output.next_token_logits, output.hidden_states
+         context_done = output.dflash_prefill_context_done
++        kv_projected = output.dflash_prefill_kv_projected
++        context_width = None
++        if kv_projected:
++            layers = self.draft_model.layers
++            if not context_done or self.lilicorr is not None or len(layers) == 0:
++                raise ValueError("Invalid mixed DFLASH projected K/V context")
++            context_width = 2 * len(layers) * layers[0].self_attn.kv_size
++        elif context_done:
++            context_width = self.draft_model.fc.out_features
+         processor = self._target_logits_processor
+         sharded = (
+             logits is not None and logits.ndim == 2 and processor is not None
+@@ -2606,8 +2630,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             or hidden is None
+             or hidden.ndim != 2
+             or hidden.shape[0] < prompt_rows + tail_rows
+-            or output.dflash_prefill_kv_projected
+-            or (context_done and hidden.shape[1] != self.draft_model.fc.out_features)
++            or (context_width is not None and hidden.shape[1] != context_width)
+             or positions.shape != (prompt_rows + tail_rows,)
+             or slots is None
+             or slots.shape != positions.shape
+@@ -2660,6 +2683,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             positions=positions[:prompt_rows],
+             extend_lens=prompt_forward_batch.extend_seq_lens,
+             prefill_context_done=context_done,
++            prefill_kv_projected=kv_projected,
+         )
+         tail_slots = slots[prompt_rows:].contiguous()
+         self._append_target_hidden_to_draft_kv_by_loc(
+@@ -2669,6 +2693,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             positions=positions[prompt_rows:],
+             commit_lens=commit_lens,
+             prefill_context_done=context_done,
++            prefill_kv_projected=kv_projected,
+         )
+         output.hidden_states = None
+         target_out.kv_loc_plan = None
+@@ -2708,18 +2733,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 and not batch.return_hidden_states_mode.need_capture()
+                 and not torch.cuda.is_current_stream_capturing()
+             ):
+-                kv_helper = None
+-                if self._use_fused_kv_materialize and self.lilicorr is None:
+-                    # The stacked bank contains raw V. Its fused and per-layer
+-                    # consumers must agree if a partially completed write retries.
+-                    unit_values = all(
+-                        layer.self_attn.v_scale is None
+-                        or (type(layer.self_attn.v_scale) in (int, float) and layer.self_attn.v_scale == 1)
+-                        for layer in self.draft_model.layers
+-                    )
+-                    if unit_values:
+-                        kv_helper = self._fused_kv_helper
+-                scope = dflash_sp_prefill_scope(self._sp_prefill_context, kv_helper)
++                scope = dflash_sp_prefill_scope(self._sp_prefill_context, self._prefill_kv_helper())
+             with scope:
+                 batch_output = self.target_worker.forward_batch_generation(
+                     batch,

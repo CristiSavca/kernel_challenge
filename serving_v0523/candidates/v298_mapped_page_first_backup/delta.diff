@@ -1,0 +1,99 @@
+diff --git a/python/sglang/srt/mem_cache/pool_host/common.py b/python/sglang/srt/mem_cache/pool_host/common.py
+index 305a54f..e8e05fb 100644
+--- a/python/sglang/srt/mem_cache/pool_host/common.py
++++ b/python/sglang/srt/mem_cache/pool_host/common.py
+@@ -421,6 +421,32 @@ def _resolve_device_accessible_ptr_fn():
+     return get_device_accessible_ptr
+ 
+ 
++def has_linear_host_mapping(buffer: torch.Tensor, device: torch.device) -> bool:
++    """Can one device address and a byte stride cover every host registration?"""
++    ranges = getattr(buffer, _CUDA_HOST_REGISTERED_RANGES_ATTR, ())
++    if not ranges or not buffer.is_contiguous() or buffer.device.type != "cpu":
++        return False
++    resolve = _resolve_device_accessible_ptr_fn()
++    if resolve is None:
++        return False
++    device_index = device.index if device.index is not None else torch.cuda.current_device()
++    flat = buffer.view(-1)
++    base = flat.data_ptr()
++    covered = 0
++    try:
++        mapped_base = resolve(flat, device_index)
++        for ptr, size in ranges:
++            if ptr != base + covered or covered % flat.element_size() or size <= 0:
++                return False
++            offset = covered // flat.element_size()
++            if mapped_base + covered != resolve(flat[offset : offset + 1], device_index):
++                return False
++            covered += size
++    except RuntimeError:
++        return False
++    return covered == buffer.nbytes
++
++
+ def make_kernel_ptr_table(
+     tensors: list[torch.Tensor],
+     target_device: torch.device | str,
+diff --git a/python/sglang/srt/mem_cache/pool_host/mha.py b/python/sglang/srt/mem_cache/pool_host/mha.py
+index bd2334c..6921625 100644
+--- a/python/sglang/srt/mem_cache/pool_host/mha.py
++++ b/python/sglang/srt/mem_cache/pool_host/mha.py
+@@ -45,6 +45,7 @@ from sglang.srt.mem_cache.pool_host.common import (
+     ALLOC_MEMORY_FUNCS,
+     _cuda_host_unregister,
+     get_allocator_from_storage,
++    has_linear_host_mapping,
+     make_kernel_ptr_table,
+ )
+ from sglang.srt.mem_cache.pool_host.hisparse import HiSparseHostPoolMixin
+@@ -286,6 +287,14 @@ class MHATokenToKVPoolHost(HostKVCache):
+         )
+         self.host_kv_data_refs = self.k_data_refs + self.v_data_refs
+         self._init_write_back_staging_buffers(buffer_info, write_back_staging)
++        self.can_use_mapped_backup = (
++            _is_cuda
++            and self.can_use_jit
++            and self.can_use_write_back_jit
++            and self.pin_memory
++            and self.page_size == 1
++            and has_linear_host_mapping(self.kv_buffer, self._transfer_device)
++        )
+ 
+     def get_size_per_token(self):
+         return (
+@@ -615,7 +624,33 @@ class MHATokenToKVPoolHost(HostKVCache):
+                         num_layers=self.layer_num,
+                     )
+             elif self.layout == "page_first":
+-                if self.can_use_write_back_jit:
++                if (
++                    self.can_use_mapped_backup
++                    and device_indices.device == self._transfer_device
++                    and host_indices.device.type == "cpu"
++                    and host_indices.dtype == device_indices.dtype == torch.int64
++                    and host_indices.ndim == device_indices.ndim == 1
++                    and host_indices.numel() == device_indices.numel()
++                    and 2 * self.staging_page_capacity <= host_indices.numel() < 2**31
++                    and host_indices.is_contiguous()
++                    and device_indices.is_contiguous()
++                    # Distinct destinations make parallel stores independent.
++                    and bool(torch.all(host_indices[1:] > host_indices[:-1]))
++                ):
++                    mapped_indices = host_indices.to(device_indices.device, non_blocking=True)
++                    jit_transfer_hicache_all_layer(
++                        page_size=self.page_size,
++                        k_ptr_dst=self.k_data_ptrs,
++                        v_ptr_dst=self.v_data_ptrs,
++                        indices_dst=mapped_indices,
++                        k_ptr_src=device_k_data_ptrs,
++                        v_ptr_src=device_v_data_ptrs,
++                        indices_src=device_indices,
++                        kv_cache_dst_stride_bytes=self.layout_dim,
++                        kv_cache_src_stride_bytes=self.device_row_stride_bytes,
++                        element_size=self.element_dim * self.dtype.itemsize,
++                    )
++                elif self.can_use_write_back_jit:
+                     jit_transfer_hicache_all_layer_staged_lf_pf(
+                         k_ptr_src=device_k_data_ptrs,
+                         v_ptr_src=device_v_data_ptrs,

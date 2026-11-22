@@ -1,0 +1,124 @@
+{
+  "at": "2026-11-18T10:48:16.796479+00:00",
+  "four_load_target": 4,
+  "milestone": 3,
+  "best_four_load": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "v68_private_check": {
+    "job": "04b01f958aa5487c",
+    "comparator_job": "ac89fddc4ee147ab",
+    "exact_export_sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+    "passed": true,
+    "concurrency": 16,
+    "repetitions": 1,
+    "v68": {
+      "acceptance": 4,
+      "cache_hit": 0.92,
+      "concurrency": 16,
+      "reps": 1,
+      "spread": 0,
+      "tok_s_per_gpu": 17512.9,
+      "tok_s_per_user_e2e": 25,
+      "tok_s_per_user_e2e_p50": 46,
+      "tok_s_per_user_p50": 48,
+      "truncated": false,
+      "ttft_first_p90_s": 50.737,
+      "ttft_later_p90_s": 0.264,
+      "ttft_p90_s": 0.42
+    },
+    "v64": {
+      "acceptance": 4,
+      "cache_hit": 0.92,
+      "concurrency": 16,
+      "reps": 1,
+      "spread": 0,
+      "tok_s_per_gpu": 17349.9,
+      "tok_s_per_user_e2e": 24.7,
+      "tok_s_per_user_e2e_p50": 46.8,
+      "tok_s_per_user_p50": 48.8,
+      "truncated": false,
+      "ttft_first_p90_s": 50.659,
+      "ttft_later_p90_s": 0.256,
+      "ttft_p90_s": 0.394
+    },
+    "relative_raw_throughput": 1.0093948668292037,
+    "relative_median_decode": 0.9836065573770493,
+    "indicative_ratio_vs_stock": 1.424,
+    "short_outputs": 0,
+    "extra_gpu_memory_gb": 1.7,
+    "scored_submission": false,
+    "decision": "Retain the scored slot. The single matched load gained 0.94 percent in raw throughput and its median decode rate declined."
+  },
+  "candidates": {
+    "V101": {
+      "parent": "V99",
+      "sha256": "a12131f6612b38bd8147040fd38f85fbd727a96b7055d096e92bda163b85978a",
+      "validation": "serving_v0523/candidates/v101_adaptive_draft_spine/validation.json",
+      "official_result": null
+    },
+    "V101b": {
+      "parent": "V101",
+      "sha256": "5efac32facda3a20a0e7ba5fb1b1724454eba4e2439c4fe95da11cba67b1e39e",
+      "validation": "serving_v0523/candidates/v101b_endpoint_guarded_spine/validation.json",
+      "official_result": null
+    },
+    "V102": {
+      "parent": "V64",
+      "sha256": "ee8bf58ecb98548d236b54f774e948139fff0659c3479b6586b3243142daa5b6",
+      "validation": "serving_v0523/candidates/v102_v64_graph_grouped_prefill/validation.json",
+      "official_result": null
+    }
+  },
+  "synthetic_guarded_vs_v99": {
+    "stationary_0.60": {
+      "8": 1.0100184882246463,
+      "64": 1.0041906236443685
+    },
+    "stationary_0.70": {
+      "8": 1.0225136551418195,
+      "64": 1.0321594098530171
+    },
+    "stationary_0.80": {
+      "8": 1.018170810461737,
+      "64": 1.0411715492895728
+    },
+    "stationary_0.94": {
+      "8": 0.993108058389773,
+      "64": 1.0006235686197769
+    },
+    "alternate_1_calls": {
+      "8": 1.0724329039872735,
+      "64": 1.1115609013545042
+    },
+    "alternate_8_calls": {
+      "8": 0.9991147272887003,
+      "64": 0.9917975918218703
+    }
+  },
+  "synthetic_test_scope": "4,096 paired request seeds on a fixed 60/40 proposal lattice. Ratios count committed tokens per target call. Hardware step time and real request statistics remain unknown.",
+  "replay_provenance": {
+    "proposal_replay": "serving_v0523/candidates/v101_adaptive_draft_spine/paired_endpoint_tie.json",
+    "actual_guard_kernel_checks": "serving_v0523/candidates/v101b_endpoint_guarded_spine/guard_cpu.json",
+    "actual_kernel_source_aot": "serving_v0523/candidates/v101b_endpoint_guarded_spine/sm90.json",
+    "actual_kernel_interpreter": "serving_v0523/candidates/v101b_endpoint_guarded_spine/interpreter.json"
+  },
+  "runner": {
+    "receipt": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "pid_at_launch": 35803,
+    "opens": "2026-11-19T00:03:00+00:00",
+    "regression_tests": 60,
+    "nov18_regression_tests": 26,
+    "quota_used_when_armed": 0,
+    "when_v93_queued_or_running": "V102/16 on confirmed V64; V79a/16 when inherited gates permit",
+    "when_v93_passes": "V98/16 and V101b/16 when inherited gates permit",
+    "slot_one": "V89/4 after V87 pass, V100c/32 while V87 pending and V64 passes, V80a/16 after confirmed V87 failure or skip"
+  },
+  "outstanding_at_1045_utc": {
+    "V87/4": "00c134c978104d65",
+    "V88/4": "30bb36feb528416f",
+    "V93/16": "75557c21595347de"
+  }
+}

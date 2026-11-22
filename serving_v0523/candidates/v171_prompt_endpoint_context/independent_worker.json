@@ -1,0 +1,42 @@
+{
+  "cases": 351,
+  "accelerated": 27,
+  "fallback": 324,
+  "checked_normalized_bf16_elements": 3340224,
+  "sources": {
+    "layers/dflash_context_projection.py": "b3f1d4f2d35aa398456cf7e93309088e93e156a63756bdf8cfc2baca24b7899b",
+    "layers/layernorm.py": "dca150fc6e2c469d036633d0abd1b39d95480b8ade6c2f2e5260c6240c49d68e",
+    "models/dflash.py": "1c8307ba7f63fd41f53435fbdabdad8c9e9a04847bef4959f1f8fc16ea6db0ae",
+    "speculative/dflash_worker_v2.py": "3809671559a7bf58bcec868d5ec1a3b87a1cda98442963e7dba345fd166d197e",
+    "model_executor/runner/prefill_cuda_graph_runner.py": "8d8f328992f94285d6d2d3c01fe05604e28e2d8c08486f3e8f3356f44ba6c807",
+    "models/muse_spark.py": "c9f3eb10ab59ea812fe3f05d6095a8b3079005d3a80ec83f7eefe5d25830a972"
+  },
+  "physical_h200": false,
+  "torch": "2.5.1",
+  "tags": [
+    "normal",
+    "short",
+    "disabled",
+    "capture",
+    "external",
+    "logprob",
+    "norm_hook",
+    "fc_hook",
+    "override_prune",
+    "quantized_norm",
+    "norm_dispatch",
+    "mis",
+    "setwise"
+  ],
+  "modes": [
+    "eager",
+    "full",
+    "breakable"
+  ],
+  "group_sizes": [
+    2,
+    4,
+    8
+  ],
+  "limitations": "Host oracle replays the worker and norm using PyTorch CPU; peer ranks and CUDA cache writers are simulated."
+}

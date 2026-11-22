@@ -1,0 +1,7 @@
+# Independent prompt KV review
+
+The prefill caller passes its GPU extend lengths, computed positions and the exact draft-pool slots returned by the existing KV plan. The worker trims alignment padding before choosing slabs and forwards identical slices of all three row arrays. Decode verification supplies a two-dimensional slot table with per-request commit lengths and stays on its original route. Draft hidden projection is the registered DFlash2 model’s ordinary replicated, unquantized dense FC and row-local RMSNorm. The stacked projection and subsequent scatter are local to each draft rank, so a rank taking an instrumentation fallback does not change collective order.
+
+The final guard checks the native BF16 NHD pool and its live pointer tables, excludes quantized stores, asynchronous assertions and a replaced storage method, and returns to the ordinary path in Dynamo, CUDA capture, deterministic modes and with local or global forward hooks. Complete eight-row groups use the existing V104 kernel with each group’s length fixed at eight. A final one through seven rows retain the ordinary pool writer. The direct kernel’s arithmetic is byte-identical to V104. Numerical agreement on the official checkpoint, H200 allocation peaks and TTFT still require measurement because the FC and stacked BF16 GEMM row counts change.
+
+Reviewed frozen export `4b4ab2f797c8580ed24a7eec28525f728fa1824d559b26c1020e9f22e26713f3`. [Frozen source](delta.diff) · [CPU prompt tests](prompt_cpu.json) · [Unchanged kernel hashes](kernel_bytes.json) · [Export receipt](validation.json)

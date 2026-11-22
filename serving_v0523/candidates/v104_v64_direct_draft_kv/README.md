@@ -1,0 +1,25 @@
+# V104 direct draft KV writes
+
+V104 integrates five prefix-valid draft cache writes into the existing stacked K normalization and rotary kernel. It adds `--speculative-dflash-direct-prefix-kv` to the measured V64 launch flags. The flag defaults off. The full patch SHA-256 is `6747155fe16b33f758b0fb5b9ac1e1be9453df721b130c3bb99da4ad3d53db04`. [Full patch](patch.diff) · [Three-file change from V64](delta.diff) · [Exact flags and export](validation.json)
+
+## Measured-parent path
+
+The scored V64 launch allocated BF16 **draft** KV and FP8 **target** KV on every rank. After target verification, the native DFLASH worker passes the target-confirmed lengths and draft-translated physical slot IDs to its prefix-valid append routine. The native draft has five full-precision projection layers, ordinary RMSNorm, NeoX rotary embedding and one local KV head of width 128 at TP8. Its plain MHA draft pool uses the default NHD layout. The judge’s public logs record memory and acceptance but contain no per-kernel timing or direct-path invocation counter. [Scored V64 log](../../runs/abd217baf0ed49fd.log) · [Official draft configuration](https://huggingface.co/RadixArk/Muse-Spark-Open-DFlash2/blob/main/config.json)
+
+The stacked projection GEMM runs over the identical input and weight tensors. Each normalization program reads its request's commit length before accessing its position, projection or physical write slot. The stock writer discards the same rows outside that prefix. For the remaining rows, the same kernel body computes K with ordinary RMSNorm and RoPE, rounds K to BF16, and writes K and V directly into the pool's per-layer buffers. The established target verification, length/bonus publication, draft index translation and CUDA-stream ordering remain in the original worker.
+
+At 16 requests, width eight and four committed tokens per verification, this replaces six kernel launches with one. It removes 320 KiB of BF16 intermediate writes and 160 KiB of intermediate reads across five layers on each rank. The pool receives the same 160 KiB of committed K/V in both versions. The estimate counts logical intermediate traffic; the actual HBM traffic and wall-time benefit require a GPU trace.
+
+## Eligibility and precision
+
+The writer checks the concrete MHA pool implementation, NHD shape, both K/V widths and dtypes, contiguous per-layer buffers, rank-local layer order, and the pointers' dtype and device. It requires CUDA compute capability 9 or later with BF16 projections. It rechecks the pool and both pointer-table identities before writing. CUDA VMM post-capture finalization changes the backed extent at fixed virtual addresses. Noncontiguous request metadata, changed pool identity, other layouts and unsupported dtypes run the established materialize-and-callback path.
+
+The BF16 pool directly stores the same rounded K and source V. The optional FP8 E4M3 path additionally requires all live scale values to be ordinary unit host scalars on every invocation. It reproduces the stock FP32 reciprocal multiplication, BF16 rounding, NaN-preserving saturation and FP8 conversion. A negative-NaN byte comparison caught an earlier version that omitted the FP32/BF16 conversion. Mutable tensor scales or non-unit scales run the existing pool writer.
+
+A CPU execution of the two production Triton paths matched all 1,483,968 cache bytes, including untouched regions, across 32 BF16/FP8 cases and 1,154 valid head rows. It covered zero, full and partial commits, invalid sentinel addresses in discarded rows, separate layer pointers, partial rotary dimensions, two signed zeros, signed NaNs, infinities, saturation and near-boundary values. A second fixture exercised 40 setup decisions and 22 calls through the real worker, real BF16 matrix multiplication and callback dispatch. [Cache byte comparison](bytes_cpu.json) · [Worker and eligibility tests](host_dispatch.json)
+
+Sixteen final-source SM90 specializations assembled without spills, covering BF16 and FP8 caches, one or two local KV heads, full or partial rotation, and BF16 or FP32 rotary tables. For one head with 128 channels and full BF16 rotary, the direct BF16 writer used 28 registers, the FP8 writer 30, and the stock workspace specialization 25. [Hopper compilation](sm90.json)
+
+The unmodified Triton 3.8 CPU interpreter also produced byte-identical BF16 caches in all three geometry cases. Its FP8 comparison stopped inside the original stock writer because the interpreter lacks a BF16 scalar-constant primitive. FP8 evidence comes from the paired Torch-byte test and Hopper compilation. [Interpreter result](interpreter.json)
+
+The official exporter produced 55,580 bytes over 12 allowed Python files. The patch applies and reverses from pinned SGLang, and recomposing V64 plus the delta reproduces it byte for byte. All five launch flags passed the fixed-pattern audit. H200 correctness, throughput, TTFT and peak memory require an official run. [Validation receipt](validation.json) · [Serving rules](../../RULES.md)

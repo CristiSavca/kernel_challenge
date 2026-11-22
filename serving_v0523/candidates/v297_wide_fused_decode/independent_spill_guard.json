@@ -1,0 +1,108 @@
+{
+  "source_sha256": "4e6d8950c64fa6f610a30e06a168614b98c3b7e66d9357e03d60fec07a24911b",
+  "samples": [
+    {
+      "image": "w13_m16_n512",
+      "assembly_sha256": "8cb11d9437dcbb91102d3f695c7fe5126e499abdc2303b276697d27bff016b35",
+      "rows": 16,
+      "stages": 4,
+      "accepted": true,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 64,
+        "HGMMA.64x16x16.F32.BF16": 64,
+        "WARPGROUP.DEPBAR.LE": 32,
+        "LDL": 0,
+        "STL": 0
+      }
+    },
+    {
+      "image": "w2_m16_n256",
+      "assembly_sha256": "09348eeba8e448b7f38b57f018af368bafce2799169cd0bef2f6819d0cdf5dfe",
+      "rows": 16,
+      "stages": 3,
+      "accepted": true,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 48,
+        "HGMMA.64x16x16.F32.BF16": 48,
+        "WARPGROUP.DEPBAR.LE": 24,
+        "LDL": 0,
+        "STL": 0
+      }
+    },
+    {
+      "image": "w13_m24_n512",
+      "assembly_sha256": "1c154cde765aa92abee9d759fa5a8ff39cbb1de9cfcb651359b9028134939243",
+      "rows": 24,
+      "stages": 4,
+      "accepted": true,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 64,
+        "HGMMA.64x16x16.F32.BF16": 64,
+        "HGMMA.64x24x16.F32.BF16": 64,
+        "WARPGROUP.DEPBAR.LE": 48,
+        "LDL": 0,
+        "STL": 0
+      }
+    },
+    {
+      "image": "w2_m24_n256",
+      "assembly_sha256": "a518a8a8dc1b538a6cdc77bab17fd4958949a21356fa3597e47984ac32e50ed7",
+      "rows": 24,
+      "stages": 3,
+      "accepted": true,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 48,
+        "HGMMA.64x16x16.F32.BF16": 48,
+        "HGMMA.64x24x16.F32.BF16": 48,
+        "WARPGROUP.DEPBAR.LE": 36,
+        "LDL": 0,
+        "STL": 0
+      }
+    },
+    {
+      "image": "w13_m16_n512_s3r96_single",
+      "assembly_sha256": "4c0614d12b76889b75fb7e960daec73d65b4c4f9be49bd369d71aece06ae97d6",
+      "rows": 16,
+      "stages": 3,
+      "accepted": false,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 48,
+        "HGMMA.64x16x16.F32.BF16": 48,
+        "WARPGROUP.DEPBAR.LE": 24,
+        "LDL": 39,
+        "STL": 47
+      }
+    },
+    {
+      "image": "w13_m24_n512_s3r112_single",
+      "assembly_sha256": "1961457689fe1c24f6af46e022b50a22b34d2c38875c170248aed835dbae4eb0",
+      "rows": 24,
+      "stages": 3,
+      "accepted": false,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 48,
+        "HGMMA.64x16x16.F32.BF16": 48,
+        "HGMMA.64x24x16.F32.BF16": 48,
+        "WARPGROUP.DEPBAR.LE": 36,
+        "LDL": 45,
+        "STL": 46
+      }
+    },
+    {
+      "image": "w13_m24_n512_s4r112_single",
+      "assembly_sha256": "552f24d17fecce99ded0295b05a3ad9cab4c7329e0ad5d716783f541a271c98b",
+      "rows": 24,
+      "stages": 4,
+      "accepted": false,
+      "opcode_counts": {
+        "HGMMA.64x8x16.F32.BF16": 64,
+        "HGMMA.64x16x16.F32.BF16": 64,
+        "HGMMA.64x24x16.F32.BF16": 64,
+        "WARPGROUP.DEPBAR.LE": 48,
+        "LDL": 83,
+        "STL": 69
+      }
+    }
+  ],
+  "meaning": "Compiled, spill-heavy alternatives have the required HGMMA and drain counts. The final startup predicate rejects them and selects the original narrow path. The four selected wide images pass. Histograms reproduce the admission result after the binaries are retired."
+}

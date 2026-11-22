@@ -1,0 +1,102 @@
+{
+  "updated_at_utc": "2026-11-16T14:33:23.218126+00:00",
+  "objective": "Integrate V64+V62; pursue larger decode gains toward 2x then 3x while preserving serving rules.",
+  "incumbent": {
+    "candidate": "V44",
+    "job": "c3b7bd142c264853",
+    "score": 1.1847,
+    "passed": true,
+    "peak_over_stock_gb": 1.8
+  },
+  "observation": "No new H200 measurements for V65-V68. V44 one-user check is running; V50/V53/V55/V56 remain queued.",
+  "diagnosis": "Compiler/CPU and source proofs cannot show serving throughput. Grouped decode retains indexed tile geometry and packed-weight traffic; opportunity is TMA data delivery and fewer launches, not skipped expert math.",
+  "coordination": {
+    "root": "Frozen V65 and V68 composition, exact CLI exports, combined CPU suites, runner mocks and process replacement.",
+    "perf_scan": "V66 grouped decode implementation and separate V67 source review.",
+    "memory_candidate": "V67 cache capacity repair, allocation proof, tree feasibility and exact CPU masks/commit design.",
+    "dense_critic": "Independent source, rules, scheduler, planner, combined CPU and runner reviews."
+  },
+  "candidates": {
+    "v65": {
+      "path": "serving_v0523/candidates/v65_grouped_sp_verify_attention/patch.diff",
+      "sha256": "80e41ae32e748857053f553359f4d555cbe983534cff465f4910551723c30337",
+      "bytes": 62373
+    },
+    "v66": {
+      "path": "serving_v0523/candidates/v66_humming_grouped_decode/patch.diff",
+      "sha256": "1032101b0fbdf8ccc8a5e0b858b6c507a1b9958ac7a0996344a7ca29a8d2c6fd",
+      "bytes": 61072
+    },
+    "v67": {
+      "path": "serving_v0523/candidates/v67_dflash_verify_capacity/patch.diff",
+      "sha256": "fbdcc9ff342a6bb0066b373ba7a659de4ba3a6bda3791d0f2cf57839e7a7ea57",
+      "bytes": 68665
+    },
+    "v68": {
+      "path": "serving_v0523/candidates/v68_grouped_decode_verify/patch.diff",
+      "sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+      "bytes": 85080
+    }
+  },
+  "experiment": {
+    "date": "2026-11-17T00:03:00Z",
+    "ordered_candidates": [
+      "V64",
+      "V62",
+      "V68"
+    ],
+    "users": 16,
+    "changed_from": "V64,V62,V60; replace only unsent V60 after V68 review",
+    "existing_queue_unchanged": true,
+    "hypothesis": "GPU-only grouped decode and fusion improve TMA transport and launch overhead enough to beat mapping/gather costs; combined prefill/attention contribute separately.",
+    "usefulness_gate": "All correctness/later-turn/token-count, +2GB peak and <=2x TTFT gates, then >=5% over stronger passing component at the same load.",
+    "kill_or_pivot": "Any judge correctness/memory/TTFT/capture failure blocks scoring. A regression requires a concrete source diagnosis or different design before another check.",
+    "upper_bound": "Unknown without measured phase shares. Same packed weight bytes and tile counts rule out a data-volume-based 2x decode claim; no component gain is multiplied into the full frontier score.",
+    "two_x_or_three_x_measured": false
+  },
+  "tree_search": {
+    "state": "Design and CPU proof only, no production patch",
+    "finding": "Trained depth7 caps committed tokens at8; native SWA tree ABI expands page tables and commit assumes contiguous rows. Need exact packed-mask attention and ordered path KV/auxiliary remap. Illustrative acceptance scenarios are not measured selector entropy."
+  },
+  "validation": {
+    "v65": "candidates/v65_grouped_sp_verify_attention/validation.json",
+    "v66": "candidates/v66_humming_grouped_decode/independent_review.json",
+    "v67": "candidates/v67_dflash_verify_capacity/README.md",
+    "v68": "candidates/v68_grouped_decode_verify/validation.json",
+    "rules": "candidates/v65_grouped_sp_verify_attention/rules_audit.md",
+    "runner_cpu": "runs/nov17_integrated_runner.cpu.json",
+    "runner_review": "runs/nov17_integrated_runner.review.json"
+  },
+  "launch": {
+    "started_at": "2026-11-16T14:30:00.165676+00:00",
+    "pid": 84529,
+    "caffeinate_pid": 84530,
+    "script_sha256": "10e91ed68e614d87bc5ba5913ca5a6b11883e00c44b6147ceb57f0fe0a55d42c",
+    "starts_utc": "2026-11-17T00:03:00Z",
+    "ends_utc": "2026-11-17T23:30:00Z",
+    "scope": "three private 16-user checks: V64,V62,V68; no scored endpoint",
+    "superseded": {
+      "pid": 23738,
+      "caffeinate_pid": 23739,
+      "script_sha256": "d316ede39df785c8e8311e53412685f37d197a447159e86b157aa8ce1143a49a",
+      "verified_stopped": true,
+      "reason": "Prioritize reviewed integrated decode candidate V68 over unsubmitted V60; retain component controls and all existing queued jobs."
+    }
+  },
+  "collector_pid": 54869,
+  "costs": {
+    "paid_gpu": 0,
+    "new_checks_submitted_this_iteration": 0,
+    "new_scores_submitted": 0
+  },
+  "cleanup_ledger": "serving_v0523/runs/v65_v68_cleanup.json",
+  "open_gates": [
+    "H200 compile and cubin resources",
+    "capture/replay with changing routes",
+    "NCCL and rounding agreement",
+    "first/later-turn output counts",
+    "peak memory and TTFT",
+    "16-user component attribution",
+    "all-load serving frontier"
+  ]
+}

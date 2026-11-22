@@ -1,0 +1,116 @@
+{
+  "state": "ARMED_WAITING_FOR_UTC_WINDOW",
+  "at": "2026-11-18T08:10:31.954079+00:00",
+  "pid": 16624,
+  "caffeinate_pid": 16649,
+  "replaced_pid": 17344,
+  "exclusive_lock_verified": true,
+  "arm_submissions": 0,
+  "scored_actions": 0,
+  "script_sha256": "2d27c3855113333bbbc10b75f87fb150dd2a177de775153c5e71a9186cf51dab",
+  "regression_tests": 39,
+  "imported_nov17_helper_sha256": "b04830f38a89cf0bb00f65a44bba504e8f9dad4205d4fefe02a80c616ce4028f",
+  "imported_nov18_helper_sha256": "867e850280d53c9665cde4ae3698f12f0931fd8e82953f1913d5122e95929117",
+  "start_utc": "2026-11-19T00:03:00+00:00",
+  "end_utc": "2026-11-19T22:00:00+00:00",
+  "quota_reset": "2026-11-20T00:00:00Z",
+  "v68_job": "04b01f958aa5487c",
+  "optional_parent_receipts": [
+    "v72a_nov18_check16",
+    "v76a_nov18_check16"
+  ],
+  "allow_pending_parents": true,
+  "reserve_checks": 0,
+  "maximum_private_checks": 3,
+  "checks": [
+    {
+      "alternatives": [
+        {
+          "candidate": "v89",
+          "users": 4,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": "",
+            "--speculative-dflash-compact-context": "",
+            "--speculative-dflash-fused-candidate-head": ""
+          },
+          "sha256": "e20ea10ed16c9b4dec6e0d4c834ef44c086f5cbf468ee6574a5a258800da6e18"
+        },
+        {
+          "candidate": "v80a",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": ""
+          },
+          "sha256": "9c6cf15326e1fbda08159c6d20d6dc1c23150695738453df15d60ace3b2d3864"
+        }
+      ],
+      "decision_receipt": "v87_nov18_check4",
+      "when_queued_running_or_passed": "v89",
+      "when_failed_or_skipped": "v80a",
+      "when_unknown": "defer this slot"
+    },
+    {
+      "alternatives": [
+        {
+          "candidate": "v98",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25",
+            "--speculative-dflash-tree": "",
+            "--speculative-dflash-tp-context-projection": "",
+            "--speculative-dflash-tp-conv-projection": "",
+            "--speculative-dflash-compact-context": "",
+            "--speculative-dflash-fused-candidate-head": "",
+            "--speculative-dflash-reduced-target-argmax": ""
+          },
+          "sha256": "c1b8ffcd56c3fbb3c80ae008ab0f10bfe8f9d601ac6822f8d1a27d5c7aad2525"
+        },
+        {
+          "candidate": "v95",
+          "users": 16,
+          "flags": {
+            "--enable-layernorm-sp": "",
+            "--moe-runner-backend": "humming",
+            "--speculative-moe-runner-backend": "marlin",
+            "--swa-full-tokens-ratio": "0.25"
+          },
+          "sha256": "e9359287a5e70dff46449743557bf4622c121ae7adb0c36c119a1b2d7ca311e9"
+        }
+      ],
+      "decision_receipt": "v93_nov18_check16",
+      "v93_job": "75557c21595347de",
+      "when_v93_admitted_and_shared_parents_eligible": "v98",
+      "when_v93_or_v68_failed": "v95",
+      "when_unknown": "defer this slot"
+    },
+    {
+      "candidate": "v79a",
+      "users": 16,
+      "flags": {
+        "--enable-layernorm-sp": "",
+        "--moe-runner-backend": "humming",
+        "--speculative-moe-runner-backend": "marlin",
+        "--swa-full-tokens-ratio": "0.25",
+        "--speculative-dflash-tree": "",
+        "--speculative-dflash-tp-context-projection": "",
+        "--speculative-num-draft-tokens": "12"
+      },
+      "sha256": "28690547fa3a3d52a05c1d4385c48906979b21ac52b4533d42e2cdbc4cfd94b1"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "archive": "experiments/modal_node/20261113T204343Z-bench",
+  "archive_substrate": "V41, eight H200, SP disabled. Only recorded prompt sizes are reused.",
+  "source_threshold": "V64 grouped route threshold of 256 routes per global expert",
+  "rows": {
+    "1": {
+      "all_prompt_calls": 54,
+      "live_prompt_rows": 303536,
+      "eligible_at_live_shape": 17,
+      "eligible_live_rows": 268481,
+      "eligible_at_captured_shape": 17,
+      "eligible_captured_rows": 269312
+    },
+    "4": {
+      "all_prompt_calls": 127,
+      "live_prompt_rows": 669797,
+      "eligible_at_live_shape": 35,
+      "eligible_live_rows": 571372,
+      "eligible_at_captured_shape": 35,
+      "eligible_captured_rows": 571392
+    },
+    "16": {
+      "all_prompt_calls": 241,
+      "live_prompt_rows": 1415564,
+      "eligible_at_live_shape": 75,
+      "eligible_live_rows": 1228800,
+      "eligible_at_captured_shape": 75,
+      "eligible_captured_rows": 1228800
+    },
+    "32": {
+      "all_prompt_calls": 351,
+      "live_prompt_rows": 2825080,
+      "eligible_at_live_shape": 150,
+      "eligible_live_rows": 2455793,
+      "eligible_at_captured_shape": 150,
+      "eligible_captured_rows": 2456064
+    }
+  },
+  "uniform_model": {
+    "assumptions": "Eight distinct expert IDs sampled uniformly per token. All ranks pass the size and scratch gates.",
+    "expected_unique_owners": 5.294652000382479,
+    "full_chunk_baseline_remote_B_per_rank_per_layer": 117440512,
+    "full_chunk_expected_sparse_remote_B_per_rank_per_layer": 77725830.22334282,
+    "full_chunk_expected_saved_B_per_rank_per_layer": 39714681.77665718,
+    "full_chunk_metadata_mask_payload_per_gathering_rank_B": 114695,
+    "equivalent_time_us_at_assumed_effective_GB_s": {
+      "150": 264.7645451777145,
+      "300": 132.38227258885726,
+      "450": 88.25484839257152
+    }
+  },
+  "seeded_uniform_split_decisions": {
+    "8192": {
+      "trials": 64,
+      "production_destination_width_histogram": [
+        [
+          2,
+          54
+        ],
+        [
+          4,
+          10
+        ]
+      ],
+      "mean_remote_MiB_per_rank_on_sparse_rounds": 37.06126403808594,
+      "all_owners_and_one_hot_owner": "dense fallback"
+    },
+    "16384": {
+      "trials": 64,
+      "production_destination_width_histogram": [
+        [
+          2,
+          28
+        ],
+        [
+          4,
+          36
+        ]
+      ],
+      "mean_remote_MiB_per_rank_on_sparse_rounds": 74.11087036132812,
+      "all_owners_and_one_hot_owner": "dense fallback"
+    }
+  },
+  "hardware_timing": false
+}

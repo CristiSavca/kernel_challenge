@@ -1,0 +1,74 @@
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 36911de..3c692f5 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -541,6 +541,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         *,
+         input_row_map=None,
+         local_route_count=None,
++        window_token_count=None,
+     ) -> None:
+         from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
+             compact_prefill_and_combine,
+@@ -550,7 +551,7 @@ class MuseSpark1xFp4Experts(nn.Module):
+         if self.humming_prefill_silu is not None:
+             compact_prefill_and_combine(
+                 self, hidden_states, local_topk_ids, topk_scores, output,
+-                input_row_map=input_row_map, local_route_count=local_route_count,
++                input_row_map=input_row_map, local_route_count=local_route_count, window_token_count=window_token_count,
+             )
+             return
+ 
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index 8eebc1d..2b63bc5 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -482,14 +482,16 @@ def humming_grouped_expert_outputs(
+     return outputs, mapped_rows
+ 
+ 
+-def _compact_prefill_windows(local_ids, local_experts, global_experts, local_route_count=None):
++def _compact_prefill_windows(local_ids, local_experts, global_experts, local_route_count=None, window_token_count=None):
+     # Take one eager host snapshot, as in the grouped path's offsets[0].item().
+     # The bound admits any single tile; uneven rank loads need no device retries.
+     tokens, topk = local_ids.shape
+     tile_tokens = 128
+     slots_per_tile = tile_tokens * topk
+     slots = tokens * topk
+-    expected = (slots * local_experts + global_experts - 1) // global_experts
++    # Keep the original grouped arena budget after dropping tokens without local routes.
++    budget_slots = slots if window_token_count is None else window_token_count * topk
++    expected = (budget_slots * local_experts + global_experts - 1) // global_experts
+     capacity = expected + max(slots_per_tile, (expected + 7) // 8)
+     if local_route_count is not None and local_route_count <= capacity:
+         if tokens:
+@@ -510,14 +512,14 @@ def _compact_prefill_windows(local_ids, local_experts, global_experts, local_rou
+ 
+ 
+ def compact_prefill_and_combine(
+-    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None
++    layer, hidden_states, local_ids, scores, output, *, input_row_map=None, local_route_count=None, window_token_count=None
+ ):
+     from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
+         fused_post_expert_norm_weighted_sum,
+     )
+ 
+     for begin, end, live in _compact_prefill_windows(
+-        local_ids, layer.num_local_experts, layer.global_num_experts, local_route_count
++        local_ids, layer.num_local_experts, layer.global_num_experts, local_route_count, window_token_count
+     ):
+         if live == 0:
+             output[begin:end].zero_()
+diff --git a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+index bb55409..b32a8a3 100644
+--- a/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
++++ b/python/sglang/srt/layers/muse_spark/sparse_prompt_exchange.py
+@@ -141,7 +141,7 @@ def _prompt_experts_into(experts, shard, scores, ids, group, output):
+         compact_scores = scores.index_select(0, live_rows)
+         # Grouped projection stages its inputs before the finalizer writes them back.
+         experts._grouped_humming_and_combine_impl(
+-            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count
++            inputs, compact_ids, compact_scores, inputs, local_route_count=local_route_count, window_token_count=tokens
+         )
+         _return_partials(inputs, needs, counts, width, group, output)
+     else:

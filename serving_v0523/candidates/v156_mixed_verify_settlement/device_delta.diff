@@ -1,0 +1,248 @@
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 27b845e..5629ea3 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -2333,6 +2333,243 @@ class DFlashWorkerV2(BaseSpecWorker):
+     ) -> DFlashDraftInputV2:
+         return make_draft_input_v2(bonus_tokens=bonus_tokens, new_seq_lens=new_seq_lens)
+ 
++    def can_settle_mixed_verify(
++        self, prompt_batch: ScheduleBatch, decode_batch: ScheduleBatch
++    ) -> bool:
++        """Check both roles on their original metadata, before the target forward."""
++        parallel = get_parallel()
++        runner = self.target_worker.model_runner
++        if (
++            not is_cuda()
++            or parallel.pp_size != 1
++            or parallel.dp_size != 1
++            or parallel.attn_cp_size != 1
++            or parallel.attn_dcp_size != 1
++            or self.lilicorr is not None
++            or self._is_domino
++            or self._need_mamba_verify_commit
++            or self.use_compact_draft_cache
++            or self._selector_sample is not None
++            or SIMULATE_ACC_LEN > 0
++            or runner.sampling_observer is not None
++            or runner.ngram_embedding_manager.enabled
++            or prompt_batch.forward_mode != ForwardMode.EXTEND
++            or decode_batch.forward_mode != ForwardMode.DECODE
++        ):
++            return False
++
++        for batch in (prompt_batch, decode_batch):
++            info = batch.sampling_info
++            if (
++                not batch.reqs
++                or not batch.spec_algorithm.is_dflash()
++                or batch.is_prefill_only
++                or batch.return_hidden_states
++                or batch.beam_tail is not None
++                or info is None
++                or not self._can_skip_verify_logits(batch, info)
++                or info.has_watermark_candidates
++                or info.acc_additive_penalties is not None
++                or info.acc_scaling_penalties is not None
++                or info.sampling_support_logprobs_capture_indices is not None
++                or any(grammar is not None for grammar in (info.grammars or ()))
++                or any(
++                    req.beam_group is not None
++                    or req.return_routed_experts
++                    or req.return_indexer_topk
++                    or req.return_sampling_mask
++                    for req in batch.reqs
++                )
++            ):
++                return False
++        return True
++
++    def forward_mixed_verify(
++        self,
++        *,
++        mixed_batch: ScheduleBatch,
++        prompt_batch: ScheduleBatch,
++        decode_batch: ScheduleBatch,
++        prompt_forward_batch: ForwardBatch,
++        on_publish=None,
++    ):
++        """Settle a prepared EXTEND; return None before target work when ineligible."""
++        from sglang.srt.managers.utils import MixedDFlashResult
++
++        if not self.can_settle_mixed_verify(prompt_batch, decode_batch):
++            return None
++        p, t = len(prompt_batch.reqs), len(decode_batch.reqs)
++        width = int(self.block_size)
++        reqs = prompt_batch.reqs + decode_batch.reqs
++        lengths = mixed_batch.extend_lens
++        if (
++            len(mixed_batch.reqs) != len(reqs)
++            or len({id(req) for req in reqs}) != len(reqs)
++            or any(a is not b for a, b in zip(mixed_batch.reqs, reqs))
++            or prompt_batch.decoding_reqs
++            or mixed_batch.forward_mode != ForwardMode.EXTEND
++            or prompt_forward_batch.forward_mode != ForwardMode.EXTEND
++            or prompt_forward_batch.sampling_info is not prompt_batch.sampling_info
++            or prompt_forward_batch.req_pool_indices is not prompt_batch.req_pool_indices
++            or prompt_forward_batch.seq_lens is not prompt_batch.seq_lens
++            or prompt_forward_batch.batch_size != p
++            or mixed_batch.hicache_consumer_index != prompt_batch.hicache_consumer_index
++            or mixed_batch.spec_info is not None
++            or lengths is None
++            or list(lengths[:p]) != prompt_batch.extend_lens
++            or list(lengths[p:]) != [width] * t
++            or mixed_batch.prefix_lens is None
++            or list(mixed_batch.prefix_lens[:p]) != prompt_batch.prefix_lens
++            or decode_batch.seq_lens.shape != (t,)
++            or decode_batch.seq_lens.dtype != torch.int64
++            or decode_batch.seq_lens_cpu is None
++            or decode_batch.seq_lens_cpu.device.type != "cpu"
++            or list(mixed_batch.prefix_lens[p:]) != decode_batch.seq_lens_cpu.tolist()
++        ):
++            return None
++        q = sum(lengths[:p])
++        total = q + t * width
++        if (
++            prompt_forward_batch.extend_num_tokens != q
++            or prompt_forward_batch.positions.shape != (q,)
++            or mixed_batch.extend_num_tokens != total
++            or mixed_batch.input_ids is None
++            or mixed_batch.input_ids.shape != (total,)
++            or mixed_batch.out_cache_loc is None
++            or mixed_batch.out_cache_loc.shape != (total,)
++        ):
++            return None
++        prefix_lens = decode_batch.seq_lens
++        if prefix_lens.is_cuda:
++            prefix_lens.record_stream(torch.cuda.current_stream(prefix_lens.device))
++        # The combined allocation and proposal belong to this actual call. Keep the
++        # native input window for acceptance, including width-1 rejected suffixes.
++        candidates = mixed_batch.input_ids[q:].reshape(t, width)
++        tail_positions = prefix_lens[:, None] + self._block_pos_offsets
++        positions = torch.cat((prompt_forward_batch.positions, tail_positions.flatten()))
++        self._wait_for_fused_hicache_load(mixed_batch)
++        target = self.target_worker.forward_batch_generation(
++            mixed_batch,
++            is_verify=True,
++            capture_hidden_mode=CaptureHiddenMode.FULL,
++            return_kv_loc_plan=True,
++            mixed_verify_prompt_count=p,
++        )
++        prompt_result, decode_result, next_input = self.settle_mixed_verify(
++            target_out=target,
++            prompt_forward_batch=prompt_forward_batch,
++            decode_sampling_info=decode_batch.sampling_info,
++            candidates=candidates,
++            prefix_lens=prefix_lens,
++            positions=positions,
++            on_publish=on_publish,
++        )
++        return MixedDFlashResult.from_role_results(
++            prompt_batch, decode_batch, prompt_result, decode_result, next_input
++        )
++
++    def settle_mixed_verify(
++        self,
++        *,
++        target_out: GenerationBatchResult,
++        prompt_forward_batch: ForwardBatch,
++        decode_sampling_info: SamplingBatchInfo,
++        candidates: torch.Tensor,
++        prefix_lens: torch.Tensor,
++        positions: torch.Tensor,
++        on_publish=None,
++    ):
++        """Consume one unsampled EXTEND in prompt-then-verify order on the forward stream."""
++        prompts = prompt_forward_batch.batch_size
++        prompt_rows = prompt_forward_batch.extend_num_tokens
++        tails = prefix_lens.numel()
++        width = int(self.block_size)
++        tail_rows = tails * width
++        output = target_out.logits_output
++        logits, hidden = output.next_token_logits, output.hidden_states
++        slots = self._draft_write_ids(target_out.kv_loc_plan)
++        if (
++            prompts <= 0
++            or tails <= 0
++            or prompt_rows is None
++            or prompt_rows < prompts
++            or candidates.shape != (tails, width)
++            or prefix_lens.shape != (tails,)
++            or prefix_lens.dtype != torch.int64
++            or prompt_forward_batch.seq_lens.shape != (prompts,)
++            or prompt_forward_batch.extend_seq_lens.shape != (prompts,)
++            or logits is None
++            or logits.shape != (prompts + tail_rows, decode_sampling_info.vocab_size)
++            or hidden is None
++            or hidden.ndim != 2
++            or hidden.shape[0] < prompt_rows + tail_rows
++            or positions.shape != (prompt_rows + tail_rows,)
++            or slots is None
++            or slots.shape != positions.shape
++        ):
++            raise ValueError("Inconsistent prompt and verify rows for mixed DFLASH settlement")
++
++        # ModelRunner.sample consumes only the ordinary prompt context. Verify must
++        # retain every raw target row until the native accept consumes the chain.
++        prompt_output = LogitsProcessorOutput(next_token_logits=logits[:prompts])
++        decode_output = LogitsProcessorOutput(next_token_logits=logits[prompts:])
++        prompt_ids = self.target_worker.model_runner.sample(prompt_output, prompt_forward_batch)
++        self._tp_sync.sync(SpecTpSyncSite.DFLASH_TARGET, prompt_ids)
++        _, commit_lens, bonus, out_tokens, tail_lens = self._accept_block(
++            candidates=candidates,
++            next_token_logits=decode_output.next_token_logits,
++            sampling_info=decode_sampling_info,
++            draft_input=None,
++            prefix_lens=prefix_lens,
++            bs=tails,
++        )
++        # The eligibility check excludes logprob and auxiliary consumers. Drop all
++        # vocab views here so the overlap result queue only retains sampled ids.
++        prompt_output.next_token_logits = None
++        decode_output.next_token_logits = None
++        output.next_token_logits = None
++        del logits
++        if tail_lens is None:
++            tail_lens = prefix_lens + commit_lens.to(prefix_lens.dtype)
++        next_draft_input = make_draft_input_v2(
++            bonus_tokens=torch.cat((prompt_ids, bonus)),
++            new_seq_lens=torch.cat((prompt_forward_batch.seq_lens, tail_lens)),
++        )
++        if on_publish is not None:
++            on_publish(next_draft_input.new_seq_lens)
++
++        self._append_target_hidden_to_draft_kv_by_loc(
++            target_hidden=hidden[:prompt_rows],
++            cache_loc=slots[:prompt_rows],
++            positions=positions[:prompt_rows],
++            extend_lens=prompt_forward_batch.extend_seq_lens,
++        )
++        tail_slots = slots[prompt_rows:].contiguous()
++        self._append_target_hidden_to_draft_kv_by_loc(
++            target_hidden=hidden[prompt_rows : prompt_rows + tail_rows],
++            cache_loc=tail_slots,
++            cache_loc_2d=tail_slots.view(tails, width),
++            positions=positions[prompt_rows:],
++            commit_lens=commit_lens,
++        )
++        output.hidden_states = None
++        target_out.kv_loc_plan = None
++        prompt_result = GenerationBatchResult(
++            logits_output=prompt_output,
++            next_token_ids=prompt_ids,
++            new_seq_lens=next_draft_input.new_seq_lens[:prompts],
++            can_run_cuda_graph=target_out.can_run_cuda_graph,
++        )
++        decode_result = GenerationBatchResult(
++            logits_output=decode_output,
++            next_token_ids=out_tokens.reshape(-1),
++            accept_lens=commit_lens,
++            new_seq_lens=next_draft_input.new_seq_lens[prompts:],
++            speculative_num_draft_tokens=width,
++            can_run_cuda_graph=target_out.can_run_cuda_graph,
++        )
++        return prompt_result, decode_result, next_draft_input
++
+     def forward_batch_generation(
+         self,
+         batch: ScheduleBatch,

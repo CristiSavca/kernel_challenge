@@ -1,0 +1,177 @@
+diff --git a/python/sglang/srt/speculative/dflash_mixed_graph_admission.py b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+new file mode 100644
+index 0000000..fc56040
+--- /dev/null
++++ b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+@@ -0,0 +1,171 @@
++"""Whole-cohort cost gate for a prepared DFLASH prompt/verification target forward."""
++from __future__ import annotations
++
++from dataclasses import dataclass
++
++import torch
++import torch.distributed as dist
++
++from sglang.srt.model_executor.forward_batch_info import CaptureHiddenMode, ForwardMode
++from sglang.srt.model_executor.runner.decode_cuda_graph_runner import DecodeCudaGraphRunner
++from sglang.srt.model_executor.runner.prefill_cuda_graph_runner import PrefillCudaGraphRunner
++from sglang.srt.runtime_context import get_parallel, get_schedule
++from sglang.srt.speculative.dflash_info import DFlashVerifyInput
++
++
++@dataclass(frozen=True)
++class DFlashMixedGraphPlan:
++    prompt_rows: int
++    verify_rows: int
++    mixed_rows: int
++
++
++def _has_live_extent(batch, rows, device):
++    return all(
++        t is not None and t.shape == (rows,) and t.device == device
++        for t in (batch.input_ids, batch.positions, batch.out_cache_loc)
++    )
++
++
++def plan_mixed_dflash_target(model_runner, prompt, verify, mixed, tail_reqs):
++    """Compare one combined target graph with the two original target graphs.
++
++    Call on the TP worker after native page-one reservation, overlap resolution and
++    construction of all three ForwardBatch views. The caller owns the mapping
++    from resolved positions to physical slots, prefix attention metadata and the
++    lifetime of the reservation. This method reads only host metadata and tensor
++    shapes. None preserves the caller's separated schedule.
++    """
++    prefill = model_runner.prefill_cuda_graph_runner
++    decode = model_runner.decode_cuda_graph_runner
++    parallel = get_parallel()
++    if (
++        not isinstance(prefill, PrefillCudaGraphRunner)
++        or not isinstance(decode, DecodeCudaGraphRunner)
++        or prefill.model_runner is not model_runner
++        or decode.model_runner is not model_runner
++        or model_runner.is_draft_worker
++        or not model_runner.spec_algorithm.is_dflash()
++        or model_runner.page_size != 1
++        or (parallel.dp_size, parallel.pp_size, parallel.attn_cp_size, parallel.attn_dcp_size) != (1, 1, 1, 1)
++        or not prefill._uses_eager_prefill_tail()
++        or prefill.enable_cp_bcg_capture
++        or decode.ragged_verify_mode
++        or decode.enable_pdmux
++        or decode.require_mlp_tp_gather
++        or decode.is_encoder_decoder
++        or decode.enable_two_batch_overlap
++    ):
++        return None
++
++    p, b, width = prompt.batch_size, verify.batch_size, decode.captured_req_width
++    info = verify.spec_info
++    if (
++        p < 1 or b < 1 or width < 2 or len(tail_reqs) != b
++        or mixed.batch_size != p + b or mixed.batch_size > prefill.max_bs
++        or prompt.forward_mode != ForwardMode.EXTEND or mixed.forward_mode != ForwardMode.EXTEND
++        or verify.forward_mode != ForwardMode.TARGET_VERIFY
++        or not isinstance(info, DFlashVerifyInput) or info.num_tokens_per_req != width
++        or info.draft_token_num != width or info.topk != 1 or info.custom_mask is not None
++        or info.ragged_verify_layout is not None
++        or prompt.spec_info is not None or mixed.spec_info is not None
++        or any(f.capture_hidden_mode != CaptureHiddenMode.FULL or f.return_logprob or f.is_prefill_only
++               or f.token_indices_to_pool is not None or f.contains_mm_inputs() for f in (prompt, verify, mixed))
++        or decode.capture_hidden_mode < verify.capture_hidden_mode
++        or prompt.extend_seq_lens_cpu is None or mixed.extend_seq_lens_cpu is None
++        or len(prompt.extend_seq_lens_cpu) != p
++        or any(type(n) is not int or n < 1 for n in prompt.extend_seq_lens_cpu)
++        or list(mixed.extend_seq_lens_cpu) != [*prompt.extend_seq_lens_cpu, *([width] * b)]
++        or prompt.extend_prefix_lens_cpu is None or mixed.extend_prefix_lens_cpu is None
++        or len(prompt.extend_prefix_lens_cpu) != p or len(mixed.extend_prefix_lens_cpu) != p + b
++        or list(mixed.extend_prefix_lens_cpu[:p]) != list(prompt.extend_prefix_lens_cpu)
++        or any(type(n) is not int or n < 0 for n in mixed.extend_prefix_lens_cpu)
++        or not prompt.rids or not verify.rids or not mixed.rids
++        or len(prompt.rids) != p or len(verify.rids) != b
++        or list(mixed.rids) != [*prompt.rids, *verify.rids]
++        or len(set(mixed.rids)) != p + b
++        or [req.rid for req in tail_reqs] != list(verify.rids)
++    ):
++        return None
++
++    if prompt.input_ids is None:
++        return None
++    device = prompt.input_ids.device
++    q = sum(prompt.extend_seq_lens_cpu)
++    schedule = get_schedule()
++    mixed_tokens = q + b * width
++    if (
++        (schedule.max_prefill_tokens and mixed_tokens > schedule.max_prefill_tokens)
++        or (schedule.chunked_prefill_size > 0 and mixed_tokens > schedule.chunked_prefill_size)
++        or not _has_live_extent(prompt, q, device)
++        or not _has_live_extent(verify, b * width, device)
++        or not _has_live_extent(mixed, q + b * width, device)
++        or any(f.kv_loc_plan is None or f.kv_loc_plan._source is not model_runner.kv_index_translator
++               for f in (prompt, verify, mixed))
++    ):
++        return None
++
++    for view in (prompt, mixed):
++        mirror = view.req_pool_indices_cpu
++        if (not isinstance(mirror, torch.Tensor) or mirror.device.type != "cpu"
++                or mirror.dtype not in (torch.int32, torch.int64) or mirror.shape != (view.batch_size,)):
++            return None
++        # _batch_max_context_len otherwise falls back to a device scalar read.
++        if prefill.max_context_size is not None or prefill.max_seq_len is not None:
++            lengths_cpu = view.seq_lens_cpu
++            if not isinstance(lengths_cpu, torch.Tensor) or lengths_cpu.device.type != "cpu":
++                return None
++    table_rows, context_capacity = model_runner.req_to_token_pool.req_to_token.shape
++    physical = mixed.req_pool_indices_cpu.tolist()
++    if (physical[:p] != prompt.req_pool_indices_cpu.tolist()
++            or physical[p:] != [req.kv.req_pool_idx for req in tail_reqs]
++            or len(set(physical)) != len(physical)
++            or any(row <= 0 or row >= table_rows for row in physical)):
++        return None
++    for req, prefix in zip(tail_reqs, mixed.extend_prefix_lens_cpu[p:]):
++        kv = req.kv
++        if (
++            type(kv.req_pool_idx) is not int or req.is_retracted or req.finished() or kv.kv_committed_len < 0
++            or not kv.kv_committed_len <= prefix <= kv.kv_committed_len + width
++            or not kv.kv_committed_len + 2 * width <= kv.kv_allocated_len <= context_capacity
++        ):
++            return None
++
++    if not all(prefill.can_run_graph(view) for view in (prompt, mixed)) or not decode.can_run_graph(verify):
++        return None
++    prompt_rows = prefill._pad_to_bucket(q, prefill.capture_num_tokens)
++    mixed_rows = prefill._pad_to_bucket(q + b * width, prefill.capture_num_tokens)
++    verify_bs = decode._pad_to_bucket(b, decode.capture_bs)
++    verify_rows = verify_bs * width
++    if mixed_rows > prompt_rows + verify_rows:
++        return None
++    # The native eligibility checks can admit a padded size before consulting the
++    # backend. Check the installed graph keys, including its real attention variant.
++    verify_key = decode._make_graph_key(
++        decode._capture_graph_size(bs=verify_bs, num_tokens=verify_rows),
++        variant_label=decode._resolve_lora_variant(verify),
++        attention_variant=decode._resolve_attention_variant(verify, verify_bs),
++    )
++    if not decode.backend.can_run(verify, verify_key) or not all(
++        prefill.backend.can_run(view, prefill._shape_key(n, view))
++        for view, n in ((prompt, prompt_rows), (mixed, mixed_rows))
++    ):
++        return None
++    return DFlashMixedGraphPlan(prompt_rows, verify_rows, mixed_rows)
++
++
++def agree_mixed_dflash_target(local_plan):
++    """All TP ranks call at the same scheduling point, including on a local decline."""
++    group = get_parallel().tp_group
++    if group.world_size == 1:
++        return local_plan
++    if local_plan is None:
++        values = [-1, -1, -1]
++    else:
++        values = [local_plan.prompt_rows, local_plan.verify_rows, local_plan.mixed_rows]
++    vote = torch.tensor(values + [-v for v in values], dtype=torch.int64, device="cpu")
++    dist.all_reduce(vote, op=dist.ReduceOp.MIN, group=group.cpu_group)
++    low_p, low_v, low_m, neg_p, neg_v, neg_m = vote.tolist()
++    if low_p < 0 or (low_p, low_v, low_m) != (-neg_p, -neg_v, -neg_m):
++        return None
++    return DFlashMixedGraphPlan(low_p, low_v, low_m)

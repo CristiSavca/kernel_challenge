@@ -1,0 +1,362 @@
+diff --git a/python/sglang/srt/layers/dflash_context_projection.py b/python/sglang/srt/layers/dflash_context_projection.py
+index 4545c39..ee1f97e 100644
+--- a/python/sglang/srt/layers/dflash_context_projection.py
++++ b/python/sglang/srt/layers/dflash_context_projection.py
+@@ -19,6 +19,107 @@ class _PrefillContext(NamedTuple):
+     logits_processor: nn.Module
+ 
+ 
++class DFlashVerifyFCGraph:
++    """Share raw verify taps across graph sizes and project a full-K FC shard."""
++
++    def __init__(self, context):
++        self.context = context
++        self.weight = context.fc.weight
++        self.weight_ptr = self.weight.data_ptr()
++        self.version = None if torch.is_inference(self.weight) else self.weight._version
++        self.active = True
++        self.local_weight = None
++        self.raw = None
++
++    def ready(self):
++        draft, fc, _, projector, _, _, _ = self.context
++        return (
++            self.active
++            and draft.fc is fc
++            and fc.weight is self.weight
++            and fc.weight.data_ptr() == self.weight_ptr
++            and (self.version is None or fc.weight._version == self.version)
++            and fc.weight.shape == (fc.out_features, fc.in_features)
++            and fc.weight.is_contiguous()
++            and fc.bias is None
++            and draft.project_target_hidden == projector
++            and not draft.quantizable
++            and not torch.is_autocast_enabled(fc.weight.device.type)
++            and not torch.are_deterministic_algorithms_enabled()
++            and not module_hooks._global_forward_hooks
++            and not module_hooks._global_forward_pre_hooks
++            and not fc._forward_hooks
++            and not fc._forward_pre_hooks
++            and "forward" not in vars(fc)
++            and getattr(fc, "_compiled_call_impl", None) is None
++        )
++
++    def prepare_capture(self, runner):
++        from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++        from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import FullCudaGraphBackend
++
++        context = self.context
++        eligible = (
++            self.ready()
++            and type(runner.backend) is FullCudaGraphBackend
++            and not runner.ragged_verify_mode
++            and not runner.enable_pdmux
++            and not runner.enable_two_batch_overlap
++            and not runner.enable_torch_compile
++            and not runner.model_runner.capture_head_hooks
++            and not runner.model_runner.capture_tail_hooks
++            and not is_batch_invariant_mode_enabled()
++            and not any(mod._forward_hooks or mod._forward_pre_hooks for mod in context.target.modules())
++            and all(
++                getattr(mod, "_compiled_call_impl", None) is None and "forward" not in vars(mod)
++                for mod in (context.target, context.target.model, context.target.model.language_model, context.logits_processor)
++            )
++        )
++        if not _agree(eligible, context.group):
++            return None
++        local_weight, raw = self.local_weight, self.raw
++        try:
++            if local_weight is None:
++                # Isolate peers from source changes, including partial draft loads.
++                width = context.fc.out_features // context.group.world_size
++                first = width * context.group.rank_in_group
++                with torch.inference_mode(False), torch.no_grad():
++                    local_weight = self.weight.narrow(0, first, width).clone()
++            if raw is None or raw.shape[0] < runner.max_num_token:
++                raw = self.weight.new_empty((runner.max_num_token, context.fc.in_features))
++            allocated = True
++        except torch.OutOfMemoryError:
++            allocated = False
++        if not _agree(allocated, context.group):
++            # Keep older graph storage valid. New local allocations made during
++            # this attempt have no published references and are released on exit.
++            return None
++        self.local_weight, self.raw = local_weight, raw
++        return self
++
++    def capture(self, output, batch):
++        # A precise raw-workspace alias also verifies that the native Muse body
++        # reached its direct writer. A wrapper replacing the taps cannot qualify.
++        raw = output.hidden_states
++        workspace = batch.dflash_verify_raw_buffer
++        if raw is workspace and raw is not None:
++            output.dflash_verify_fc_shard = torch.nn.functional.linear(raw, self.local_weight)
++
++    def complete_capture(self, output):
++        # Capture-time CPU consensus covers rank-local changes in returned shape
++        # or ownership. FullCudaGraphBackend retains this exact output object.
++        if not _agree(output.dflash_verify_fc_shard is not None, self.context.group):
++            output.dflash_verify_fc_shard = None
++
++    def finish(self, local, raw):
++        # Every rank must issue the same gather before consulting rank-local draft
++        # hooks or mutations. Clean peers' channel shards always use private weights.
++        full = self.context.group.all_gather(local, dim=-1)
++        if not self.ready():
++            return self.context.draft.project_target_hidden(raw)
++        return self.context.draft.hidden_norm(full)
++
++
+ class _PeerKVWeight(NamedTuple):
+     group: object
+     local_weight: torch.Tensor
+diff --git a/python/sglang/srt/layers/logits_processor.py b/python/sglang/srt/layers/logits_processor.py
+index c7c72f9..f5a0acb 100644
+--- a/python/sglang/srt/layers/logits_processor.py
++++ b/python/sglang/srt/layers/logits_processor.py
+@@ -295,6 +295,7 @@ class LogitsProcessorOutput:
+     # For the DFLASH worker consuming the native prefill capture on this rank.
+     dflash_prefill_context_done: bool = False
+     dflash_prefill_kv_projected: bool = False
++    dflash_verify_fc_shard: Optional[torch.Tensor] = None
+ 
+     def finalize_input_logprobs(self) -> None:
+         if self.input_logprobs_copy_done is None:
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index a01653a..0336633 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -833,6 +833,9 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     mixed_verify_logits_indices: Optional[torch.Tensor] = None
+     mixed_verify_sharded_logits: bool = False
+ 
++    # Shared raw tap matrix for serialized target verification graphs.
++    dflash_verify_raw_buffer: Optional[torch.Tensor] = None
++
+     def mark_forward_metadata_ready(self, replan_equivalent: bool = False):
+         """Record that attention metadata was pre-planned for this batch.
+ 
+diff --git a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+index dc70e10..a9ab8a2 100644
+--- a/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py
+@@ -843,6 +843,12 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         return max(request_counts)
+ 
+     def can_run_graph(self, forward_batch: ForwardBatch):
++        if (
++            getattr(self, "_verify_fc_capture", None) is not None
++            and not getattr(forward_batch.spec_info, "consumes_verify_context", False)
++        ):
++            # Other consumers may retain raw taps beyond this worker iteration.
++            return False
+         # Disable for token embedding overrides (dynamic per-request)
+         if forward_batch.replace_embeds is not None:
+             return False
+@@ -1254,6 +1260,8 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+         # Warm up + autotune kernels once before capture (run-once across the
+         # decode + prefill runners; see BaseRunner.warmup).
+         self.warmup()
++        verify_fc = getattr(self.model_runner, "dflash_verify_fc_graph", None)
++        self._verify_fc_capture = verify_fc.prepare_capture(self) if verify_fc is not None else None
+         # warmup() may disable torch.compile for a model whose _can_torch_compile
+         # is False; recompute the compile bucket so capture matches.
+         if self.enable_torch_compile and not (get_flags().capture.enable_torch_compile):
+@@ -1386,6 +1394,11 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+             bs, stream_idx=stream_idx, num_tokens=num_tokens
+         )
+ 
++        verify_fc = getattr(self, "_verify_fc_capture", None)
++        if verify_fc is not None:
++            forward_batch.dflash_verify_raw_buffer = verify_fc.raw[:num_tokens]
++        captured_output = None
++
+         # All setup hooks below read get_attn_backend() (TboForwardBatchPreparer,
+         # DeepEP adapter, …) so they must run inside the same ForwardContext
+         # that wraps the warmup/capture forward.
+@@ -1400,6 +1413,7 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+             attn_backend.init_forward_metadata_out_graph(forward_batch, in_capture=True)
+ 
+             def run_once():
++                nonlocal captured_output
+                 # Debug replay retains this callback beyond the capture scope.
+                 with forward_context(
+                     ForwardContext(attn_backend=attn_backend),
+@@ -1468,6 +1482,9 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+                         )
+                     for capture_hook in self.model_runner.capture_tail_hooks:
+                         capture_hook(self, out, forward_batch, num_tokens)
++                    if verify_fc is not None:
++                        verify_fc.capture(out, forward_batch)
++                        captured_output = out
+                     return out
+ 
+             self.deepep_adapter.capture(is_extend_in_batch=False)
+@@ -1502,6 +1519,8 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+                     capture_inputs=None,
+                     post_warmup_hook=post_warmup_hook,
+                 )
++                if verify_fc is not None:
++                    verify_fc.complete_capture(captured_output)
+ 
+     def _set_dp_real_num_tokens(self, raw_num_token: int) -> None:
+         # An idle DP rank replays a fabricated batch whose count may not reach
+@@ -2044,6 +2063,11 @@ class DecodeCudaGraphRunner(BaseCudaGraphRunner):
+                     if output.hidden_states is not None
+                     else None
+                 ),
++                dflash_verify_fc_shard=(
++                    output.dflash_verify_fc_shard[: self.raw_num_token]
++                    if output.dflash_verify_fc_shard is not None
++                    else None
++                ),
+                 last_hidden_states=(
+                     output.last_hidden_states[: self.raw_num_token]
+                     if output.last_hidden_states is not None
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index ae7af01..6905bba 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1261,13 +1261,29 @@ class MuseSpark1xModel(nn.Module):
+         stream = hidden_states.to(self.residual_dtype)
+         attn_input = self.layers[0].self_attn_input_norm(stream)
+         aux_hidden_states = []
++        packed = getattr(forward_batch, "dflash_verify_raw_buffer", None)
++        width = stream.shape[-1]
++        if packed is not None and (
++            len(set(self.layers_to_capture)) != len(self.layers_to_capture)
++            or packed.shape != (stream.shape[0], len(self.layers_to_capture) * width)
++            or packed.dtype != self.operator_dtype or packed.device != stream.device
++            or not forward_batch.forward_mode.is_target_verify() or sp_active
++        ):
++            packed = None
++        tap = 0
+         for layer_idx, layer in enumerate(self.layers):
+             stream, attn_input = layer(positions, stream, attn_input, forward_batch)
+             if layer_idx in self.layers_to_capture:
+                 # Draft context projection reads operator dtype, not residual_dtype.
+-                aux_hidden_states.append(stream.to(self.operator_dtype))
++                if packed is None:
++                    aux_hidden_states.append(stream.to(self.operator_dtype))
++                else:
++                    packed[:, tap * width : (tap + 1) * width].copy_(stream)
++                    tap += 1
+         norm_input = stream.to(self.operator_dtype)
+         hidden_states = self.norm(norm_input).to(self.operator_dtype)
++        if packed is not None and tap == len(self.layers_to_capture) and tap:
++            return hidden_states, packed
+         if aux_hidden_states:
+             return hidden_states, aux_hidden_states
+         return hidden_states
+diff --git a/python/sglang/srt/speculative/dflash_info.py b/python/sglang/srt/speculative/dflash_info.py
+index 5826777..4d5846a 100644
+--- a/python/sglang/srt/speculative/dflash_info.py
++++ b/python/sglang/srt/speculative/dflash_info.py
+@@ -56,6 +56,7 @@ class DFlashVerifyInput(SpecInput):
+     # part of it this verify writes (`KVLocPlan.write_ids`).
+     kv_loc_plan: Optional[KVLocPlan] = None
+     kv_loc_cols: Optional[Cols] = None
++    consumes_verify_context: bool = False
+ 
+     def __post_init__(self):
+         super().__init__(spec_input_type=SpecInputType.DFLASH_VERIFY)
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 9b0dc75..d673fa7 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -21,6 +21,8 @@ from sglang.kernels.ops.speculative.dspark.dspark_accept import (
+ from sglang.srt.configs.hybrid_arch import mambaish_config
+ from sglang.srt.environ import envs
+ from sglang.srt.layers.dflash_context_projection import (
++    DFlashVerifyFCGraph,
++    _agree,
+     dflash_sp_prefill_scope,
+     prepare_dflash_sp_prefill,
+ )
+@@ -642,6 +644,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         self._new_seq_lens_bufs: List[torch.Tensor] = []
+         self._target_logits_processor = self._defer_target_verify_gather()
+         self._sp_prefill_context = None
++        self._verify_fc_graph = None
+         parallel = get_parallel()
+         if (
+             get_spec().speculative_dflash_sp_prefill_context
+@@ -660,6 +663,28 @@ class DFlashWorkerV2(BaseSpecWorker):
+                 self._target_logits_processor,
+                 parallel.tp_group,
+             )
++            context = self._sp_prefill_context
++            if context is not None:
++                from sglang.srt.models.muse_spark import MuseSpark1xModel
++
++                graph_config = get_exec().graph.cuda_graph_config
++                eligible = (
++                    self.model_runner.spec_algorithm.is_dflash()
++                    and type(getattr(getattr(context.target, "model", None), "language_model", None)) is MuseSpark1xModel
++                    and graph_config is not None
++                    and graph_config.decode.backend == Backend.FULL
++                    and self.draft_parallel_layout.tp_group is None
++                    and self.lilicorr is None
++                    and context.fc.out_features % parallel.tp_group.world_size == 0
++                    and not context.logits_processor.keep_last_hidden_states
++                    and context.logits_processor.expected_aux_hidden_states is None
++                    and self.model_runner.lora_manager is None
++                )
++                if _agree(eligible, parallel.tp_group):
++                    candidate = DFlashVerifyFCGraph(context)
++                    if _agree(candidate.ready(), parallel.tp_group):
++                        self._verify_fc_graph = candidate
++                        self.model_runner.dflash_verify_fc_graph = candidate
+ 
+     def _defer_target_verify_gather(self) -> Optional[LogitsProcessor]:
+         processors = [
+@@ -1047,6 +1072,9 @@ class DFlashWorkerV2(BaseSpecWorker):
+         # Weight loaders may modify a parameter via .data without advancing its
+         # version, including before reporting failure. Drop both packed banks.
+         self._fused_kv_helper = None
++        if getattr(self, "_verify_fc_graph", None) is not None:
++            # A partial or failed loader may already have changed a rank's FC.
++            self._verify_fc_graph.active = False
+ 
+     def _init_fused_kv_helper(self) -> None:
+         """Initialize the fused KV materialization helper with pre-stacked weights."""
+@@ -1900,6 +1928,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+         extend_lens: Optional[torch.Tensor] = None,
+         prefill_context_done: bool = False,
+         prefill_kv_projected: bool = False,
++        verify_fc_shard: Optional[torch.Tensor] = None,
+     ) -> None:
+         """Materialize target context features into the draft KV cache at explicit slots.
+ 
+@@ -2005,7 +2034,9 @@ class DFlashWorkerV2(BaseSpecWorker):
+                     raise ValueError("Preprojected draft K/V requires finalized context with LiLiCorr disabled.")
+                 self._append_paired_prompt_kv(target_hidden, positions, cache_loc, cache_loc_2d, commit_lens)
+                 return
+-            if prefill_context_done:
++            if verify_fc_shard is not None:
++                ctx_hidden = self._verify_fc_graph.finish(verify_fc_shard, target_hidden)
++            elif prefill_context_done:
+                 ctx_hidden = target_hidden
+             else:
+                 ctx_hidden = self.draft_model.project_target_hidden(target_hidden)
+@@ -3307,6 +3338,7 @@ class DFlashWorkerV2(BaseSpecWorker):
+             custom_mask=custom_mask,
+             capture_hidden_mode=CaptureHiddenMode.FULL,
+             kv_loc_plan=kv_loc_plan,
++            consumes_verify_context=not batch.return_hidden_states,
+         )
+ 
+         batch.out_cache_loc = verify_out_cache_loc
+@@ -3470,10 +3502,12 @@ class DFlashWorkerV2(BaseSpecWorker):
+             cache_loc_2d=cache_loc.view(verify_out_cache_loc_2d.shape),
+             positions=positions,
+             commit_lens=commit_lens,
++            verify_fc_shard=logits_output.dflash_verify_fc_shard,
+         )
+ 
+         # Avoid copying large hidden-state buffers to CPU in overlap scheduling.
+         logits_output.hidden_states = None
++        logits_output.dflash_verify_fc_shard = None
+ 
+         next_draft_input = self._make_next_draft_input_decode(
+             bonus_tokens=bonus,

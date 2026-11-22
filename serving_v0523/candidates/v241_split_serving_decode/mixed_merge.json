@@ -1,0 +1,167 @@
+{
+  "full_sha256": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+  "source_sha256": {
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py": "af1e6af5cf4f6376e9ee72da11814cd0c3c569c8434e8eca490f2b8bda6b7363",
+    "python/sglang/srt/layers/attention/flashattention_backend.py": "e78b0ac4239bbe5cfde2c1ff9fac1a5b4bb7fa35ae5767b495178f1dbd877575",
+    "python/sglang/srt/layers/attention/direct_prompt_kv.py": "e54ec34c4bb519f74bf1e2a36c5a6347bd88e6cfe066a9e13134323b206d580a"
+  },
+  "cases": [
+    {
+      "tail_requests": 3,
+      "mode": "eligible",
+      "eligible_predicate": true,
+      "calls": [
+        "partition",
+        "merge",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1054720,
+      "scratch_bytes": 4459520,
+      "merge_grid": [
+        3,
+        2,
+        32
+      ],
+      "rows": 2
+    },
+    {
+      "tail_requests": 3,
+      "mode": "softcap",
+      "eligible_predicate": false,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1054720
+    },
+    {
+      "tail_requests": 3,
+      "mode": "ragged",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1054464
+    },
+    {
+      "tail_requests": 3,
+      "mode": "unsupported_groups",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1054720
+    },
+    {
+      "tail_requests": 15,
+      "mode": "eligible",
+      "eligible_predicate": true,
+      "calls": [
+        "partition",
+        "merge",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1079296,
+      "scratch_bytes": 4858880,
+      "merge_grid": [
+        15,
+        2,
+        16
+      ],
+      "rows": 4
+    },
+    {
+      "tail_requests": 15,
+      "mode": "softcap",
+      "eligible_predicate": false,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1079296
+    },
+    {
+      "tail_requests": 15,
+      "mode": "ragged",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1079040
+    },
+    {
+      "tail_requests": 15,
+      "mode": "unsupported_groups",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1079296
+    },
+    {
+      "tail_requests": 31,
+      "mode": "eligible",
+      "eligible_predicate": true,
+      "calls": [
+        "partition",
+        "merge",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1112064,
+      "scratch_bytes": 5391360,
+      "merge_grid": [
+        31,
+        2,
+        16
+      ],
+      "rows": 4
+    },
+    {
+      "tail_requests": 31,
+      "mode": "softcap",
+      "eligible_predicate": false,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1112064
+    },
+    {
+      "tail_requests": 31,
+      "mode": "ragged",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1111808
+    },
+    {
+      "tail_requests": 31,
+      "mode": "unsupported_groups",
+      "eligible_predicate": true,
+      "calls": [
+        "native",
+        "pack",
+        "dense"
+      ],
+      "charged_write_bytes": 1112064
+    }
+  ],
+  "scope": "Production planner, actual forward_extend eligibility and split, real paged launcher, CPU torch storage. CUDA partition, merge and FA3 boundaries replaced by checked probes."
+}

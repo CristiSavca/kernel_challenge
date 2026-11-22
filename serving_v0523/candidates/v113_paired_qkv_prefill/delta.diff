@@ -1,0 +1,164 @@
+diff --git a/python/sglang/srt/layers/communication/sp_paired_qkv.py b/python/sglang/srt/layers/communication/sp_paired_qkv.py
+new file mode 100644
+index 0000000..884c1b4
+--- /dev/null
++++ b/python/sglang/srt/layers/communication/sp_paired_qkv.py
+@@ -0,0 +1,118 @@
++"""Two-dimensional token/head distribution for dense SP prefill projections."""
++
++import torch
++from torch.nn import functional as F
++
++from sglang.srt.runtime_context import get_exec, get_parallel
++from sglang.srt.utils.custom_op import register_custom_op
++
++
++def paired_qkv_wins(rows, hidden, channels, size):
++    # Per-rank element counts. A conventional ring forwards size-1 token
++    # shards. Here each half shares its shards, then each opposite pair
++    # exchanges one weight and one half-batch of the projected head rows.
++    half = size // 2
++    ring = (size - 1) * rows * hidden
++    paired = (half - 1) * rows * hidden + channels * hidden + half * rows * channels
++    return 8 * paired <= 7 * ring
++
++
++def enable_paired_qkv(linears, group):
++    from sglang.srt.batch_invariant_ops import is_batch_invariant_mode_enabled
++    from sglang.srt.environ import envs
++    from sglang.srt.layers.quantization.unquant import UnquantizedLinearMethod
++
++    if group.world_size not in (4, 8) or torch.distributed.get_backend(group.cpu_group) != "gloo":
++        return
++    comm = group.pynccl_comm
++    # These layers always have the same partition geometry on each TP rank.
++    # Agree before enabling any peer traffic (including the initial warmup).
++    ready = (
++        comm is not None and comm.available
++        and get_parallel().attn_tp_group.ranks == group.ranks
++        and torch.cuda.get_device_capability(comm.device)[0] == 9
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and not is_batch_invariant_mode_enabled()
++        and not torch.is_autocast_enabled()
++        and not torch.are_deterministic_algorithms_enabled()
++        and all(
++            type(fc.quant_method) is UnquantizedLinearMethod
++            and "apply" not in vars(fc.quant_method)
++            and fc.bias is None and not fc.gather_output
++            and fc.weight.device == comm.device and fc.weight.dtype == torch.bfloat16
++            and not fc.weight.requires_grad
++            and fc.weight.ndim == 2 and fc.weight.is_contiguous()
++            for fc in linears
++        )
++    )
++    status = torch.tensor(int(ready), dtype=torch.int32, device="cpu")
++    torch.distributed.all_reduce(status, op=torch.distributed.ReduceOp.MIN, group=group.cpu_group)
++    if not status.item():
++        return
++    # Establish the peer connections outside capture; use one distinct receive
++    # location per peer. The PyNCCL operations enqueue on the caller's stream.
++    rank = group.rank_in_group
++    half = group.world_size // 2
++    base = rank // half * half
++    peers = [p for p in range(base, base + half) if p != rank]
++    peers.append((rank + half) % group.world_size)
++    probe = torch.zeros(1, dtype=torch.bfloat16, device=comm.device)
++    receive = probe.new_empty(len(peers))
++    with comm.change_state(enable=True):
++        comm.group_start()
++        try:
++            for i, peer in enumerate(peers):
++                comm.send(probe, peer)
++                comm.recv(receive[i:i+1], peer)
++        finally:
++            comm.group_end()
++    for fc in linears:
++        fc._sp_paired_qkv = True
++
++
++def _paired_shape(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
++    return local.new_empty((local.shape[0] * size, weight.shape[0]))
++
++
++@register_custom_op(fake_impl=_paired_shape)
++def paired_qkv(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool) -> torch.Tensor:
++    from sglang.srt.layers.quantization.unquant import bf16_gemm_dispatch
++
++    group = get_parallel().tp_group
++    rank, half = group.rank_in_group, size // 2
++    base = rank // half * half
++    buddy = (rank + half) % size
++    rows, hidden = local.shape
++    half_input = local.new_empty((half, rows, hidden))
++    half_input[rank - base].copy_(local)
++    buddy_weight = torch.empty_like(weight)
++    comm = group.pynccl_comm
++    with comm.change_state(enable=True):
++        comm.group_start()
++        try:
++            for peer in range(base, base + half):
++                if peer != rank:
++                    comm.send(local, peer)
++                    comm.recv(half_input[peer - base], peer)
++            comm.send(weight, buddy)
++            comm.recv(buddy_weight, buddy)
++        finally:
++            comm.group_end()
++
++        x = half_input.view(half * rows, hidden)
++        # Preserve the UnquantizedLinearMethod backend that this layer uses.
++        project = bf16_gemm_dispatch if dispatch else F.linear
++        output = local.new_empty((size * rows, weight.shape[0]))
++        owned = output.narrow(0, base * rows, half * rows)
++        incoming = output.narrow(0, (half - base) * rows, half * rows)
++        owned.copy_(project(x, weight, None))
++        outgoing = project(x, buddy_weight, None)
++        del x, half_input, buddy_weight
++        comm.group_start()
++        try:
++            comm.send(outgoing, buddy)
++            comm.recv(incoming, buddy)
++        finally:
++            comm.group_end()
++    return output
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index ea02720..dcc7ea8 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -239,6 +239,18 @@ def column_parallel_g_matmul(
+     tile-gated all-gather; other models retain their existing implementation.
+     """
+     num_tokens = sp_num_tokens()
++    if getattr(linear, "_sp_paired_qkv", False):
++        from sglang.srt.layers.communication.sp_paired_qkv import paired_qkv, paired_qkv_wins
++        from sglang.srt.layers.quantization.unquant import get_bf16_gemm_backend
++
++        rows, hidden = input_parallel.shape
++        size = get_parallel().tp_group.world_size
++        if paired_qkv_wins(rows, hidden, linear.weight.shape[0], size):
++            backend = get_bf16_gemm_backend()
++            return paired_qkv(
++                input_parallel.contiguous(), linear.weight, size,
++                backend.is_cutedsl() or backend.is_gemv(),
++            )[:num_tokens]
+     if sp_fused_matmul_eligible(linear):
+         if getattr(linear, "_sp_use_cutlass", False):
+             from sglang.kernels.ops.communication.sp_collective_gemm import (
+diff --git a/python/sglang/srt/models/muse_spark.py b/python/sglang/srt/models/muse_spark.py
+index 395a5d8..0a4651e 100644
+--- a/python/sglang/srt/models/muse_spark.py
++++ b/python/sglang/srt/models/muse_spark.py
+@@ -1189,6 +1189,12 @@ class MuseSpark1xModel(nn.Module):
+             # existing fused CUTLASS path for the FlashInfer/MegaMoE mode.
+             backend = get_moe_runner_backend()
+             replicate_expert_input = backend.is_marlin() or backend.is_humming()
++            if replicate_expert_input:
++                from sglang.srt.layers.communication.sp_paired_qkv import enable_paired_qkv
++
++                enable_paired_qkv(
++                    [layer.self_attn.qkv_proj for layer in self.layers], get_parallel().tp_group
++                )
+             moe_layers = [layer.mlp for layer in self.layers if layer.is_moe_layer]
+             for layer in self.layers:
+                 linears = [layer.self_attn.qkv_proj, layer.self_attn.o_proj]

@@ -1,0 +1,38 @@
+diff --git a/python/sglang/kernels/ops/speculative/dflash_tree.py b/python/sglang/kernels/ops/speculative/dflash_tree.py
+index bae557f..a535bac 100644
+--- a/python/sglang/kernels/ops/speculative/dflash_tree.py
++++ b/python/sglang/kernels/ops/speculative/dflash_tree.py
+@@ -169,8 +169,17 @@ def _select_spine_tree(
+     parents = tl.load(Original + 2 * PLANE + offsets, active, other=-2)
+     ancestors = tl.load(Original + 3 * PLANE + offsets, active, other=0)
+     margins = tl.load(Advantage + offsets, active, other=0)
+-    utilities = tl.cumsum(margins)
+-    length = tl.argmax(tl.where(active, utilities, -2147483647), axis=0, tie_break_left=True)
++    # Lane zero tracks the original binary policy. A hedge must beat both
++    # endpoints on the adjacent-margin estimate before it can override that policy.
++    endpoint_vote = tl.sum(tl.where(nodes == 0, margins, 0))
++    utilities = tl.cumsum(tl.where(nodes == 0, 0, margins))
++    chain_utility = tl.sum(tl.where(nodes == WIDTH - 1, utilities, 0))
++    interior = tl.where((nodes > 0) & (nodes < WIDTH - 1), utilities, -2147483647)
++    best = tl.argmax(interior, axis=0, tie_break_left=True)
++    length = tl.where(
++        tl.max(interior) > tl.maximum(0, chain_utility),
++        best, tl.where(endpoint_vote > 0, WIDTH - 1, 0),
++    )
+     spine = _native_prefix_nodes(tokens, parents, Chain, offset, nodes, WIDTH)
+     common = tl.sum(spine.to(tl.int32)) - 1
+     # Preserve the incumbent's actual row ordering whenever the topology agrees.
+@@ -241,7 +250,12 @@ def _update_spine_margins(
+     magnitude = tl.maximum(prior, -prior) * 3 // 4
+     decayed = tl.where(prior < 0, -magnitude, magnitude)
+     updated = tl.where(uncertain, prior, decayed + 4 * (reward - previous))
+-    tl.store(Next + offset + nodes, tl.where(nodes == 0, 0, updated), active)
++    tree_reward = tl.sum(tl.where(nodes == 0, reward, 0))
++    chain_reward = tl.sum(tl.where(nodes == WIDTH - 1, reward, 0))
++    vote = (chain_reward > tree_reward).to(tl.int32) - (chain_reward < tree_reward).to(tl.int32)
++    decay = (prior > 0).to(tl.int32) - (prior < 0).to(tl.int32)
++    endpoint = tl.maximum(-WIDTH, tl.minimum(WIDTH, prior - decay + 2 * vote))
++    tl.store(Next + offset + nodes, tl.where(nodes == 0, endpoint, updated), active)
+ 
+ 
+ def select_dflash_tree(original, chain, advantage):

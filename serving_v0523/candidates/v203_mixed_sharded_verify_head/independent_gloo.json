@@ -1,0 +1,43 @@
+{
+  "torch": "2.5.1",
+  "actual_gloo": true,
+  "h200": false,
+  "same_rows_seen_by_each_rank": {
+    "4": {
+      "native_producer_calls": 16,
+      "native_penalty_admission_vetoes": 64,
+      "ordinary_penalized_prompt_sampler_calls": 16,
+      "per_rank_case_pairs": 8,
+      "native_prompt_and_accept_calls": 16,
+      "compared_logits": 622202,
+      "tail_target_rows": 176,
+      "posted_prompt_vocab_values": 17086,
+      "posted_tail_pair_values": 352,
+      "nan_tail_target_rows": 33
+    },
+    "8": {
+      "native_producer_calls": 16,
+      "native_penalty_admission_vetoes": 64,
+      "ordinary_penalized_prompt_sampler_calls": 16,
+      "per_rank_case_pairs": 8,
+      "native_prompt_and_accept_calls": 16,
+      "compared_logits": 1245298,
+      "tail_target_rows": 176,
+      "posted_prompt_vocab_values": 17086,
+      "posted_tail_pair_values": 352,
+      "nan_tail_target_rows": 33
+    }
+  },
+  "files": {
+    "srt/layers/logits_processor.py": "82f9d13a53629fefb556d8e337e26e67c12cc6bee4bafb63944c04f8f730b8a6",
+    "srt/speculative/dflash_worker_v2.py": "c4e62c2d249824d59a267282e99622fb0b5c63de88f8b638d0a6ecf9a7137260",
+    "srt/layers/sampler.py": "b9b0c965731104a5a7a1565bc5927d1ddb6dea278f19e3beb981382c468d63e6",
+    "srt/model_executor/model_runner.py": "2ef478a3c5093c476e606c46d182184722350dd87e3e84284ef421eb4cf624f0",
+    "kernels/ops/sampling/softcap_row_argmax.py": "e76309596ed42e25388e8c65592593ab526ef6f0d96c57a1653e137a79b501db",
+    "kernels/ops/activation/softcap.py": "c9934dbb4662a505c8de73f9cfde5ac9c86dd2d89324c3e52144d145b609833a"
+  },
+  "simulations": [
+    "checked CPU execution of Triton load/store/reduction bodies, NumPy FP32 tanh",
+    "synthetic target logits, physical slots and model taps"
+  ]
+}

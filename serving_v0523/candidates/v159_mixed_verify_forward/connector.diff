@@ -1,0 +1,198 @@
+diff --git a/python/sglang/srt/speculative/dflash_mixed_forward.py b/python/sglang/srt/speculative/dflash_mixed_forward.py
+new file mode 100644
+index 0000000..cfbd93b
+--- /dev/null
++++ b/python/sglang/srt/speculative/dflash_mixed_forward.py
+@@ -0,0 +1,163 @@
++"""Use a live draft proposal in a graph-supported combined causal target forward."""
++from __future__ import annotations
++
++import hashlib
++import json
++from copy import copy
++
++import torch
++
++from sglang.srt.managers.utils import MixedDFlashResult
++from sglang.srt.model_executor.forward_batch_info import CaptureHiddenMode, ForwardBatch, ForwardMode
++from sglang.srt.model_executor.runner.decode_cuda_graph_runner import DecodeCudaGraphRunner
++from sglang.srt.model_executor.runner.prefill_cuda_graph_runner import PrefillCudaGraphRunner
++from sglang.srt.runtime_context import get_exec, get_schedule
++from sglang.srt.speculative.dflash_info import DFlashVerifyInput
++from sglang.srt.speculative.dflash_mixed_graph_admission import (
++    agree_mixed_dflash_target, plan_mixed_dflash_target,
++)
++
++
++def _prepare_views(worker, prompt, decode, proposal):
++    """Read the two resolved batches. No target or distributed model work occurs here."""
++    runner = worker.target_worker.model_runner
++    if (not worker.is_current_decode_proposal(decode, proposal)
++            or not worker.can_settle_mixed_verify(prompt, decode)
++            or runner.page_size != 1 or runner.lora_manager is not None
++            or runner.model_config.model_is_mrope or runner.model_config.is_encoder_decoder
++            or runner.ngram_embedding_manager.engram_hasher is not None
++            or runner.watermark_state is not None or worker.target_worker.is_dllm()
++            or get_exec().features.enable_encoder_swa_bounded_replay
++            or not isinstance(runner.prefill_cuda_graph_runner, PrefillCudaGraphRunner)
++            or not isinstance(runner.decode_cuda_graph_runner, DecodeCudaGraphRunner)):
++        return None
++    p, t, width = len(prompt.reqs), len(decode.reqs), int(worker.block_size)
++    lengths, prefixes = prompt.extend_lens, prompt.prefix_lens
++    if (not isinstance(lengths, list) or len(lengths) != p
++            or not isinstance(prefixes, list) or len(prefixes) != p
++            or any(type(n) is not int or n < 1 for n in lengths)
++            or any(type(n) is not int or n < 0 for n in prefixes)
++            or prompt.decoding_reqs or prompt.spec_info is not None
++            or len({id(r) for r in (*prompt.reqs, *decode.reqs)}) != p + t
++            or proposal.prefix_lens.dtype != torch.int64
++            or proposal.tokens.shape != (t, width) or proposal.positions.shape != (t, width)
++            or proposal.virtual_slots.shape != (t, width)):
++        return None
++    q, tail_rows = sum(lengths), t * width
++    total = q + tail_rows
++    policy = get_schedule()
++    if ((policy.max_prefill_tokens and total > policy.max_prefill_tokens)
++            or (policy.chunked_prefill_size > 0 and total > policy.chunked_prefill_size)
++            or not runner.prefill_cuda_graph_runner._uses_eager_prefill_tail()
++            or p + t > runner.prefill_cuda_graph_runner.max_bs
++            or prompt.extend_num_tokens != q
++            or prompt.input_ids is None or prompt.input_ids.shape != (q,)
++            or prompt.out_cache_loc is None or prompt.out_cache_loc.shape != (q,)
++            or prompt.seq_lens_cpu is None or prompt.seq_lens_cpu.device.type != "cpu"
++            or prompt.seq_lens_cpu.tolist() != [a + b for a, b in zip(prefixes, lengths)]
++            or prompt.orig_seq_lens is None or prompt.orig_seq_lens.shape != (p,)
++            or prompt.req_pool_indices_cpu is None or decode.req_pool_indices_cpu is None
++            or any(b.tbo_split_seq_index is not None or b.input_embeds is not None
++                   or b.replace_embeds is not None or b.encoder_lens is not None
++                   or any(x is not None for x in (b.multimodal_inputs or ()))
++                   for b in (prompt, decode))
++            or any(r.lora_id is not None or r.token_type_ids is not None for r in (*prompt.reqs, *decode.reqs))):
++        return None
++
++    # Ordinary FA3 can publish only GPU lengths. On a viable mixed round, take
++    # the exact O(t) mirror from this proposal, never the two-block capacity bound.
++    base = proposal.prefix_lens
++    host_base = proposal.prefix_lens_cpu
++    if host_base is None:
++        host_base = base.to("cpu")
++    if host_base.shape != (t,) or host_base.device.type != "cpu":
++        return None
++    tail_prefixes = host_base.tolist()
++    for req, n in zip(decode.reqs, tail_prefixes):
++        if n < len(req.origin_input_ids) or n + width > req.kv.kv_allocated_len:
++            return None
++
++    # init_new populates host sums and sampling grammars on its argument.
++    # Isolate those assignments from both live cohort objects and their sampler.
++    prompt_view = copy(prompt)
++    prompt_view.sampling_info = copy(prompt.sampling_info)
++    prompt_fb = ForwardBatch.init_new(
++        prompt_view, runner, capture_hidden_mode=CaptureHiddenMode.FULL, return_hidden_states_before_norm=False,
++    )
++    tail_view = copy(decode)
++    tail_view.sampling_info = copy(decode.sampling_info)
++    tail_view.input_ids = proposal.tokens.reshape(-1)
++    tail_view.out_cache_loc = proposal.virtual_slots.reshape(-1)
++    tail_view.forward_mode = ForwardMode.TARGET_VERIFY
++    tail_view.seq_lens_cpu = host_base + width
++    tail_view.seq_lens_sum = int(tail_view.seq_lens_cpu.sum())
++    tail_view.spec_info = DFlashVerifyInput(
++        draft_token=tail_view.input_ids, positions=proposal.positions.reshape(-1),
++        draft_token_num=width, capture_hidden_mode=CaptureHiddenMode.FULL,
++        kv_loc_plan=proposal.kv_loc_plan,
++    )
++    verify_fb = ForwardBatch.init_new(
++        tail_view, runner, capture_hidden_mode=CaptureHiddenMode.FULL, return_hidden_states_before_norm=False,
++        kv_loc_plan=proposal.kv_loc_plan,
++    )
++    mix = copy(prompt_view)
++    mix.reqs = prompt.reqs + decode.reqs
++    mix.decoding_reqs = list(decode.reqs)
++    mix.sampling_info = None  # V155 returns raw logits. Each role retains its own sampler context.
++    mix.extend_lens = [*lengths, *([width] * t)]
++    mix.prefix_lens = [*prefixes, *tail_prefixes]
++    mix.extend_num_tokens = total
++    mix.extend_logprob_start_lens = [*(prompt.extend_logprob_start_lens or [0] * p), *([0] * t)]
++    mix.req_pool_indices = torch.cat((prompt.req_pool_indices, decode.req_pool_indices))
++    mix.req_pool_indices_cpu = torch.cat((prompt.req_pool_indices_cpu, decode.req_pool_indices_cpu))
++    mix.seq_lens = torch.cat((prompt.seq_lens, base + width))
++    mix.seq_lens_cpu = torch.cat((prompt.seq_lens_cpu, tail_view.seq_lens_cpu))
++    mix.seq_lens_sum = int(mix.seq_lens_cpu.sum())
++    mix.orig_seq_lens = torch.cat((prompt.orig_seq_lens, (base + width).to(prompt.orig_seq_lens.dtype)))
++    mix.input_ids = torch.cat((prompt.input_ids, tail_view.input_ids))
++    mix.out_cache_loc = torch.cat((prompt.out_cache_loc, tail_view.out_cache_loc))
++    mixed_fb = ForwardBatch.init_new(
++        mix, runner, capture_hidden_mode=CaptureHiddenMode.FULL, return_hidden_states_before_norm=False,
++    )
++    # Draft and target use the same explicit positional inputs after replay.
++    mixed_fb.positions = torch.cat((prompt_fb.positions, tail_view.spec_info.positions))
++    mixed_fb.set_mixed_verify_rows(p)
++    plan = plan_mixed_dflash_target(runner, prompt_fb, verify_fb, mixed_fb, decode.reqs)
++    if plan is None:
++        return None
++    identity = json.dumps([p, t, q, mixed_fb.rids, mix.extend_lens, mix.prefix_lens,
++                           mix.req_pool_indices_cpu.tolist()], separators=(",", ":")).encode()
++    # A fixed-width collective even when ranks have different request counts.
++    digest = hashlib.sha256(identity).digest()
++    signature = (p, t, q, *(int.from_bytes(digest[i:i+8], "big") >> 1 for i in range(0, 32, 8)))
++    return plan, signature, prompt_fb, mixed_fb
++
++
++def try_forward_proposed_mixed(worker, prompt_batch, decode_batch, proposal, *, on_publish=None):
++    """All TP ranks participate. None leaves the original proposal available for standalone verify."""
++    try:
++        views = _prepare_views(worker, prompt_batch, decode_batch, proposal)
++    except (ValueError, NotImplementedError):
++        # Unsupported pre-target metadata can be declined locally. Every rank
++        # still votes before entering the target or either cohort's sampler.
++        views = None
++    plan = views[0] if views is not None else None
++    signature = views[1] if views is not None else (-1,) * 7
++    if agree_mixed_dflash_target(plan, cohort_signature=signature) is None:
++        return None
++    _, _, prompt_fb, mixed_fb = views
++    worker.consume_decode_proposal(decode_batch, proposal)
++    worker._wait_for_fused_hicache_load(prompt_batch)
++    worker.target_worker.set_hicache_consumer(prompt_batch.hicache_consumer_index)
++    positions = mixed_fb.positions
++    target_out = worker.target_worker.forward_batch_generation(
++        batch=None, forward_batch=mixed_fb, is_verify=True, return_kv_loc_plan=True
++    )
++    prompt_result, decode_result, next_input = worker.settle_mixed_verify(
++        target_out=target_out, prompt_forward_batch=prompt_fb, decode_sampling_info=decode_batch.sampling_info,
++        candidates=proposal.tokens, prefix_lens=proposal.prefix_lens, positions=positions,
++        on_publish=on_publish,
++    )
++    return MixedDFlashResult.from_role_results(
++        prompt_batch, decode_batch, prompt_result, decode_result, next_input
++    )
+diff --git a/python/sglang/srt/speculative/dflash_mixed_graph_admission.py b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+index fc56040..69837e0 100644
+--- a/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
++++ b/python/sglang/srt/speculative/dflash_mixed_graph_admission.py
+@@ -154,7 +154,7 @@ def plan_mixed_dflash_target(model_runner, prompt, verify, mixed, tail_reqs):
+     return DFlashMixedGraphPlan(prompt_rows, verify_rows, mixed_rows)
+ 
+ 
+-def agree_mixed_dflash_target(local_plan):
++def agree_mixed_dflash_target(local_plan, *, cohort_signature=None):
+     """All TP ranks call at the same scheduling point, including on a local decline."""
+     group = get_parallel().tp_group
+     if group.world_size == 1:
+@@ -163,9 +163,12 @@ def agree_mixed_dflash_target(local_plan):
+         values = [-1, -1, -1]
+     else:
+         values = [local_plan.prompt_rows, local_plan.verify_rows, local_plan.mixed_rows]
++    if cohort_signature is not None:
++        values.extend(cohort_signature)
+     vote = torch.tensor(values + [-v for v in values], dtype=torch.int64, device="cpu")
+     dist.all_reduce(vote, op=dist.ReduceOp.MIN, group=group.cpu_group)
+-    low_p, low_v, low_m, neg_p, neg_v, neg_m = vote.tolist()
+-    if low_p < 0 or (low_p, low_v, low_m) != (-neg_p, -neg_v, -neg_m):
++    result = vote.tolist()
++    minima, neg_maxima = result[:len(values)], result[len(values):]
++    if any(lo < 0 or lo != -neg_hi for lo, neg_hi in zip(minima, neg_maxima)):
+         return None
+-    return DFlashMixedGraphPlan(low_p, low_v, low_m)
++    return DFlashMixedGraphPlan(*minima[:3])

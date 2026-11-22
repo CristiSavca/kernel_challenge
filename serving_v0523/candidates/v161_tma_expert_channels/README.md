@@ -1,0 +1,20 @@
+# V161 Hopper tensor copies for routed expert decode
+
+V161 uses Hopper's Tensor Memory Accelerator to stage the packed gate/up and down weights and scales for V153’s low-density expert kernels. A 128-input-feature chunk formerly required 1,152 logical 16-byte weight and scale copies for gate/up and 576 for down. One elected thread issues four two-dimensional tensor transfers for gate/up or two for down. The original per-warp activation loads, packed FP4 decoding, ascending-K matrix operations and BF16 rounding boundaries are shared with V153. A completion barrier tracks the exact tensor-transfer byte count and carries its phase across jobs. [Official patch and flags](validation.json) · [Production changes](delta.diff)
+
+| SM90a steady loop over 128 input features | V153 gate/up | V161 gate/up | V153 down | V161 down |
+| --- | ---: | ---: | ---: | ---: |
+| Static instruction sites | 987 | 728 | 681 | 426 |
+| Registers per thread | 57 | 44 | 58 | 38 |
+| BF16 MMA instructions | 16 | 16 | 8 | 8 |
+| Shared operand load sites | 75 | 51 | 59 | 35 |
+| Tensor-copy instruction sites | 0 | 4 | 0 | 2 |
+| Local spills | 0 | 0 | 0 | 0 |
+
+NVCC 12.9.86 compiled the production TVM-FFI wrapper for SM90 and SM90a. The fallback kernel machine code on SM90a exactly matches V153. Static loop size falls 26.2% for gate/up and 37.4% for down. The original read payload still sets a floor. One request with eight verified rows and independent uniform routing needs about 193.8 MiB of cold packed weights and scales per rank per sparse layer. That takes at least 42.3 µs at 4.8 TB/s. Tensor-copy issue, barrier latency, cache locality, physical routing skew and per-rank tails determine wall time. No physical H200 result or 4× throughput measurement is available. [Compiled resource and instruction counts](sm90.json) · [SM90a disassembly](sm90a.sass.gz) · [V153 routing model](../v153_cooperative_expert_channels/work_model.json)
+
+Model preparation encodes four immutable shapes and original bank addresses into 512 bytes of CPU metadata per sparse layer. The host verifies live shapes and addresses before passing the gate/up or down descriptor pair by value to the launch. CUDA captures the launch parameters with the graph. The vector-staged entry remains available after an optional build or encoding failure, a bank replacement or unsuitable activation alignment. Medium-density verification and grouped prefill use their existing kernels. [Host tests](dispatch.json) · [Tensor-map encoding calls](descriptor.json) · [CUDA tensor-map and graph capture semantics](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html)
+
+The production arithmetic and tensor-copy coordinates ran through a CPU warp emulator over six shapes up to 4,096 × 4,096, plus two cancellation tests sensitive to accumulation order. It checked 62,208 BF16 intermediate and 49,536 BF16 output elements, 59,392 inactive cells, and 7,116 transfers spanning 32,790,528 bytes with both immediate and delayed completion. An independent reader compared 1,638,144 vector ranges across 40 grid-stride job transitions. The driver encoder was exercised through a recording CPU stub. Device descriptor acceptance, real TMA completion, serving agreement and latency still need an H200 run. [Numerical results](warp.json) · [Independent review](independent_review.md)
+
+The official standalone kernel track closed on November 4. Its final boards remain public and the CLI continues to show daily quota counters. The published expert problem includes the corresponding EP8 eight-row, width-4,096 geometry. Its normal entry accepts raw checkpoint E2M1 weights and E4M3 scales, and its baseline prepares Marlin's layout. A genuine standalone submission would need to prepare the Humming layout from those raw weights and implement the full routed expert output, including per-expert normalization and weighted combination across all public shapes. No standalone check or submission was made. [Organizer’s current track guide](https://openkernelchallenge.dev/llms.txt) · [Standalone expert contract](../../../muse_moe_w4a16/TASK.md)

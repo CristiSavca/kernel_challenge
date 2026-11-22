@@ -1,0 +1,156 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+index 1501956..19a805f 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/expert_route_pair.cuh
+@@ -194,6 +194,140 @@ __global__ __launch_bounds__(32 * kWarps) void projection_kernel(const __grid_co
+     project<Gate>(p, p.plan + 1 + j * (kRows + 1), column);
+ }
+ 
++constexpr uint32_t kChannelWarps = 8;
++constexpr uint32_t kKSteps = 8;
++
++template <bool Gate>
++struct alignas(16) PackedTile {
++  uint32_t weights[Gate ? 2 : 1][kKSteps][256];
++  uint16_t scales[Gate ? 2 : 1][kKSteps][64];
++  uint32_t inputs[kKSteps][kRows][12];
++};
++
++SGL_DEVICE void copy_packed_vector(void* dest, const void* src) {
++  const uint32_t shared = static_cast<uint32_t>(__cvta_generic_to_shared(dest));
++  asm volatile("cp.async.cg.shared.global [%0], [%1], 16;" :: "r"(shared), "l"(src) : "memory");
++}
++
++template <bool Gate>
++SGL_DEVICE void stage_packed(const Projection& p, size_t start, uint32_t width, const bf16_t* input,
++                             uint32_t valid_bytes, PackedTile<Gate>& dest) {
++  constexpr uint32_t planes = Gate ? 2 : 1;
++  for (uint32_t i = threadIdx.x; i < planes * kKSteps * 64; i += 32 * kChannelWarps) {
++    const uint32_t plane = i / (kKSteps * 64), step = i / 64 % kKSteps, offset = 4 * (i % 64);
++    const size_t base = start + size_t(step) * width + plane * p.output_width;
++    copy_packed_vector(&dest.weights[plane][step][offset], p.bank.weight + 2 * base + offset);
++  }
++  for (uint32_t i = threadIdx.x; i < planes * kKSteps * 8; i += 32 * kChannelWarps) {
++    const uint32_t plane = i / (kKSteps * 8), step = i / 8 % kKSteps, offset = i % 8;
++    const size_t base = start + size_t(step) * width + plane * p.output_width;
++    copy_packed_vector(&dest.scales[plane][step][8 * offset], p.bank.scale + base + 16 * offset);
++  }
++  const uint32_t lane = threadIdx.x % 32;
++  if (lane < 2 * kKSteps) {
++    const uint32_t step = lane / 2, half = lane % 2, route = threadIdx.x / 32;
++    const uint32_t address = static_cast<uint32_t>(__cvta_generic_to_shared(&dest.inputs[step][route][4 * half]));
++    asm volatile("cp.async.cg.shared.global [%0], [%1], 16, %2;" ::
++                 "r"(address), "l"(input + 8 * lane), "r"(valid_bytes) : "memory");
++  }
++  asm volatile("cp.async.commit_group;" ::: "memory");
++}
++
++SGL_DEVICE void publish_packed() {
++  asm volatile("cp.async.wait_group 0;" ::: "memory");
++  __syncthreads();
++}
++
++SGL_DEVICE void contract_fragment(float4& sum, uint32_t word, uint32_t scales, uint32_t lo, uint32_t hi) {
++  const uint32_t low = broadcast_scale(scales & 255), high = broadcast_scale(scales >> 8);
++  const uint32_t a0 = operand_pair(word, low, 0), a1 = operand_pair(word, high, 1);
++  const uint32_t a2 = operand_pair(word, low, 2), a3 = operand_pair(word, high, 3);
++  asm volatile(
++      "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 "
++      "{%0,%1,%2,%3},{%4,%5,%6,%7},{%8,%9},{%0,%1,%2,%3};"
++      : "+f"(sum.x), "+f"(sum.y), "+f"(sum.z), "+f"(sum.w)
++      : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(lo), "r"(hi));
++}
++
++template <bool Gate>
++SGL_DEVICE void project_channels(const Projection& p, const int32_t* job, uint32_t column, PackedTile<Gate>* buffers) {
++  const uint32_t lane = threadIdx.x % 32, warp = threadIdx.x / 32;
++  const uint32_t band = warp / 4;
++  // Rotate only across groups of eight lanes. Every MMA output row keeps a single
++  // weight fragment, and all 32 lanes select distinct 32-bit shared-memory banks.
++  const uint32_t part = (warp + lane / 8) % 4;
++  const uint32_t wi = 128 * band + 4 * lane + part;
++  const uint32_t si = 32 * band + 4 * (lane / 4) + part;
++  const uint32_t expert = job[0], tiles = p.input_width / 16;
++  const uint32_t width = Gate ? 2 * p.output_width : p.output_width;
++  const size_t base = size_t(expert) * tiles * width + column;
++  const int32_t slot = job[1 + warp];
++  const uint32_t row = slot < 0 ? 0u : uint32_t(slot) / p.top_k;
++  const bf16_t* input = p.inputs + size_t(row) * p.input_width;
++  const uint32_t valid_bytes = slot < 0 ? 0u : 16u;
++  float4 gate{}, up{};
++  stage_packed<Gate>(p, base, width, input, valid_bytes, buffers[0]);
++  publish_packed();
++  for (uint32_t first = 0; first < tiles; first += kKSteps) {
++    const uint32_t phase = (first / kKSteps) % 2;
++    if (first + kKSteps < tiles) {
++      const uint32_t next = first + kKSteps;
++      stage_packed<Gate>(p, base + size_t(next) * width, width, input + 16 * next, valid_bytes, buffers[1 - phase]);
++    }
++#pragma unroll
++    for (uint32_t s = 0; s < kKSteps; ++s) {
++      const auto& src = buffers[phase];
++      // A 12-word row pitch keeps all 32 input loads in separate banks.
++      const uint32_t* x = &src.inputs[s][lane / 4][lane % 4];
++      const uint32_t lo = x[0], hi = x[4];
++      contract_fragment(gate, src.weights[0][s][wi], src.scales[0][s][si], lo, hi);
++      if constexpr (Gate) contract_fragment(up, src.weights[1][s][wi], src.scales[1][s][si], lo, hi);
++    }
++    // Complete the next buffer's writes and every warp's reads of this buffer.
++    // The last rendezvous also protects shared storage across grid-stride jobs.
++    publish_packed();
++  }
++  const float scale = cast<float>(p.global[expert]);
++#pragma unroll
++  for (uint32_t i = 0; i < 4; ++i) {
++    const int32_t out = job[1 + (lane % 4) * 2 + i % 2];
++    if (out >= 0) {
++      const float a[4] = {gate.x, gate.y, gate.z, gate.w};
++      float value = scaled_bf16(a[i], scale);
++      if constexpr (Gate) {
++        const float b[4] = {up.x, up.y, up.z, up.w};
++        value = apply_activation_f32<ActivationKind::kSiLU>(value) * scaled_bf16(b[i], scale);
++      }
++      const uint32_t n = column + 64 * band + 16 * part + lane / 4 + 8 * (i / 2);
++      p.outputs[size_t(out) * p.output_width + n] = cast<bf16_t>(value);
++    }
++  }
++}
++
++template <bool Gate>
++__global__ __launch_bounds__(32 * kChannelWarps) void projection_channels(const __grid_constant__ Projection p) {
++  __shared__ PackedTile<Gate> buffers[2];
++  const uint32_t column = 128 * blockIdx.x;
++  for (uint32_t j = blockIdx.y; j < static_cast<uint32_t>(p.plan[0]); j += gridDim.y)
++    project_channels<Gate>(p, p.plan + 1 + j * (kRows + 1), column, buffers);
++}
++
++inline bool aligned_packed_projection(const Projection& p) {
++  const uintptr_t bits = reinterpret_cast<uintptr_t>(p.inputs) | reinterpret_cast<uintptr_t>(p.bank.weight)
++                         | reinterpret_cast<uintptr_t>(p.bank.scale);
++  return (bits & 15u) == 0;
++}
++
++template <bool Gate>
++inline void launch_projection(const Projection& p, uint32_t groups, DLDevice device) {
++  const dim3 grid(p.output_width / (64 * kWarps), groups);
++  if (aligned_packed_projection(p)) {
++    host::LaunchKernel(grid, 32 * kChannelWarps, device)(projection_channels<Gate>, p);
++  } else {
++    host::LaunchKernel(grid, 32 * kWarps, device)(projection_kernel<Gate>, p);
++  }
++}
++
+ }  // namespace muse_route_pair
+ 
+ struct MuseRoutePair {
+@@ -239,8 +373,8 @@ struct MuseRoutePair {
+         static_cast<const bf16_t*>(active.data_ptr()), static_cast<bf16_t*>(outputs.data_ptr()),
+         {static_cast<const uint32_t*>(down.data_ptr()), static_cast<const uint8_t*>(ds.data_ptr())},
+         static_cast<const bf16_t*>(dscale.data_ptr()), work, uint32_t(inner), uint32_t(hidden), 1};
+-    LaunchKernel(dim3(inner / (64 * kWarps), groups), 32 * kWarps, dev.unwrap())(projection_kernel<true>, up);
+-    LaunchKernel(dim3(hidden / (64 * kWarps), groups), 32 * kWarps, dev.unwrap())(projection_kernel<false>, out);
++    launch_projection<true>(up, uint32_t(groups), dev.unwrap());
++    launch_projection<false>(out, uint32_t(groups), dev.unwrap());
+   }
+ };
+ }  // namespace sglang

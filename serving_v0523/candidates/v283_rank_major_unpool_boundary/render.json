@@ -1,0 +1,31 @@
+{
+  "layouts": [
+    "row-major",
+    "rank-major TP4",
+    "rank-major TP8"
+  ],
+  "ordered_capture_threads": [
+    256,
+    512
+  ],
+  "width": 8192,
+  "orig_wrappers": [
+    [
+      "run_std",
+      "MuseSparkNormResidual<8192, 256, true, true, 1, false, false>::run"
+    ],
+    [
+      "run_std_router",
+      "MuseSparkNormResidual<8192, 256, true, true, 1, false, true>::run"
+    ],
+    [
+      "run_scale",
+      "MuseSparkNormResidual<8192, 256, true, true, 1, true, false>::run"
+    ],
+    [
+      "run_scale_router",
+      "MuseSparkNormResidual<8192, 256, true, true, 1, true, true>::run"
+    ]
+  ],
+  "PDL": true
+}

@@ -1,0 +1,563 @@
+{
+  "compiler": "NVCC 12.9.86, compute_90a/sm_90a, pinned Humming 0.1.12",
+  "variants": {
+    "w2_8_native": {
+      "source_sha256": "44ca026d8bec8a20f925f3c628cd4c5468bf7029d45d0b8f0922af6e0bf0cf34",
+      "block": [
+        8,
+        128,
+        256
+      ],
+      "warp": [
+        8,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 91136,
+      "stages": 4,
+      "cubin_sha256": "ccf6b7556df5bcae7a4d341167c3d4e1e1a521c63c82e6d72cd52d0b6fba34de",
+      "sass_sha256": "eb92f4f10a1cf68d728b419dae86bc5309df0bf4f6c3528add4c714328ffe29d",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1146,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2216
+    },
+    "w2_8_wide": {
+      "source_sha256": "88b6f226be693d32196b183c343173300fd3adfa1afb2127374f5929fd207e58",
+      "block": [
+        8,
+        256,
+        256
+      ],
+      "warp": [
+        8,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 164864,
+      "stages": 4,
+      "cubin_sha256": "3f38f87d2e226c43fc4f271581356ba220d96e133e9dab6e485a12ad931f52da",
+      "sass_sha256": "f87729b1008f4c907bcbb01d73e0dfddf85311b723fd6fa9ac5062df39af0c1e",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 2157,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3376
+    },
+    "w2_8_wide3": {
+      "source_sha256": "d9c9f46ab96524c04c3383640d781c31d40f76cd188ecc823efb80e8de5eb284",
+      "block": [
+        8,
+        256,
+        256
+      ],
+      "warp": [
+        8,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 123904,
+      "stages": 3,
+      "cubin_sha256": "3c7dd0ac21d41e23c8ca8745e15789608aa310865427fa8c16ecacd46362e532",
+      "sass_sha256": "4a76520c56fb690e44b0a7f46ac8ed789666911ca2679ec0ca5770f1e5c0620b",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1615,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2680
+    },
+    "w2_16_native": {
+      "source_sha256": "7696ce2502ce60829e4b520172eae739ad30740890586eb614a95e76cf44cd63",
+      "block": [
+        16,
+        128,
+        256
+      ],
+      "warp": [
+        16,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 107520,
+      "stages": 4,
+      "cubin_sha256": "32dec35fa9005a3cd80b0f8faf8c0e4fd4cffb56383c2e6f7a24ed904bd23a13",
+      "sass_sha256": "2b68c96c060e3c96118a84cdef9ff4064879a4101e6cfe7d59423bf8368ba449",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1152,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2320
+    },
+    "w2_16_wide": {
+      "source_sha256": "541b842fceed86b20ea0cb1b90c6e80e6b2ccabe2f2d768462372056d6d3af6a",
+      "block": [
+        16,
+        256,
+        256
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 181248,
+      "stages": 4,
+      "cubin_sha256": "f92d76df7456ba4de450b50d39df7c2cfc9bafafe3c772ad3c6eab93f3d83afa",
+      "sass_sha256": "8a6853a47b98f056d814553d003147333ae559d4d7fc534dab20e0a4050c65f9",
+      "registers": 96,
+      "stack_store_load": [
+        56,
+        68,
+        88
+      ],
+      "full_K_loop_instruction_sites": 2174,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 7,
+      "whole_instruction_sites": 3704
+    },
+    "w2_16_wide3": {
+      "source_sha256": "6dc0454aa2eb770f246bb97bbe69ae6243847dc280df1bfe14b516bd6be82f7f",
+      "block": [
+        16,
+        256,
+        256
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 136192,
+      "stages": 3,
+      "cubin_sha256": "8e75372492b96ff2b7b4b8d321b0b930f735eb74f80bdcc42333b7e76f9705d4",
+      "sass_sha256": "7061ac0b49b53aeaf9d5230095d49dee9efa90b2d06fb319bea01056d5f3fced",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1616,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2888
+    },
+    "w2_24_native": {
+      "source_sha256": "4a29bd20730d8986bfd2b0515393fc1b89cae4e0bc796a6ddfc22833d0b45b6a",
+      "block": [
+        24,
+        128,
+        256
+      ],
+      "warp": [
+        24,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 123904,
+      "stages": 4,
+      "cubin_sha256": "f566a38d9b3d7f38679305b8af5d682ff90aba43cd0fe222f778ba5b68d1fdd0",
+      "sass_sha256": "633f729515768f9ecdc1591d578af6e8e5c91ad5e42bd08778c6c955f0314d06",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1172,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2448
+    },
+    "w2_24_wide": {
+      "source_sha256": "2583b12c2bc5c92c5b05f7d3a4b34c1e650241bfc6744e5278eb4de2890e79d9",
+      "block": [
+        24,
+        256,
+        256
+      ],
+      "warp": [
+        24,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 197632,
+      "stages": 4,
+      "cubin_sha256": "2cc91dda2d7f73b2a963b111f781ce58ee0ee5d05eead82a89b01b52ff9ae447",
+      "sass_sha256": "0cef44f8110873a75e4f8b465a65ca3e982af871cd6cdf4413d8f36a9aadc6bb",
+      "registers": 96,
+      "stack_store_load": [
+        16,
+        28,
+        48
+      ],
+      "full_K_loop_instruction_sites": 2187,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3888
+    },
+    "w2_24_wide3": {
+      "source_sha256": "a3f99799235eff249d0f09026cd52d8b3e0cc4174aa5b9692f37aff8da6b29c1",
+      "block": [
+        24,
+        256,
+        256
+      ],
+      "warp": [
+        24,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 148480,
+      "stages": 3,
+      "cubin_sha256": "5233b589ced5865c0476950f0dfdc9a3a7d2077b9ecf9dac9add6289cfd820a7",
+      "sass_sha256": "9bdd541b96e129af7366e422470c28b187d3ea5dde8029db6a471ccb18c2994e",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1641,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3160
+    },
+    "w13_8_native": {
+      "source_sha256": "aad14ceef54e5dff88bd9efcbfe37fce327ec89cb9f4de94e06c3684958c57d8",
+      "block": [
+        8,
+        256,
+        128
+      ],
+      "warp": [
+        8,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 82944,
+      "stages": 4,
+      "cubin_sha256": "8d24f13b5fbc0adc5ac84f620093958ceff008c5f24af177ff315d4f82967db6",
+      "sass_sha256": "103e93893a7cf9e9324da6f4dba50b6ee0bace2df6e0db71afdf9988c92279ef",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1147,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2192
+    },
+    "w13_8_wide": {
+      "source_sha256": "429b70421e8dbdeb87af2a5b7098be1f102c8f906ff52692dea444cfe56383c2",
+      "block": [
+        8,
+        512,
+        128
+      ],
+      "warp": [
+        8,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 156672,
+      "stages": 4,
+      "cubin_sha256": "822c37bbef98b7f71eb4da2a6841a9c0fcdab638db5dabb97b6a7336a501ce61",
+      "sass_sha256": "52ca1cb41fa1cf52c80e47190115dacc3a40bceb69c637265bec3cb19d4274e3",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 2153,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3336
+    },
+    "w13_8_wide3": {
+      "source_sha256": "6f8fc2b31b8d3ac1390b90f396da7af0aa124bcaa06dfe08bd1f835931fa34aa",
+      "block": [
+        8,
+        512,
+        128
+      ],
+      "warp": [
+        8,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 117760,
+      "stages": 3,
+      "cubin_sha256": "fd3d7acf72f277451ae8aad52477b183886cfeb36bf212366bb42da018619369",
+      "sass_sha256": "63b8f69ede4841295b206c2fdd4d0a9622ba7fe6a20a42c22ff9f9367dad1565",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1614,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2640
+    },
+    "w13_16_native": {
+      "source_sha256": "64de3e9c6ef4c547a97ede0243bccd49869f2f6a87f9f66dda3412ca8556eae7",
+      "block": [
+        16,
+        256,
+        128
+      ],
+      "warp": [
+        16,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 91136,
+      "stages": 4,
+      "cubin_sha256": "d30ce6cf2e52d168704c1bc902ab1eda15fade70a01caad90f0e69391caa4f93",
+      "sass_sha256": "974c8b42fe63a2cbac6e534527ed19570590f057afd8190deca871c603156b20",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1146,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2272
+    },
+    "w13_16_wide": {
+      "source_sha256": "fb45dee6ef0e6870153fed72c556d2b993dd5a9d9e9bb5b65d41a479c784b833",
+      "block": [
+        16,
+        512,
+        128
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 164864,
+      "stages": 4,
+      "cubin_sha256": "6d264a13c29530b3032d41bd206957b943c015925436ace673533bc5ddc2eb9b",
+      "sass_sha256": "1ee8038660942b4a4d21ac6a3ea3ea5e8e9306f068187d0b0dbb4e4129d939d8",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 2159,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3552
+    },
+    "w13_16_wide3": {
+      "source_sha256": "2d8a7cbf67a6c969e6369653d2b1627b8d45a46ac1c48aa641f746af5d38ff49",
+      "block": [
+        16,
+        512,
+        128
+      ],
+      "warp": [
+        16,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 123904,
+      "stages": 3,
+      "cubin_sha256": "1c37736bc8cc08183fcb0a2dbf1c81d6f349ff2766b4e7149cc96374a0f2a938",
+      "sass_sha256": "c5e4b5db9a84751521d949261fcaca8812111157e4411d44ac56c66a2e945b63",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1616,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2848
+    },
+    "w13_24_native": {
+      "source_sha256": "6e46003d81acdc4eb6c3f45d4d0899bcf11a7f08d44d503247f03f041ad1ef74",
+      "block": [
+        24,
+        256,
+        128
+      ],
+      "warp": [
+        24,
+        32,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 99328,
+      "stages": 4,
+      "cubin_sha256": "21622f417f06c9557f23bdd2c21eedd7b7e38c2744fe1263cfc32494fd6dfc03",
+      "sass_sha256": "5699e92e5c7bf332bb748c01b8dbb5fc06b058546d01cf0946d48252b43ddfbe",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1172,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 32,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 2400
+    },
+    "w13_24_wide": {
+      "source_sha256": "20c89f396f712c6439da936014a11e7115e2842d37ebc8087eac7420d533e70f",
+      "block": [
+        24,
+        512,
+        128
+      ],
+      "warp": [
+        24,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 173056,
+      "stages": 4,
+      "cubin_sha256": "25eb9f7acb4de044a36b20e9045066e2390a77cca564ec98cee4e3318205e8e1",
+      "sass_sha256": "722e0d1de0c45686d33b96a732f06e7e60377445c91b88fa1d4750ba5f12e58b",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 2186,
+      "stages_per_loop": 4,
+      "HGMMA_per_loop": 64,
+      "drains_per_loop": 16,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3792
+    },
+    "w13_24_wide3": {
+      "source_sha256": "913261046ca07eacae788c71a7c2a2d3416a48c9bf66841f206970b72dc8583e",
+      "block": [
+        24,
+        512,
+        128
+      ],
+      "warp": [
+        24,
+        64,
+        64
+      ],
+      "threads": 640,
+      "math_threads": 512,
+      "shared": 130048,
+      "stages": 3,
+      "cubin_sha256": "5fea22d768b07286349db5f785ba082ec1231baed115815132e36b91370b54c8",
+      "sass_sha256": "d6f5cbf8a9fdab1b24652bdcf0c7163f1ff0abb4b34d949ac4b1c31a3e38df9e",
+      "registers": 96,
+      "stack_store_load": [
+        0,
+        0,
+        0
+      ],
+      "full_K_loop_instruction_sites": 1640,
+      "stages_per_loop": 3,
+      "HGMMA_per_loop": 48,
+      "drains_per_loop": 12,
+      "loop_local_access_sites": 0,
+      "whole_instruction_sites": 3072
+    }
+  }
+}

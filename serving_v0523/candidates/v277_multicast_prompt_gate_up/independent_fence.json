@@ -1,0 +1,434 @@
+{
+  "images": [
+    {
+      "image": "GroupedMulticastPromptGateUpKernel.cu",
+      "sha256": "874e28a3a69b2fd911fd042c63bdc0e1a417a020ef12ac96f3072cc49c8e3e6f",
+      "cluster": 4
+    },
+    {
+      "image": "WidePromptWeightPipeline2.cu",
+      "sha256": "7830b0e2e1d9a87cae6889e390099ff465b3905c9ba3eed3db4c9dfd5fa569a7",
+      "cluster": 2
+    },
+    {
+      "image": "WidePromptWeightPipeline4.cu",
+      "sha256": "ef86fa1eaeb41616112be9ec7f4b6864ce7de74c989907c71a2578340b9b1726",
+      "cluster": 4
+    }
+  ],
+  "source_sha256": {
+    "w13/prompt_multicast.py": "df30eaef5fd36bd3fd1b04f0bec3edefef19c06d620c3ff24c770579ab66613c",
+    "w13/decode_gate_up.py": "e5f2848c6f7a573d7a8a1722dfc5c063031c08b6842d9d61b049a56e6102c2e3",
+    "w13/residual_prompt_mma.py": "deb3ccbaf8aafe104ad966d405d259680ece714a377016d866cb8cecadce188e",
+    "w2/prompt_weight_pipeline.py": "b2079f9390831371614d20a526af750e413eaef392c386b0fbad6c4ec0102b79",
+    "w2/residual_prompt_mma.py": "fdda95d431045973df248ce0a9ff2c8cac4e17a9558b3002a1b7a5d3117dde4c",
+    "vendor/epilogue/pipeline.cuh": "730493c5a7a92176bf3a5d47d54596a663d734018ac02c2b26ebb2da3e292ed3",
+    "vendor/utils/storage.cuh": "066b4c47b65b07c88ed975ccc5413fea67786e210f92c8032d1c7d8eb4ccd5f5",
+    "vendor/mma/wgmma.cuh": "e3b1e50fa31b96a2f86b4dbec7d83db7d940356d2be653876359754514c355be",
+    "vendor/scheduler.cuh": "24443b74d10ac799d805d2ffc840503142696f744a1b3882379c55a6efc1f2e2",
+    "vendor/kernel/humming_ws.cuh": "6a148cc29b81d4009066667c347d9091a8a138009f7884226e9969a6936e2899",
+    "vendor/memory/g2s_pipeline.cuh": "479ff827ecf40b82d4685b3a104d796ef41bb643a1d9cc398feabcc77ccbd43b"
+  },
+  "ordering": {
+    "2": {
+      "local": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 1,
+          "root_waits": [
+            [
+              0,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 1,
+          "missing_peer_fence_orders": 2,
+          "root_waits": [
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 4,
+          "missing_peer_fence_orders": 5,
+          "root_waits": [
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ],
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ],
+            [
+              0,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        }
+      ],
+      "math": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 1,
+          "root_waits": [
+            [
+              0,
+              512
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 2,
+          "root_waits": [
+            [
+              0,
+              512
+            ],
+            [
+              1,
+              512
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 5,
+          "root_waits": [
+            [
+              0,
+              512
+            ],
+            [
+              1,
+              512
+            ],
+            [
+              0,
+              512
+            ],
+            [
+              1,
+              512
+            ],
+            [
+              0,
+              512
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        }
+      ],
+      "producer": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              257
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 1
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              257
+            ],
+            [
+              1,
+              257
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 2
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              257
+            ],
+            [
+              1,
+              257
+            ],
+            [
+              0,
+              257
+            ],
+            [
+              1,
+              257
+            ],
+            [
+              0,
+              257
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 5
+        }
+      ]
+    },
+    "4": {
+      "local": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 3,
+          "root_waits": [
+            [
+              0,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 3,
+          "missing_peer_fence_orders": 6,
+          "root_waits": [
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 12,
+          "missing_peer_fence_orders": 15,
+          "root_waits": [
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ],
+            [
+              0,
+              256
+            ],
+            [
+              1,
+              256
+            ],
+            [
+              0,
+              256
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        }
+      ],
+      "math": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 3,
+          "root_waits": [
+            [
+              0,
+              1024
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 6,
+          "root_waits": [
+            [
+              0,
+              1024
+            ],
+            [
+              1,
+              1024
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 15,
+          "root_waits": [
+            [
+              0,
+              1024
+            ],
+            [
+              1,
+              1024
+            ],
+            [
+              0,
+              1024
+            ],
+            [
+              1,
+              1024
+            ],
+            [
+              0,
+              1024
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 0
+        }
+      ],
+      "producer": [
+        {
+          "jobs": 0,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [],
+          "remote_producer_arrivals_per_follower": 0
+        },
+        {
+          "jobs": 1,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              259
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 1
+        },
+        {
+          "jobs": 2,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              259
+            ],
+            [
+              1,
+              259
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 2
+        },
+        {
+          "jobs": 5,
+          "stale_read_orders": 0,
+          "missing_peer_fence_orders": 0,
+          "root_waits": [
+            [
+              0,
+              259
+            ],
+            [
+              1,
+              259
+            ],
+            [
+              0,
+              259
+            ],
+            [
+              1,
+              259
+            ],
+            [
+              0,
+              259
+            ]
+          ],
+          "remote_producer_arrivals_per_follower": 5
+        }
+      ]
+    }
+  },
+  "unsafe_in_job_pairs": {
+    "w13_four_stages": 0,
+    "w13_two_stages_negative_control": 248,
+    "w2_four_stages": 0
+  },
+  "scope": "CPU happens-before graph, native generated geometry and source checks; no CUDA scheduling or numeric execution"
+}

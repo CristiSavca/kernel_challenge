@@ -1,0 +1,87 @@
+{
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent_hashes": {
+    "v64": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+    "v65": "80e41ae32e748857053f553359f4d555cbe983534cff465f4910551723c30337",
+    "v66": "1032101b0fbdf8ccc8a5e0b858b6c507a1b9958ac7a0996344a7ca29a8d2c6fd",
+    "v67": "fbdcc9ff342a6bb0066b373ba7a659de4ba3a6bda3791d0f2cf57839e7a7ea57"
+  },
+  "v66_payload": {
+    "bytes": 61072,
+    "files": 11,
+    "max_added_line": 99,
+    "reviewed_scratch_hunks_equal": true
+  },
+  "v66_planner": {
+    "tested_source_sha256": "1aec843d9ddf1b053d8d17ff59aa4237f78f733f42691d47a759b689ba3826bf",
+    "method": "Execute the final Triton planner body with NumPy tensors and checked masked pointers. Compare local IDs, suffix offsets, original-slot maps, and live row order to an independent oracle.",
+    "exact_source_cases": 3036,
+    "extreme_signed_id_cases": 506,
+    "max_slots_tested": 2048,
+    "max_experts_tested": 64,
+    "dtypes": [
+      "int32",
+      "int64"
+    ],
+    "coverage": [
+      "EP1/EP4/EP8 every rank",
+      "all dropped",
+      "first or last owned expert",
+      "mixed routing",
+      "nonpower-of-two shapes",
+      "int64 wraparound sentinels"
+    ],
+    "mismatches": 0,
+    "out_of_bounds_accesses": 0,
+    "colliding_stores": 0
+  },
+  "pinned_humming_0_1_12": {
+    "sdist_sha256": "c96c37c95f74379067d2d2d0c5154d12ee9a8cfa29a7c3370a7f3e34f207ca72",
+    "configs_per_projection_ep8": 3,
+    "configs_per_projection_ep4": 3,
+    "local_m_tile": [
+      8,
+      16,
+      24
+    ],
+    "ep8_tier_upper_bounds": [
+      112,
+      216,
+      320
+    ],
+    "ep4_tier_upper_bounds": [
+      144,
+      432,
+      864
+    ],
+    "target_grouped_cta_threads": 640,
+    "target_grouped_cta_smem_bytes_range": [
+      82944,
+      123904
+    ],
+    "same_tiles_as_indexed": true,
+    "same_weight_traffic_as_indexed_at_equal_tiles": true,
+    "empty_route_tensor_contract": "Physical M stays positive. All expert offsets equal M, giving zero scheduled tiles and an all-masked mapped finalizer."
+  },
+  "v67_integration": {
+    "v66_minus_v64_paths": [
+      "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+      "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+      "python/sglang/srt/environ.py",
+      "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+      "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+      "python/sglang/srt/models/muse_spark.py"
+    ],
+    "v67_minus_v65_paths": [
+      "python/sglang/srt/layers/attention/flashattention_backend.py",
+      "python/sglang/srt/mem_cache/allocation_sizing.py",
+      "python/sglang/srt/mem_cache/kv_cache_configurator.py"
+    ],
+    "paths_disjoint": true,
+    "capacity_contract": "V67 grows key-axis request and page buffers. V66 reads the same number of live query rows and derives its static route slots from that extent. V62 consumes the live key lengths.",
+    "current_max_route_slots": 2048,
+    "current_max_query_rows_per_request": 8,
+    "wider_draft_configuration": "Native FA3 handles query geometry above the V62 tile bound. V66 uses indexed Humming when the physical route count exceeds 2048."
+  },
+  "gpu_validated": false
+}

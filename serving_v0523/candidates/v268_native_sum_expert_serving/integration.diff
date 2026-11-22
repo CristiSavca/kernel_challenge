@@ -1,0 +1,31 @@
+diff --git a/python/sglang/srt/layers/communication/sp_half_qkv.py b/python/sglang/srt/layers/communication/sp_half_qkv.py
+index 13087a2..31f9fe9 100644
+--- a/python/sglang/srt/layers/communication/sp_half_qkv.py
++++ b/python/sglang/srt/layers/communication/sp_half_qkv.py
+@@ -73,7 +73,7 @@ def enable_half_qkv(linears, group):
+         _exchange_peer(comm, (rank + half) % size, owned, remote)
+     group.sp_qkv_cohort_stream = torch.cuda.Stream(device=comm.device)
+     for fc in linears:
+-        fc._sp_half_qkv = True
++        fc._sp_half_qkv = fc.quant_method
+ 
+ 
+ def _half_qkv_shape(local: torch.Tensor, weight: torch.Tensor, size: int, dispatch: bool):
+diff --git a/python/sglang/srt/layers/layernorm_sp.py b/python/sglang/srt/layers/layernorm_sp.py
+index 90241fc..97a4897 100644
+--- a/python/sglang/srt/layers/layernorm_sp.py
++++ b/python/sglang/srt/layers/layernorm_sp.py
+@@ -256,9 +256,12 @@ def column_parallel_g_matmul(
+     tile-gated all-gather; other models retain their existing implementation.
+     """
+     num_tokens = sp_num_tokens()
++    method = getattr(linear, "_sp_half_qkv", None)
+     if (
+-        getattr(linear, "_sp_half_qkv", False) and bias is None
++        method is not None and linear.quant_method is method and "apply" not in vars(method) and bias is None
+         and input_parallel.dtype == torch.bfloat16 and not input_parallel.requires_grad
++        and linear.weight.dtype == input_parallel.dtype and linear.weight.device == input_parallel.device
++        and linear.weight.ndim == 2 and linear.weight.is_contiguous() and not linear.weight.requires_grad
+         and not torch.is_autocast_enabled() and not torch.are_deterministic_algorithms_enabled()
+     ):
+         from sglang.srt.layers.communication.sp_half_qkv import half_qkv, half_qkv_eligible

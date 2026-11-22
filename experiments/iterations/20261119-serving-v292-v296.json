@@ -1,0 +1,179 @@
+{
+  "objective": "Official four-load serving target of 4×",
+  "classification": "progress",
+  "prior_iteration": "20261119-serving-v286-v291.json",
+  "observed_utc": "2026-11-19 07:23:16 UTC",
+  "official_incumbent": {
+    "job_id": "abd217baf0ed49fd",
+    "score": 1.4119,
+    "passed": true,
+    "scope": "Highest completed passing run returned by this team’s official jobs listing",
+    "patch_sha256": "f6aaf93ce06ccfce9461e06bc3f71dea05dd901c01497c8be31bd2c515da689a",
+    "concurrency": [
+      1,
+      4,
+      16,
+      32
+    ]
+  },
+  "candidate": "V296",
+  "candidates": [
+    {
+      "candidate": "V293",
+      "parent": "V291",
+      "parent_tree": "7c7319c4a98fb10931ec00011563f49b9837c93b",
+      "tree": "5e2d502c0fc57804ce6a29ed28c04e282224cee5",
+      "patch_sha256": "d0c301387bfffba3dd6393fa047f55dda36652bda972c82d7499944063cd12cf",
+      "delta_sha256": "e326742bdff8d1f84bbb81514a8f673f9873936a49e7e86a5dc5358929b6489e",
+      "bytes": 401544,
+      "submitted": false,
+      "paths": 61,
+      "directory": "serving_v0523/candidates/v293_peer_prompt_norm"
+    },
+    {
+      "candidate": "V295",
+      "parent": "V291",
+      "parent_tree": "7c7319c4a98fb10931ec00011563f49b9837c93b",
+      "tree": "2c712d66b6211c08845570d67423807ef7d54006",
+      "patch_sha256": "299cf145714cf84abddf8fadfd46698a91c196c7cf35d11cf5591b96c3fd89fb",
+      "delta_sha256": "c89c3c66896fc2928a7427dafc2888e644a2b92a2ba75e12262446d9b8963893",
+      "bytes": 401651,
+      "submitted": false,
+      "paths": 61,
+      "directory": "serving_v0523/candidates/v295_published_prompt_routes"
+    },
+    {
+      "candidate": "V296",
+      "parent": "V295",
+      "parent_tree": "2c712d66b6211c08845570d67423807ef7d54006",
+      "tree": "988e8f886b89bb726cfac55a1211085046f91fe8",
+      "patch_sha256": "9080bf12a7d0ce24da22b5782cd5749e9d737ef0e09b9f1f05259d02eaceac6b",
+      "delta_sha256": "0a57d62f939d0fd6c4610fa186d21203fd68bf96421ba342166694bd2727e4e1",
+      "bytes": 407046,
+      "submitted": false,
+      "paths": 61,
+      "directory": "serving_v0523/candidates/v296_normalized_peer_routes"
+    }
+  ],
+  "implementation": "Publish exact route scores, IDs, rank eligibility and normalized activation rows together in the alternating symmetric input banks. 186 separate route collectives and 62 activation-copy launches removed for a fully eligible 62-layer prompt.",
+  "limits": "3× and 4× still require measured improvements across the official load curve. V296 has no eight-H200 result for output agreement, TTFT, peak memory or throughput. High-load decode was separately checked for regressions.",
+  "tests": {
+    "real_process_rank_calls_per_independent_replay": 276,
+    "route_pairs_per_replay": 861584,
+    "bf16_activation_words_per_replay": 7813888,
+    "wrong_words_in_alias_ablation": 17088,
+    "breakable_captures": 18,
+    "graph_replays": 108,
+    "ordinary_decode_comparisons": 34,
+    "flag_orderings": 40320,
+    "server_configurations": 17
+  },
+  "independent_findings": {
+    "V292": "V68 has a 0.85% advantage over the corresponding V64 stock-normalized 16-user check, inside its replicate spread. None of 18 completed private checks returned within eight hours.",
+    "V294": "52 two-prompt joins in 298 actual prefill forwards had no overlapping query rows or sliding bands. Prefix and sliding shortcuts offer no new work removal on these traces.",
+    "selector": "The lazy greedy draft selector saved under 0.03% of local vocabulary-head FLOPs in the 32-user shape. It would serialize seven edges."
+  },
+  "selection": {
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "mode": "check",
+        "status": "queued",
+        "users": 16,
+        "load_source": "dated local accepted CLI receipt"
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "mode": "check",
+        "status": "queued",
+        "users": 16,
+        "load_source": "dated local accepted CLI receipt"
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "mode": "check",
+        "status": "queued",
+        "users": 32,
+        "load_source": "official result"
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "mode": "check",
+        "status": "queued",
+        "users": 4,
+        "load_source": "official result"
+      }
+    },
+    "remaining": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "standby": "V229/V198 conditional November 20 private check",
+    "new_submissions": 0,
+    "paid_allocations": 0
+  },
+  "next_discriminating_measurement": "Matched eight-H200 V291/V296 at 16 or 32 users, with routing publication plus packing time, norm/copy time, actual admittance, full token agreement, first/later TTFT, peak memory, and measured throughput. Existing check reservations keep their earlier evidence-based selection.",
+  "inputs_sha256": {
+    "serving_v0523/candidates/v292_calibrated_selection/check.json": "add3a17e895c769579af1908e0f483ff323b75b55ba8650f23a4e35066a141bb",
+    "serving_v0523/candidates/v293_peer_prompt_norm/admission.json": "804c7d9a55e063943e8f06dc19ca08a849a070db0c85a6cdb040ac5c6db5fb60",
+    "serving_v0523/candidates/v293_peer_prompt_norm/cleanup.json": "3eddf8b4188bbeeb4864a9256c2ddd53f81f5a3d9819166489d5cf5e210200c8",
+    "serving_v0523/candidates/v293_peer_prompt_norm/native_setup.json": "e0f79a693f5d1b1cb65b2e02e6bca07e7f8526575268e1c120eae8017a60e928",
+    "serving_v0523/candidates/v293_peer_prompt_norm/numeric.json": "d8d6adec638791710bc20a61b3e22082ededfa77eb04ad7f1479187e0d84d9f0",
+    "serving_v0523/candidates/v293_peer_prompt_norm/transport_norm.json": "f982effa770a730edfd4cc5ed3e323371e12500fdebe7dd3020e7ade1ecfe532",
+    "serving_v0523/candidates/v293_peer_prompt_norm/validation.json": "da0b31f0e26240fb328f6bc49dcaa296424db212cd40db374313a5753b85e9d7",
+    "serving_v0523/candidates/v293_peer_prompt_norm/work.json": "4ef2431d8571d3e9c9ce9b663a2996f1ef11cdbb7992e0d7e6f43df2c95a6008",
+    "serving_v0523/candidates/v294_live_prefix_window_feasibility/cleanup.json": "179599df379428257707333984f1fbd173813db52dbf64a41effd91fdbf36ad0",
+    "serving_v0523/candidates/v294_live_prefix_window_feasibility/trace.json": "7bf670739db36502fc0a5660dac51f5d08c14098a41a0a86049641eb2ec55d0e",
+    "serving_v0523/candidates/v294_live_prefix_window_feasibility/window.json": "7087dacf8bd886af4cd1fc64a23ac12a73f3ee8639d1d6f338a55f4510f45c4f",
+    "serving_v0523/candidates/v295_published_prompt_routes/export_cleanup.json": "c58f886b5ec6a868c7c3e3b11d0e8a5f0c0729f4da6db93b33756ea9cfd28148",
+    "serving_v0523/candidates/v295_published_prompt_routes/graph_replay.json": "4d2dc60b59a03deb76b4bbc164a34275192c3e0fecb75212773bfeb7d13d48f5",
+    "serving_v0523/candidates/v295_published_prompt_routes/independent_routes.json": "cb1ebf693626037e31d4ab76c1832fb096002c235295c1a295d41cb95d143102",
+    "serving_v0523/candidates/v295_published_prompt_routes/ordering.json": "9dfc00aec5d97d30740af4f0bda0b3764c91cd8ca61d5d6c5e84d62137fc388d",
+    "serving_v0523/candidates/v295_published_prompt_routes/startup.json": "67da40e1c1c88f918f750089d53a0a71960e26202d86e8383e7f81dc58024b35",
+    "serving_v0523/candidates/v295_published_prompt_routes/validation.json": "5b861c8701e42963b0cdfe06cf661436e25959447e41957bb758afed93b2e458",
+    "serving_v0523/candidates/v295_published_prompt_routes/work.json": "4a08fc87406cfef8ec075aee060afb2e91d1402abaf51b2b087463c264e07e12",
+    "serving_v0523/candidates/v296_normalized_peer_routes/cleanup.json": "7a5001fd46a3665588675eec9b1f055a9e8576239b909bc07cb808fa50e540d2",
+    "serving_v0523/candidates/v296_normalized_peer_routes/flags.json": "b53dbc4f08e8b12d83f27b3041f883f657d6e32ad8caf81a048ad1b49df46639",
+    "serving_v0523/candidates/v296_normalized_peer_routes/graph_norm.json": "c2cae04e8a8ab67a25121ce84e3f30af8dddceb1bba659e4d33801bec89d236a",
+    "serving_v0523/candidates/v296_normalized_peer_routes/independent_norm_alias.json": "6486dc6123435e0d445e56b27c8e6e2b50f71f5e0f3cc5f682091e43cfffdb0b",
+    "serving_v0523/candidates/v296_normalized_peer_routes/independent_norm_late_helper.json": "f4ec9b0891c4b5621c8982e44c29e42ff59b340c02b63f200d892b215a4958d3",
+    "serving_v0523/candidates/v296_normalized_peer_routes/independent_norm_routes.json": "d57d71b9672f5e4a0c6b4e6025ff1ebd0f1e117a98f5e7e144492a01b2be0c48",
+    "serving_v0523/candidates/v296_normalized_peer_routes/judge_observation.json": "631b2e5a3cf28fa7c9dc356d5bf45ddd6591f17d2246169a9d22d1c66e79c9fa",
+    "serving_v0523/candidates/v296_normalized_peer_routes/native_setup.json": "74fa1895654f83d8ecf2b54f7bbbe512b638dabe23cd74742b0d353d5894cfcf",
+    "serving_v0523/candidates/v296_normalized_peer_routes/norm_publication.json": "b377b854272612219bacb2368edd15e75c7b18f5073726d39231a1c09eed1423",
+    "serving_v0523/candidates/v296_normalized_peer_routes/ordinary_decode.json": "7b168eda0ca6bd2bb0e53d2c7b6b66e52f14472c637de8f61228f425e50572e2",
+    "serving_v0523/candidates/v296_normalized_peer_routes/server_config.json": "c2b9b755199eb430ea09738efa413b84c5814a5c60583dd6474746f16a089507",
+    "serving_v0523/candidates/v296_normalized_peer_routes/validation.json": "60bcdb3d19578dac5f2a0085826547fb7f2b992953f214962c61b631aa720ede",
+    "experiments/iterations/20261119-serving-selector-work.json": "62275bc48ead7cf4262be47ff36a03562ab88eb0c7cfda2fa081535de12ab055"
+  },
+  "cleanup": [
+    {
+      "candidate": "V293",
+      "receipt": "serving_v0523/candidates/v293_peer_prompt_norm/cleanup.json",
+      "observed_volume_free_change_bytes": 51372032
+    },
+    {
+      "candidate": "V294",
+      "receipt": "serving_v0523/candidates/v294_live_prefix_window_feasibility/cleanup.json",
+      "observed_volume_free_change_bytes": 61440
+    },
+    {
+      "candidate": "V295",
+      "receipt": "serving_v0523/candidates/v295_published_prompt_routes/export_cleanup.json",
+      "observed_volume_free_change_bytes": 51580928
+    },
+    {
+      "candidate": "V296",
+      "receipt": "serving_v0523/candidates/v296_normalized_peer_routes/cleanup.json",
+      "observed_volume_free_change_bytes": 51945472
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "state": "CPU_AND_INDEPENDENT_SOURCE_PASS_GPU_PENDING",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V72",
+  "parent_sha256": "e90c47ab73e66158b678893bb6fc7950c3b52f38cc3213ac6d7b7716d1b19705",
+  "sha256": "9d82d7f0eabe1635316daf72cde73130a7c37629af237bd39d9eb6d6e6983cf7",
+  "bytes": 133765,
+  "files": 25,
+  "python_compiled": 23,
+  "max_added_line": 106,
+  "delta_sha256": "03c374bb350efc00330d4d15f0938341cc1e889043d39cbc63cd0b965c60d4cf",
+  "delta_bytes": 4877,
+  "delta_files": [
+    "python/sglang/srt/arg_groups/fields/spec.py",
+    "python/sglang/srt/layers/dflash_context_projection.py",
+    "python/sglang/srt/models/dflash.py"
+  ],
+  "official_local_export_exact": true,
+  "apply_and_reverse_strict_pass": true,
+  "cpu": {
+    "constructors": 120,
+    "projection_and_gather": 336,
+    "checkpoint_and_shape": 924,
+    "independent_rerun_passed": true,
+    "inherited_tree": {
+      "proposals": 1400,
+      "accept_slot_permutations": 9800,
+      "replay_resets": 707,
+      "capability": 32,
+      "attention": 72,
+      "max_relative_l2": 0.001504
+    },
+    "inherited_capacity": {
+      "allocator_tail": 2286109,
+      "graph_shapes": 33792
+    }
+  },
+  "source_geometry_tp8": {
+    "input_features": 40960,
+    "output_features": 8192,
+    "prior_fc_weight_mib": 640,
+    "sharded_fc_weight_mib_per_rank": 80,
+    "weight_saving_mib_per_rank": 560,
+    "extra_gather_transient_mib_256_rows": 4.5,
+    "extra_gather_transient_mib_16384_rows": 288,
+    "timing_measured": false
+  },
+  "runtime_gates_pending": [
+    "flag acceptance and activation",
+    "PyTorch CUDA linear and NCCL execution",
+    "first and later-turn agreement",
+    "exact requested token lengths",
+    "peak memory <= stock plus 2 GB per rank",
+    "TTFT <= twice stock",
+    "acceptance and throughput comparison"
+  ],
+  "gpu_executed": false,
+  "submitted": false,
+  "scratch_removed": true,
+  "cleanup": {
+    "removed_stage": "okc-v73.9R6RzZ6R",
+    "allocated_kib": 174172,
+    "available_kib_before": 31013792,
+    "available_kib_after": 31195072,
+    "observed_change_kib": 181280
+  }
+}

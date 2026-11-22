@@ -1,0 +1,888 @@
+{
+  "nvcc": "12.9.86",
+  "native_host": "Ubuntu aarch64 with apache-tvm-ffi headers",
+  "architecture": [
+    "sm_90",
+    "sm_90a"
+  ],
+  "flags": [
+    "-O3",
+    "--use_fast_math",
+    "--expt-extended-lambda",
+    "--expt-relaxed-constexpr",
+    "-std=c++20"
+  ],
+  "hardware": false,
+  "builds": {
+    "base": {
+      "files": {
+        "sm_90.ptx": "c28cfad120dd76e41b74103b66b03d95e2d78c19192ca306dc1944a509d1412f",
+        "sm_90a.ptx": "7b2b26f7eaffb315aecc7e00d2c12ba00defdf25ea69d543208c33d8ca7c5b4d",
+        "sm_90.cubin": "9025441027ee268585f59fc93c46698fc61ebf0a5b90eeffe5f46d0f6c67a8cf",
+        "sm_90a.cubin": "37d9f65b44bfa4b509e4c878cfd424833920f3f3f5bcba442bf0f5cfa553087e",
+        "sm_90.o": "5617ccb962234ff319172914e1159bd125f5716b08368c584bb28e34971515c5",
+        "sm_90a.o": "7440975d422e471e58ab65c68a1133c4507f3a5a6b60dfc188f42735dfce8e71",
+        "sm_90.sass": "66225bde98622b7aa452d8f6e56294ad65bed4cb283bc7cc57ad80d6c90556d7",
+        "sm_90a.sass": "286e625cf78d770512432b217fa2d5b0d0f3dcff082d25bf16e89efbb13f10c4",
+        "muse_spark/expert_route_pair.cuh": "901a1c8ebfe37ed4a67586ad8766e27daa7d783a22f51097d35c13078896c43e"
+      },
+      "results": {
+        "sm_90a": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          }
+        },
+        "sm_90": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "coop": {
+      "files": {
+        "sm_90.ptx": "78398d16c473f317d6156635e0ebd1146585764c880cc20c08caf0f3c2819268",
+        "sm_90a.ptx": "d45efe0901e2f5f63c1a3dd9d7964e44a81a9e1ac95f549add59c4662272056e",
+        "sm_90.cubin": "e29baeffa69f3c4752a6e2b15cc8538306ea2fcc713c10661d02d5c3bcc1e7a0",
+        "sm_90a.cubin": "7b602d7228963a4433a3048bdda367940fdf988938231c19e277c5db79d3a5b8",
+        "sm_90.o": "8cb663a7620dc5fd77da216fba9325c9927a53495c12bee312a20ed813d6579b",
+        "sm_90a.o": "b37be8a3e606fbf8ff9cda4eca76717513c330edad5d83c7268c558f0efe2b0b",
+        "sm_90.sass": "532f36da4592e259d146dbe7db0db016069a0bbaed6badad3d29a827b73dd1f8",
+        "sm_90a.sass": "eab7535d59a752d19f6537794cd37ee11e6ad23026dcb65735618468591d6c22",
+        "muse_spark/expert_route_pair.cuh": "c918e33be90838c392d968b8e4a36dbadb6b533de9e9e1ba26eb7088b1188b9f"
+      },
+      "results": {
+        "sm_90a": {
+          "cooperative_W2": {
+            "registers": 56,
+            "shared_bytes": 18432,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1184,
+            "steady_backedge": {
+              "begin": "0x1a80",
+              "end": "0x42c0",
+              "sites": 645,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 16,
+                "LDGSTS": 14,
+                "LDS": 40,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 64,
+            "shared_bytes": 36864,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1560,
+            "steady_backedge": {
+              "begin": "0x1c40",
+              "end": "0x56d0",
+              "sites": 938,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 16,
+                "LDGSTS": 14,
+                "LDS": 56,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        },
+        "sm_90": {
+          "cooperative_W2": {
+            "registers": 56,
+            "shared_bytes": 18432,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1184,
+            "steady_backedge": {
+              "begin": "0x1a80",
+              "end": "0x42c0",
+              "sites": 645,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 16,
+                "LDGSTS": 14,
+                "LDS": 40,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 64,
+            "shared_bytes": 36864,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1560,
+            "steady_backedge": {
+              "begin": "0x1c40",
+              "end": "0x56d0",
+              "sites": 938,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 16,
+                "LDGSTS": 14,
+                "LDS": 56,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "direct": {
+      "files": {
+        "sm_90.ptx": "64cf10bb2837ad7fcfb5bdf91190d1f35dda33375226991c3a15b0307f324f11",
+        "sm_90a.ptx": "c7b1b8ac4d28c8980adecc9d7839ec6b4463e4d0360fb1f6588bd98f7a6980f9",
+        "sm_90.cubin": "3d98692f088f5e1ef0933305869e586f9b813826cf8927473e1da0da0d6c4ca8",
+        "sm_90a.cubin": "09e0f3970fb14c07c79fc69d4d8afeec4e97c04657f73d90fa53929ca205aabd",
+        "sm_90.o": "4c14a5f09a6f9eade09c12ced7975fb71a394e99efbddc92d556a4de4977adce",
+        "sm_90a.o": "595b3450ddead874cc88614982a90cdbc1687737cb7aa0d815c7796f0c1f0471",
+        "sm_90.sass": "4101fed34d2fbfe2a2427f84f4aa94aef2026d14e5d6a3817b1364ceb282cdc6",
+        "sm_90a.sass": "c21c918a8589fecc8b9de45a85ba92bb35743cc7b585490d46fb114e4d854764",
+        "muse_spark/expert_route_pair.cuh": "9aa5f74ee5b8ff49401d9ab5f1074c63e2cb84f1c5f1c3577b41273a30497c24"
+      },
+      "results": {
+        "sm_90a": {
+          "cooperative_W2": {
+            "registers": 30,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 400,
+            "steady_backedge": {
+              "begin": "0x610",
+              "end": "0xd40",
+              "sites": 116,
+              "histogram": {
+                "HMMA": 2,
+                "HMUL2": 16,
+                "LDG": 8,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 48,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 368,
+            "steady_backedge": {
+              "begin": "0x800",
+              "end": "0xdb0",
+              "sites": 92,
+              "histogram": {
+                "HMMA": 2,
+                "HMUL2": 16,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          }
+        },
+        "sm_90": {
+          "cooperative_W2": {
+            "registers": 30,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 400,
+            "steady_backedge": {
+              "begin": "0x610",
+              "end": "0xd40",
+              "sites": 116,
+              "histogram": {
+                "HMMA": 2,
+                "HMUL2": 16,
+                "LDG": 8,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 48,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 368,
+            "steady_backedge": {
+              "begin": "0x800",
+              "end": "0xdb0",
+              "sites": 92,
+              "histogram": {
+                "HMMA": 2,
+                "HMUL2": 16,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "inputs": {
+      "files": {
+        "sm_90.ptx": "fdd0bdd8ad84eef1eb836f054013f0ad6ab0f134a7eed441d666015d01675e8a",
+        "sm_90a.ptx": "912ec843faa4a8be4c9785a59bd95dc271c67312380487b84ba73baf3b91cd38",
+        "sm_90.cubin": "3ee16b5b20ea0c5d0cde2190b68886b9f219f97b7c62ec76545c65b53820f3a3",
+        "sm_90a.cubin": "c70e92a38d7a59b3595fa17c7b27fd43404bfaeac968561708ed84488c92ddda",
+        "sm_90.o": "22b17f28293c65729af5928325f5ded11ccc8b48a170ee0252883ff2448644c6",
+        "sm_90a.o": "e18c94282dfef9c4db33b5201c292dd3d9b0a15532b16408c026c192a85a6b41",
+        "sm_90.sass": "3da5a37de8c1294ab515e0b3be79d8d5b0283b00856126c1d5b16ff2c327e3b7",
+        "sm_90a.sass": "b238a9a8995bdf9f8e6ec385f18028060f0626c0a8464148c8b1b36d532af02f",
+        "muse_spark/expert_route_pair.cuh": "bc37f0db48fde3167bd1127a4362b6b5c7add1ac4b6f7b1064e96fbf01f718f9"
+      },
+      "results": {
+        "sm_90a": {
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        },
+        "sm_90": {
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "final": {
+      "files": {
+        "sm_90.ptx": "a8f92e78d850ca69783eed3eefe9b93e98e397087feb99d388327f7e29f90cd8",
+        "sm_90a.ptx": "9338f25aa6088c2fdfb0d3afb4756f3802bd8db5be179c649fc9464f043c2327",
+        "sm_90.cubin": "2452d4c2a930e066717e963c2a573f63706d1c04e835dc9743166983100d7430",
+        "sm_90a.cubin": "eb406529dbf5a5b33ead1e0429ba53820eabe997774264f0556e2c5d2ea24d6f",
+        "sm_90.o": "b1c665b778d5acab6f788a1c4ab32093a17915184fafa9d18940e8f6f1521c92",
+        "sm_90a.o": "bdade847a02540c30dbce234d460c6818ee737731fd69641041bc46d20c18278",
+        "sm_90.sass": "0a85bb82d23745dbb9123ad766e0ce80f779a9c6d3bc504a0ad995403dbd2068",
+        "sm_90a.sass": "e2587b4c2a9bafd349b1f89c4cf767b93384a558686962c34b666ccca2f1d452",
+        "muse_spark/expert_route_pair.cuh": "c44ec0bef375ae6ce1fcf1e8540959719d9323345811ac5fce1fec9fc14bce9d"
+      },
+      "results": {
+        "sm_90a": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        },
+        "sm_90a_identical_parent_functions": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "instruction_sites": 3008,
+            "sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd"
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "instruction_sites": 2384,
+            "sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602"
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "instruction_sites": 192,
+            "sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a"
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "instruction_sites": 976,
+            "sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c"
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "instruction_sites": 1320,
+            "sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d"
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "instruction_sites": 440,
+            "sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f"
+          }
+        },
+        "sm_90": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        },
+        "sm_90_identical_parent_functions": {
+          "_ZN6sglang22muse_medium_route_pair10projectionILb0EEEvNS_15muse_route_pair10ProjectionEj": {
+            "instruction_sites": 3008,
+            "sha256": "c3b525dd8ffdf14e6c3a2a999cbb07d8b9c1a77a2589db66917d0ba53ebf83fd"
+          },
+          "_ZN6sglang22muse_medium_route_pair10projectionILb1EEEvNS_15muse_route_pair10ProjectionEj": {
+            "instruction_sites": 2384,
+            "sha256": "99f394d67d6389a61cfef062958ec2866c5a6886e8eb57f343046f37a6f30602"
+          },
+          "_ZN6sglang22muse_medium_route_pair9plan_rowsEPKiPij": {
+            "instruction_sites": 192,
+            "sha256": "7745097a054463535a672bdc6a494543c738c308c62d23a57a7f014be1dbb47a"
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb0EEEvNS0_10ProjectionE": {
+            "instruction_sites": 976,
+            "sha256": "634e52bbef95ddc42a5138afa130acbbe4cc3f7662169963e5ebf1d8cb12521c"
+          },
+          "_ZN6sglang15muse_route_pair17projection_kernelILb1EEEvNS0_10ProjectionE": {
+            "instruction_sites": 1320,
+            "sha256": "2044df43bbb1db313d4235c6721a5701958f8cdc4ccd5437600e8fb6c7202e8d"
+          },
+          "_ZN6sglang15muse_route_pair11plan_routesEPKiPijj": {
+            "instruction_sites": 440,
+            "sha256": "13ad93e4de0f7aa2753794943a56fdf4161c0f28d2e3d21c77014b8fc622519f"
+          }
+        }
+      }
+    },
+    "final-low": {
+      "files": {
+        "sm_90.ptx": "37606b8713fcb605c7e64f114ff3128d7aabeb0cc004ff18ebd8b7a817ba0dbf",
+        "sm_90a.ptx": "af8c097027eef3cf735e0f8493e5708a6351a3c991eed231cce975c79e6b9306",
+        "sm_90.cubin": "5804318aff600a31d695180a3d7eaaf58863c5dfdf8001138f107adcbe53bc6e",
+        "sm_90a.cubin": "286c88ba33d9611255d391d4ff45e589861ba310f710ccd7c9651b8644bc7b4c",
+        "sm_90.o": "db74e79e2573c00f4b1d25f523992c645bacbbfd7ed7a9214ca875a9bcd35d91",
+        "sm_90a.o": "4f9238f86e7f0830c53df651cca9b2d063c088d95f7729b3b07a3b6edbf79dda",
+        "sm_90.sass": "0c2bc3f070c020955b11c4f23df278b4ec6b9223448f2c70c652affa8c8c9b39",
+        "sm_90a.sass": "df6ff6a30d9547aa22068edf1c680eed0915013db33e9e24764f5cbc3197457e",
+        "muse_spark/expert_route_pair.cuh": "c44ec0bef375ae6ce1fcf1e8540959719d9323345811ac5fce1fec9fc14bce9d"
+      },
+      "results": {
+        "sm_90a": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        },
+        "sm_90": {
+          "parent_W2": {
+            "registers": 56,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 976,
+            "steady_backedge": {
+              "begin": "0x9a0",
+              "end": "0x1560",
+              "sites": 189,
+              "histogram": {
+                "HMMA": 4,
+                "HMUL2": 32,
+                "LDG": 4,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W2": {
+            "registers": 58,
+            "shared_bytes": 24576,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1272,
+            "steady_backedge": {
+              "begin": "0x1e10",
+              "end": "0x4890",
+              "sites": 681,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 59,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          },
+          "parent_W13": {
+            "registers": 78,
+            "shared_bytes": 0,
+            "barriers": 0,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1320,
+            "steady_backedge": {
+              "begin": "0x9f0",
+              "end": "0x1e50",
+              "sites": 327,
+              "histogram": {
+                "HMMA": 8,
+                "HMUL2": 64,
+                "LDG": 6,
+                "LDGSTS": 0,
+                "LDS": 0,
+                "BAR": 0,
+                "DEPBAR": 0
+              }
+            }
+          },
+          "cooperative_W13": {
+            "registers": 57,
+            "shared_bytes": 43008,
+            "barriers": 1,
+            "spill_store": 0,
+            "spill_load": 0,
+            "whole_sites": 1648,
+            "steady_backedge": {
+              "begin": "0x1d90",
+              "end": "0x5b30",
+              "sites": 987,
+              "histogram": {
+                "HMMA": 16,
+                "HMUL2": 128,
+                "LDG": 0,
+                "LDGSTS": 15,
+                "LDS": 75,
+                "BAR": 1,
+                "DEPBAR": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

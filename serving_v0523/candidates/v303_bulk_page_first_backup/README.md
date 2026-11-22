@@ -1,0 +1,5 @@
+# V303 bulk backup for contiguous host cache pages
+
+V303 groups adjacent host destinations and gathers live GPU cache rows into a bounded staging buffer. Each group then transfers through ordinary bulk device-to-host copies. Fragmented destinations keep the V298 path. For an eligible 16K checkpoint with all three cache pools present, 38 GPU relayouts and 76 bulk copies carry the same 288 MiB as the three mapped V298 kernels. The crossover depends on actual mapped-write bandwidth, copy overlap and exposed checkpoint time. [Patch](patch.diff) · [Work model](work.json)
+
+CPU replay compared 453,394,944 bytes including partial and mixed cache pools. Host dispatch measurements cover contiguous and fragmented slots. Both CUDA build products were compiled offline and the exact patch reconstructed cleanly. No V303 GPU runtime or serving score was measured. [Replay](replay.json) · [Startup and fallbacks](startup.json) · [Host dispatch](host_submit.json) · [Compilation](aot.json) · [Export](validation.json)

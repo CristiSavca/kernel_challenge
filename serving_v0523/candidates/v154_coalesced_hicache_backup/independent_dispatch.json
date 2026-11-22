@@ -1,0 +1,415 @@
+{
+  "allocator": "pinned HostKVCache.alloc/free and ordered release queue",
+  "normal_entry": "pinned MHATokenToKVPoolHost with actual multi-chunk wrapper",
+  "backend": "CPU tensor mock at CUDA JIT launch interface; independent full-byte slot-index oracle",
+  "stage_capacity_pages": 64,
+  "layout_and_restore_controls": [
+    "transfer_kv_all_layer_lf_pf",
+    "jit_transfer_hicache_all_layer",
+    "jit_transfer_hicache_all_layer",
+    "transfer_kv_direct",
+    "transfer_kv_all_layer_direct_lf_pf",
+    "transfer_kv_all_layer_lf_ph",
+    "jit_transfer_hicache_one_layer"
+  ],
+  "cases": [
+    {
+      "page": 1,
+      "pages": 0,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [],
+      "copies_before": 0,
+      "copies_with_coalescing": 0,
+      "compared_bytes": 53248
+    },
+    {
+      "page": 1,
+      "pages": 1,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        1
+      ],
+      "copies_before": 2,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 61440
+    },
+    {
+      "page": 1,
+      "pages": 63,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        63
+      ],
+      "copies_before": 126,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 569344
+    },
+    {
+      "page": 1,
+      "pages": 64,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64
+      ],
+      "copies_before": 128,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 577536
+    },
+    {
+      "page": 1,
+      "pages": 65,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        1
+      ],
+      "copies_before": 130,
+      "copies_with_coalescing": 4,
+      "compared_bytes": 585728
+    },
+    {
+      "page": 1,
+      "pages": 129,
+      "layers": 16,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        64,
+        1
+      ],
+      "copies_before": 258,
+      "copies_with_coalescing": 6,
+      "compared_bytes": 1110016
+    },
+    {
+      "page": 1,
+      "pages": 0,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [],
+      "copies_before": 0,
+      "copies_with_coalescing": 0,
+      "compared_bytes": 153088
+    },
+    {
+      "page": 1,
+      "pages": 1,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        1
+      ],
+      "copies_before": 2,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 176640
+    },
+    {
+      "page": 1,
+      "pages": 63,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        63
+      ],
+      "copies_before": 126,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 1636864
+    },
+    {
+      "page": 1,
+      "pages": 64,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64
+      ],
+      "copies_before": 128,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 1660416
+    },
+    {
+      "page": 1,
+      "pages": 65,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        1
+      ],
+      "copies_before": 130,
+      "copies_with_coalescing": 4,
+      "compared_bytes": 1683968
+    },
+    {
+      "page": 1,
+      "pages": 129,
+      "layers": 46,
+      "width": 128,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        64,
+        1
+      ],
+      "copies_before": 258,
+      "copies_with_coalescing": 6,
+      "compared_bytes": 3191296
+    },
+    {
+      "page": 1,
+      "pages": 0,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [],
+      "copies_before": 0,
+      "copies_with_coalescing": 0,
+      "compared_bytes": 33280
+    },
+    {
+      "page": 1,
+      "pages": 1,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [
+        1
+      ],
+      "copies_before": 2,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 38400
+    },
+    {
+      "page": 1,
+      "pages": 63,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [
+        63
+      ],
+      "copies_before": 126,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 355840
+    },
+    {
+      "page": 1,
+      "pages": 64,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64
+      ],
+      "copies_before": 128,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 360960
+    },
+    {
+      "page": 1,
+      "pages": 65,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        1
+      ],
+      "copies_before": 130,
+      "copies_with_coalescing": 4,
+      "compared_bytes": 366080
+    },
+    {
+      "page": 1,
+      "pages": 129,
+      "layers": 5,
+      "width": 128,
+      "dtype": "torch.bfloat16",
+      "layout": "ascending",
+      "chunk_sizes": [
+        64,
+        64,
+        1
+      ],
+      "copies_before": 258,
+      "copies_with_coalescing": 6,
+      "compared_bytes": 693760
+    },
+    {
+      "page": 1,
+      "pages": 63,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        63
+      ],
+      "copies_before": 126,
+      "copies_with_coalescing": 126,
+      "compared_bytes": 13344
+    },
+    {
+      "page": 1,
+      "pages": 65,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        64,
+        1
+      ],
+      "copies_before": 130,
+      "copies_with_coalescing": 130,
+      "compared_bytes": 13728
+    },
+    {
+      "page": 1,
+      "pages": 191,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        64,
+        64,
+        63
+      ],
+      "copies_before": 382,
+      "copies_with_coalescing": 382,
+      "compared_bytes": 37920
+    },
+    {
+      "page": 4,
+      "pages": 65,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        64,
+        1
+      ],
+      "copies_before": 130,
+      "copies_with_coalescing": 130,
+      "compared_bytes": 54912
+    },
+    {
+      "page": 4,
+      "pages": 131,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        64,
+        64,
+        3
+      ],
+      "copies_before": 262,
+      "copies_with_coalescing": 262,
+      "compared_bytes": 105600
+    },
+    {
+      "page": 16,
+      "pages": 3,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "fragmented",
+      "chunk_sizes": [
+        3
+      ],
+      "copies_before": 6,
+      "copies_with_coalescing": 6,
+      "compared_bytes": 29184
+    },
+    {
+      "page": 1,
+      "pages": 133,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "mixed-runs",
+      "chunk_sizes": [
+        64,
+        64,
+        5
+      ],
+      "copies_before": 266,
+      "copies_with_coalescing": 12,
+      "compared_bytes": 26784
+    },
+    {
+      "page": 4,
+      "pages": 133,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "mixed-runs",
+      "chunk_sizes": [
+        64,
+        64,
+        5
+      ],
+      "copies_before": 266,
+      "copies_with_coalescing": 12,
+      "compared_bytes": 107136
+    },
+    {
+      "page": 1,
+      "pages": 7,
+      "layers": 3,
+      "width": 16,
+      "dtype": "torch.uint8",
+      "layout": "ascending",
+      "chunk_sizes": [
+        7
+      ],
+      "copies_before": 14,
+      "copies_with_coalescing": 2,
+      "compared_bytes": 2592
+    }
+  ],
+  "all_compared_bytes": 13699104,
+  "pinned_sources": {
+    "python/sglang/srt/mem_cache/pool_host/base.py": "b6b9c3a30bbbc10b36741829a0cc2bfc1b2731e4880e50cc9d0fb47e9f5e6628",
+    "python/sglang/srt/mem_cache/pool_host/mha.py": "a4420c250dd89880327dfe87e12e7a501b96763ccb50edfd07ff773141742991",
+    "python/sglang/kernels/ops/kvcache/hicache.py": "f26aa62750f30ae9ce7a49ced671407daa97e3334288f8d335d51d666c5cc97d"
+  },
+  "hardware": false
+}

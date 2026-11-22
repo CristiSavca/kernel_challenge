@@ -1,0 +1,466 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_check_window_rows",
+      "label": "i32",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "94cff5b35730cdff6f39839191d9c72e86a9d63036c1a247d5ca6297b7f7c59a",
+      "cubin_bytes": 13704,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_check_window_rows",
+      "label": "i64",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "2b92917ff35dec6e2c87564c7113cec2fe3d337c44c984d0d4754afdda6b122e",
+      "cubin_bytes": 13704,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b1-w512",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": true,
+        "ROW_BLOCK": 1,
+        "TILE_BLOCK": 2
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "7c2fc8d57e07c077140e85f98cf82d55767d780930be55463f70b412c4ab9bcd",
+      "cubin_bytes": 8288,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 16 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b1-w2559",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": true,
+        "ROW_BLOCK": 1,
+        "TILE_BLOCK": 16
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "350dbaacaa2ecb2565dedb1d29c0b7592a0b1a785f038e188cd7edcb49565321",
+      "cubin_bytes": 8800,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 16 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b1-w18431",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": true,
+        "ROW_BLOCK": 1,
+        "TILE_BLOCK": 128
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "bd1ebe3003637fd5c71230fa561d6516325ba95808852de451f76f0a39220c0d",
+      "cubin_bytes": 9568,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 15 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b2-w512",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 2,
+        "TILE_BLOCK": 4
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "a623c81d6d2b5b80d67046d1b77a36fdf7275173d44e9b89d852334fb3e03206",
+      "cubin_bytes": 9568,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 26 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b2-w2559",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 2,
+        "TILE_BLOCK": 32
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "d19e2d3f6c69d0ee2798473d14b822c7b00a54ad1030ec8f3476ad49e2808eac",
+      "cubin_bytes": 9312,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b2-w18431",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 2,
+        "TILE_BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "581083e251f06a2d5ad30137f67338dae94800973507587f946c0ee4a03ced3b",
+      "cubin_bytes": 10848,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b3-w512",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 4,
+        "TILE_BLOCK": 8
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "46ae3721890a1f68ef31a5f1d8479ee8ed56b8fb142d38e643874cbacefba286",
+      "cubin_bytes": 9824,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 26 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b3-w2559",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 4,
+        "TILE_BLOCK": 32
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "248f6a27269a9b301928545a51b01033552c7e72bf4619bb330db4136f8bd8ad",
+      "cubin_bytes": 9440,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b3-w18431",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 4,
+        "TILE_BLOCK": 256
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "249ad893413dd60fdbe1b0d7c59e3c4cc2e7361741e55ef43f75c9319e3d605a",
+      "cubin_bytes": 10976,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b8-w512",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 8,
+        "TILE_BLOCK": 16
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "0292987dc5c744bbf788988c1e65cb65fce00d9d86266fe39cea63cfbd4cc997",
+      "cubin_bytes": 10208,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 26 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b8-w2559",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 8,
+        "TILE_BLOCK": 128
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "ddeecf0a2467291d8cf1d4b55074315c6acb214f6608095f6c11759aa2802a48",
+      "cubin_bytes": 10976,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b8-w18431",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 8,
+        "TILE_BLOCK": 1024
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "bdba2f8aadb83c4a8d68e627861365d7c810113edd77d35d8528d9c7dca348c6",
+      "cubin_bytes": 12896,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b32-w512",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 32,
+        "TILE_BLOCK": 64
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "268238fc0d1ccaebe29205d7a52490eabc6fe27c5a407800aa60302544c6f8aa",
+      "cubin_bytes": 10208,
+      "shared_bytes": 8,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 22 registers, used 1 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/attention/prefill_kv_span.py",
+      "kernel": "_finish_window_rows",
+      "label": "b32-w2559",
+      "types": [
+        "*i64",
+        "*i32",
+        "*i32",
+        "*i64",
+        "i32",
+        "i32"
+      ],
+      "constants": {
+        "SINGLE": false,
+        "ROW_BLOCK": 32,
+        "TILE_BLOCK": 512
+      },
+      "num_warps": 4,
+      "num_stages": 3,
+      "source_sha256": "834dac41933aaedcc0a5cbbaff3e12444056e26a6e88f666e1f5a1cbb85a6b96",
+      "cubin_sha256": "f92a9a43477fc79d448c285aa6541f9d8c874c6b0c0e6b110dab5309e50e834a",
+      "cubin_bytes": 11232,
+      "shared_bytes": 16,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 1 barriers"
+      ]
+    }
+  ]
+}

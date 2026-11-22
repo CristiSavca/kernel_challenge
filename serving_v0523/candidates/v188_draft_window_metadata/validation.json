@@ -1,0 +1,53 @@
+{
+  "candidate": "V188",
+  "base": "297e54fd105e974cdf401e5b4d20253a22c16f90",
+  "parent": "V68",
+  "parent_sha256": "6248a58842e1a22c1cda5a957d5ab464a6ec824efcdf8308bdcc9c6a1046e505",
+  "parent_tree": "f9966bf0dfca287d58d8d24ea2d055b3c2162702",
+  "tree": "f48dce05d2a272b8da444559507070c370b7537c",
+  "bytes": 92019,
+  "patch_sha256": "cf8190f5901a87ca6f6e8effa2f6151998c86f7af47835d23a68c45aa5764471",
+  "delta_bytes": 7372,
+  "delta_sha256": "7c2123c5a327f881f3c6671f86060e3c42f0a8cd2f7a19849e3eecef22ba994f",
+  "paths": [
+    "python/sglang/kernels/jit/csrc/muse_spark/expert_scaled_silu.cuh",
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/kernels/ops/attention/paged_verify_attention.py",
+    "python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py",
+    "python/sglang/srt/arg_groups/layernorm_sp_hook.py",
+    "python/sglang/srt/arg_groups/muse_spark_hook.py",
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py",
+    "python/sglang/srt/layers/layernorm_sp.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py",
+    "python/sglang/srt/layers/muse_spark/muse_spark_nvfp4_moe.py",
+    "python/sglang/srt/layers/quantization/modelopt_quant.py",
+    "python/sglang/srt/mem_cache/allocation_sizing.py",
+    "python/sglang/srt/mem_cache/kv_cache_configurator.py",
+    "python/sglang/srt/models/muse_spark.py"
+  ],
+  "changed_from_parent": [
+    "python/sglang/kernels/ops/attention/metadata.py",
+    "python/sglang/srt/layers/attention/flashattention_backend.py"
+  ],
+  "launch_flags": {
+    "--enable-layernorm-sp": "",
+    "--moe-runner-backend": "humming",
+    "--speculative-moe-runner-backend": "marlin",
+    "--swa-full-tokens-ratio": "0.25"
+  },
+  "official_export": "okc serve diff .",
+  "rules_url": "https://openkernelchallenge.dev/api/v1/serving",
+  "denied_flag_patterns": 76,
+  "max_added_line_chars": 114,
+  "strict_forward_reverse_full_and_delta": true,
+  "standalone_compile_sm90": 20,
+  "physical_H200": false,
+  "submitted": false,
+  "control": {
+    "job": "04b01f958aa5487c",
+    "users": 16,
+    "tok_s_per_gpu": 17512.9
+  }
+}

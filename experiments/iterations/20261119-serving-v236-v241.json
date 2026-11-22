@@ -1,0 +1,177 @@
+{
+  "recorded_utc": "2026-11-19T02:58:49.435033+00:00",
+  "goal": "4x official four-load serving score",
+  "best_verified": {
+    "candidate": "V64",
+    "score": 1.4119,
+    "rungs": [
+      {
+        "concurrency": 1,
+        "ratio": 1.17,
+        "stock_tok_s_per_gpu": 6431,
+        "tok_s_per_gpu": 7524.1,
+        "tok_s_per_user": 140
+      },
+      {
+        "concurrency": 4,
+        "ratio": 1.316,
+        "stock_tok_s_per_gpu": 9989.5,
+        "tok_s_per_gpu": 13146,
+        "tok_s_per_user": 56.6
+      },
+      {
+        "concurrency": 16,
+        "ratio": 1.5919,
+        "stock_tok_s_per_gpu": 12262.8,
+        "tok_s_per_gpu": 19520.7,
+        "tok_s_per_user": 17.3
+      },
+      {
+        "concurrency": 32,
+        "ratio": 1.6213,
+        "stock_tok_s_per_gpu": 12673.4,
+        "tok_s_per_gpu": 20547.4,
+        "tok_s_per_user": 9
+      }
+    ],
+    "receipt": "serving_v0523/runs/abd217baf0ed49fd.json"
+  },
+  "candidate": "V241",
+  "exports": {
+    "V236": {
+      "path": "serving_v0523/candidates/v236_tiled_verify_merge/patch.diff",
+      "delta": "serving_v0523/candidates/v236_tiled_verify_merge/delta.diff",
+      "bytes": 407719,
+      "tree": "83d1f571528b06d39d6daca7a11014d5be5896a1",
+      "patch_sha256": "c38b23ad967bd3ba862f2d4a7fee0885f62649dd1f27758fc64b97524e9791a8",
+      "parent": "V235"
+    },
+    "V237": {
+      "path": "serving_v0523/candidates/v237_fused_verify_scale/patch.diff",
+      "delta": "serving_v0523/candidates/v237_fused_verify_scale/delta.diff",
+      "bytes": 392694,
+      "tree": "1e152d2b2b2e0e553812f8400fa4f3b6ce9c1ff2",
+      "patch_sha256": "3523359b53eb4f9ee237fa328e9db09257060eef6f741434f8bf2727b1f7b9b5",
+      "parent": "V235"
+    },
+    "V239": {
+      "path": "serving_v0523/candidates/v239_split_mixed_full_attention/patch.diff",
+      "delta": "serving_v0523/candidates/v239_split_mixed_full_attention/delta.diff",
+      "bytes": 409513,
+      "tree": "a742125ed177ca34ecc7b2a999b5386048ebdd7c",
+      "patch_sha256": "458da177802ac4d2071adaa05110df7696b3117602728bdbc2b4e6d7610fdf5d",
+      "parent": "V235"
+    },
+    "V240": {
+      "path": "serving_v0523/candidates/v240_mixed_paged_verify_tail/patch.diff",
+      "delta": "serving_v0523/candidates/v240_mixed_paged_verify_tail/delta.diff",
+      "bytes": 392725,
+      "tree": "f1de2c1be368c5e58decad2e11af683cd008f82f",
+      "patch_sha256": "bae5ddc9545ed49734a56137609bf96985cdeae2125a539d6f2fdf32e45637ab",
+      "parent": "V239"
+    },
+    "V241": {
+      "path": "serving_v0523/candidates/v241_split_serving_decode/patch.diff",
+      "delta": "serving_v0523/candidates/v241_split_serving_decode/delta.diff",
+      "bytes": 397454,
+      "tree": "bdcbadeed85c9294faa7c1959a2bc10baf4006e0",
+      "patch_sha256": "c1b938cd93f2cfdbaba9b0e6dce7e5d16f95410d811db9a8e8570693739f0acf",
+      "parent": "V235"
+    }
+  },
+  "negative_result": "serving_v0523/candidates/v238_cross_verify_weight_residency/results.json",
+  "receipts": {
+    "export_cleanup.json": "serving_v0523/candidates/v241_split_serving_decode/export_cleanup.json",
+    "fa3_dispatch.json": "serving_v0523/candidates/v241_split_serving_decode/fa3_dispatch.json",
+    "flags.json": "serving_v0523/candidates/v241_split_serving_decode/flags.json",
+    "global_names.json": "serving_v0523/candidates/v241_split_serving_decode/global_names.json",
+    "historical_selection.json": "serving_v0523/candidates/v241_split_serving_decode/historical_selection.json",
+    "independent_graph.json": "serving_v0523/candidates/v241_split_serving_decode/independent_graph.json",
+    "judge_observation.json": "serving_v0523/candidates/v241_split_serving_decode/judge_observation.json",
+    "mixed_merge.json": "serving_v0523/candidates/v241_split_serving_decode/mixed_merge.json",
+    "mixed_merge_numerical.json": "serving_v0523/candidates/v241_split_serving_decode/mixed_merge_numerical.json",
+    "server_resolution.json": "serving_v0523/candidates/v241_split_serving_decode/server_resolution.json",
+    "split_full_replay.json": "serving_v0523/candidates/v241_split_serving_decode/split_full_replay.json",
+    "validation.json": "serving_v0523/candidates/v241_split_serving_decode/validation.json"
+  },
+  "physical_evidence": {
+    "trace": "serving_v0523/candidates/v239_split_mixed_full_attention/work.json",
+    "archive": "eight-H200 V41, one repetition at each of 16 and 32 users; no V241 device timings",
+    "certain_fit_cold_chunks_at_16_and_32": [
+      58,
+      115
+    ],
+    "full_verify_merge_CTAs_32": [
+      253952,
+      63488
+    ],
+    "specialized_mixed_reference_max_relative_L2": 0.002244
+  },
+  "private_status": {
+    "observed_utc": "2026-11-19T02:57:09.640982+00:00",
+    "limits": {
+      "scored": {
+        "per_day": 1,
+        "used": 0,
+        "left": 1
+      },
+      "checks": {
+        "per_day": 3,
+        "used": 3,
+        "left": 0
+      }
+    },
+    "resets_at": "2026-11-20T00:00:00Z",
+    "jobs": {
+      "V93": {
+        "id": "75557c21595347de",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V204": {
+        "id": "7fcdf9abf39b486a",
+        "status": "queued",
+        "mode": "check",
+        "users": 16
+      },
+      "V120b": {
+        "id": "a73535cda6bf4cac",
+        "status": "queued",
+        "mode": "check",
+        "users": 32
+      },
+      "V139": {
+        "id": "b013f83007d544d3",
+        "status": "queued",
+        "mode": "check",
+        "users": 4
+      }
+    },
+    "approved_best": {
+      "candidate": "V64",
+      "score": 1.4119,
+      "job": "abd217baf0ed49fd"
+    },
+    "contract_patch_limit": 409600,
+    "standby": {
+      "pid": 88885,
+      "open_standby_log": true,
+      "conditional": "V229 on qualifying V204/16",
+      "fallback": "V198",
+      "launch_receipt": "../../runs/nov20_v229_runner.launch.json"
+    },
+    "v241_submitted": false,
+    "new_jobs": 0
+  },
+  "dispatch_decision": "Retain armed V229/V198 private selector. V241 has no matched H200 latency, correctness, peak or throughput evidence. No new job, worker, or paid allocation.",
+  "cleanup": [
+    "serving_v0523/candidates/v236_tiled_verify_merge/compiler_cleanup.json",
+    "serving_v0523/candidates/v236_tiled_verify_merge/export_cleanup.json",
+    "serving_v0523/candidates/v237_fused_verify_scale/cleanup.json",
+    "serving_v0523/candidates/v237_fused_verify_scale/compiler_cleanup.json",
+    "serving_v0523/candidates/v239_split_mixed_full_attention/interpreter_cleanup.json",
+    "serving_v0523/candidates/v240_mixed_paged_verify_tail/export_cleanup.json",
+    "serving_v0523/candidates/v241_split_serving_decode/export_cleanup.json"
+  ]
+}

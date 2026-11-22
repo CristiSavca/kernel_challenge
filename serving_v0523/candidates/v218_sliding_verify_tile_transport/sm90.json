@@ -1,0 +1,421 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "physical_gpu_execution": false,
+  "sliding_shape": {
+    "tensor_box": [
+      64,
+      64
+    ],
+    "query_heads": 16,
+    "kv_heads": 2,
+    "head_dim": 64,
+    "window_left": 2047,
+    "verify_width": 8,
+    "partitions": 66,
+    "k_descale": "FP32",
+    "v_descale": "FP32"
+  },
+  "input_sha256": {
+    "paged_verify_attention.py": "4e80e7f56cfc0de735316e72b3e6eee14785f9480276996728efb66b45bde268",
+    "metadata.py": "e2b26b6c66f78fdca72353d54b4f3501a2c9203fbeceaac2fb1df40a5b2a68f6",
+    "v215_paged.py": "8a70205cefdf58f31cb1c8e20ee98525ec16aef3b1edb5717ba30c3deac63b85",
+    "compile_decode_sm90.py": "6bef8a33600c52700440540e4c945a8cbd905b73a4770eaad63fa527e3a612ae"
+  },
+  "partition_type_match": {
+    "1": true,
+    "4": true,
+    "16": true,
+    "32": true
+  },
+  "profiles": [
+    {
+      "label": "partition/b1/v215",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "6ed6857b9ff494a6157fb4ca17b32a17cdb2d5a1ee9ca8323d4064421b3fe5da",
+      "cubin_bytes": 105480,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b1/indexed",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "e82b75a379c9a27839790b77218910514814a721c3c7ae1b40727e78f6a0647a",
+      "cubin_bytes": 105480,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b1/direct",
+      "shared_bytes": 33048,
+      "registers": 236,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "b8b1148bfd7505879f978b88aa234237d0e9687279c1b4bc8dbd6c455199bb70",
+      "cubin_bytes": 178184,
+      "sass_matrix": {
+        "HMMA.16816.F32": 64,
+        "HGMMA.64x64x16.F32.BF16": 8
+      },
+      "sass_tensor_loads": {
+        "UTMALDG.2D": 4
+      },
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "merge/b1/v_descale",
+      "shared_bytes": 1024,
+      "registers": 47,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "3250e7d57abba959b218ff8e8aff79d6364192e16fb0f6ed56a7b7dc35898b20",
+      "cubin_bytes": 22896,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "partition/b4/v215",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "4f8f30a80c9820ce47a2859ee964031755cd6a181c6716c474e2ef6f5c920a35",
+      "cubin_bytes": 108424,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b4/indexed",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "228d38b6817ce6e58441a1d7c9d2d1d1b766d4f34a087dfc627d2ccd2318680b",
+      "cubin_bytes": 108424,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b4/direct",
+      "shared_bytes": 33048,
+      "registers": 223,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "7b74c658b2f8bcadb049bccc3741e5ebfbb68a2225f2800c7ad1f60e2d54febf",
+      "cubin_bytes": 180872,
+      "sass_matrix": {
+        "HMMA.16816.F32": 64,
+        "HGMMA.64x64x16.F32.BF16": 8
+      },
+      "sass_tensor_loads": {
+        "UTMALDG.2D": 4
+      },
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "merge/b4/v_descale",
+      "shared_bytes": 1024,
+      "registers": 45,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "c6fcb25a818f5027557a22a46a0b9e369b2a452cfc094be0ee6d51417b773d27",
+      "cubin_bytes": 24944,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "partition/b16/v215",
+      "shared_bytes": 33024,
+      "registers": 199,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "2babea1e3d1dee5e708e6947d391ce8ccf0f653190753cb8969afa70f968db38",
+      "cubin_bytes": 110600,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b16/indexed",
+      "shared_bytes": 33024,
+      "registers": 199,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "2bb0963103cfbb8cd6041980aaec38d483f6386bac9ad81872fb4849edf8c7dc",
+      "cubin_bytes": 110600,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b16/direct",
+      "shared_bytes": 33048,
+      "registers": 223,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "79b6812a63a96fd6292f5fba0194a01dcfc1c2510b9dbfedd4bd4141a948ffcb",
+      "cubin_bytes": 183432,
+      "sass_matrix": {
+        "HMMA.16816.F32": 64,
+        "HGMMA.64x64x16.F32.BF16": 8
+      },
+      "sass_tensor_loads": {
+        "UTMALDG.2D": 4
+      },
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "merge/b16/v_descale",
+      "shared_bytes": 1024,
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "6c2dd3b875aeabb03f7bf11146af65631e9b64c9eaa81fee34ef24256d8a22dd",
+      "cubin_bytes": 26352,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "partition/b32/v215",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "cee48760199115bd283aae36db75beb384794b9599a3aa43f8cd2710b8d7d56d",
+      "cubin_bytes": 107528,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b32/indexed",
+      "shared_bytes": 33024,
+      "registers": 198,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "d4d6a0911a199fa8854ee8482560cb107e68548967c24956404b974bb8b60753",
+      "cubin_bytes": 107528,
+      "sass_matrix": {
+        "HMMA.16816.F32": 32,
+        "HGMMA.64x64x16.F32.BF16": 4
+      },
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "partition/b32/direct",
+      "shared_bytes": 33048,
+      "registers": 218,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "a7d96f669d8f609b3789693bd3c2e26190757b795edb788a04ab383ac30f3675",
+      "cubin_bytes": 180360,
+      "sass_matrix": {
+        "HMMA.16816.F32": 64,
+        "HGMMA.64x64x16.F32.BF16": 8
+      },
+      "sass_tensor_loads": {
+        "UTMALDG.2D": 4
+      },
+      "ptx_matrix_types": [
+        "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+        "wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16"
+      ]
+    },
+    {
+      "label": "merge/b32/v_descale",
+      "shared_bytes": 1024,
+      "registers": 40,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "2873692d7695e65594c46e06608b8150bf41324fa5a6c49e4990111c4710284f",
+      "cubin_bytes": 24048,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/both/legacy",
+      "shared_bytes": 32,
+      "registers": 30,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "117affca62066be3ec94ea2be1d30ca62a4854756e2ac75771305920ddcf9897",
+      "cubin_bytes": 36696,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/both/vmm",
+      "shared_bytes": 32,
+      "registers": 32,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "f8d3ba520e7a72c98504e2d55715bcd7b63fcca2e95ae5e5cc0c7baee2769b24",
+      "cubin_bytes": 37352,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/swa_only/legacy",
+      "shared_bytes": 32,
+      "registers": 30,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "bd4280360842d9a481ab1199bf9af986124fcb815bfa660733b25dd6eab92c5c",
+      "cubin_bytes": 26960,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/swa_only/vmm",
+      "shared_bytes": 32,
+      "registers": 30,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "3caf68f8d3770ea274778fac147fede3d19ed27a5256e1891f950979efb2915b",
+      "cubin_bytes": 27744,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/full_only/legacy",
+      "shared_bytes": 32,
+      "registers": 28,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "d3c5d6e6c49e3d72ca9df9507cf8b201d90274c13d3e0a65f5a8b912ae877fd3",
+      "cubin_bytes": 26960,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    },
+    {
+      "label": "producer/full_only/vmm",
+      "shared_bytes": 32,
+      "registers": 30,
+      "spill_store_load_bytes": [
+        0,
+        0
+      ],
+      "cubin_sha256": "48f55bd6fb5adeb0ac594a2e31167be3ba93709c28567385888af215c9de2501",
+      "cubin_bytes": 27744,
+      "sass_matrix": {},
+      "sass_tensor_loads": {},
+      "ptx_matrix_types": []
+    }
+  ]
+}

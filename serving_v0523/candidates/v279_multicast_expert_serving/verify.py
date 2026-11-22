@@ -1,0 +1,114 @@
+"""Reconstruct the combined serving patch from the judge pin and the native output reduction."""
+import ast
+import fnmatch
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from collections import Counter
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+STAGE = Path(sys.argv[1]).resolve()
+ENDPOINT = "https://openkernelchallenge.dev/api/v1/serving"
+PARTS = (258, 261, 270, 274, 277)
+DONOR_PARENT = {274: 270}
+MODEL = "python/sglang/srt/models/muse_spark.py"
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def files(num):
+    folder = next(HERE.parent.glob(f"v{num}_*"))
+    return folder, json.loads((folder / "validation.json").read_bytes())
+
+
+contract = json.loads(subprocess.check_output(["curl", "-fsSL", ENDPOINT]))
+rules, pin = contract["rules"], contract["base"]["commit"]
+m = {n: files(n) for n in (248, 256, *PARTS)}
+full, delta = [(HERE / f).read_bytes() for f in ("patch.diff", "delta.diff")]
+with tempfile.TemporaryDirectory() as tmp:
+    env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp)/"index")}
+
+    def git(*args, data=None):
+        return subprocess.check_output(["git", "-C", str(STAGE), *args], env=env, input=data)
+
+    def apply(tree, patch, reverse=False):
+        git("read-tree", tree)
+        opts = (["--reverse"] if reverse else [])
+        git("apply", "--cached", "--whitespace=error-all", *opts, "-", data=patch)
+        return git("write-tree").decode().strip()
+
+    pin_tree = git("rev-parse", pin + "^{tree}").decode().strip()
+    base = m[248][1]["tree"]
+    flags = m[248][1]["launch_flags"]
+    pieces = {}
+    for n, (folder, manifest) in m.items():
+        source = (folder / "patch.diff").read_bytes()
+        assert manifest["base"] == pin and digest(source) == manifest["patch_sha256"]
+        assert apply(pin, source) == manifest["tree"] and apply(manifest["tree"], source, True) == pin_tree
+        assert flags == manifest["launch_flags"]
+        if n in PARTS:
+            pieces[n] = (folder / "delta.diff").read_bytes()
+            parent = m[DONOR_PARENT.get(n, 248 if n == 277 else 256)][1]["tree"]
+            assert digest(pieces[n]) == manifest["delta_sha256"] and manifest["parent_tree"] == parent
+            assert apply(parent, pieces[n]) == manifest["tree"] and apply(manifest["tree"], pieces[n], True) == parent
+    tree = apply(pin, full)
+    assert apply(tree, full, True) == pin_tree and apply(base, delta) == tree and apply(tree, delta, True) == base
+    # Independent edits commute. Store each subset once and verify every way to reach it.
+    trees = {frozenset(): base}
+    count = Counter({frozenset(): 1})
+    for length in range(len(PARTS)):
+        for included in [key for key in trees if len(key) == length]:
+            for part in PARTS:
+                if part in included or (part in DONOR_PARENT and DONOR_PARENT[part] not in included):
+                    continue
+                updated = included | {part}
+                result = apply(trees[included], pieces[part])
+                assert trees.setdefault(updated, result) == result
+                assert apply(result, pieces[part], reverse=True) == trees[included]
+                count[updated] += count[included]
+    shared = (HERE/"shared_fence.diff").read_bytes()
+    unshared = trees[frozenset(PARTS)]
+    assert count[frozenset(PARTS)] == 60
+    assert apply(unshared, shared) == tree and apply(tree, shared, True) == unshared
+    paths = git("diff", "--name-only", pin_tree, tree).decode().splitlines()
+    changed = git("diff", "--name-only", base, tree).decode().splitlines()
+    expected = set()
+    for part in PARTS:
+        meta = m[part][1]
+        expected.update(git("diff", "--name-only", meta["parent_tree"], meta["tree"]).decode().splitlines())
+    assert set(changed) == expected
+    native_sp = "python/sglang/srt/layers/layernorm_sp.py"
+    for path in (native_sp, MODEL):
+        assert git("show", tree + ":" + path) == git("show", base + ":" + path)
+    assert not git("ls-tree", tree, "python/sglang/srt/layers/communication/sp_attention_return.py")
+    for path in paths:
+        assert path.startswith(rules["allowed_prefix"]) and path.endswith(tuple(rules["allowed_suffixes"]))
+        assert not any(path.startswith(p) for p in rules["forbidden_prefixes"])
+        old, new = git("ls-tree", pin_tree, path), git("ls-tree", tree, path)
+        mode = old.split()[0] if old else b"100644"
+        assert mode in (b"100644", b"100755") and new.startswith(mode + b" blob ")
+        data = git("show", tree + ":" + path)
+        assert data and b"\0" not in data and data == (STAGE / path).read_bytes()
+        if path.endswith(".py"):
+            compile(data, path, "exec")
+    assert git("diff", "-U1", "--no-renames", pin, tree) == full
+lines = full.decode().splitlines()
+assert not any(s.startswith(("rename from ", "rename to ", "old mode ", "new mode ", "GIT binary patch", "Binary files")) for s in lines)
+added = [s[1:] for s in lines if s.startswith("+") and not s.startswith("+++ ")]
+assert len(full) <= rules["max_patch_bytes"] and max(map(len, added)) <= rules["max_line_chars"]
+assert not any(word in line for line in added for word in rules["forbidden_words"])
+patterns = [p for group in contract["launch_flags"]["denied"].values() for p in group]
+assert not any(fnmatch.fnmatchcase(flag, pattern) for flag in flags for pattern in patterns)
+print(json.dumps(dict(candidate="V279", parent="V248", base=pin, tree=tree, parent_tree=base,
+    patch_sha256=digest(full), bytes=len(full), delta_bytes=len(delta), delta_sha256=digest(delta),
+    parent_sha256=m[248][1]["patch_sha256"], component_deltas={n:digest(v) for n,v in pieces.items()},
+    legal_apply_orders=count[frozenset(PARTS)], subtrees=len(trees), shared_fence_sha256=digest(shared), paths=paths, changed_from_parent=changed,
+    launch_flags=flags, max_added_line_chars=max(map(len,added)), forbidden_flag_patterns=len(patterns),
+    strict_apply_reverse_full_delta=True, official_export="okc serve diff", official_rules=ENDPOINT,
+    byte_budget=rules["max_patch_bytes"], physical_H200=False, submitted=False), indent=2))

@@ -1,0 +1,537 @@
+diff --git a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+index 8e2929b..9f5d236 100644
+--- a/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
++++ b/python/sglang/kernels/jit/csrc/muse_spark/decode_gate_up_launch.cuh
+@@ -48,3 +48,23 @@ struct MuseDecodeGateUp {
+ 
+-  template <bool Prompt>
++  static bool input_map(Tensor input, int64_t tile, CUtensorMap* map) {
++    if (input.ndim() != 2 || !input.IsContiguous() || tile <= 0 || tile > 256) return false;
++    const cuuint64_t dims[] = {uint64_t(input.size(1)), uint64_t(input.size(0))}, stride[] = {2 * dims[0]};
++    const cuuint32_t box[] = {64, uint32_t(tile)}, step[] = {1, 1};
++    return cuTensorMapEncodeTiled(map, CU_TENSOR_MAP_DATA_TYPE_BFLOAT16, 2, input.data_ptr(), dims, stride, box, step,
++        CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_128B, CU_TENSOR_MAP_L2_PROMOTION_NONE,
++        CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) == CUDA_SUCCESS;
++  }
++
++  // The graph reuses the same packed input allocation in every iteration.
++  static bool prepare_wave(Tensor input, Tensor banks, Tensor wave, int64_t tile) {
++    check_storage(banks);
++    host::TensorMatcher({int64_t(sizeof(Maps) + sizeof(CUtensorMap))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(wave);
++    CUtensorMap map{};
++    if (!input_map(input, tile, &map)) return false;
++    std::memcpy(wave.data_ptr(), banks.data_ptr(), sizeof(Maps));
++    std::memcpy(static_cast<char*>(wave.data_ptr()) + sizeof(Maps), &map, sizeof(map));
++    return true;
++  }
++
++  template <bool Prompt, bool Wave = false>
+   static bool run(Tensor input, Tensor output, Tensor ids, Tensor offsets, Tensor scales, Tensor storage,
+@@ -52,3 +72,7 @@ struct MuseDecodeGateUp {
+     using namespace host;
+-    check_storage(storage);
++    if constexpr (Wave) {
++      TensorMatcher({int64_t(sizeof(Maps) + sizeof(CUtensorMap))}).with_dtype<uint8_t>().with_device<kDLCPU>().verify(storage);
++    } else {
++      check_storage(storage);
++    }
+     auto rows = SymbolicSize{"rows"}, k = SymbolicSize{"K"}, i = SymbolicSize{"intermediate"}, e = SymbolicSize{"experts"};
+@@ -66,7 +90,7 @@ struct MuseDecodeGateUp {
+     CUtensorMap a{};
+-    const cuuint64_t dims[] = {uint64_t(k.unwrap()), uint64_t(rows.unwrap())}, stride[] = {2 * dims[0]};
+-    const cuuint32_t box[] = {64, uint32_t(tile)}, step[] = {1, 1};
+-    if (cuTensorMapEncodeTiled(&a, CU_TENSOR_MAP_DATA_TYPE_BFLOAT16, 2, input.data_ptr(), dims, stride, box, step,
+-        CU_TENSOR_MAP_INTERLEAVE_NONE, CU_TENSOR_MAP_SWIZZLE_128B, CU_TENSOR_MAP_L2_PROMOTION_NONE,
+-        CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE) != CUDA_SUCCESS) return false;
++    if constexpr (Wave) {
++      std::memcpy(&a, static_cast<const char*>(storage.data_ptr()) + sizeof(Maps), sizeof(a));
++    } else if (!input_map(input, tile, &a)) {
++      return false;
++    }
+     Maps maps{};
+diff --git a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+index 5ee468b..5537510 100644
+--- a/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
++++ b/python/sglang/kernels/ops/moe/muse_spark_post_expert_finalize_triton.py
+@@ -10,3 +10,4 @@ _MIN_TOKENS_FOR_FUSED = 32
+ @triton.jit
+-def _post_expert_norm_weighted_sum_kernel(
++def _post_expert_norm_weighted_sum_row(
++    tok,
+     x_ptr,
+@@ -30,3 +31,2 @@ def _post_expert_norm_weighted_sum_kernel(
+ ):
+-    tok = tl.program_id(0)
+     offs = tl.arange(0, BLOCK_H)
+@@ -82,2 +82,35 @@ def _post_expert_norm_weighted_sum_kernel(
+ 
++@triton.jit
++def _post_expert_norm_weighted_sum_kernel(
++    x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++    TOPK: tl.constexpr, H: tl.constexpr, eps, APPLY_NORM: tl.constexpr,
++    HAS_WEIGHT: tl.constexpr, WEIGHT_FIRST: tl.constexpr, HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr, HAS_EXPERT_SCALE: tl.constexpr,
++    ROUND_PRODUCT: tl.constexpr, BLOCK_H: tl.constexpr,
++):
++    _post_expert_norm_weighted_sum_row(
++        tl.program_id(0), x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++        TOPK, H, eps, APPLY_NORM, HAS_WEIGHT, WEIGHT_FIRST, HAS_IDS, HAS_ROW_MAP,
++        HAS_EXPERT_SCALE, ROUND_PRODUCT, BLOCK_H,
++    )
++
++
++@triton.jit
++def _finalize_wave(
++    x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr, bounds,
++    TOPK: tl.constexpr, H: tl.constexpr, eps, APPLY_NORM: tl.constexpr,
++    HAS_WEIGHT: tl.constexpr, WEIGHT_FIRST: tl.constexpr, HAS_IDS: tl.constexpr,
++    HAS_ROW_MAP: tl.constexpr, HAS_EXPERT_SCALE: tl.constexpr,
++    ROUND_PRODUCT: tl.constexpr, BLOCK_H: tl.constexpr,
++):
++    first = tl.load(bounds)
++    end = tl.load(bounds + 1)
++    for tok in range(first + tl.program_id(0), end, tl.num_programs(0)):
++        _post_expert_norm_weighted_sum_row(
++            tok, x_ptr, w_ptr, s_ptr, out_ptr, ids_ptr, scale_ids_ptr, expert_scales_ptr,
++            TOPK, H, eps, APPLY_NORM, HAS_WEIGHT, WEIGHT_FIRST, HAS_IDS,
++            HAS_ROW_MAP, HAS_EXPERT_SCALE, ROUND_PRODUCT, BLOCK_H,
++        )
++
++
+ def fused_post_expert_norm_weighted_sum(
+@@ -95,2 +128,3 @@ def fused_post_expert_norm_weighted_sum(
+     expert_output_scales: Optional[torch.Tensor] = None,
++    token_bounds: Optional[torch.Tensor] = None,
+ ) -> torch.Tensor:
+@@ -148,3 +182,10 @@ def fused_post_expert_norm_weighted_sum(
+     block_h = triton.next_power_of_2(hidden)
+-    _post_expert_norm_weighted_sum_kernel[(tokens,)](
++    if token_bounds is None:
++        kernel = _post_expert_norm_weighted_sum_kernel[(tokens,)]
++        bounds_args = ()
++    else:
++        assert has_out and token_bounds.shape == (2,)
++        kernel = _finalize_wave[(min(tokens, 512),)]
++        bounds_args = (token_bounds,)
++    kernel(
+         x,
+@@ -156,2 +197,3 @@ def fused_post_expert_norm_weighted_sum(
+         expert_output_scales.contiguous() if expert_output_scales is not None else x,
++        *bounds_args,
+         TOPK=topk,
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index c176f60..6e74f6f 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -2026,2 +2026,3 @@ class Envs:
+     SGLANG_ENABLE_MUSE_SPARK_FINALIZE_AR = EnvBool(True)
++    SGLANG_ENABLE_MUSE_SPARK_HUMMING_GRAPH_PREFILL = EnvBool(True)
+     SGLANG_ENABLE_MUSE_SPARK_HUMMING_GROUPED_DECODE = EnvBool(True)
+diff --git a/python/sglang/srt/layers/muse_spark/decode_gate_up.py b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+index af933ba..22b0958 100644
+--- a/python/sglang/srt/layers/muse_spark/decode_gate_up.py
++++ b/python/sglang/srt/layers/muse_spark/decode_gate_up.py
+@@ -23,2 +23,3 @@ def _launcher():
+                 ("configure", "MuseDecodeGateUp::configure"),
++                ("prepare_wave", "MuseDecodeGateUp::prepare_wave"), ("run_wave", "MuseDecodeGateUp::run<true, true>"),
+             ],
+@@ -148,4 +149,3 @@ def prepare_gate_up(layer, meta, compute, tunings, *, prompt=False):
+ 
+-def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+-    """Return compact BF16 activations, or decline before issuing the projection."""
++def _bound_gate_up(layer, tuning, prompt):
+     state = getattr(layer, "humming_prompt_gate_up" if prompt else "humming_decode_gate_up", None)
+@@ -160,2 +160,36 @@ def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
+     _, handle, shared, width = kernel
++    return launcher, maps, handle, shared, width, sms
++
++
++def bind_prompt_wave(layer, inputs, active):
++    """Bind host tensor maps once, before issuing any work to the supplied arena."""
++    tuning = layer.humming_grouped_tunings["w13"]
++    bound = _bound_gate_up(layer, tuning, True)
++    if bound is None:
++        return None
++    launcher, maps, handle, shared, tile, sms = bound
++    rows, intermediate = inputs.size(0), layer.intermediate_size_per_partition
++    if (inputs.shape != (rows, layer.hidden_size) or active.shape != (rows, intermediate)
++            or intermediate < 128 or intermediate % 128 or not 0 < rows <= (2**31 - 1) // (intermediate // 128)
++            or inputs.dtype != torch.bfloat16 or active.dtype != torch.bfloat16
++            or inputs.device != layer.w13_weight.device or active.device != inputs.device
++            or not inputs.is_contiguous() or not active.is_contiguous()):
++        return None
++    wave_maps = maps.new_empty(maps.numel() + 128)
++    if not launcher.prepare_wave(inputs, maps, wave_maps, tile):
++        return None
++
++    def project(experts, offsets):
++        if not launcher.run_wave(inputs, active, experts, offsets, layer.w13_global_scale, wave_maps, handle, shared, tile, sms):
++            raise RuntimeError("Invalid grouped prompt wave geometry after input-map preparation")
++
++    return project
++
++
++def run_gate_up(layer, inputs, keys, offsets, tuning, *, prompt=False):
++    """Return compact BF16 activations, or decline before issuing the projection."""
++    bound = _bound_gate_up(layer, tuning, prompt)
++    if bound is None:
++        return None
++    launcher, maps, handle, shared, width, sms = bound
+     active = inputs.new_empty((inputs.shape[0], layer.intermediate_size_per_partition))
+diff --git a/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+new file mode 100644
+index 0000000..91b1118
+--- /dev/null
++++ b/python/sglang/srt/layers/muse_spark/humming_prefill_waves.py
+@@ -0,0 +1,209 @@
++"""Graph-replayable grouped expert prefill with bounded BF16 workspace."""
++
++import torch
++import triton
++import triton.language as tl
++
++
++def wave_capacity(tokens, topk, experts, hidden, intermediate):
++    # Whole tokens stay together. The last token that starts in a wave can
++    # extend up to topk - 1 rows past its nominal route limit.
++    stage_width = max(hidden, intermediate)
++    output_width = max(hidden, 2 * intermediate)
++    max_rows = (384 << 20) // (2 * (stage_width + output_width))
++    if not 1 <= topk <= 8 or tokens < 1:
++        return 0
++    slots = tokens * topk
++    capacity = slots if slots <= max_rows else min(tokens, max_rows - topk + 1)
++    if capacity < 1:
++        return 0
++    key_span = triton.next_power_of_2(max(slots, capacity + topk - 1))
++    if triton.cdiv(slots, capacity) > 16 or (experts + 1) * key_span >= 2**31:
++        return 0
++    return capacity
++
++
++def plan_waves(local_ids, experts, capacity):
++    tokens, topk = local_ids.shape
++    waves = triton.cdiv(tokens * topk, capacity)
++    live = (local_ids >= 0) & (local_ids < experts)
++    counts = live.sum(1, dtype=torch.int32)
++    starts = torch.cumsum(counts, 0, dtype=torch.int32) - counts
++    wave = torch.div(starts, capacity, rounding_mode="floor").clamp_max(waves - 1)
++    bins = torch.where(live, wave[:, None] * experts + local_ids, waves * experts)
++    sorted_bins, sorted_slots = bins.flatten().sort(stable=True)
++    cutoffs = torch.arange(waves * experts + 1, device=local_ids.device, dtype=torch.int32)
++    edges = torch.searchsorted(sorted_bins, cutoffs, out_int32=True)
++    wave_starts = torch.arange(waves, device=local_ids.device, dtype=torch.int32) * capacity
++    token_bounds = torch.searchsorted(starts, wave_starts, out_int32=True)
++    token_bounds = torch.cat((token_bounds, token_bounds.new_full((1,), tokens)))
++    return sorted_bins, sorted_slots, edges, token_bounds
++
++
++@triton.jit
++def _pack_wave(
++    Inputs, SortedBins, SortedSlots, Edges, Packed, RowKeys, RowMap,
++    ROWS: tl.constexpr, EXPERTS: tl.constexpr, TOPK: tl.constexpr,
++    HIDDEN: tl.constexpr, WIDTH: tl.constexpr, SPAN: tl.constexpr, PLAIN_IDS: tl.constexpr = False,
++):
++    first = tl.load(Edges)
++    end = tl.load(Edges + EXPERTS)
++    col = tl.arange(0, WIDTH)
++    for pos in range(first + tl.program_id(0), end, tl.num_programs(0)):
++        slot = tl.load(SortedSlots + pos).to(tl.int32)
++        expert = tl.load(SortedBins + pos) % EXPERTS
++        row = ROWS - (end - pos)
++        tl.store(RowKeys + row, expert if PLAIN_IDS else (expert + 1) * SPAN + slot)
++        tl.store(RowMap + slot, row)
++        src = (slot // TOPK).to(tl.int64) * HIDDEN + col
++        vals = tl.load(Inputs + src, mask=col < HIDDEN, other=0)
++        tl.store(Packed + row.to(tl.int64) * HIDDEN + col, vals, mask=col < HIDDEN)
++
++
++@triton.jit
++def _load_wave(
++    Edges, TokenBounds, Cursor, Bounds, Offsets, Interval, Active,
++    TOKENS: tl.constexpr, ROWS: tl.constexpr, EXPERTS: tl.constexpr,
++    WAVES: tl.constexpr, BLOCK: tl.constexpr, FIRST: tl.constexpr,
++):
++    if FIRST:
++        wave = 0
++    else:
++        wave = tl.load(Cursor) + 1
++    # Clamp every pointer even on the final WHILE condition update.
++    index = tl.minimum(wave, WAVES - 1)
++    col = tl.arange(0, BLOCK)
++    base = index * EXPERTS
++    bound = tl.load(Edges + base + col, mask=col <= EXPERTS, other=0)
++    last = tl.load(Edges + base + EXPERTS)
++    first_token = tl.load(TokenBounds + index)
++    end_token = tl.load(TokenBounds + index + 1)
++    tl.store(Bounds + col, bound, mask=col <= EXPERTS)
++    tl.store(Offsets + col, bound + (ROWS - last), mask=col <= EXPERTS)
++    tl.store(Interval, first_token)
++    tl.store(Interval + 1, end_token)
++    tl.store(Cursor, wave)
++    # Trailing tokens may own zero local routes and must still write their outputs.
++    tl.store(Active, (wave < WAVES) & (first_token < TOKENS))
++
++
++def grouped_prefill_waves(layer, hidden_states, scores, local_ids, capacity):
++    from humming.layer import HummingMethod
++
++    from sglang.kernels.ops.moe.muse_spark_post_expert_finalize_triton import (
++        fused_post_expert_norm_weighted_sum,
++    )
++    from sglang.srt.layers.muse_spark.muse_spark_humming_moe import (
++        _GROUPED_COMPUTE,
++        _expert_scaled_silu_module,
++    )
++
++    tokens, hidden = hidden_states.shape
++    topk = local_ids.shape[1]
++    experts = layer.num_local_experts
++    intermediate = layer.intermediate_size_per_partition
++    rows = min(tokens * topk, capacity + topk - 1)
++    stage_width = max(hidden, intermediate)
++    output_width = max(hidden, 2 * intermediate)
++    # Use the unfused wave's existing byte budget for both layouts.
++    elements = rows * (stage_width + output_width)
++    workspace = hidden_states.new_empty(elements)
++    project = None
++    if getattr(layer, "humming_prompt_gate_up", None) is not None:
++        from sglang.srt.layers.muse_spark.decode_gate_up import bind_prompt_wave
++
++        compact_rows = min(tokens * topk, elements // (hidden + intermediate))
++        compact_capacity = compact_rows if compact_rows == tokens * topk else compact_rows - topk + 1
++        if compact_capacity >= capacity:
++            cut = compact_rows * hidden
++            packed = workspace[:cut].view(compact_rows, hidden)
++            activation = workspace[cut : cut + compact_rows * intermediate].view(compact_rows, intermediate)
++            project = bind_prompt_wave(layer, packed, activation)
++            if project is not None:
++                rows, capacity = compact_rows, compact_capacity
++                projected = packed
++    if project is None:
++        cut = rows * stage_width
++        stage, arena = workspace[:cut], workspace[cut:]
++        packed = stage[: rows * hidden].view(rows, hidden)
++        gate_up = arena[: rows * 2 * intermediate].view(rows, 2 * intermediate)
++        activation = stage[: rows * intermediate].view(rows, intermediate)
++        projected = arena[: rows * hidden].view(rows, hidden)
++    span = triton.next_power_of_2(max(tokens * topk, rows))
++    sorted_bins, sorted_slots, edges, token_bounds = plan_waves(local_ids, experts, capacity)
++    row_keys = local_ids.new_empty(rows)
++    row_map = torch.full_like(local_ids, -1)
++    output = torch.empty_like(hidden_states)
++
++    def run_wave(bounds, offsets, interval):
++        _pack_wave[(min(rows, 256),)](
++            hidden_states, sorted_bins, sorted_slots, bounds, packed, row_keys, row_map,
++            ROWS=rows, EXPERTS=experts, TOPK=topk, HIDDEN=hidden,
++            WIDTH=triton.next_power_of_2(hidden), SPAN=span, PLAIN_IDS=project is not None, num_warps=8,
++        )
++        if project is not None:
++            project(row_keys, offsets)
++        else:
++            HummingMethod.forward_layer(
++                layer, inputs=packed, outputs=gate_up, expert_layout=offsets,
++                compute_config=_GROUPED_COMPUTE, tuning_config=layer.humming_grouped_tunings["w13"],
++                sublayer_name="w13",
++            )
++            _expert_scaled_silu_module().run(
++                gate_up, activation, row_keys, offsets, layer.w13_global_scale, span
++            )
++        HummingMethod.forward_layer(
++            layer, inputs=activation, outputs=projected, expert_layout=offsets,
++            compute_config=_GROUPED_COMPUTE, tuning_config=layer.humming_grouped_tunings["w2"],
++            sublayer_name="w2",
++        )
++        fused_post_expert_norm_weighted_sum(
++            projected, scores, norm_weight=layer._post_expert_norm_weight,
++            eps=layer._post_expert_norm_eps, weight_first=layer._post_expert_norm_weight_first,
++            slot_row_indices=row_map, slot_expert_ids=local_ids,
++            expert_output_scales=layer.w2_global_scale, out=output,
++            token_bounds=interval,
++        )
++    waves = token_bounds.numel() - 1
++    if waves < 4 or not getattr(layer, "humming_conditional_waves", False):
++        for wave in range(waves):
++            bounds = edges[wave * experts : (wave + 1) * experts + 1]
++            run_wave(bounds, bounds + (rows - bounds[-1:]), token_bounds[wave : wave + 2])
++        return output
++
++    # Allocate the loop-carried metadata in the parent graph. Only single-device
++    # kernels enter the body. Tensor-parallel collectives stay in the parent.
++    bounds = edges.new_empty(experts + 1)
++    offsets = torch.empty_like(bounds)
++    interval = edges.new_empty(2)
++    cursor = edges.new_empty(())
++    active = torch.empty((), dtype=torch.bool, device=edges.device)
++
++    def load_wave(first):
++        _load_wave[(1,)](
++            edges, token_bounds, cursor, bounds, offsets, interval, active,
++            TOKENS=tokens, ROWS=rows, EXPERTS=experts, WAVES=waves,
++            BLOCK=triton.next_power_of_2(experts + 1), FIRST=first, num_warps=1,
++        )
++
++    load_wave(True)
++    if torch.cuda.is_current_stream_capturing():
++        graph = torch.cuda.CUDAGraph.get_currently_capturing_graph()
++        if project is not None:
++            # The first wave owns at least the first token, including all-remote tokens.
++            run_wave(bounds, offsets, interval)
++            load_wave(False)
++        graph.begin_capture_to_while_node(active)
++        try:
++            run_wave(bounds, offsets, interval)
++            load_wave(False)
++            graph.set_conditional_handle_for_current_node(active)
++        finally:
++            graph.end_capture_to_conditional_node()
++    else:
++        # Warm up both metadata kernels. Eager mode never reads a count back.
++        for wave in range(waves):
++            if wave:
++                load_wave(False)
++            run_wave(bounds, offsets, interval)
++    return output
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+index 891250c..d3e12b7 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_fp4_moe.py
+@@ -43,2 +43,3 @@ from sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context
+ )
++from sglang.srt.runtime_context import get_forward
+ from sglang.srt.utils.common import get_device_capability, is_cuda
+@@ -620,2 +621,25 @@ class MuseSpark1xFp4Experts(nn.Module):
+             local_topk_ids = local_humming_expert_ids(self, topk_ids)
++            if (
++                getattr(self, "humming_graph_prefill", False)
++                and self._post_expert_norm_weight is not None
++                and hidden_states.dtype == torch.bfloat16
++                and hidden_states.is_contiguous()
++                and topk_ids.numel() >= self.global_num_experts * _HUMMING_GROUPED_MIN_ROUTES_PER_EXPERT
++                and not torch.compiler.is_compiling()
++                and getattr(get_forward(), "sp_active", False)
++            ):
++                from sglang.srt.layers.muse_spark.humming_prefill_waves import (
++                    grouped_prefill_waves,
++                    wave_capacity,
++                )
++
++                tokens, hidden = hidden_states.shape
++                capacity = wave_capacity(
++                    tokens, local_topk_ids.shape[1], self.num_local_experts,
++                    hidden, self.intermediate_size_per_partition,
++                )
++                if capacity:
++                    return grouped_prefill_waves(
++                        self, hidden_states, topk_scores, local_topk_ids, capacity
++                    )
+             if (
+diff --git a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+index ac75a67..a76b964 100644
+--- a/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
++++ b/python/sglang/srt/layers/muse_spark/muse_spark_humming_moe.py
+@@ -5,2 +5,4 @@ from __future__ import annotations
+ import json
++import logging
++import subprocess
+ from typing import TYPE_CHECKING
+@@ -13,2 +15,3 @@ from sglang.kernels.jit.utils import cache_once, get_activation_cuda_cflags, loa
+ from sglang.srt.environ import envs
++from sglang.srt.runtime_context import get_exec, get_parallel
+ 
+@@ -35,2 +38,73 @@ def _expert_scaled_silu_module():
+ 
++@cache_once
++def _graph_prefill_ready(device, tp_group):
++    supported = (
++        envs.SGLANG_ENABLE_MUSE_SPARK_HUMMING_GRAPH_PREFILL.get()
++        and torch.version.cuda is not None
++        and not get_exec().deterministic.enable_deterministic_inference
++        and not envs.SGLANG_ENABLE_DETERMINISTIC_INFERENCE.get()
++        and torch.cuda.get_device_capability(device) == (9, 0)
++    )
++    if supported:
++        try:
++            _expert_scaled_silu_module()
++        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++            logging.getLogger(__name__).warning("Disabling graph-local grouped prefill: %s", exc)
++            supported = False
++    # Breakable graph capture puts a TP barrier at each eager boundary.
++    # All ranks must choose the same graph structure, even after a JIT failure.
++    if tp_group.world_size > 1:
++        ready = torch.tensor(int(supported), device="cpu", dtype=torch.int32)
++        torch.distributed.all_reduce(ready, op=torch.distributed.ReduceOp.MIN, group=tp_group.cpu_group)
++        supported = bool(ready.item())
++    return supported
++
++
++@cache_once
++def _conditional_waves_ready(device):
++    graph_type = torch.cuda.CUDAGraph
++    methods = (
++        "get_currently_capturing_graph", "begin_capture_to_while_node",
++        "set_conditional_handle_for_current_node", "end_capture_to_conditional_node",
++    )
++    if not all(hasattr(graph_type, name) for name in methods):
++        return False
++    if torch.cuda.get_allocator_backend() != "native":
++        return False
++    version = tuple(int(part) for part in torch.version.cuda.split(".")[:2])
++    if version < (12, 4):
++        return False
++    # Exercise the device predicate once before model capture. Use an isolated
++    # stream and pool so the feature check cannot clear the model's allocator cache.
++    try:
++        with torch.cuda.device(device), torch.cuda.stream(torch.cuda.Stream(device=device)):
++            count = torch.empty((), dtype=torch.int32, device=device)
++            active = torch.empty((), dtype=torch.bool, device=device)
++            count.fill_(2)
++            torch.gt(count, 0, out=active)
++            graph = graph_type()
++            graph.capture_begin(capture_error_mode="thread_local")
++            try:
++                torch.gt(count, 0, out=active)
++                current = graph_type.get_currently_capturing_graph()
++                current.begin_capture_to_while_node(active)
++                try:
++                    count.sub_(1)
++                    torch.gt(count, 0, out=active)
++                    current.set_conditional_handle_for_current_node(active)
++                finally:
++                    current.end_capture_to_conditional_node()
++            finally:
++                graph.capture_end()
++            graph.replay()
++            if count.item() != 0:
++                return False
++            count.fill_(-1)
++            graph.replay()
++            return count.item() == -1
++    except (RuntimeError, NotImplementedError) as exc:
++        logging.getLogger(__name__).info("Using unrolled grouped expert waves: %s", exc)
++        return False
++
++
+ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+@@ -47,2 +121,9 @@ def prepare_humming_nvfp4(layer: MuseSpark1xFp4Experts) -> None:
+ 
++    layer.humming_graph_prefill = (
++        _graph_prefill_ready(layer.gate_up_proj.device, get_parallel().tp_group)
++        and layer.intermediate_size_per_partition % 8 == 0
++    )
++    layer.humming_conditional_waves = (
++        layer.humming_graph_prefill and _conditional_waves_ready(layer.gate_up_proj.device)
++    )
+     input_schema = HummingInputSchema(a_dtype=dtypes.bfloat16)
+diff --git a/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py b/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
+index f8b5295..f2dd6f9 100644
+--- a/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
++++ b/python/sglang/srt/model_executor/runner_backend/cuda_graph_dedup_mixin.py
+@@ -134,2 +134,6 @@ def graph_node_payload(node):
+             payload = graph_signature(child_graph)
++        case kind if kind.name == "CU_GRAPH_NODE_TYPE_CONDITIONAL":
++            # The handle and body belong to this raw graph. Two such nodes with
++            # identical outer topology cannot safely share an executable.
++            payload = (int(node),)
+         case cuda_drv.CUgraphNodeType.CU_GRAPH_NODE_TYPE_EMPTY:

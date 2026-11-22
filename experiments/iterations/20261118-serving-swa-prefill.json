@@ -1,0 +1,132 @@
+{
+  "at": "2026-11-18T11:28:31.741059+00:00",
+  "four_load_target": 4,
+  "milestone": 3,
+  "best_four_load": {
+    "candidate": "V64",
+    "job": "abd217baf0ed49fd",
+    "score": 1.4119
+  },
+  "same_stock_curve": {
+    "stock_anchor_geomean": 9996.000336893705,
+    "highest_v64_raw_toks_per_s_per_gpu": 20547.4,
+    "necessary_raw_maximum_for_scores": {
+      "3": 29988.001010681117,
+      "4": 39984.00134757482
+    },
+    "required_raw_maximum_factor_for_4x": 1.945939697848624
+  },
+  "V68_private_check": {
+    "evidence": "serving_v0523/runs/04b01f958aa5487c.json",
+    "concurrency": 16,
+    "passed": true,
+    "relative_raw_throughput_vs_V64_check": 1.0093948668292037,
+    "raw_tokens_s_gpu": [
+      17349.9,
+      17512.9
+    ],
+    "median_decode_tokens_s_user": [
+      48.8,
+      48.0
+    ]
+  },
+  "V103": {
+    "evidence": "serving_v0523/candidates/v103_hybrid_expert_tp_feasibility/README.md",
+    "decision": "Expert tensor parallelism adds per-layer communication. The available workload data does not establish enough per-rank imbalance to offset it. No export or check."
+  },
+  "candidates": {
+    "V104": {
+      "parent": "V64",
+      "patch_sha256": "6747155fe16b33f758b0fb5b9ac1e1be9453df721b130c3bb99da4ad3d53db04",
+      "delta_sha256": "b416476625b0185a3de6900492a6cf3cc88b19589f2aaf1b4e5412a20aa64f79",
+      "export_bytes": 55580,
+      "mechanism": "Commit verified draft K/V directly to the physical cache in the stacked normalization and rotary kernel. Saves five launches and 480 KiB of logical intermediate traffic per rank at 16 requests and four commits. BF16 is the scored parent’s draft dtype. FP8 uses a Torch byte oracle and offline compilation because the stock writer fails inside the Triton CPU interpreter.",
+      "validation": "serving_v0523/candidates/v104_v64_direct_draft_kv/validation.json",
+      "compiler": "serving_v0523/candidates/v104_v64_direct_draft_kv/sm90.json",
+      "official_hardware_result": null
+    },
+    "V105": {
+      "parent": "V64",
+      "patch_sha256": "5ac11e0d6a95e44441bcb39920b4f4951f713208385516ce7c703f3cc461288c",
+      "delta_sha256": "0cfa4b8be021169b3a7945db7ed2e61940badacd5585de6365b16dd8b52f5cef",
+      "export_bytes": 53127,
+      "mechanism": "On the V64 page-one parent, gather the visible FP8 suffix and run dense native FA3 for eligible long sliding-window prefills. The pinned decoder is preserved.",
+      "validation": "serving_v0523/candidates/v105_swa_suffix_prefill/validation.json",
+      "compiler": "serving_v0523/candidates/v105_swa_suffix_prefill/sm90.json",
+      "official_hardware_result": null
+    },
+    "V106": {
+      "parent": "V100c",
+      "patch_sha256": "376d808919cba9ba365fca58147802d03d836ab26f96a521d0bf6b1cee5bf14c",
+      "delta_sha256": "623ef55d3043db654af0e2f05f1398550055d9c07e41b694efc505f634697b36",
+      "export_bytes": 59212,
+      "mechanism": "Combine 160-token pages for full attention with V105-style packed FP8 sliding-window attention. Account for both partial pages and separate K/V slot and page pitches. The decoder and flags are identical to V100c.",
+      "validation": "serving_v0523/candidates/v106_paged_swa_suffix_prefill/validation.json",
+      "compiler": "serving_v0523/candidates/v106_paged_swa_suffix_prefill/sm90.json",
+      "official_hardware_result": null
+    }
+  },
+  "V106_local_evidence": {
+    "cpu_interpreter_checked_bytes": 89743360,
+    "independent_paged_oracle_counts": {
+      "eager_and_graph_page_tables": 80,
+      "aligned_word_copy_batches": 7,
+      "suffix_begins_inside_page": 29,
+      "last_visible_row_precedes_page_end": 34,
+      "copied_fp8_bytes": 19229952,
+      "reference_attention_scalars": 77312,
+      "packed_batches": 21,
+      "byte_copy_batches": 14,
+      "native_page160_batches": 6,
+      "overlapping_or_wrong_head_stride_fallbacks": 4
+    },
+    "forward_extend_dispatch": {
+      "dense": 14,
+      "paged": 76
+    },
+    "sm90_compiled": 40,
+    "sm90_spill_specializations": [
+      "row32_tablei64_copy8_page160"
+    ],
+    "forbidden_flag_patterns_checked": 76,
+    "inherited_expert_integration_rerun": {
+      "cases": 54,
+      "pre_norm_calls": 324
+    },
+    "inherited_allocator_rerun": {
+      "signed_indices": 25209,
+      "allocation_requests": 108
+    },
+    "target_registers": 72,
+    "target_spill_bytes": 0,
+    "estimated_packing_read_write_mib_per_gpu_full_chunk": 413
+  },
+  "official_window": {
+    "launch": "serving_v0523/runs/nov19_decode_runner.launch.json",
+    "script_sha256": "7db4e44543b65313d89db093d651fd8c06a3e1d7bed426051861e9c359900f32",
+    "pid_at_arm": 67308,
+    "start_utc": "2026-11-19T00:03:00+00:00",
+    "first_private_slot": {
+      "V87_pending_and_scored_V64_pass": "V106/32",
+      "V87_pass": "V89/4",
+      "V87_failure_or_skip": "V80a/16",
+      "unknown": "defer",
+      "exclusive_with": "old V100c/32 receipt"
+    },
+    "other_slots": "Second and third allocations preserved from the V101b/V102 iteration. See exact receipt.",
+    "offline_regressions_passed": 89,
+    "at_arm_submissions": 0,
+    "score_action": false,
+    "queue_snapshot_at_utc": "2026-11-18T11:22Z",
+    "queued": {
+      "V87/4": "00c134c978104d65",
+      "V88/4": "30bb36feb528416f",
+      "V93/16": "75557c21595347de"
+    },
+    "remaining_at_snapshot": {
+      "private": 0,
+      "scored": 1
+    }
+  },
+  "compiler_cleanup": "serving_v0523/candidates/v106_paged_swa_suffix_prefill/sm90_cleanup.json"
+}

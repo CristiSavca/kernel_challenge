@@ -1,0 +1,746 @@
+{
+  "triton": "3.8.0",
+  "target": "sm90",
+  "cuda_execution": false,
+  "assembler": "Cuda compilation tools, release 12.9, V12.9.86",
+  "cases": [
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "2048-16384-plain0",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 16384,
+        "PLAIN_IDS": false
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "8177712f4f85998e2b687b0fd7a72ee27b887f5f18a3d8dd7ce3bea13f6faa16",
+      "cubin_bytes": 8624,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "2048-16384-plain0-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 2048,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 1,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "0229337572877cd0204be0f12ad787478f4fe2fecc553b8a570733a74fc0e03c",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "2048-16384-plain0-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 2048,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 1,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "607322b830003cbd5cdac2010372b5854cb9873590a3071245833a7be1dbd4b7",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "2048-16384-plain1",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 16384,
+        "PLAIN_IDS": true
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "388a0d80481c54027208d092f2f25ed21bdb46a6a1b537d326c79c2be5a410a2",
+      "cubin_bytes": 8496,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "2048-16384-plain1-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 2048,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 1,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "0229337572877cd0204be0f12ad787478f4fe2fecc553b8a570733a74fc0e03c",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "2048-16384-plain1-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 2048,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 1,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "607322b830003cbd5cdac2010372b5854cb9873590a3071245833a7be1dbd4b7",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "8192-8199-plain0",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 8199,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 65536,
+        "PLAIN_IDS": false
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "f1e79b1333f3f16983aa251112cdbf40901f409061bfd1eba849359af55be930",
+      "cubin_bytes": 8624,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "8192-8199-plain0-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 8192,
+        "ROWS": 8199,
+        "EXPERTS": 32,
+        "WAVES": 8,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "73f8e224e0d1668b3388ed7c7c85ebb415f12b532ec9b1694f4bdf7a6d442612",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "8192-8199-plain0-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 8192,
+        "ROWS": 8199,
+        "EXPERTS": 32,
+        "WAVES": 8,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "14d57b1f59cad57a5daa4947049aeb2c0e604b24b14f5f90c40944660d30f42a",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "8192-12298-plain1",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 12298,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 65536,
+        "PLAIN_IDS": true
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "cf8f007e64317a02298f0df22fb3ac7dd6168914098bd418fe6d69176f4bd4a1",
+      "cubin_bytes": 8496,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "8192-12298-plain1-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 8192,
+        "ROWS": 12298,
+        "EXPERTS": 32,
+        "WAVES": 6,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "8d20ee342e15d64f15ce9fe1f0eb22a4c08121dc59e3d011b9174c96989c772a",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "8192-12298-plain1-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 8192,
+        "ROWS": 12298,
+        "EXPERTS": 32,
+        "WAVES": 6,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "41cd16b54b3f1836b78dba4be3e8357a9f1199cc6aac19bcf389b5729aabad84",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "16384-16384-plain0",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": false
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "aa88888e399734e7500f970a4c72a65cc5326bdc41028b9df5de58feb2a849c6",
+      "cubin_bytes": 8624,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "16384-16384-plain0-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 16384,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 9,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "e2941bafe2d41265e548d03e717fc3e25d3803802ee838ba0675f6bfb5a1c920",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "16384-16384-plain0-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 16384,
+        "ROWS": 16384,
+        "EXPERTS": 32,
+        "WAVES": 9,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "6afdbd3ecd81eda3d896d47ba97d4f7c76645f01e12b4fc171044ec320f67410",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_pack_wave",
+      "label": "16384-24576-plain1",
+      "types": [
+        "*bf16",
+        "*i32",
+        "*i64",
+        "*i32",
+        "*bf16",
+        "*i32",
+        "*i32"
+      ],
+      "constants": {
+        "ROWS": 24576,
+        "EXPERTS": 32,
+        "TOPK": 8,
+        "HIDDEN": 4096,
+        "WIDTH": 4096,
+        "SPAN": 131072,
+        "PLAIN_IDS": true
+      },
+      "num_warps": 8,
+      "num_stages": 3,
+      "aligned": [
+        "Inputs",
+        "SortedBins",
+        "SortedSlots",
+        "Packed",
+        "RowKeys",
+        "RowMap"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "8c6b0285b82b0a1d8faf963a24c907879af15958942ec8ce67a50560d48e627d",
+      "cubin_bytes": 8496,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 32 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "16384-24576-plain1-first1",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 16384,
+        "ROWS": 24576,
+        "EXPERTS": 32,
+        "WAVES": 6,
+        "BLOCK": 64,
+        "FIRST": true
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "9fe45152aa79820710057f94fede242abc6c7d54cdb6dc853d18842bd49c3508",
+      "cubin_bytes": 7344,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 24 registers, used 0 barriers"
+      ]
+    },
+    {
+      "file": "srt/layers/muse_spark/humming_prefill_waves.py",
+      "kernel": "_load_wave",
+      "label": "16384-24576-plain1-first0",
+      "types": [
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i32",
+        "*i1"
+      ],
+      "constants": {
+        "TOKENS": 16384,
+        "ROWS": 24576,
+        "EXPERTS": 32,
+        "WAVES": 6,
+        "BLOCK": 64,
+        "FIRST": false
+      },
+      "num_warps": 1,
+      "num_stages": 3,
+      "aligned": [
+        "Edges",
+        "TokenBounds",
+        "Cursor",
+        "Bounds",
+        "Offsets",
+        "Interval",
+        "Active"
+      ],
+      "source_sha256": "6137841c922c914265e936bf5fa1042747da0eb79e8819b291bd1fe6b5a654e2",
+      "cubin_sha256": "4f603b3da0c6af0b566ef49b7c6c8644a411fd6498aa9a58b602e58dc913e166",
+      "cubin_bytes": 7856,
+      "shared_bytes": 0,
+      "assembler_stats": [
+        "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+        "ptxas info    : Used 28 registers, used 0 barriers"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+diff --git a/python/sglang/kernels/ops/attention/paged_verify_attention.py b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+index 0a3d17b..cffda5d 100644
+--- a/python/sglang/kernels/ops/attention/paged_verify_attention.py
++++ b/python/sglang/kernels/ops/attention/paged_verify_attention.py
+@@ -419,6 +419,7 @@ def paged_verify_attention(
+     out,
+     num_sms,
+     origins=None,
++    workspace_limit_bytes=None,
+ ):
+     """Return BF16 attention, or None when the native FA3 route is needed."""
+     batch, _ = page_table.shape
+@@ -452,8 +453,11 @@ def paged_verify_attention(
+     tile_m = triton.next_power_of_2(max_q * groups)
+     tile_n = 64 if window_left >= 0 else 128
+     partitions = max(1, triton.cdiv(num_sms * (1 if window_left >= 0 else 2), kv_heads))
++    slots = partitions + batch - 1
++    if workspace_limit_bytes is not None and slots * kv_heads * tile_m * (head_dim + 1) * 4 > workspace_limit_bytes:
++        return None
+     partial = torch.empty(
+-        (partitions + batch - 1, kv_heads, tile_m, head_dim),
++        (slots, kv_heads, tile_m, head_dim),
+         device=q.device,
+         dtype=torch.float32,
+     )
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 74952fd..d1f31dc 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -1976,11 +1976,12 @@ class FlashAttentionBackend(AttentionBackend):
+             else:
+                 query = q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim)
+                 result = None
+-                if (
++                verify_eligible = (
+                     self._hopper_verify_sms
+                     and self.topk <= 1
+-                    and forward_batch.forward_mode.is_target_verify()
+-                    and forward_batch.spec_algorithm is not None
++                    and (forward_batch.forward_mode.is_target_verify()
++                         or (batched_prompt_kv is not None and batched_prompt_kv[1] is not None))
++                    and getattr(forward_batch, "spec_algorithm", None) is not None
+                     and forward_batch.spec_algorithm.is_dflash()
+                     and getattr(forward_batch.spec_info, "ragged_verify_layout", None)
+                     is None
+@@ -1992,7 +1993,8 @@ class FlashAttentionBackend(AttentionBackend):
+                     and causal
+                     and layer.logit_cap == 0.0
+                     and kwargs.keys() <= {"k_descale", "v_descale"}
+-                ):
++                )
++                if verify_eligible and forward_batch.forward_mode.is_target_verify():
+                     origins = None
+                     if window_size[0] < 0 and page_table is metadata.page_table:
+                         origins = getattr(metadata, "verify_tile_origins", None)
+@@ -2035,14 +2037,30 @@ class FlashAttentionBackend(AttentionBackend):
+                         cut, max_seqlen_q, max_tail, cu_tail, cuk_tail = tail
+                         full_out = _fa_out
+                         tail_out = full_out[cut:]
+-                        tail_result = flash_attn_with_kvcache(
+-                            q=query[cut:], k_cache=key_cache, v_cache=value_cache,
+-                            page_table=page_table[count:], cache_seqlens=cache_seqlens[count:],
+-                            cu_seqlens_q=cu_tail, cu_seqlens_k_new=cuk_tail, max_seqlen_q=max_tail,
+-                            softmax_scale=layer.scaling, causal=causal, window_size=window_size,
+-                            softcap=layer.logit_cap, num_splits=self.num_splits, out=tail_out,
+-                            ver=self.fa_impl_ver, **{k: v[count:] for k, v in kwargs.items()},
+-                        )
++                        tail_query = query[cut:]
++                        tail_pages, tail_lengths = page_table[count:], cache_seqlens[count:]
++                        tail_scales = {k: v[count:] for k, v in kwargs.items()}
++                        tail_result = None
++                        if (verify_eligible and max_tail == self.speculative_num_draft_tokens
++                                and tail_query.shape[0] == max_tail * tail_lengths.shape[0]):
++                            # The certified causal tail has a uniform width. Complete its workspace
++                            # before packing the prompt, with the live FP8 write operands accounted for.
++                            available = 32 * 1024 * 1024 - write_k.nbytes - write_v.nbytes
++                            tail_result = paged_verify_attention(
++                                tail_query, key_cache, value_cache, tail_pages, tail_lengths, cu_tail,
++                                max_q=max_tail, window_left=window_size[0], softmax_scale=layer.scaling,
++                                k_descale=tail_scales.get("k_descale"), v_descale=tail_scales.get("v_descale"),
++                                out=tail_out, num_sms=self._hopper_verify_sms, workspace_limit_bytes=available,
++                            )
++                        if tail_result is None:
++                            tail_result = flash_attn_with_kvcache(
++                                q=tail_query, k_cache=key_cache, v_cache=value_cache,
++                                page_table=tail_pages, cache_seqlens=tail_lengths,
++                                cu_seqlens_q=cu_tail, cu_seqlens_k_new=cuk_tail, max_seqlen_q=max_tail,
++                                softmax_scale=layer.scaling, causal=causal, window_size=window_size,
++                                softcap=layer.logit_cap, num_splits=self.num_splits, out=tail_out,
++                                ver=self.fa_impl_ver, **tail_scales,
++                            )
+                         if tail_result.data_ptr() != tail_out.data_ptr():
+                             tail_out.copy_(tail_result)
+                         query, _fa_out = query[:cut], full_out[:cut]

@@ -1,0 +1,80 @@
+{
+  "source_sha256": "fe06f2eda20344c5cd713198ea14d6eff4d2c30ad99e605d8339ea111013c38c",
+  "triton": "3.8.0",
+  "physical_H200": false,
+  "cases": [
+    {
+      "rows": 1,
+      "cols": 32,
+      "width": 64,
+      "fixture": "integer",
+      "fp32_values": 32,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 8
+    },
+    {
+      "rows": 63,
+      "cols": 64,
+      "width": 256,
+      "fixture": "random",
+      "fp32_values": 4032,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 504
+    },
+    {
+      "rows": 64,
+      "cols": 256,
+      "width": 512,
+      "fixture": "tie",
+      "fp32_values": 16384,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 512
+    },
+    {
+      "rows": 65,
+      "cols": 96,
+      "width": 192,
+      "fixture": "random",
+      "fp32_values": 6240,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 520
+    },
+    {
+      "rows": 131,
+      "cols": 64,
+      "width": 1024,
+      "fixture": "integer",
+      "fp32_values": 8384,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 1048
+    },
+    {
+      "rows": 8,
+      "cols": 256,
+      "width": 8192,
+      "fixture": "tie",
+      "fp32_values": 2048,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 64
+    },
+    {
+      "rows": 2048,
+      "cols": 256,
+      "width": 8192,
+      "fixture": "sparse-exact",
+      "fp32_values": 524288,
+      "changed_bits": 0,
+      "max_abs_error": 0.0,
+      "top8_ids": 16384
+    }
+  ],
+  "checked_fp32": 561408,
+  "checked_top8": 19040,
+  "scope": "The CPU interpreter executes all production loop iterations and BF16 input conversions; CPU BLAS implements FP32 dot tiles. Native CUDA/cuBLAS agreement and serving throughput need the judge."
+}
